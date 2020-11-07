@@ -6,15 +6,15 @@ Quickly get cluster core component status and cluster size information and abnor
 ## Usage
 
 1、Install Node-problem-Detector in the inspection cluster
-* Create a ConfigMap file for Node-Problem-Detector, which contains fault patrol rules and can be added by the user.   
-`kubectl apply -f `
+* Create a ConfigMap file for Node-Problem-Detector, which contains fault patrol rules and can be added by the user. [npd-config.yaml](./docs/npd-config.yaml).   
+`kubectl apply -f npd-config.yaml`
 
-* Create the DaemonSet file for Node-Problem-Detector  
-`kubectl apply -f `
+* Create the DaemonSet file for Node-Problem-Detector. [npd.yaml](./docs/npd.yaml)  
+`kubectl apply -f npd.yaml`
 
 2、Get the Installer Excutable File
 ```shell script
-wget 
+wget https://installertest.pek3b.qingstor.com/ke
 chmod +x ke
 ```
 
