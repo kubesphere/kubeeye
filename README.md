@@ -39,45 +39,47 @@ chmod +x ke
 ## Example display
 ```
 root@node1:/home/ubuntu/go/src/kubeye# ./ke audit --kubeconfig /home/ubuntu/config
-AuditAddress: https://192.168.0.3:6443
-AuditTime: "2020-11-06T17:39:15+08:00"
-ClusterInfo:
-  K8sVersion: "1.16"
-  NamespaceNum: 6
-  NodeNum: 3
-  PodNum: 28
-ComponentStatus:
+allNodeStatusResults:
+- heartbeatTime: "2020-11-10T11:00:19+08:00"
+  message: kubelet is posting ready status
+  name: node1
+  reason: KubeletReady
+  status: "True"
+- heartbeatTime: "2020-10-21T17:34:49+08:00"
+  message: Kubelet stopped posting node status.
+  name: node2
+  reason: NodeStatusUnknown
+  status: Unknown
+- heartbeatTime: "2020-10-21T17:35:21+08:00"
+  message: Kubelet stopped posting node status.
+  name: node3
+  reason: NodeStatusUnknown
+  status: Unknown
+basicClusterInformation:
+  k8sVersion: "1.16"
+  namespaceNum: 6
+  nodeNum: 3
+  podNum: 28
+basicComponentStatus:
   controller-manager: ok
   etcd-0: '{"health":"true"}'
   scheduler: ok
-GoodPractice:
-- ContainerResults:
-  - Results:
+clusterCheckResults:
+- eventTime: "2020-11-10T10:57:23+08:00"
+  message: 'Error: ImagePullBackOff'
+  name: nginx-6c74496488-s45tg.163ff88f7263ccc7
+  namespace: test
+  reason: Failed
+clusterConfigurationResults:
+- containerResults:
+  - results:
       cpuLimitsMissing:
-        Category: Resources
-        ID: cpuLimitsMissing
-        Message: CPU limits should be set
-        Severity: warning
-        Success: false
-  CreatedTime: "2020-11-06T17:39:15+08:00"
-  Kind: Deployment
-  Name: openebs-ndm-operator
-  Namespace: openebs
-NodeStatus:
-- HeartbeatTime: "2020-11-06T17:38:16+08:00"
-  Message: kubelet is posting ready status
-  Name: node1
-  Reason: KubeletReady
-  Status: "True"
-- HeartbeatTime: "2020-10-21T17:34:49+08:00"
-  Message: Kubelet stopped posting node status.
-  Name: node2
-  Reason: NodeStatusUnknown
-  Status: Unknown
-ProblemDetector:
-- EventTime: "2020-11-06T17:37:08+08:00"
-  Message: 'Error: ImagePullBackOff'
-  Name: nginx-6c74496488-s45tg.163ff88f7263ccc7
-  Namespace: test
-  Reason: Failed
+        category: Resources
+        id: cpuLimitsMissing
+        message: CPU limits should be set
+        severity: warning
+  createdTime: "2020-11-10T11:00:21+08:00"
+  kind: Deployment
+  name: coredns
+  namespace: kube-system
 ```
