@@ -7,6 +7,8 @@ Quickly get cluster core component status and cluster size information and abnor
 
 1、Install Node-problem-Detector in the inspection cluster
 
+> Note: The NPD module does not need to be installed when no node information needs to be probed.
+
 * Create a ConfigMap file for Node-Problem-Detector, which contains fault patrol rules and can be added by the user  [npd-config.yaml](./docs/npd-config.yaml).  
 `kubectl apply -f npd-config.yaml`
 

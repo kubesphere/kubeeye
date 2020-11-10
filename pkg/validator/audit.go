@@ -11,7 +11,6 @@ import (
 
 	"os"
 	"sigs.k8s.io/yaml"
-	"time"
 )
 
 func Cluster(ctx context.Context) (int, error) {
@@ -20,12 +19,12 @@ func Cluster(ctx context.Context) (int, error) {
 		fmt.Println("do not get cluster information")
 	}
 
-	componentStatusResult, err := ComponentStatusResult(k.ComponentStatus)
+	BasicComponentStatus, err := ComponentStatusResult(k.ComponentStatus)
 	if err != nil {
 		fmt.Println("do not get componentStatus")
 	}
 
-	problemDetector, err := ProblemDetectorResult(k.ProblemDetector)
+	clusterCheckResults, err := ProblemDetectorResult(k.ProblemDetector)
 	if err != nil {
 		fmt.Println("do not get problemDetector")
 	}
@@ -43,19 +42,19 @@ func Cluster(ctx context.Context) (int, error) {
 	}
 
 	auditData := AuditData{
-		AuditTime:       k.CreationTime.Format(time.RFC3339),
-		AuditAddress:      k.AuditAddress,
-		ComponentStatus: componentStatusResult,
-		ClusterInfo: ClusterInfo{
+		//	AuditTime:       k.CreationTime.Format(time.RFC3339),
+		//	AuditAddress:      k.AuditAddress,
+		BasicComponentStatus: BasicComponentStatus,
+		BasicClusterInformation: BasicClusterInformation{
 			K8sVersion:   k.ServerVersion,
 			PodNum:       len(k.Pods),
 			NodeNum:      len(k.Nodes),
 			NamespaceNum: len(k.Namespaces),
 		},
 
-		GoodPractice: goodPractice,
-		NodeStatus: nodeStatus,
-		ProblemDetector: problemDetector,
+		ClusterConfigurationResults: goodPractice,
+		AllNodeStatusResults:        nodeStatus,
+		ClusterCheckResults:         clusterCheckResults,
 	}
 
 	jsonBytes, err := json.Marshal(auditData)
@@ -71,31 +70,31 @@ func ComponentStatusResult(cs []v1.ComponentStatus) (interface{}, error) {
 	}
 	return cr, nil
 }
-func ProblemDetectorResult(event []v1.Event) ([]ProblemDetector, error) {
-	var pdrs []ProblemDetector
-	for j := 0; j < len(event); j++{
-		if  event[j].Type == "Warning" {
-			pdr := ProblemDetector{
+func ProblemDetectorResult(event []v1.Event) ([]ClusterCheckResults, error) {
+	var pdrs []ClusterCheckResults
+	for j := 0; j < len(event); j++ {
+		if event[j].Type == "Warning" {
+			pdr := ClusterCheckResults{
 				Namespace: event[j].ObjectMeta.Namespace,
-				Name: event[j].ObjectMeta.Name,
+				Name:      event[j].ObjectMeta.Name,
 				EventTime: event[j].LastTimestamp.Time,
-				Reason: event[j].Reason,
-				Message: event[j].Message,
+				Reason:    event[j].Reason,
+				Message:   event[j].Message,
 			}
 			pdrs = append(pdrs, pdr)
 		}
 	}
 	return pdrs, nil
 }
-func NodeStatusResult(nodes []v1.Node) ([]NodeStatus, error) {
-	var nodestatus []NodeStatus
-	for k :=0; k < len(nodes); k++{
-		nodestate := NodeStatus{
-			Name: nodes[k].ObjectMeta.Name,
+func NodeStatusResult(nodes []v1.Node) ([]AllNodeStatusResults, error) {
+	var nodestatus []AllNodeStatusResults
+	for k := 0; k < len(nodes); k++ {
+		nodestate := AllNodeStatusResults{
+			Name:          nodes[k].ObjectMeta.Name,
 			HeartbeatTime: nodes[k].Status.Conditions[len(nodes[k].Status.Conditions)-1].LastHeartbeatTime.Time,
-			Status: nodes[k].Status.Conditions[len(nodes[k].Status.Conditions)-1].Status,
-			Reason: nodes[k].Status.Conditions[len(nodes[k].Status.Conditions)-1].Reason,
-			Message: nodes[k].Status.Conditions[len(nodes[k].Status.Conditions)-1].Message,
+			Status:        nodes[k].Status.Conditions[len(nodes[k].Status.Conditions)-1].Status,
+			Reason:        nodes[k].Status.Conditions[len(nodes[k].Status.Conditions)-1].Reason,
+			Message:       nodes[k].Status.Conditions[len(nodes[k].Status.Conditions)-1].Message,
 		}
 		nodestatus = append(nodestatus, nodestate)
 	}
