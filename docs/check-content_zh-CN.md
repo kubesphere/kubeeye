@@ -27,3 +27,14 @@
 * 节点是否出现CorruptDockerImage
 * 节点是否出现CorruptDockerOverlay2
 * 节点是否出现DockerContainerStartupFailure
+* 节点kubelet是否正常
+* pod里镜像拉取不到检测
+* pod里No such file or directory字样检测
+* pod里I/O error字样检测
+* pod里 No such device or address字样检测
+* pod里 Device or resource busy字样检测
+* pod里 File exists字样检测
+* pod里 Not a directory字样检测
+* pod里 Invalid argument字样检测
+* pod里 Too many open files字样检测
+* pod里 No space left on device字样检测
