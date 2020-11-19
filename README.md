@@ -5,7 +5,27 @@ Quickly get cluster core component status and cluster size information and abnor
 
 ## Usage
 
-1、Install Node-problem-Detector in the inspection cluster
+1、Get the Installer Excutable File
+* Binary downloads of the kubeye.
+```shell script
+wget https://installertest.pek3b.qingstor.com/ke
+chmod +x ke
+```
+* Build Binary from Source Code
+```shell script
+git clone https://github.com/kubesphere/kubeye.git
+cd kubeye 
+make
+```
+2、Perform operation
+```shell script
+./ke audit --kubeconfig ***
+
+--kubeconfig string
+      Path to a kubeconfig. Only required if out-of-cluster.
+```
+
+3、Install Node-problem-Detector in the inspection cluster
 
 > Note: The NPD module does not need to be installed When more detailed node information does not need to be probed.
 
@@ -14,20 +34,6 @@ Quickly get cluster core component status and cluster size information and abnor
 
 * Create the DaemonSet file for Node-Problem-Detector  [npd.yaml](./docs/npd.yaml).  
 `kubectl apply -f npd.yaml`
-
-2、Get the Installer Excutable File
-```shell script
-wget https://installertest.pek3b.qingstor.com/ke
-chmod +x ke
-```
-
-3、Perform operation
-```shell script
-./ke audit --kubeconfig ***
-
---kubeconfig string
-      Path to a kubeconfig. Only required if out-of-cluster.
-```
 
 ## Results
 
