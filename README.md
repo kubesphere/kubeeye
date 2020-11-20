@@ -43,49 +43,24 @@ make
 4. Runtime cluster failure and other information.
 
 ## Example display
+
 ```
-root@node1:/home/ubuntu/go/src/kubeye# ./ke audit --kubeconfig /home/ubuntu/config
-allNodeStatusResults:
-- heartbeatTime: "2020-11-10T11:00:19+08:00"
-  message: kubelet is posting ready status
-  name: node1
-  reason: KubeletReady
-  status: "True"
-- heartbeatTime: "2020-10-21T17:34:49+08:00"
-  message: Kubelet stopped posting node status.
-  name: node2
-  reason: NodeStatusUnknown
-  status: Unknown
-- heartbeatTime: "2020-10-21T17:35:21+08:00"
-  message: Kubelet stopped posting node status.
-  name: node3
-  reason: NodeStatusUnknown
-  status: Unknown
-basicClusterInformation:
-  k8sVersion: "1.16"
-  namespaceNum: 6
-  nodeNum: 3
-  podNum: 28
-basicComponentStatus:
-  controller-manager: ok
-  etcd-0: '{"health":"true"}'
-  scheduler: ok
-clusterCheckResults:
-- eventTime: "2020-11-10T10:57:23+08:00"
-  message: 'Error: ImagePullBackOff'
-  name: nginx-6c74496488-s45tg.163ff88f7263ccc7
-  namespace: test
-  reason: Failed
-clusterConfigurationResults:
-- containerResults:
-  - results:
-      cpuLimitsMissing:
-        category: Resources
-        id: cpuLimitsMissing
-        message: CPU limits should be set
-        severity: warning
-  createdTime: "2020-11-10T11:00:21+08:00"
-  kind: Deployment
-  name: coredns
-  namespace: kube-system
+root@node1:/home/ubuntu/go/src/kubeye# 
+./ke audit --kubeconfig /home/ubuntu/config
+HEARTBEATTIME                   SEVERITY                                 NODENAME   REASON              MESSAGE
+2020-11-19 10:32:03 +0800 CST   danger                                   node18     NodeStatusUnknown   Kubelet stopped posting node status.
+2020-11-19 10:31:37 +0800 CST   danger                                   node19     NodeStatusUnknown   Kubelet stopped posting node status.
+2020-11-19 10:31:14 +0800 CST   danger                                   node2      NodeStatusUnknown   Kubelet stopped posting node status.
+2020-11-19 10:31:58 +0800 CST   danger                                   node3      NodeStatusUnknown   Kubelet stopped posting node status.
+NAME                            SEVERITY                                 MESSAGE
+scheduler                       danger                                   Get http://127.0.0.1:10251/healthz: dial tcp 127.0.0.1:10251: connect: connection refused
+EVENTTIME                       NODENAME                                 NAMESPACE     REASON       MESSAGE
+2020-11-20 18:52:13 +0800 CST   nginx-b8ffcf679-q4n9v.16491643e6b68cd7   default       Failed       Error: ImagePullBackOff
+TIME                            NAME                                     NAMESPACE     KIND         MESSAGE
+2020-11-20T18:54:44+08:00       calico-node                              kube-system   DaemonSet    [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources} runningAsPrivileged:{runningAsPrivileged Should not be running as privileged false    warning  Security}]}]
+2020-11-20T18:54:44+08:00       kube-proxy                               kube-system   DaemonSet    [{map[runningAsPrivileged:{runningAsPrivileged Should not be running as privileged false    warning  Security}]}]
+2020-11-20T18:54:44+08:00       coredns                                  kube-system   Deployment   [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources}]}]
+2020-11-20T18:54:44+08:00       nodelocaldns                             kube-system   DaemonSet    [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources} hostPortSet:{hostPortSet Host port should not be configured false    warning  Networking} runningAsPrivileged:{runningAsPrivileged Should not be running as privileged false    warning  Security}]}]
+2020-11-20T18:54:44+08:00       nginx                                    default       Deployment   [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources} livenessProbeMissing:{livenessProbeMissing Liveness probe should be configured false    warning  Health Checks} tagNotSpecified:{tagNotSpecified Image tag should be specified false    danger   Images  }]}]
+2020-11-20T18:54:44+08:00       calico-kube-controllers                  kube-system   Deployment   [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources} livenessProbeMissing:{livenessProbeMissing Liveness probe should be configured false    warning  Health Checks}]}
 ```

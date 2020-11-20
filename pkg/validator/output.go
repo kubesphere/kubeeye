@@ -9,11 +9,11 @@ import (
 type AuditData struct {
 	//AuditTime                    string                    `yaml:"auditTime" json:"auditTime,omitempty"`
 	//AuditAddress                 string                    `yaml:"auditAddress" json:"auditAddress,omitempty"`
-	BasicClusterInformation     BasicClusterInformation `yaml:"basicClusterInformation" json:"basicClusterInformation,omitempty"`
-	BasicComponentStatus        interface{}             `yaml:"basicComponentStatus" json:"basicComponentStatus,omitempty"`
-	ClusterCheckResults         []ClusterCheckResults   `yaml:"clusterCheckResults" json:"clusterCheckResults,omitempty"`
-	ClusterConfigurationResults []PodResult             `yaml:"clusterConfigurationResults" json:"clusterConfigurationResults,omitempty"`
-	AllNodeStatusResults        []AllNodeStatusResults  `yaml:"allNodeStatusResults" json:"allNodeStatusResults,omitempty"`
+	//BasicClusterInformation     BasicClusterInformation `yaml:"basicClusterInformation" json:"basicClusterInformation,omitempty"`
+	BasicComponentStatus        []BasicComponentStatus `yaml:"basicComponentStatus" json:"basicComponentStatus,omitempty"`
+	ClusterCheckResults         []ClusterCheckResults  `yaml:"clusterCheckResults" json:"clusterCheckResults,omitempty"`
+	ClusterConfigurationResults []PodResult            `yaml:"clusterConfigurationResults" json:"clusterConfigurationResults,omitempty"`
+	AllNodeStatusResults        []AllNodeStatusResults `yaml:"allNodeStatusResults" json:"allNodeStatusResults,omitempty"`
 }
 
 type ClusterCheckResults struct {
@@ -24,12 +24,19 @@ type ClusterCheckResults struct {
 	Message   string    `yaml:"message" json:"message,omitempty"`
 }
 
+type BasicComponentStatus struct {
+	Name     string          `yaml:"name" json:"name,omitempty"`
+	Message  string          `yaml:"message" json:"message,omitempty"`
+	Severity config.Severity `yaml:"severity" json:"severity,omitempty"`
+}
+
 type AllNodeStatusResults struct {
 	Name          string                 `yaml:"name" json:"name,omitempty"`
 	Status        corev1.ConditionStatus `yaml:"status" json:"status,omitempty"`
 	HeartbeatTime time.Time              `yaml:"heartbeatTime" json:"heartbeatTime,omitempty"`
 	Reason        string                 `yaml:"reason" json:"reason,omitempty"`
 	Message       string                 `yaml:"message" json:"message,omitempty"`
+	Severity      config.Severity        `yaml:"severity" json:"severity,omitempty"`
 }
 
 type BasicClusterInformation struct {
