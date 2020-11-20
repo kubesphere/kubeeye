@@ -45,17 +45,19 @@ make
 ## Example display
 
 ```
-root@node1:/home/ubuntu/go/src/kubeye# 
-./ke audit --kubeconfig /home/ubuntu/config
+root@node1:/home/ubuntu/go/src/kubeye# ./ke audit --kubeconfig /home/ubuntu/config
 HEARTBEATTIME                   SEVERITY                                 NODENAME   REASON              MESSAGE
 2020-11-19 10:32:03 +0800 CST   danger                                   node18     NodeStatusUnknown   Kubelet stopped posting node status.
 2020-11-19 10:31:37 +0800 CST   danger                                   node19     NodeStatusUnknown   Kubelet stopped posting node status.
 2020-11-19 10:31:14 +0800 CST   danger                                   node2      NodeStatusUnknown   Kubelet stopped posting node status.
 2020-11-19 10:31:58 +0800 CST   danger                                   node3      NodeStatusUnknown   Kubelet stopped posting node status.
+
 NAME                            SEVERITY                                 MESSAGE
 scheduler                       danger                                   Get http://127.0.0.1:10251/healthz: dial tcp 127.0.0.1:10251: connect: connection refused
+
 EVENTTIME                       NODENAME                                 NAMESPACE     REASON       MESSAGE
 2020-11-20 18:52:13 +0800 CST   nginx-b8ffcf679-q4n9v.16491643e6b68cd7   default       Failed       Error: ImagePullBackOff
+
 TIME                            NAME                                     NAMESPACE     KIND         MESSAGE
 2020-11-20T18:54:44+08:00       calico-node                              kube-system   DaemonSet    [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources} runningAsPrivileged:{runningAsPrivileged Should not be running as privileged false    warning  Security}]}]
 2020-11-20T18:54:44+08:00       kube-proxy                               kube-system   DaemonSet    [{map[runningAsPrivileged:{runningAsPrivileged Should not be running as privileged false    warning  Security}]}]
