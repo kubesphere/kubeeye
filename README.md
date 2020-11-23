@@ -41,10 +41,10 @@ make
 1. Whether the core components of the cluster are healthy, including controller-manager, scheduler and etc.
 2. Whether the cluster node healthy.
 3. Whether the cluster pod is healthy.
-> Check for more detail items[Click here](./docs/check-content_zh-CN.md)
+> Check for more detail items [Click here](./docs/check-content_zh-CN.md)
 
 ## Results Example
-* 
+
 ```
 root@node1:/home/ubuntu/go/src/kubeye# ./ke audit --kubeconfig /home/ubuntu/config
 HEARTBEATTIME                   SEVERITY                                 NODENAME   REASON              MESSAGE
