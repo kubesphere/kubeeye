@@ -56,8 +56,9 @@ func Cluster(ctx context.Context) error {
 			continue
 		}
 	}
+
 	if len(basicComponentStatus) != 0 {
-		fmt.Fprintln(w, "NAME\tSEVERITY\tMESSAGE")
+		fmt.Fprintln(w, "\nNAME\tSEVERITY\tMESSAGE")
 		for _, basiccomponentStatus := range basicComponentStatus {
 			s := fmt.Sprintf("%s\t%s\t%-8v",
 				basiccomponentStatus.Name,
@@ -68,8 +69,9 @@ func Cluster(ctx context.Context) error {
 			continue
 		}
 	}
+
 	if len(clusterCheckResults) != 0 {
-		fmt.Fprintln(w, "EVENTTIME\tNODENAME\tNAMESPACE\tREASON\tMESSAGE")
+		fmt.Fprintln(w, "\nEVENTTIME\tNODENAME\tNAMESPACE\tREASON\tMESSAGE")
 		for _, clusterCheckResult := range clusterCheckResults {
 			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%-8v",
 				clusterCheckResult.EventTime,
@@ -82,8 +84,9 @@ func Cluster(ctx context.Context) error {
 			continue
 		}
 	}
+
 	if len(goodPractice) != 0 {
-		fmt.Fprintln(w, "TIME\tNAME\tNAMESPACE\tKIND\tMESSAGE")
+		fmt.Fprintln(w, "\nTIME\tNAME\tNAMESPACE\tKIND\tMESSAGE")
 		for _, goodpractice := range goodPractice {
 			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%-8v",
 				goodpractice.CreatedTime,
