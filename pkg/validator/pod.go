@@ -2,7 +2,7 @@ package validator
 
 import (
 	"context"
-	"fmt"
+	"github.com/pkg/errors"
 	"kubeye/pkg/config"
 	"kubeye/pkg/kube"
 	"time"
@@ -13,13 +13,13 @@ func ValidatePods(ctx context.Context, conf *config.Configuration, kubeResource 
 
 	results := []PodResult{}
 
-	for _, pod := range podToAudit{
+	for _, pod := range podToAudit {
 		result, err := ValidatePod(ctx, conf, pod)
-		if err != nil{
-			fmt.Println("do not get result")
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get result")
 		}
 
-		if len(result.ContainerResults[0].Results) == 0 || result.ContainerResults == nil{
+		if len(result.ContainerResults[0].Results) == 0 || result.ContainerResults == nil {
 			continue
 		}
 		results = append(results, result)
@@ -43,14 +43,12 @@ func ValidatePod(ctx context.Context, c *config.Configuration, pod kube.GenericW
 	}
 
 	result := PodResult{
-		CreatedTime:       time.Now().Format(time.RFC3339),
-		Kind:              pod.Kind,
-		Name:              pod.ObjectMeta.GetName(),
-		Namespace:         pod.ObjectMeta.GetNamespace(),
-		ContainerResults:  pRes.ContainerResults,
+		CreatedTime:      time.Now().Format(time.RFC3339),
+		Kind:             pod.Kind,
+		Name:             pod.ObjectMeta.GetName(),
+		Namespace:        pod.ObjectMeta.GetNamespace(),
+		ContainerResults: pRes.ContainerResults,
 	}
 	return result, nil
-
-
 
 }

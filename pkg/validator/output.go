@@ -25,6 +25,7 @@ type ClusterCheckResults struct {
 }
 
 type BasicComponentStatus struct {
+	Time     string          `yaml:"time" json:"time,omitempty"`
 	Name     string          `yaml:"name" json:"name,omitempty"`
 	Message  string          `yaml:"message" json:"message,omitempty"`
 	Severity config.Severity `yaml:"severity" json:"severity,omitempty"`

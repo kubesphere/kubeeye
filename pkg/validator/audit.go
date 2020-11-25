@@ -7,10 +7,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	conf "kubeye/pkg/config"
 	"kubeye/pkg/kube"
+	"os"
 	"strings"
 	"text/tabwriter"
-
-	"os"
+	"time"
 )
 
 func Cluster(ctx context.Context) error {
@@ -38,7 +38,7 @@ func Cluster(ctx context.Context) error {
 	config, err = conf.ParseFile()
 	goodPractice, err := ValidatePods(ctx, &config, k)
 	if err != nil {
-		fmt.Println("1")
+		errors.Wrap(err, "Failed to get goodPractice information")
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 10, 4, 3, ' ', 0)
@@ -46,7 +46,7 @@ func Cluster(ctx context.Context) error {
 		fmt.Fprintln(w, "HEARTBEATTIME\tSEVERITY\tNODENAME\tREASON\tMESSAGE")
 		for _, nodestatus := range nodeStatus {
 			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%-8v",
-				nodestatus.HeartbeatTime,
+				nodestatus.HeartbeatTime.Format(time.RFC3339),
 				nodestatus.Severity,
 				nodestatus.Name,
 				nodestatus.Reason,
@@ -58,9 +58,10 @@ func Cluster(ctx context.Context) error {
 	}
 
 	if len(basicComponentStatus) != 0 {
-		fmt.Fprintln(w, "\nNAME\tSEVERITY\tMESSAGE")
+		fmt.Fprintln(w, "\nTIME\tNAME\tSEVERITY\tMESSAGE")
 		for _, basiccomponentStatus := range basicComponentStatus {
-			s := fmt.Sprintf("%s\t%s\t%-8v",
+			s := fmt.Sprintf("%s\t%s\t%s\t%-8v",
+				basiccomponentStatus.Time,
 				basiccomponentStatus.Name,
 				basiccomponentStatus.Severity,
 				basiccomponentStatus.Message,
@@ -74,7 +75,7 @@ func Cluster(ctx context.Context) error {
 		fmt.Fprintln(w, "\nEVENTTIME\tNODENAME\tNAMESPACE\tREASON\tMESSAGE")
 		for _, clusterCheckResult := range clusterCheckResults {
 			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%-8v",
-				clusterCheckResult.EventTime,
+				clusterCheckResult.EventTime.Format(time.RFC3339),
 				clusterCheckResult.Name,
 				clusterCheckResult.Namespace,
 				clusterCheckResult.Reason,
@@ -132,6 +133,7 @@ func ComponentStatusResult(cs []v1.ComponentStatus) ([]BasicComponentStatus, err
 		}
 
 		cr := BasicComponentStatus{
+			Time:     time.Now().Format(time.RFC3339),
 			Name:     cs[i].ObjectMeta.Name,
 			Message:  cs[i].Conditions[0].Message,
 			Severity: "danger",

@@ -19,11 +19,27 @@ var (
 	// We explicitly set the order to avoid thrash in the
 	// tests as we migrate toward JSON schema
 	checkOrder = []string{
+		// Pod checks
+		//"hostIPCSet",
+		//"hostPIDSet",
+		//"hostNetworkSet",
+		// Container checks
+		//"memoryLimitsMissing",
+		//"memoryRequestsMissing",
 		"cpuLimitsMissing",
-		"runningAsPrivileged",
-		"livenessProbeMissing",
-		"hostPortSet",
-		"tagNotSpecified",
+		//"cpuRequestsMissing",
+		//"readinessProbeMissing",
+		//"livenessProbeMissing",
+		//"pullPolicyNotAlways",
+		//"tagNotSpecified",
+		//"hostPortSet",
+		//"runAsRootAllowed",
+		//"runAsPrivileged",
+		//"notReadOnlyRootFilesystem",
+		//"privilegeEscalationAllowed",
+		//"dangerousCapabilities",
+		//"insecureCapabilities",
+		//"priorityClassNotSet",
 	}
 )
 
@@ -71,7 +87,6 @@ func resolveCheck(conf *config.Configuration, checkID string, controller kube.Ge
 	}
 	return &check, nil
 }
-
 
 func applyPodSchemaChecks(conf *config.Configuration, controller kube.GenericWorkload) (ResultSet, error) {
 	results := ResultSet{}

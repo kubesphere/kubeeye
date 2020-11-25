@@ -22,6 +22,7 @@ type ResourceProvider struct {
 	Namespaces      []corev1.Namespace
 	Pods            []corev1.Pod
 	ComponentStatus []corev1.ComponentStatus
+	ConfigMap       []corev1.ConfigMap
 	ProblemDetector []corev1.Event
 	Controllers     []GenericWorkload
 }
@@ -53,11 +54,15 @@ func CreateResourceProviderFromCluster(ctx context.Context) (*ResourceProvider, 
 
 func CreateResourceProviderFromAPI(ctx context.Context, kube kubernetes.Interface, auditAddress string, dynamic *dynamic.Interface) (*ResourceProvider, error) {
 	listOpts := metav1.ListOptions{}
+	//var configmap = []corev1.ConfigMap{}
+	//configmap.Data =
 	serverVersion, err := kube.Discovery().ServerVersion()
 	if err != nil {
 		logrus.Errorf("Error fetching serverVersion: %v", err)
 		return nil, err
 	}
+
+	//kube.CoreV1().ConfigMaps("").Create(ctx,configmap,listOpts)
 
 	nodes, err := kube.CoreV1().Nodes().List(ctx, listOpts)
 	if err != nil {
@@ -101,7 +106,7 @@ func CreateResourceProviderFromAPI(ctx context.Context, kube kubernetes.Interfac
 		Namespaces:      namespaces.Items,
 		Pods:            pods.Items,
 		ComponentStatus: componentStatus.Items,
-		ProblemDetector:  problemDetectors.Items,
+		ProblemDetector: problemDetectors.Items,
 		Controllers:     controllers,
 	}
 	return &api, nil

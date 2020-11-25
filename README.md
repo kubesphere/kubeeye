@@ -30,11 +30,15 @@ make
 
 > Note: The NPD module does not need to be installed When more detailed node information does not need to be probed.
 
-* Create a ConfigMap file for Node-Problem-Detector, which contains fault patrol rules and can be added by the user  [npd-config.yaml](./docs/npd-config.yaml).  
-`kubectl apply -f npd-config.yaml`
+```shell script
+./ke add npd --kubeconfig ***
 
-* Create the DaemonSet file for Node-Problem-Detector  [npd.yaml](./docs/npd.yaml).  
-`kubectl apply -f npd.yaml`
+--kubeconfig string
+      Path to a kubeconfig. Only required if out-of-cluster.
+> Note: If it is an external cluster, the server needs an external network address in the config file.
+```
+
+* Continue with step 2.
 
 ## Results
 
@@ -67,3 +71,5 @@ TIME                            NAME                                     NAMESPA
 2020-11-20T18:54:44+08:00       nginx                                    default       Deployment   [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources} livenessProbeMissing:{livenessProbeMissing Liveness probe should be configured false    warning  Health Checks} tagNotSpecified:{tagNotSpecified Image tag should be specified false    danger   Images  }]}]
 2020-11-20T18:54:44+08:00       calico-kube-controllers                  kube-system   Deployment   [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources} livenessProbeMissing:{livenessProbeMissing Liveness probe should be configured false    warning  Health Checks}]}
 ```
+
+## Custom check
