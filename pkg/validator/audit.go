@@ -8,12 +8,13 @@ import (
 	conf "kubeye/pkg/config"
 	"kubeye/pkg/kube"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/tabwriter"
 	"time"
 )
 
-func Cluster(ctx context.Context) error {
+func Cluster(configuration string, ctx context.Context) error {
 	k, err := kube.CreateResourceProvider(ctx)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get cluster information")
@@ -35,8 +36,20 @@ func Cluster(ctx context.Context) error {
 	}
 
 	var config conf.Configuration
+	var goodPractice []PodResult
+	if len(configuration) != 0 {
+		fp, err := filepath.Abs(configuration)
+		if err != nil {
+			return errors.Wrap(err, "Failed to look up current directory")
+		}
+		config1, err := conf.ParseFile1(fp)
+		goodPractice1, err := ValidatePods(ctx, &config1, k)
+		goodPractice = append(goodPractice, goodPractice1...)
+
+	}
 	config, err = conf.ParseFile()
-	goodPractice, err := ValidatePods(ctx, &config, k)
+	goodPractice2, err := ValidatePods(ctx, &config, k)
+	goodPractice = append(goodPractice, goodPractice2...)
 	if err != nil {
 		errors.Wrap(err, "Failed to get goodPractice information")
 	}

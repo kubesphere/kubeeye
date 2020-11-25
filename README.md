@@ -73,3 +73,44 @@ TIME                            NAME                                     NAMESPA
 ```
 
 ## Custom check
+
+* Add custom npd rule methods
+```
+1. Deploy npd, ./ke add npd --kubeconfig ***
+2. Ddit node-problem-detector-config configMap, such as: kubectl edit cm -n kube-system node-problem-detector-config
+3. Add exception log information under the rule of configMap, rules follow regular expressions.
+```
+* Add custom best practice configuration
+```
+1. Use the -f parameter and file name config.yaml.
+./ke audit -f /home/ubuntu/go/src/kubeye/examples/tmp/config.yaml --kubeconfig ***
+
+--kubeconfig string
+      Path to a kubeconfig. Only required if out-of-cluster.
+2. config.yaml example, follow the JSON syntax.
+ubuntu@node1:~/go/src/kubeye/examples/tmp$ cat config.yaml
+checks:
+  imageRegistry: warning
+
+customChecks:
+  imageRegistry:
+    successMessage: Image comes from allowed registries
+    failureMessage: Image should not be from disallowed registry
+    category: Images
+    target: Container
+    schema:
+      '$schema': http://json-schema.org/draft-07/schema
+      type: object
+      properties:
+        image:
+          type: string
+          not:
+            pattern: ^quay.io
+
+
+ubuntu@node1:~/go/src/kubeye/examples/tmp$./ke audit -f /home/ubuntu/go/src/kubeye/examples/tmp/config.yaml
+TIME                        NAME                      NAMESPACE     KIND         MESSAGE
+2020-11-25T20:41:59+08:00   nginx                     default       Deployment   [{map[imageRegistry:{imageRegistry Image should not be from disallowed registry false    warning  Images  }]}]
+2020-11-25T20:41:59+08:00   coredns                   kube-system   Deployment   [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources}]}]
+
+```

@@ -7,6 +7,7 @@ import (
 	packr "github.com/gobuffalo/packr/v2"
 	"io"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"path"
 )
 
 type Configuration struct {
@@ -22,18 +23,39 @@ type Exemption struct {
 }
 
 var configBox = (*packr.Box)(nil)
+var configBox1 = (*packr.Box)(nil)
 
 func getConfigBox() *packr.Box {
 	if configBox == (*packr.Box)(nil) {
 		configBox = packr.New("Config", "../../examples")
+
 	}
 	return configBox
 }
+
+func getConfigBox1(fp string) *packr.Box {
+	var dir, _ = path.Split(fp)
+	if configBox1 == (*packr.Box)(nil) {
+		configBox1 = packr.New("CustomConfig", fmt.Sprintf("%s", dir))
+	}
+	return configBox1
+}
+
 func ParseFile() (Configuration, error) {
 	var rawBytes []byte
 	var err error
 
 	rawBytes, err = getConfigBox().Find("config.yaml")
+	if err != nil {
+		return Configuration{}, err
+	}
+	return Parse(rawBytes)
+}
+func ParseFile1(fp string) (Configuration, error) {
+	var rawBytes []byte
+	var err error
+
+	rawBytes, err = getConfigBox1(fp).Find("config.yaml")
 	if err != nil {
 		return Configuration{}, err
 	}

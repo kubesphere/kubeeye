@@ -3,28 +3,28 @@ checks:
   cpuLimitsMissing: warning
   #image
   tagNotSpecified: danger
-  imageRegistry: warning
+  #imageRegistry: warning
   #healthChecks
   livenessProbeMissing: warning
   #network
-  hostPortSet: warning
+  #hostPortSet: warning
   #security
-  runningAsPrivileged: warning
+  runAsPrivileged: warning
 
 customChecks:
-  imageRegistry:
-    successMessage: Image comes from allowed registries
-    failureMessage: Image should not be from disallowed registry
-    category: Images
-    target: Container
-    schema:
-      '$schema': http://json-schema.org/draft-07/schema
-      type: object
-      properties:
-        image:
-          type: string
-          not:
-            pattern: ^quay.io
+#  imageRegistry:
+#    successMessage: Image comes from allowed registries
+#    failureMessage: Image should not be from disallowed registry
+#    category: Images
+#    target: Container
+#    schema:
+#      '$schema': http://json-schema.org/draft-07/schema
+#      type: object
+#      properties:
+#        image:
+#          type: string
+#          not:
+#            pattern: ^quay.io
 
 
 
