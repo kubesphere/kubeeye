@@ -56,12 +56,12 @@ func Cluster(configuration string, ctx context.Context) error {
 
 	w := tabwriter.NewWriter(os.Stdout, 10, 4, 3, ' ', 0)
 	if len(nodeStatus) != 0 {
-		fmt.Fprintln(w, "HEARTBEATTIME\tSEVERITY\tNODENAME\tREASON\tMESSAGE")
+		fmt.Fprintln(w, "NODENAME\tSEVERITY\tHEARTBEATTIME\tREASON\tMESSAGE")
 		for _, nodestatus := range nodeStatus {
 			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%-8v",
-				nodestatus.HeartbeatTime.Format(time.RFC3339),
-				nodestatus.Severity,
 				nodestatus.Name,
+				nodestatus.Severity,
+				nodestatus.HeartbeatTime.Format(time.RFC3339),
 				nodestatus.Reason,
 				nodestatus.Message,
 			)
@@ -71,12 +71,12 @@ func Cluster(configuration string, ctx context.Context) error {
 	}
 
 	if len(basicComponentStatus) != 0 {
-		fmt.Fprintln(w, "\nTIME\tNAME\tSEVERITY\tMESSAGE")
+		fmt.Fprintln(w, "\nNAME\tSEVERITY\tTIME\tMESSAGE")
 		for _, basiccomponentStatus := range basicComponentStatus {
 			s := fmt.Sprintf("%s\t%s\t%s\t%-8v",
-				basiccomponentStatus.Time,
 				basiccomponentStatus.Name,
 				basiccomponentStatus.Severity,
+				basiccomponentStatus.Time,
 				basiccomponentStatus.Message,
 			)
 			fmt.Fprintln(w, s)
@@ -85,12 +85,12 @@ func Cluster(configuration string, ctx context.Context) error {
 	}
 
 	if len(clusterCheckResults) != 0 {
-		fmt.Fprintln(w, "\nEVENTTIME\tNODENAME\tNAMESPACE\tREASON\tMESSAGE")
+		fmt.Fprintln(w, "\nNAMESPACE\tNODENAME\tEVENTTIME\tREASON\tMESSAGE")
 		for _, clusterCheckResult := range clusterCheckResults {
 			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%-8v",
-				clusterCheckResult.EventTime.Format(time.RFC3339),
-				clusterCheckResult.Name,
 				clusterCheckResult.Namespace,
+				clusterCheckResult.Name,
+				clusterCheckResult.EventTime.Format(time.RFC3339),
 				clusterCheckResult.Reason,
 				clusterCheckResult.Message,
 			)
@@ -100,14 +100,14 @@ func Cluster(configuration string, ctx context.Context) error {
 	}
 
 	if len(goodPractice) != 0 {
-		fmt.Fprintln(w, "\nTIME\tNAME\tNAMESPACE\tKIND\tMESSAGE")
+		fmt.Fprintln(w, "\nNAMESPACE\tNAME\tKIND\tTIME\tMESSAGE")
 		for _, goodpractice := range goodPractice {
 			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%-8v",
-				goodpractice.CreatedTime,
-				goodpractice.Name,
 				goodpractice.Namespace,
+				goodpractice.Name,
 				goodpractice.Kind,
-				goodpractice.ContainerResults,
+				goodpractice.CreatedTime,
+				goodpractice.Message,
 			)
 			fmt.Fprintln(w, s)
 			continue

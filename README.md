@@ -15,32 +15,22 @@ chmod +x ke
 ```shell script
 git clone https://github.com/kubesphere/kubeye.git
 cd kubeye 
-make
+make ke-linux
 ```
 2、Perform operation
 ```shell script
-./ke audit --kubeconfig ***
-
---kubeconfig string
-      Path to a kubeconfig. Only required if out-of-cluster.
-> Note: If it is an external cluster, the server needs an external network address in the config file.
+./ke audit --kubeconfig /home/ubuntu/.kube/config
 ```
 
-3、Install Node-problem-Detector in the inspection cluster
+3、(Optional) Install Node-problem-Detector in the inspection cluster
 
 > Note: The NPD module does not need to be installed When more detailed node information does not need to be probed.
 
 ```shell script
-./ke add npd --kubeconfig ***
-
---kubeconfig string
-      Path to a kubeconfig. Only required if out-of-cluster.
-> Note: If it is an external cluster, the server needs an external network address in the config file.
+./ke install npd --kubeconfig /home/ubuntu/.kube/config
 ```
 
-* Continue with step 2.
-
-## Results
+## Features
 
 1. Whether the core components of the cluster are healthy, including controller-manager, scheduler and etc.
 2. Whether the cluster node healthy.
@@ -51,39 +41,44 @@ make
 
 ```
 root@node1:/home/ubuntu/go/src/kubeye# ./ke audit --kubeconfig /home/ubuntu/config
-HEARTBEATTIME                   SEVERITY                                 NODENAME   REASON              MESSAGE
-2020-11-19 10:32:03 +0800 CST   danger                                   node18     NodeStatusUnknown   Kubelet stopped posting node status.
-2020-11-19 10:31:37 +0800 CST   danger                                   node19     NodeStatusUnknown   Kubelet stopped posting node status.
-2020-11-19 10:31:14 +0800 CST   danger                                   node2      NodeStatusUnknown   Kubelet stopped posting node status.
-2020-11-19 10:31:58 +0800 CST   danger                                   node3      NodeStatusUnknown   Kubelet stopped posting node status.
+NODENAME   SEVERITY   HEARTBEATTIME               REASON              MESSAGE
+node18     danger     2020-11-19T10:32:03+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
+node19     danger     2020-11-19T10:31:37+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
+node2      danger     2020-11-19T10:31:14+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
 
-NAME                            SEVERITY                                 MESSAGE
-scheduler                       danger                                   Get http://127.0.0.1:10251/healthz: dial tcp 127.0.0.1:10251: connect: connection refused
+NAME        SEVERITY   TIME                        MESSAGE
+scheduler   danger     2020-11-27T17:09:59+08:00   Get http://127.0.0.1:10251/healthz: dial tcp 127.0.0.1:10251: connect: connection refused
 
-EVENTTIME                       NODENAME                                 NAMESPACE     REASON       MESSAGE
-2020-11-20 18:52:13 +0800 CST   nginx-b8ffcf679-q4n9v.16491643e6b68cd7   default       Failed       Error: ImagePullBackOff
+NAMESPACE        NODENAME                                EVENTTIME                   REASON             MESSAGE
+insights-agent   workloads-1606467120.164b519ca8c67416   2020-11-27T16:57:05+08:00   DeadlineExceeded   Job was active longer than specified deadline
+kube-system      calico-node-zvl9t.164b3dc50580845d      2020-11-27T17:09:35+08:00   DNSConfigForming   Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
+kube-system      kube-proxy-4bnn7.164b3dc4f4c4125d       2020-11-27T17:09:09+08:00   DNSConfigForming   Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
+kube-system      nodelocaldns-2zbhh.164b3dc4f42d358b     2020-11-27T17:09:14+08:00   DNSConfigForming   Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
+default          nginx-b8ffcf679-q4n9v.16491643e6b68cd7  2020-11-27T17:09:24+08:00   Failed             Error: ImagePullBackOff
 
-TIME                            NAME                                     NAMESPACE     KIND         MESSAGE
-2020-11-20T18:54:44+08:00       calico-node                              kube-system   DaemonSet    [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources} runningAsPrivileged:{runningAsPrivileged Should not be running as privileged false    warning  Security}]}]
-2020-11-20T18:54:44+08:00       kube-proxy                               kube-system   DaemonSet    [{map[runningAsPrivileged:{runningAsPrivileged Should not be running as privileged false    warning  Security}]}]
-2020-11-20T18:54:44+08:00       coredns                                  kube-system   Deployment   [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources}]}]
-2020-11-20T18:54:44+08:00       nodelocaldns                             kube-system   DaemonSet    [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources} hostPortSet:{hostPortSet Host port should not be configured false    warning  Networking} runningAsPrivileged:{runningAsPrivileged Should not be running as privileged false    warning  Security}]}]
-2020-11-20T18:54:44+08:00       nginx                                    default       Deployment   [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources} livenessProbeMissing:{livenessProbeMissing Liveness probe should be configured false    warning  Health Checks} tagNotSpecified:{tagNotSpecified Image tag should be specified false    danger   Images  }]}]
-2020-11-20T18:54:44+08:00       calico-kube-controllers                  kube-system   Deployment   [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources} livenessProbeMissing:{livenessProbeMissing Liveness probe should be configured false    warning  Health Checks}]}
+NAMESPACE        NAME                      KIND         TIME                        MESSAGE
+kube-system      node-problem-detector     DaemonSet    2020-11-27T17:09:59+08:00   [livenessProbeMissing runAsPrivileged]
+kube-system      calico-node               DaemonSet    2020-11-27T17:09:59+08:00   [runAsPrivileged cpuLimitsMissing]
+kube-system      nodelocaldns              DaemonSet    2020-11-27T17:09:59+08:00   [cpuLimitsMissing runAsPrivileged]
+default          nginx                     Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing livenessProbeMissing tagNotSpecified]
+insights-agent   workloads                 CronJob      2020-11-27T17:09:59+08:00   [livenessProbeMissing]
+insights-agent   cronjob-executor          Job          2020-11-27T17:09:59+08:00   [livenessProbeMissing]
+kube-system      calico-kube-controllers   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing livenessProbeMissing]
+kube-system      coredns                   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing]   
 ```
 
 ## Custom check
 
 * Add custom npd rule methods
 ```
-1. Deploy npd, ./ke add npd --kubeconfig ***
+1. Deploy npd, ./ke add npd --kubeconfig /home/ubuntu/.kube/config
 2. Ddit node-problem-detector-config configMap, such as: kubectl edit cm -n kube-system node-problem-detector-config
 3. Add exception log information under the rule of configMap, rules follow regular expressions.
 ```
 * Add custom best practice configuration
 ```
 1. Use the -f parameter and file name config.yaml.
-./ke audit -f /home/ubuntu/go/src/kubeye/examples/tmp/config.yaml --kubeconfig ***
+./ke audit -f /home/ubuntu/go/src/kubeye/examples/tmp/config.yaml --kubeconfig /home/ubuntu/.kube/config
 
 --kubeconfig string
       Path to a kubeconfig. Only required if out-of-cluster.
@@ -109,8 +104,12 @@ customChecks:
 
 
 ubuntu@node1:~/go/src/kubeye/examples/tmp$./ke audit -f /home/ubuntu/go/src/kubeye/examples/tmp/config.yaml
-TIME                        NAME                      NAMESPACE     KIND         MESSAGE
-2020-11-25T20:41:59+08:00   nginx                     default       Deployment   [{map[imageRegistry:{imageRegistry Image should not be from disallowed registry false    warning  Images  }]}]
-2020-11-25T20:41:59+08:00   coredns                   kube-system   Deployment   [{map[cpuLimitsMissing:{cpuLimitsMissing CPU limits should be set false    warning  Resources}]}]
-
+NAMESPACE     NAME                      KIND         TIME                        MESSAGE
+default       nginx                     Deployment   2020-11-27T17:18:31+08:00   [imageRegistry]
+kube-system   node-problem-detector     DaemonSet    2020-11-27T17:18:31+08:00   [livenessProbeMissing runAsPrivileged]
+kube-system   calico-node               DaemonSet    2020-11-27T17:18:31+08:00   [cpuLimitsMissing runAsPrivileged]
+kube-system   calico-kube-controllers   Deployment   2020-11-27T17:18:31+08:00   [cpuLimitsMissing livenessProbeMissing]
+kube-system   nodelocaldns              DaemonSet    2020-11-27T17:18:31+08:00   [runAsPrivileged cpuLimitsMissing]
+default       nginx                     Deployment   2020-11-27T17:18:31+08:00   [livenessProbeMissing cpuLimitsMissing]
+kube-system   coredns                   Deployment   2020-11-27T17:18:31+08:00   [cpuLimitsMissing]
 ```

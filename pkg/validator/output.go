@@ -52,6 +52,7 @@ type PodResult struct {
 	Namespace        string            `yaml:"namespace" json:"namespace,omitempty"`
 	Kind             string            `yaml:"kind" json:"kind,omitempty"`
 	Name             string            `yaml:"name" json:"name,omitempty"`
+	Message          []string          `yaml:"message" json:"message,omitempty"`
 	ContainerResults []ContainerResult `yaml:"containerResults" json:"containerResults,omitempty"`
 }
 

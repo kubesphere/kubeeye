@@ -15,6 +15,7 @@ func ValidatePods(ctx context.Context, conf *config.Configuration, kubeResource 
 
 	for _, pod := range podToAudit {
 		result, err := ValidatePod(ctx, conf, pod)
+		var messages []string
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get result")
 		}
@@ -22,6 +23,10 @@ func ValidatePods(ctx context.Context, conf *config.Configuration, kubeResource 
 		if len(result.ContainerResults[0].Results) == 0 || result.ContainerResults == nil {
 			continue
 		}
+		for key, _ := range result.ContainerResults[0].Results {
+			messages = append(messages, key)
+		}
+		result.Message = messages
 		results = append(results, result)
 	}
 	return results, nil

@@ -15,8 +15,8 @@ func init() {
 }
 
 var addCmd = &cobra.Command{
-	Use:   "add ntp",
-	Short: "add the ntp",
+	Use:   "install ntp",
+	Short: "install the ntp",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := validator.Add(cmd.Context())
 		if err != nil {
