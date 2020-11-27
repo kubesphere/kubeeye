@@ -30,10 +30,10 @@ make ke-linux
 ./ke install npd --kubeconfig /home/ubuntu/.kube/config
 ```
 
-## Features
+## What kubeye can do
 
-1. Whether the core components of the cluster are healthy, including controller-manager, scheduler and etc.
-2. Whether the cluster node healthy.
+1. Core component detection in the cluster, including controller-manager, scheduler and etc.
+2. Node detection in the cluster, including Kubelet abnormalities, insufficient machine memory resources, docker service exceptions.
 3. Whether the cluster pod is healthy.
 > Check for more detail items [Click here](./docs/check-content_zh-CN.md)
 
@@ -45,16 +45,23 @@ NODENAME   SEVERITY   HEARTBEATTIME               REASON              MESSAGE
 node18     danger     2020-11-19T10:32:03+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
 node19     danger     2020-11-19T10:31:37+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
 node2      danger     2020-11-19T10:31:14+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
+node3      danger     2020-11-27T17:36:53+08:00   KubeletNotReady     Container runtime not ready: RuntimeReady=false reason:DockerDaemonNotReady message:docker: failed to get docker version: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
 
 NAME        SEVERITY   TIME                        MESSAGE
 scheduler   danger     2020-11-27T17:09:59+08:00   Get http://127.0.0.1:10251/healthz: dial tcp 127.0.0.1:10251: connect: connection refused
+etcd-0      danger     2020-11-27T17:56:37+08:00   Get https://192.168.13.8:2379/health: dial tcp 192.168.13.8:2379: connect: connection refused
 
-NAMESPACE        NODENAME                                EVENTTIME                   REASON             MESSAGE
-insights-agent   workloads-1606467120.164b519ca8c67416   2020-11-27T16:57:05+08:00   DeadlineExceeded   Job was active longer than specified deadline
-kube-system      calico-node-zvl9t.164b3dc50580845d      2020-11-27T17:09:35+08:00   DNSConfigForming   Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
-kube-system      kube-proxy-4bnn7.164b3dc4f4c4125d       2020-11-27T17:09:09+08:00   DNSConfigForming   Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
-kube-system      nodelocaldns-2zbhh.164b3dc4f42d358b     2020-11-27T17:09:14+08:00   DNSConfigForming   Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
-default          nginx-b8ffcf679-q4n9v.16491643e6b68cd7  2020-11-27T17:09:24+08:00   Failed             Error: ImagePullBackOff
+NAMESPACE        NODENAME                                EVENTTIME                   REASON                MESSAGE
+default          node3.164b53d23ea79fc7                  2020-11-27T17:37:34+08:00   ContainerGCFailed     rpc error: code = Unknown desc = Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
+default          node3.164b553ca5740aae                  2020-11-27T18:03:31+08:00   FreeDiskSpaceFailed   failed to garbage collect required amount of images. Wanted to free 5399374233 bytes, but freed 416077545 bytes
+default          nginx-b8ffcf679-q4n9v.16491643e6b68cd7  2020-11-27T17:09:24+08:00   Failed                Error: ImagePullBackOff
+default          node3.164b5861e041a60e                  2020-11-27T19:01:09+08:00   SystemOOM             System OOM encountered, victim process: stress, pid: 16713
+default          node3.164b58660f8d4590                  2020-11-27T19:01:27+08:00   OOMKilling            Out of memory: Kill process 16711 (stress) score 205 or sacrifice child Killed process 16711 (stress), UID 0, total-vm:826516kB, anon-rss:819296kB, file-rss:0kB, shmem-rss:0kB
+insights-agent   workloads-1606467120.164b519ca8c67416   2020-11-27T16:57:05+08:00   DeadlineExceeded      Job was active longer than specified deadline
+kube-system      calico-node-zvl9t.164b3dc50580845d      2020-11-27T17:09:35+08:00   DNSConfigForming      Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
+kube-system      kube-proxy-4bnn7.164b3dc4f4c4125d       2020-11-27T17:09:09+08:00   DNSConfigForming      Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
+kube-system      nodelocaldns-2zbhh.164b3dc4f42d358b     2020-11-27T17:09:14+08:00   DNSConfigForming      Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
+
 
 NAMESPACE        NAME                      KIND         TIME                        MESSAGE
 kube-system      node-problem-detector     DaemonSet    2020-11-27T17:09:59+08:00   [livenessProbeMissing runAsPrivileged]
@@ -79,9 +86,6 @@ kube-system      coredns                   Deployment   2020-11-27T17:09:59+08:0
 ```
 1. Use the -f parameter and file name config.yaml.
 ./ke audit -f /home/ubuntu/go/src/kubeye/examples/tmp/config.yaml --kubeconfig /home/ubuntu/.kube/config
-
---kubeconfig string
-      Path to a kubeconfig. Only required if out-of-cluster.
 2. config.yaml example, follow the JSON syntax.
 ubuntu@node1:~/go/src/kubeye/examples/tmp$ cat config.yaml
 checks:
@@ -101,7 +105,6 @@ customChecks:
           type: string
           not:
             pattern: ^quay.io
-
 
 ubuntu@node1:~/go/src/kubeye/examples/tmp$./ke audit -f /home/ubuntu/go/src/kubeye/examples/tmp/config.yaml
 NAMESPACE     NAME                      KIND         TIME                        MESSAGE
