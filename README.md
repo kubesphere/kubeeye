@@ -7,10 +7,7 @@ Quickly get cluster core component status and cluster size information and abnor
 
 1、Get the Installer Excutable File
 * Binary downloads of the kubeye can be found on the [Releases page](https://github.com/kubesphere/kubeye/releases). Unpack the binary and you are good to go!
-```shell script
-wget https://installertest.pek3b.qingstor.com/ke
-chmod +x ke
-```
+
 * Build Binary from Source Code
 ```shell script
 git clone https://github.com/kubesphere/kubeye.git
