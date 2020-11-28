@@ -37,25 +37,17 @@ make ke-linux
 3. Pod detection int the cluster, including pod best practices, pod exceptions information.
 
 ## Features
-|   YES/NO   |         CHECk ITEM          |
-| ---------- | ----------------------------|
-| :white_check_mark: |         ETCD/Core           |
-| :white_check_mark: |    Controller-Manager/Core  |
-| :white_check_mark: |        Schedule/Core        |
-| :white_check_mark: |         Kubelet/Node        |
-| :white_check_mark: |         Memory/Node         |
-| :white_check_mark: |           CPU/Node          |
-| :white_check_mark: |            IO/Node          |
-| :white_check_mark: |         Docker/Node         |
-| :white_check_mark: |    cpuLimitsMissing/Pod     |
-| :white_check_mark: |  livenessProbeMissing/Pod   |
-| :white_check_mark: |     runAsPrivileged/Pod     |
-| :white_check_mark: |     tagNotSpecified/Pod     |
-| :white_check_mark: |      imageRegistry/Pod      |
-| :white_check_mark: |  livenessProbeMissing/Pod   |
-| :white_check_mark: |  livenessProbeMissing/Pod   |
-| :white_check_mark: |  livenessProbeMissing/Pod   |
-| :white_check_mark: |  livenessProbeMissing/Pod   |
+| YES/NO |       CHECk ITEM        | YES/NO |       CHECk ITEM        | YES/NO |       CHECk ITEM        |
+| ------ | ------------------------| ------ | ------------------------| ------ | ------------------------|
+| :white_check_mark: |       ETCD/Core         | :white_check_mark: | Controller-Manager/Core | :white_check_mark: |     Schedule/Core       |
+| :white_check_mark: |       Docker/Node       | :white_check_mark: |     IO/Node             | :white_check_mark: |     Memory/Node         |
+| :white_check_mark: |       Kubelet/Node      | :white_check_mark: |     CPU/Node            | :white_check_mark: |   cpuLimitsMissing/Pod  |
+| :white_check_mark: | livenessProbe/Pod       | :white_check_mark: | runAsPrivileged/Pod     | :white_check_mark: | tagNotSpecified/Pod     |             
+| :white_check_mark: |  imageRegistry/Pod      | :white_check_mark: |     CPU/Node            | :white_check_mark: |     Memory/Node         |            
+| :white_check_mark: |       Kubelet/Node      | :white_check_mark: |     CPU/Node            | :white_check_mark: |     Memory/Node         |               
+| :white_check_mark: |       Kubelet/Node      | :white_check_mark: |     CPU/Node            | :white_check_mark: |     Memory/Node         |              
+| :white_check_mark: |       Kubelet/Node      | :white_check_mark: |     CPU/Node            | :white_check_mark: |     Memory/Node         |            
+
 
 ## Results Example
 
