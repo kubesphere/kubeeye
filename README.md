@@ -37,17 +37,23 @@ make ke-linux
 3. Pod detection int the cluster, including pod best practices, pod exceptions information.
 
 ## Features
-| YES/NO |       CHECk ITEM        | YES/NO |       CHECk ITEM        | YES/NO |       CHECk ITEM        |
+| YES/NO |       CHECK ITEM        | YES/NO |       CHECK ITEM        | YES/NO |       CHECK ITEM        |
 | ------ | ------------------------| ------ | ------------------------| ------ | ------------------------|
 | :white_check_mark: |       ETCD/Core         | :white_check_mark: | Controller-Manager/Core | :white_check_mark: |     Schedule/Core       |
 | :white_check_mark: |       Docker/Node       | :white_check_mark: |     IO/Node             | :white_check_mark: |     Memory/Node         |
-| :white_check_mark: |       Kubelet/Node      | :white_check_mark: |     CPU/Node            | :white_check_mark: |   cpuLimitsMissing/Pod  |
+| :white_check_mark: |       Kubelet/Node      | :white_check_mark: |     CPU/Node            | :white_check_mark: | CorruptOverlay2/Node    |
+| :white_check_mark: |   Deadlock/Node         | :white_check_mark: |     OOM/Node            | :white_check_mark: |     TaskHung/Node       |
+| :white_check_mark: | UnregisterNetDevice/Node| :white_check_mark: | kernel NULL pointer/Node| :white_check_mark: |     Ext4Error/Node      |
+| :white_check_mark: | AUFSUmountHung/Node     | :white_check_mark: |     DockerHung/Node     | :white_check_mark: | CorruptDockerImage/Node |
 | :white_check_mark: | livenessProbe/Pod       | :white_check_mark: | runAsPrivileged/Pod     | :white_check_mark: | tagNotSpecified/Pod     |             
-| :white_check_mark: |  imageRegistry/Pod      | :white_check_mark: |     CPU/Node            | :white_check_mark: |     Memory/Node         |            
-| :white_check_mark: |       Kubelet/Node      | :white_check_mark: |     CPU/Node            | :white_check_mark: |     Memory/Node         |               
-| :white_check_mark: |       Kubelet/Node      | :white_check_mark: |     CPU/Node            | :white_check_mark: |     Memory/Node         |              
-| :white_check_mark: |       Kubelet/Node      | :white_check_mark: |     CPU/Node            | :white_check_mark: |     Memory/Node         |            
-
+| :white_check_mark: |  imageRegistry/Pod      | :white_check_mark: | cpuLimitsMissing/Pod    | :white_check_mark: |   ImagePullBackOff/Pod  |            
+| :white_check_mark: | NoSuchFileOrDirecto/Pod | :white_check_mark: |     IO error/Pod        | :white_check_mark: | NSuchDeviceOrAddress/Pod|               
+| :white_check_mark: | DeviceOrResourceBusy/Pod| :white_check_mark: |     File exists/Pod     | :white_check_mark: |  Invalid argument/Pod   |              
+| :white_check_mark: | TooManyOpenFiles/Pod    | :white_check_mark: | NoSpaceLeftOnDevice/Pod |                    |     Token expired/Pod   |            
+|                    | kubelet expired/Pod     |                    | apiserver expired/Pod   |                    |  cpuRequestsMissing/Pod | 
+|                    | hostIPCSet/Pod          |                    | hostNetworkSet/Pod      |                    |  hostPIDSet/Pod         | 
+|                    | hostPort/Pod            |                    | memoryLimitsMissing/Pod |                    |  memoryRequestsMiss/Pod | 
+|                    | notReadOnlyRootFiles/Pod|                    | pullPolicyNotAlways/Pod |                    |  runAsRootAllowed/Pod   | 
 
 ## Results Example
 
