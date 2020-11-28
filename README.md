@@ -32,10 +32,30 @@ make ke-linux
 
 ## What kubeye can do
 
-1. Core component detection in the cluster, including controller-manager, scheduler and etc.
-2. Node detection in the cluster, including Kubelet abnormalities, insufficient machine memory resources, docker service exceptions.
-3. Whether the cluster pod is healthy.
-> Check for more detail items [Click here](./docs/check-content_zh-CN.md)
+1. Core component detection in the cluster, including controller-manager, scheduler and ETCD exception detection.
+2. Node detection in the cluster, including Kubelet abnormalities, insufficient machine MEMORY/CPU/IO resources, docker service exceptions.
+3. Pod detection int the cluster, including pod best practices, pod exceptions information.
+
+## Features
+|   YES/NO   |         CHECk ITEM          |
+| ---------- | ----------------------------|
+| :white_check_mark: |         ETCD/Core           |
+| :white_check_mark: |    Controller-Manager/Core  |
+| :white_check_mark: |        Schedule/Core        |
+| :white_check_mark: |         Kubelet/Node        |
+| :white_check_mark: |         Memory/Node         |
+| :white_check_mark: |           CPU/Node          |
+| :white_check_mark: |            IO/Node          |
+| :white_check_mark: |         Docker/Node         |
+| :white_check_mark: |    cpuLimitsMissing/Pod     |
+| :white_check_mark: |  livenessProbeMissing/Pod   |
+| :white_check_mark: |     runAsPrivileged/Pod     |
+| :white_check_mark: |     tagNotSpecified/Pod     |
+| :white_check_mark: |      imageRegistry/Pod      |
+| :white_check_mark: |  livenessProbeMissing/Pod   |
+| :white_check_mark: |  livenessProbeMissing/Pod   |
+| :white_check_mark: |  livenessProbeMissing/Pod   |
+| :white_check_mark: |  livenessProbeMissing/Pod   |
 
 ## Results Example
 
