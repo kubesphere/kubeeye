@@ -15,7 +15,9 @@ limitations under the License.
 */
 package main
 
-import "kubeye/cmd"
+import (
+	"kubeye/cmd"
+)
 
 func main() {
 	cmd.Execute()

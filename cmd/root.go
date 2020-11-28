@@ -21,9 +21,11 @@ import (
 	"os"
 )
 
+var Verbose bool
+
 var rootCmd = &cobra.Command{
 	Use:   "ke",
-	Short: "kubeye the cluster configuration",
+	Short: "Kubeye the cluster configuration",
 }
 
 func Execute() {
@@ -31,4 +33,7 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+func init() {
+	rootCmd.PersistentFlags().BoolVar(&Verbose, "debug", true, "Print detailed information")
 }

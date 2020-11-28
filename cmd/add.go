@@ -8,19 +8,18 @@ import (
 	"kubeye/pkg/validator"
 )
 
-func init() {
-	rootCmd.AddCommand(addCmd)
-	flag.Parse()
-	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-}
-
 var addCmd = &cobra.Command{
-	Use:   "install ntp",
-	Short: "install the ntp",
+	Use:   "install npd",
+	Short: "install the npd",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := validator.Add(cmd.Context())
 		if err != nil {
 			fmt.Println(err)
 		}
 	},
+}
+
+func init() {
+	rootCmd.AddCommand(addCmd)
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 }

@@ -1,19 +1,14 @@
 package cmd
 
 import (
+	"flag"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"kubeye/pkg/validator"
 )
 
 var config string
-
-func init() {
-	rootCmd.AddCommand(auditCmd)
-	//flag.Parse()
-	//pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	auditCmd.Flags().StringVarP(&config, "filename", "f", "", "Customize best practice configuration")
-}
 
 var auditCmd = &cobra.Command{
 	Use:   "audit",
@@ -24,4 +19,10 @@ var auditCmd = &cobra.Command{
 			fmt.Println(err)
 		}
 	},
+}
+
+func init() {
+	rootCmd.AddCommand(auditCmd)
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	auditCmd.Flags().StringVarP(&config, "filename", "f", "", "Customize best practice configuration")
 }
