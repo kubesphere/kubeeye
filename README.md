@@ -37,28 +37,28 @@ make ke-linux
 | YES/NO |          CHECK ITEM             | YES/NO |            CHECK ITEM           | 
 | ------ | --------------------------------| ------ | --------------------------------|
 | :white_check_mark: | ETCDHealthStatus                | :white_check_mark: | Controller-ManagerHealthStatus  | 
-| :white_check_mark: | ScheduleHealthStatus            | :white_check_mark: | WhetherTheNodeMemoryIsFull      |
-| :white_check_mark: | DockerHealthStatus              | :white_check_mark: | WhetherNodeDiskIsFull           | 
-| :white_check_mark: | KubeletHealthStatus             | :white_check_mark: | WhetherNodeCPUIsFull            | 
-| :white_check_mark: | WhetherNodeCorruptOverlay2      | :white_check_mark: | WhetherNodeKernelNULLPointer    |
-| :white_check_mark: | WhetherNodeDeadlock             | :white_check_mark: | WhetherNodeOOM                  | 
-| :white_check_mark: | WhetherNodeExt4Error            | :white_check_mark: | WhetherNodeTaskHung             | 
-| :white_check_mark: | WhetherNodeUnregisterNetDevice  | :white_check_mark: | WhetherNodeCorruptDockerImage   |
-| :white_check_mark: | WhetherNodeAUFSUmountHung       | :white_check_mark: | WhetherNodeDockerHung           | 
-| :white_check_mark: | WhetherPodSetLiveNessProbe      | :white_check_mark: | WhetherPodSetTagNotSpecified    | 
-| :white_check_mark: | WhetherPodSetRunAsPrivileged    | :white_check_mark: | WhetherPodSetImagePullBackOff   |           
-| :white_check_mark: | WhetherPodSetImageRegistry      | :white_check_mark: | WhetherPodSetCpuLimitsMissing   |             
-| :white_check_mark: | WhetherPodNoSuchFileOrDirectory | :white_check_mark: | WhetherPodIOError               | 
-| :white_check_mark: | WhetherPodNoSuchDeviceOrAddress | :white_check_mark: | WhetherPodInvalidArgument       |               
-| :white_check_mark: | WhetherPodDeviceOrResourceBusy  | :white_check_mark: | WhetherPodFileExists            |              
-| :white_check_mark: | WhetherPodTooManyOpenFiles      | :white_check_mark: | WhetherPodNoSpaceLeftOnDevice   |
-|                    | WhetherNodeTokenExpired         |                    | WhetherNodeApiServerExpired     |
-|                    | WhetherNodeKubeletExpired       |                    | WhetherPodSetCpuRequestsMissing | 
-|                    | WhetherPodSetHostIPCSet         |                    | WhetherPodSetHostNetworkSet     | 
-|                    | WhetherPodHostPIDSet            |                    | WhetherPodMemoryRequestsMiss    | 
-|                    | WhetherPodSetHostPort           |                    | WhetherPodSetMemoryLimitsMissing|
-|                    | WhetherPodNotReadOnlyRootFiles  |                    | WhetherPodSetPullPolicyNotAlways| 
-|                    | WhetherPodSetRunAsRootAllowed   |                    | WhetherPodDangerousCapabilities |
+| :white_check_mark: | ScheduleHealthStatus            | :white_check_mark: | TheNodeMemoryIsFull             |
+| :white_check_mark: | DockerHealthStatus              | :white_check_mark: | NodeDiskIsFull                  | 
+| :white_check_mark: | KubeletHealthStatus             | :white_check_mark: | NodeCPUIsFull                   | 
+| :white_check_mark: | NodeCorruptOverlay2             | :white_check_mark: | NodeKernelNULLPointer           |
+| :white_check_mark: | NodeDeadlock                    | :white_check_mark: | NodeOOM                         | 
+| :white_check_mark: | NodeExt4Error                   | :white_check_mark: | NodeTaskHung                    | 
+| :white_check_mark: | NodeUnregisterNetDevice         | :white_check_mark: | NodeCorruptDockerImage          |
+| :white_check_mark: | NodeAUFSUmountHung              | :white_check_mark: | NodeDockerHung                  | 
+| :white_check_mark: | PodSetLiveNessProbe             | :white_check_mark: | PodSetTagNotSpecified           | 
+| :white_check_mark: | PodSetRunAsPrivileged           | :white_check_mark: | PodSetImagePullBackOff          |           
+| :white_check_mark: | PodSetImageRegistry             | :white_check_mark: | PodSetCpuLimitsMissing          |             
+| :white_check_mark: | PodNoSuchFileOrDirectory        | :white_check_mark: | PodIOError                      | 
+| :white_check_mark: | PodNoSuchDeviceOrAddress        | :white_check_mark: | PodInvalidArgument              |               
+| :white_check_mark: | PodDeviceOrResourceBusy         | :white_check_mark: | PodFileExists                   |              
+| :white_check_mark: | PodTooManyOpenFiles             | :white_check_mark: | PodNoSpaceLeftOnDevice          |
+|                    | NodeTokenExpired                |                    | NodeApiServerExpired            |
+|                    | NodeKubeletExpired              |                    | PodSetCpuRequestsMissing        | 
+|                    | PodSetHostIPCSet                |                    | PodSetHostNetworkSet            | 
+|                    | PodHostPIDSet                   |                    | PodMemoryRequestsMiss           | 
+|                    | PodSetHostPort                  |                    | PodSetMemoryLimitsMissing       |
+|                    | PodNotReadOnlyRootFiles         |                    | PodSetPullPolicyNotAlways       | 
+|                    | PodSetRunAsRootAllowed          |                    | PodDangerousCapabilities        |
 
 ## Results Example
 
