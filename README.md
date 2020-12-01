@@ -45,44 +45,44 @@ make ke-linux
 | :white_check_mark: | KubeletHealthStatus | If kubelet not work, the node displays NotReady|            
 | :white_check_mark: | NodeCPU | If the node CPU is always full, the node displays NotReady|
 | :white_check_mark: | NodeCorruptOverlay2 | Overlay2 is not available|            
-| :white_check_mark: | NodeKernelNULLPointer | a|
-| :white_check_mark: | NodeDeadlock | a|                  
-| :white_check_mark: | NodeOOM | a|
-| :white_check_mark: | NodeExt4Error | a|                  
-| :white_check_mark: | NodeTaskHung | a|
-| :white_check_mark: | NodeUnregisterNetDevice  a|       
-| :white_check_mark: | NodeCorruptDockerImage          | a|
-| :white_check_mark: | NodeAUFSUmountHung            a|  
-| :white_check_mark: | NodeDockerHung                  | a|
-| :white_check_mark: | PodSetLiveNessProbe             a|
-| :white_check_mark: | PodSetTagNotSpecified           | a|
-| :white_check_mark: | PodSetRunAsPrivileged           a|
-| :white_check_mark: | PodSetImagePullBackOff          |  a|         
-| :white_check_mark: | PodSetImageRegistry             a|
-| :white_check_mark: | PodSetCpuLimitsMissing          |  a|           
-| :white_check_mark: | PodNoSuchFileOrDirectory        a|
-| :white_check_mark: | PodIOError                      | a|
-| :white_check_mark: | PodNoSuchDeviceOrAddress        a|
-| :white_check_mark: | PodInvalidArgument              | a|              
-| :white_check_mark: | PodDeviceOrResourceBusy         a|
-| :white_check_mark: | PodFileExists                   | a|             
-| :white_check_mark: | PodTooManyOpenFiles             a|
-| :white_check_mark: | PodNoSpaceLeftOnDevice          |a|
-|                    | NodeTokenExpired                a|
-|                    | NodeApiServerExpired            |a|
-|                    | NodeKubeletExpired              a|
-|                    | PodSetCpuRequestsMissing        | a|
-|                    | PodSetHostIPCSet                a|
-|                    | PodSetHostNetworkSet            | a|
-|                    | PodHostPIDSet                   a|
-|                    | PodMemoryRequestsMiss           | a|
-|                    | PodSetHostPort                  a|
-|                    | PodSetMemoryLimitsMissing       |a|
-|                    | PodNotReadOnlyRootFiles         a|
-|                    | PodSetPullPolicyNotAlways       | a|
-|                    | PodSetRunAsRootAllowed          a|
-|                    | PodDangerousCapabilities        |a|
-```
+| :white_check_mark: | NodeKernelNULLPointer | the node displays NotReady|
+| :white_check_mark: | NodeDeadlock | |                  
+| :white_check_mark: | NodeOOM | |
+| :white_check_mark: | NodeExt4Error | |                  
+| :white_check_mark: | NodeTaskHung | |
+| :white_check_mark: | NodeUnregisterNetDevice  |    |    
+| :white_check_mark: | NodeCorruptDockerImage          | |
+| :white_check_mark: | NodeAUFSUmountHung            |  
+| :white_check_mark: | NodeDockerHung                  | |
+| :white_check_mark: | PodSetLiveNessProbe | Many applications running for long periods of time eventually transition to broken states, and cannot recover except by being restarted. Kubernetes provides liveness probes to detect and remedy such situations|
+| :white_check_mark: | PodSetTagNotSpecified | Whether the image tag value in pod is configured|
+| :white_check_mark: | PodSetRunAsPrivileged |  |
+| :white_check_mark: | PodSetImagePullBackOff          | |         
+| :white_check_mark: | PodSetImageRegistry             | |
+| :white_check_mark: | PodSetCpuLimitsMissing          | |           
+| :white_check_mark: | PodNoSuchFileOrDirectory        | |
+| :white_check_mark: | PodIOError                      | |
+| :white_check_mark: | PodNoSuchDeviceOrAddress        | |
+| :white_check_mark: | PodInvalidArgument              | |              
+| :white_check_mark: | PodDeviceOrResourceBusy         | |
+| :white_check_mark: | PodFileExists                   | |             
+| :white_check_mark: | PodTooManyOpenFiles             | |
+| :white_check_mark: | PodNoSpaceLeftOnDevice          | |
+|                    | NodeTokenExpired                | |
+|                    | NodeApiServerExpired            | |
+|                    | NodeKubeletExpired              | |
+|                    | PodSetCpuRequestsMissing        | |
+|                    | PodSetHostIPCSet                | |
+|                    | PodSetHostNetworkSet            | |
+|                    | PodHostPIDSet                   |
+|                    | PodMemoryRequestsMiss           | |
+|                    | PodSetHostPort                  |
+|                    | PodSetMemoryLimitsMissing       ||
+|                    | PodNotReadOnlyRootFiles         |
+|                    | PodSetPullPolicyNotAlways       | |
+|                    | PodSetRunAsRootAllowed          |
+|                    | PodDangerousCapabilities        ||
+
 ## Results Example
 
 ```
