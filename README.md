@@ -30,36 +30,59 @@ make ke-linux
 ## What kubeye can do
 
 1. Core component detection in the cluster, including controller-manager, scheduler and ETCD exception detection.
-2. Node detection in the cluster, including Kubelet abnormalities, insufficient machine MEMORY/CPU/IO resources, docker service exceptions.
+2. Node detection in the cluster, including Kubelet abnormalities, insufficient machine MEMORY/CPU/DISk resources, docker service exceptions.
 3. Pod detection int the cluster, including pod best practices, pod exceptions information.
 
 ## Features
-| YES/NO |          CHECK ITEM             | YES/NO |            CHECK ITEM           | 
-| ------ | --------------------------------| ------ | --------------------------------|
-| :white_check_mark: | ETCDHealthStatus                | :white_check_mark: | Controller-ManagerHealthStatus  | 
-| :white_check_mark: | ScheduleHealthStatus            | :white_check_mark: | TheNodeMemoryIsFull             |
-| :white_check_mark: | DockerHealthStatus              | :white_check_mark: | NodeDiskIsFull                  | 
-| :white_check_mark: | KubeletHealthStatus             | :white_check_mark: | NodeCPUIsFull                   | 
-| :white_check_mark: | NodeCorruptOverlay2             | :white_check_mark: | NodeKernelNULLPointer           |
-| :white_check_mark: | NodeDeadlock                    | :white_check_mark: | NodeOOM                         | 
-| :white_check_mark: | NodeExt4Error                   | :white_check_mark: | NodeTaskHung                    | 
-| :white_check_mark: | NodeUnregisterNetDevice         | :white_check_mark: | NodeCorruptDockerImage          |
-| :white_check_mark: | NodeAUFSUmountHung              | :white_check_mark: | NodeDockerHung                  | 
-| :white_check_mark: | PodSetLiveNessProbe             | :white_check_mark: | PodSetTagNotSpecified           | 
-| :white_check_mark: | PodSetRunAsPrivileged           | :white_check_mark: | PodSetImagePullBackOff          |           
-| :white_check_mark: | PodSetImageRegistry             | :white_check_mark: | PodSetCpuLimitsMissing          |             
-| :white_check_mark: | PodNoSuchFileOrDirectory        | :white_check_mark: | PodIOError                      | 
-| :white_check_mark: | PodNoSuchDeviceOrAddress        | :white_check_mark: | PodInvalidArgument              |               
-| :white_check_mark: | PodDeviceOrResourceBusy         | :white_check_mark: | PodFileExists                   |              
-| :white_check_mark: | PodTooManyOpenFiles             | :white_check_mark: | PodNoSpaceLeftOnDevice          |
-|                    | NodeTokenExpired                |                    | NodeApiServerExpired            |
-|                    | NodeKubeletExpired              |                    | PodSetCpuRequestsMissing        | 
-|                    | PodSetHostIPCSet                |                    | PodSetHostNetworkSet            | 
-|                    | PodHostPIDSet                   |                    | PodMemoryRequestsMiss           | 
-|                    | PodSetHostPort                  |                    | PodSetMemoryLimitsMissing       |
-|                    | PodNotReadOnlyRootFiles         |                    | PodSetPullPolicyNotAlways       | 
-|                    | PodSetRunAsRootAllowed          |                    | PodDangerousCapabilities        |
-
+|YES/NO|CHECK ITEM |Description|
+|---|---|---|
+| :white_check_mark: | ETCDHealthStatus | If ETCD is abnormal, displays dial tcp 192.168.13.8:2379: connect: connection refused|
+| :white_check_mark: | Controller-ManagerHealthStatus | If Controller-Manager is abnormal, displays dial tcp 127.0.0.1:10252: connect: connection refused|
+| :white_check_mark: | ScheduleHealthStatus | If Schedule is abnormal, displays dial tcp 127.0.0.1:10251: connect: connection refused|           
+| :white_check_mark: | NodeMemory | If the node is full of Memory, the node displays NotReady| 
+| :white_check_mark: | DockerHealthStatus | If docker is abnormal,  displays cannot connect to the Docker daemon at unix:///var/run/docker.sock|             
+| :white_check_mark: | NodeDisk | If the node is full of Disk, displays FreeDiskSpaceFailed| 
+| :white_check_mark: | KubeletHealthStatus | If kubelet not work, the node displays NotReady|            
+| :white_check_mark: | NodeCPU | If the node CPU is always full, the node displays NotReady|
+| :white_check_mark: | NodeCorruptOverlay2 | Overlay2 is not available|            
+| :white_check_mark: | NodeKernelNULLPointer | a|
+| :white_check_mark: | NodeDeadlock | a|                  
+| :white_check_mark: | NodeOOM | a|
+| :white_check_mark: | NodeExt4Error | a|                  
+| :white_check_mark: | NodeTaskHung | a|
+| :white_check_mark: | NodeUnregisterNetDevice  a|       
+| :white_check_mark: | NodeCorruptDockerImage          | a|
+| :white_check_mark: | NodeAUFSUmountHung            a|  
+| :white_check_mark: | NodeDockerHung                  | a|
+| :white_check_mark: | PodSetLiveNessProbe             a|
+| :white_check_mark: | PodSetTagNotSpecified           | a|
+| :white_check_mark: | PodSetRunAsPrivileged           a|
+| :white_check_mark: | PodSetImagePullBackOff          |  a|         
+| :white_check_mark: | PodSetImageRegistry             a|
+| :white_check_mark: | PodSetCpuLimitsMissing          |  a|           
+| :white_check_mark: | PodNoSuchFileOrDirectory        a|
+| :white_check_mark: | PodIOError                      | a|
+| :white_check_mark: | PodNoSuchDeviceOrAddress        a|
+| :white_check_mark: | PodInvalidArgument              | a|              
+| :white_check_mark: | PodDeviceOrResourceBusy         a|
+| :white_check_mark: | PodFileExists                   | a|             
+| :white_check_mark: | PodTooManyOpenFiles             a|
+| :white_check_mark: | PodNoSpaceLeftOnDevice          |a|
+|                    | NodeTokenExpired                a|
+|                    | NodeApiServerExpired            |a|
+|                    | NodeKubeletExpired              a|
+|                    | PodSetCpuRequestsMissing        | a|
+|                    | PodSetHostIPCSet                a|
+|                    | PodSetHostNetworkSet            | a|
+|                    | PodHostPIDSet                   a|
+|                    | PodMemoryRequestsMiss           | a|
+|                    | PodSetHostPort                  a|
+|                    | PodSetMemoryLimitsMissing       |a|
+|                    | PodNotReadOnlyRootFiles         a|
+|                    | PodSetPullPolicyNotAlways       | a|
+|                    | PodSetRunAsRootAllowed          a|
+|                    | PodDangerousCapabilities        |a|
+```
 ## Results Example
 
 ```
