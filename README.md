@@ -36,10 +36,10 @@ make ke-linux
 ## Features
 | YES/NO |          CHECK ITEM             | YES/NO |            CHECK ITEM           | 
 | ------ | --------------------------------| ------ | --------------------------------|
-| :white_check_mark: | ETCDStatus                      | :white_check_mark: | Controller-ManagerStatus        | 
-| :white_check_mark: | ScheduleStatus                  | :white_check_mark: | WhetherTheNodeMemoryIsFull      |
-| :white_check_mark: | DockerStatus                    | :white_check_mark: | WhetherNodeDiskIsFull           | 
-| :white_check_mark: | KubeletStatus                   | :white_check_mark: | WhetherNodeCPUIsFull            | 
+| :white_check_mark: | ETCDHealthStatus                | :white_check_mark: | Controller-ManagerHealthStatus  | 
+| :white_check_mark: | ScheduleHealthStatus            | :white_check_mark: | WhetherTheNodeMemoryIsFull      |
+| :white_check_mark: | DockerHealthStatus              | :white_check_mark: | WhetherNodeDiskIsFull           | 
+| :white_check_mark: | KubeletHealthStatus             | :white_check_mark: | WhetherNodeCPUIsFull            | 
 | :white_check_mark: | WhetherNodeCorruptOverlay2      | :white_check_mark: | WhetherNodeKernelNULLPointer    |
 | :white_check_mark: | WhetherNodeDeadlock             | :white_check_mark: | WhetherNodeOOM                  | 
 | :white_check_mark: | WhetherNodeExt4Error            | :white_check_mark: | WhetherNodeTaskHung             | 
