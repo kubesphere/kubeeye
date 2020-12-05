@@ -46,42 +46,45 @@ make ke-linux
 | :white_check_mark: | NodeCPU | If the node CPU is always full, the node displays NotReady|
 | :white_check_mark: | NodeCorruptOverlay2 | Overlay2 is not available|            
 | :white_check_mark: | NodeKernelNULLPointer | the node displays NotReady|
-| :white_check_mark: | NodeDeadlock | |                  
-| :white_check_mark: | NodeOOM | |
-| :white_check_mark: | NodeExt4Error | |                  
-| :white_check_mark: | NodeTaskHung | |
-| :white_check_mark: | NodeUnregisterNetDevice  |    |    
-| :white_check_mark: | NodeCorruptDockerImage          | |
-| :white_check_mark: | NodeAUFSUmountHung            |  
-| :white_check_mark: | NodeDockerHung                  | |
-| :white_check_mark: | PodSetLiveNessProbe | Many applications running for long periods of time eventually transition to broken states, and cannot recover except by being restarted. Kubernetes provides liveness probes to detect and remedy such situations|
-| :white_check_mark: | PodSetTagNotSpecified | Whether the image tag value in pod is configured|
-| :white_check_mark: | PodSetRunAsPrivileged |  |
-| :white_check_mark: | PodSetImagePullBackOff          | |         
-| :white_check_mark: | PodSetImageRegistry             | |
-| :white_check_mark: | PodSetCpuLimitsMissing          | |           
-| :white_check_mark: | PodNoSuchFileOrDirectory        | |
-| :white_check_mark: | PodIOError                      | |
-| :white_check_mark: | PodNoSuchDeviceOrAddress        | |
-| :white_check_mark: | PodInvalidArgument              | |              
-| :white_check_mark: | PodDeviceOrResourceBusy         | |
-| :white_check_mark: | PodFileExists                   | |             
-| :white_check_mark: | PodTooManyOpenFiles             | |
-| :white_check_mark: | PodNoSpaceLeftOnDevice          | |
-|                    | NodeTokenExpired                | |
-|                    | NodeApiServerExpired            | |
-|                    | NodeKubeletExpired              | |
-|                    | PodSetCpuRequestsMissing        | |
-|                    | PodSetHostIPCSet                | |
-|                    | PodSetHostNetworkSet            | |
-|                    | PodHostPIDSet                   |
-|                    | PodMemoryRequestsMiss           | |
-|                    | PodSetHostPort                  |
-|                    | PodSetMemoryLimitsMissing       ||
-|                    | PodNotReadOnlyRootFiles         |
-|                    | PodSetPullPolicyNotAlways       | |
-|                    | PodSetRunAsRootAllowed          |
-|                    | PodDangerousCapabilities        ||
+| :white_check_mark: | NodeDeadlock | A deadlock is a phenomenon in which two or more processes are waiting for each other as they compete for resources|                  
+| :white_check_mark: | NodeOOM | Monitor processes that consume too much memory, especially those that consume a lot of memory very quickly, and the kernel kill them to prevent them from running out of memory|
+| :white_check_mark: | NodeExt4Error | Ext4 mount error|                  
+| :white_check_mark: | NodeTaskHung | Check to see if there is a process in state D for more than 120s|
+| :white_check_mark: | NodeUnregisterNetDevice | Check corresponding net|    
+| :white_check_mark: | NodeCorruptDockerImage          | Check docker image|
+| :white_check_mark: | NodeAUFSUmountHung            |  Check storage|
+| :white_check_mark: | NodeDockerHung                  | Docker hung, you can check docker log|
+| :white_check_mark: | PodSetLiveNessProbe | No livenessProbe was declared|
+| :white_check_mark: | PodSetTagNotSpecified | The mirror address does not declare tag or tag is latest|
+| :white_check_mark: | PodSetRunAsPrivileged | Running a pod in a privileged mode means that the pod can access the host’s resources and kernel capabilities|
+| :white_check_mark: | PodSetImagePullBackOff          | Pod can't pull the image properly, so it can be pulled manually on the corresponding node|         
+| :white_check_mark: | PodSetImageRegistry             | Checks if the image form is at the beginning of the corresponding harbor|
+| :white_check_mark: | PodSetCpuLimitsMissing          |  No CPU Resource limit was declared|           
+| :white_check_mark: | PodNoSuchFileOrDirectory        | Go into the container to see if the corresponding file exists|
+| :white_check_mark: | PodIOError                      | This is usually due to file IO performance bottlenecks|
+| :white_check_mark: | PodNoSuchDeviceOrAddress        | Check corresponding net|
+| :white_check_mark: | PodInvalidArgument              | Check the storage|              
+| :white_check_mark: | PodDeviceOrResourceBusy         | Check corresponding dirctory and PID|
+| :white_check_mark: | PodFileExists                   | Check for existing files|             
+| :white_check_mark: | PodTooManyOpenFiles             | The number of file /socket connections opened by the program exceeds the system set value|
+| :white_check_mark: | PodNoSpaceLeftOnDevice          | Check for disk and inode usage|
+|                    | NodeTokenExpired                | Token certificate expired|
+|                    | NodeApiServerExpired            | kube-apiserver certificate expired|
+|                    | NodeKubeletExpired              | Kubelet certificate expired|
+|                    | PodSetCpuRequestsMissing        | The CPU Resource Request value was not declared|
+|                    | PodSetHostIPCSet                | Set the hostIP|
+|                    | PodSetHostNetworkSet            | Set the hostNetwork|
+|                    | PodHostPIDSet                   | Set the hostPID|
+|                    | PodMemoryRequestsMiss           | No memory Resource Request value is declared|
+|                    | PodSetHostPort                  | Set the hostPort|
+|                    | PodSetMemoryLimitsMissing       | No memory Resource limit value is declared|
+|                    | PodNotReadOnlyRootFiles         | The file system is not set to read-only|
+|                    | PodSetPullPolicyNotAlways       | The mirror pull strategy is not always|
+|                    | PodSetRunAsRootAllowed          | Executed as a root account|
+|                    | PodDangerousCapabilities        | You have the dangerous option in capabilities such as ALL/SYS_ADMIN/NET_ADMIN|
+|                    | PodlivenessProbeMissing        | ReadinessProbe was not declared|
+|                    | privilegeEscalationAllowed        | Privilege escalation is allowed|
+
 
 ## Results Example
 
