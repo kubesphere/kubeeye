@@ -1,5 +1,5 @@
 /*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
+Copyright © 2020 KubeSphere Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ var Verbose bool
 
 var rootCmd = &cobra.Command{
 	Use:   "ke",
-	Short: "Kubeye the cluster configuration",
+	Short: "Kubeye finds various problems on Kubernetes cluster.",
 }
 
 func Execute() {

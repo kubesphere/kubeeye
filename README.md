@@ -1,95 +1,27 @@
 # Kubeye
 
-Kubeye is a tool for inspecting Kubernetes clusters. It runs a variety of checks to ensure that Kubernetes pods are configured using best practices, helping you avoid problems in the future. 
-Quickly get cluster core component status and cluster size information and abnormal Pods information and tons of node problems. Developed by the GO language. Support for user-defined best practice configuration rules and the addition of cluster fault scouts, which can refer to the [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector) project。
+Kubeye aims to find various problems on Kubernetes, such as application misconfiguration, cluster components unhealthy and node problems(using [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)). Besides predefined rules, it also supports custom defined rules.
 
-## Usage
-
-1、Get the Installer Excutable File
-* Binary downloads of the kubeye can be found on the [Releases page](https://github.com/kubesphere/kubeye/releases). Unpack the binary and you are good to go!
-
-* Build Binary from Source Code
-```shell script
-git clone https://github.com/kubesphere/kubeye.git
-cd kubeye 
-make ke-linux
-```
-2、Perform operation
-```shell script
-./ke audit --kubeconfig /home/ubuntu/.kube/config
-```
-
-3、(Optional) Install Node-problem-Detector in the inspection cluster
-
-> Note: The NPD module does not need to be installed When more detailed node information does not need to be probed.
+## How to use
+-  Install kubeye on your machine 
+    - Download pre built executables from [Releases](https://github.com/kubesphere/kubeye/releases).
+    
+    - Or you can build from source code
+    ```shell
+    git clone https://github.com/kubesphere/kubeye.git
+    cd kubeye 
+    make install
+    ```
+   
+- [Optional] Install Node-problem-Detector
+> Note: This line will install npd on your cluster, only required if you want detailed report.
 
 ```shell script
-./ke install npd --kubeconfig /home/ubuntu/.kube/config
+ke install npd --kubeconfig ~/.kube/config
 ```
-
-## What kubeye can do
-
-1. Core component detection in the cluster, including controller-manager, scheduler and ETCD exception detection.
-2. Node detection in the cluster, including Kubelet abnormalities, insufficient machine MEMORY/CPU/DISk resources, docker service exceptions.
-3. Pod detection int the cluster, including pod best practices, pod exceptions information.
-
-## Features
-|YES/NO|CHECK ITEM |Description|
-|---|---|---|
-| :white_check_mark: | ETCDHealthStatus | If ETCD is abnormal, displays dial tcp 192.168.13.8:2379: connect: connection refused|
-| :white_check_mark: | Controller-ManagerHealthStatus | If Controller-Manager is abnormal, displays dial tcp 127.0.0.1:10252: connect: connection refused|
-| :white_check_mark: | ScheduleHealthStatus | If Schedule is abnormal, displays dial tcp 127.0.0.1:10251: connect: connection refused|           
-| :white_check_mark: | NodeMemory | If the node is full of Memory, the node displays NotReady| 
-| :white_check_mark: | DockerHealthStatus | If docker is abnormal,  displays cannot connect to the Docker daemon at unix:///var/run/docker.sock|             
-| :white_check_mark: | NodeDisk | If the node is full of Disk, displays FreeDiskSpaceFailed| 
-| :white_check_mark: | KubeletHealthStatus | If kubelet not work, the node displays NotReady|            
-| :white_check_mark: | NodeCPU | If the node CPU is always full, the node displays NotReady|
-| :white_check_mark: | NodeCorruptOverlay2 | Overlay2 is not available|            
-| :white_check_mark: | NodeKernelNULLPointer | the node displays NotReady|
-| :white_check_mark: | NodeDeadlock | A deadlock is a phenomenon in which two or more processes are waiting for each other as they compete for resources|                  
-| :white_check_mark: | NodeOOM | Monitor processes that consume too much memory, especially those that consume a lot of memory very quickly, and the kernel kill them to prevent them from running out of memory|
-| :white_check_mark: | NodeExt4Error | Ext4 mount error|                  
-| :white_check_mark: | NodeTaskHung | Check to see if there is a process in state D for more than 120s|
-| :white_check_mark: | NodeUnregisterNetDevice | Check corresponding net|    
-| :white_check_mark: | NodeCorruptDockerImage          | Check docker image|
-| :white_check_mark: | NodeAUFSUmountHung            |  Check storage|
-| :white_check_mark: | NodeDockerHung                  | Docker hung, you can check docker log|
-| :white_check_mark: | PodSetLiveNessProbe | No livenessProbe was declared|
-| :white_check_mark: | PodSetTagNotSpecified | The mirror address does not declare tag or tag is latest|
-| :white_check_mark: | PodSetRunAsPrivileged | Running a pod in a privileged mode means that the pod can access the host’s resources and kernel capabilities|
-| :white_check_mark: | PodSetImagePullBackOff          | Pod can't pull the image properly, so it can be pulled manually on the corresponding node|         
-| :white_check_mark: | PodSetImageRegistry             | Checks if the image form is at the beginning of the corresponding harbor|
-| :white_check_mark: | PodSetCpuLimitsMissing          |  No CPU Resource limit was declared|           
-| :white_check_mark: | PodNoSuchFileOrDirectory        | Go into the container to see if the corresponding file exists|
-| :white_check_mark: | PodIOError                      | This is usually due to file IO performance bottlenecks|
-| :white_check_mark: | PodNoSuchDeviceOrAddress        | Check corresponding net|
-| :white_check_mark: | PodInvalidArgument              | Check the storage|              
-| :white_check_mark: | PodDeviceOrResourceBusy         | Check corresponding dirctory and PID|
-| :white_check_mark: | PodFileExists                   | Check for existing files|             
-| :white_check_mark: | PodTooManyOpenFiles             | The number of file /socket connections opened by the program exceeds the system set value|
-| :white_check_mark: | PodNoSpaceLeftOnDevice          | Check for disk and inode usage|
-|                    | NodeTokenExpired                | Token certificate expired|
-|                    | NodeApiServerExpired            | kube-apiserver certificate expired|
-|                    | NodeKubeletExpired              | Kubelet certificate expired|
-|                    | PodSetCpuRequestsMissing        | The CPU Resource Request value was not declared|
-|                    | PodSetHostIPCSet                | Set the hostIP|
-|                    | PodSetHostNetworkSet            | Set the hostNetwork|
-|                    | PodHostPIDSet                   | Set the hostPID|
-|                    | PodMemoryRequestsMiss           | No memory Resource Request value is declared|
-|                    | PodSetHostPort                  | Set the hostPort|
-|                    | PodSetMemoryLimitsMissing       | No memory Resource limit value is declared|
-|                    | PodNotReadOnlyRootFiles         | The file system is not set to read-only|
-|                    | PodSetPullPolicyNotAlways       | The mirror pull strategy is not always|
-|                    | PodSetRunAsRootAllowed          | Executed as a root account|
-|                    | PodDangerousCapabilities        | You have the dangerous option in capabilities such as ALL/SYS_ADMIN/NET_ADMIN|
-|                    | PodlivenessProbeMissing        | ReadinessProbe was not declared|
-|                    | privilegeEscalationAllowed        | Privilege escalation is allowed|
-
-
-## Results Example
-
-```
-root@node1:/home/ubuntu/go/src/kubeye# ./ke audit --kubeconfig /home/ubuntu/config
+- Run kubeye
+```shell
+root@node1:# ke audit --kubeconfig ~/.kube/config
 NODENAME   SEVERITY   HEARTBEATTIME               REASON              MESSAGE
 node18     danger     2020-11-19T10:32:03+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
 node19     danger     2020-11-19T10:31:37+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
@@ -123,27 +55,88 @@ kube-system      calico-kube-controllers   Deployment   2020-11-27T17:09:59+08:0
 kube-system      coredns                   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing]   
 ```
 
-## Custom check
+## What kubeye can do
 
-* Add custom npd rule methods
+- Kubeye can find problems of your cluster control plane, including kube-apiserver/kube-controller-manager/etcd, etc.
+- Kubeye helps you detect all kinds of node problems, including memory/cpu/disk pressure, unexpected kernel error logs, etc.
+- Kubeye validates your workloads yaml specs against industry best practice, helps you make your cluster stable.
+
+## Checklist
+|YES/NO|CHECK ITEM |Description|
+|---|---|---|
+| :white_check_mark: | ETCDHealthStatus | if etcd is up and running normally |
+| :white_check_mark: | ControllerManagerHealthStatus | if kubernetes kube-controller-manager is up and running normally. |
+| :white_check_mark: | SchedulerHealthStatus | if kubernetes kube-scheduler |           
+| :white_check_mark: | NodeMemory | if node memory usage is above threshold | 
+| :white_check_mark: | DockerHealthStatus | if docker is up and running|             
+| :white_check_mark: | NodeDisk | if node disk usage is above given threshold | 
+| :white_check_mark: | KubeletHealthStatus | if kubelet is active and running normally |            
+| :white_check_mark: | NodeCPU | if node cpu usage is above the given threshold |
+| :white_check_mark: | NodeCorruptOverlay2 | Overlay2 is not available|            
+| :white_check_mark: | NodeKernelNULLPointer | the node displays NotReady|
+| :white_check_mark: | NodeDeadlock | A deadlock is a phenomenon in which two or more processes are waiting for each other as they compete for resources|                  
+| :white_check_mark: | NodeOOM | Monitor processes that consume too much memory, especially those that consume a lot of memory very quickly, and the kernel kill them to prevent them from running out of memory|
+| :white_check_mark: | NodeExt4Error | Ext4 mount error|                  
+| :white_check_mark: | NodeTaskHung | Check to see if there is a process in state D for more than 120s|
+| :white_check_mark: | NodeUnregisterNetDevice | Check corresponding net|    
+| :white_check_mark: | NodeCorruptDockerImage          | Check docker image|
+| :white_check_mark: | NodeAUFSUmountHung            |  Check storage|
+| :white_check_mark: | NodeDockerHung                  | Docker hung, you can check docker log|
+| :white_check_mark: | PodSetLivenessProbe | if livenessProbe set for every container in a pod|
+| :white_check_mark: | PodSetTagNotSpecified | The mirror address does not declare tag or tag is latest|
+| :white_check_mark: | PodSetRunAsPrivileged | Running a pod in a privileged mode means that the pod can access the host’s resources and kernel capabilities|
+| :white_check_mark: | PodSetImagePullBackOff          | Pod can't pull the image properly, so it can be pulled manually on the corresponding node|         
+| :white_check_mark: | PodSetImageRegistry             | Checks if the image form is at the beginning of the corresponding harbor|
+| :white_check_mark: | PodSetCpuLimitsMissing          |  No CPU Resource limit was declared|           
+| :white_check_mark: | PodNoSuchFileOrDirectory        | Go into the container to see if the corresponding file exists|
+| :white_check_mark: | PodIOError                      | This is usually due to file IO performance bottlenecks|
+| :white_check_mark: | PodNoSuchDeviceOrAddress        | Check corresponding net|
+| :white_check_mark: | PodInvalidArgument              | Check the storage|              
+| :white_check_mark: | PodDeviceOrResourceBusy         | Check corresponding dirctory and PID|
+| :white_check_mark: | PodFileExists                   | Check for existing files|             
+| :white_check_mark: | PodTooManyOpenFiles             | The number of file /socket connections opened by the program exceeds the system set value|
+| :white_check_mark: | PodNoSpaceLeftOnDevice          | Check for disk and inode usage|
+|                    | NodeTokenExpired                | Token certificate expired|
+|                    | NodeApiServerExpired            | kube-apiserver certificate expired|
+|                    | NodeKubeletExpired              | Kubelet certificate expired|
+|                    | PodSetCpuRequestsMissing        | The CPU Resource Request value was not declared|
+|                    | PodSetHostIPCSet                | Set the hostIP|
+|                    | PodSetHostNetworkSet            | Set the hostNetwork|
+|                    | PodHostPIDSet                   | Set the hostPID|
+|                    | PodMemoryRequestsMiss           | No memory Resource Request value is declared|
+|                    | PodSetHostPort                  | Set the hostPort|
+|                    | PodSetMemoryLimitsMissing       | No memory Resource limit value is declared|
+|                    | PodNotReadOnlyRootFiles         | The file system is not set to read-only|
+|                    | PodSetPullPolicyNotAlways       | The mirror pull strategy is not always|
+|                    | PodSetRunAsRootAllowed          | Executed as a root account|
+|                    | PodDangerousCapabilities        | You have the dangerous option in capabilities such as ALL/SYS_ADMIN/NET_ADMIN|
+|                    | PodlivenessProbeMissing        | ReadinessProbe was not declared|
+|                    | privilegeEscalationAllowed        | Privilege escalation is allowed|
+> unmarked items are under heavy development
+
+
+## Add your own check rules
+
+### Add custom npd rule
+
+- Install NPD with `ke install npd --kubeconfig ~/.kube/config`
+- Edit configmap kube-system/node-problem-detector-config with kubectl, 
 ```
-1. Deploy npd, ./ke add npd --kubeconfig /home/ubuntu/.kube/config
-2. Ddit node-problem-detector-config configMap, such as: kubectl edit cm -n kube-system node-problem-detector-config
+ kubectl edit cm -n kube-system node-problem-detector-config
+```
 3. Add exception log information under the rule of configMap, rules follow regular expressions.
+
+
+### Audit with your own custom best practice rules
+- Prepare a rule yaml, for example, the following rule will validate your pod spec to make sure image are only from authorized registries.
 ```
-* Add custom best practice configuration
-```
-1. Use the -f parameter and file name config.yaml.
-./ke audit -f /home/ubuntu/go/src/kubeye/examples/tmp/config.yaml --kubeconfig /home/ubuntu/.kube/config
-2. config.yaml example, follow the JSON syntax.
-ubuntu@node1:~/go/src/kubeye/examples/tmp$ cat config.yaml
 checks:
   imageRegistry: warning
 
 customChecks:
   imageRegistry:
-    successMessage: Image comes from allowed registries
-    failureMessage: Image should not be from disallowed registry
+    successMessage: Image from an authorized registriy.
+    failureMessage: Image from an unauthorized registry. 
     category: Images
     target: Container
     schema:
@@ -154,8 +147,12 @@ customChecks:
           type: string
           not:
             pattern: ^quay.io
+```
 
-ubuntu@node1:~/go/src/kubeye/examples/tmp$./ke audit -f /home/ubuntu/go/src/kubeye/examples/tmp/config.yaml
+- Save the above rule as a yaml, for example, `rule.yaml`.
+- Run kubeye with `rule.yaml`
+```shell
+root:# ke audit -f rule.yaml --kubeconfig ~/.kube/config
 NAMESPACE     NAME                      KIND         TIME                        MESSAGE
 default       nginx                     Deployment   2020-11-27T17:18:31+08:00   [imageRegistry]
 kube-system   node-problem-detector     DaemonSet    2020-11-27T17:18:31+08:00   [livenessProbeMissing runAsPrivileged]

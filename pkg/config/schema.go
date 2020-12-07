@@ -1,3 +1,17 @@
+// Copyright 2020 KubeSphere Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package config
 
 import (
@@ -20,7 +34,6 @@ type SchemaCheck struct {
 	Category       string                `yaml:"category"`
 	SuccessMessage string                `yaml:"successMessage"`
 	FailureMessage string                `yaml:"failureMessage"`
-//	Controllers    includeExcludeList    `yaml:"controllers"`
 	Containers     includeExcludeList    `yaml:"containers"`
 	Target         TargetKind            `yaml:"target"`
 	SchemaTarget   TargetKind            `yaml:"schemaTarget"`
@@ -48,21 +61,7 @@ func (check SchemaCheck) IsActionable(target TargetKind, controllerType string, 
 	if check.Target != target {
 		return false
 	}
-	//isIncluded := len(check.Controllers.Include) == 0
-	//for _, inclusion := range check.Controllers.Include {
-	//	if inclusion == controllerType {
-	//		isIncluded = true
-	//		break
-	//	}
-	//}
-	//if !isIncluded {
-	//	return false
-	//}
-	//for _, exclusion := range check.Controllers.Exclude {
-	//	if exclusion == controllerType {
-	//		return false
-	//	}
-	//}
+
 	if check.Target == TargetContainer {
 		isIncluded := len(check.Containers.Include) == 0
 		for _, inclusion := range check.Containers.Include {
