@@ -31,11 +31,12 @@ type AuditData struct {
 }
 
 type ClusterCheckResults struct {
-	Namespace string    `yaml:"namespace" json:"namespace,omitempty"`
-	Name      string    `yaml:"name" json:"name,omitempty"`
-	EventTime time.Time `yaml:"eventTime" json:"eventTime,omitempty"`
-	Reason    string    `yaml:"reason" json:"reason,omitempty"`
-	Message   string    `yaml:"message" json:"message,omitempty"`
+	Namespace string          `yaml:"namespace" json:"namespace,omitempty"`
+	Name      string          `yaml:"name" json:"name,omitempty"`
+	EventTime time.Time       `yaml:"eventTime" json:"eventTime,omitempty"`
+	Reason    string          `yaml:"reason" json:"reason,omitempty"`
+	Message   string          `yaml:"message" json:"message,omitempty"`
+	Severity  config.Severity `yaml:"severity" json:"severity,omitempty"`
 }
 
 type BasicComponentStatus struct {
@@ -68,6 +69,7 @@ type PodResult struct {
 	Name             string            `yaml:"name" json:"name,omitempty"`
 	Message          []string          `yaml:"message" json:"message,omitempty"`
 	ContainerResults []ContainerResult `yaml:"containerResults" json:"containerResults,omitempty"`
+	Severity         config.Severity   `yaml:"severity" json:"severity,omitempty"`
 }
 
 type ContainerResult struct {

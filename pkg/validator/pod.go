@@ -41,6 +41,7 @@ func ValidatePods(ctx context.Context, conf *config.Configuration, kubeResource 
 			messages = append(messages, key)
 		}
 		result.Message = messages
+		result.Severity = "Warning"
 		results = append(results, result)
 	}
 	return results, nil
@@ -67,6 +68,7 @@ func ValidatePod(ctx context.Context, c *config.Configuration, pod kube.GenericW
 		Name:             pod.ObjectMeta.GetName(),
 		Namespace:        pod.ObjectMeta.GetNamespace(),
 		ContainerResults: pRes.ContainerResults,
+		Severity:         "Warning",
 	}
 	return result, nil
 

@@ -25,8 +25,8 @@ import (
 var config string
 
 var auditCmd = &cobra.Command{
-	Use:   "audit",
-	Short: "audit the result",
+	Use:   "fault",
+	Short: "fault the result",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := validator.Cluster(config, cmd.Context())
 		if err != nil {
