@@ -36,9 +36,9 @@ func Add(ctx context.Context) error {
 	var rawBytes []byte
 
 	// configMap create
-	rawBytes, err := getConfigBox().Find("npd-config.yaml")
+	rawBytes, err := getConfigBox().Find("npd-rule.yaml")
 	if err != nil {
-		return errors.Wrap(err, "Failed to get npd-config.yaml")
+		return errors.Wrap(err, "Failed to get npd-rule.yaml")
 	}
 	config := Parse(rawBytes)
 	_, err1 := createConfigMap(ctx, config)

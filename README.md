@@ -21,38 +21,38 @@ ke install npd --kubeconfig ~/.kube/config
 ```
 - Run kubeye
 ```shell
-root@node1:# ke audit --kubeconfig ~/.kube/config
+root@node1:# ke fault --kubeconfig ~/.kube/config
 NODENAME   SEVERITY   HEARTBEATTIME               REASON              MESSAGE
-node18     danger     2020-11-19T10:32:03+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
-node19     danger     2020-11-19T10:31:37+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
-node2      danger     2020-11-19T10:31:14+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
-node3      danger     2020-11-27T17:36:53+08:00   KubeletNotReady     Container runtime not ready: RuntimeReady=false reason:DockerDaemonNotReady message:docker: failed to get docker version: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
+node18     Fatal     2020-11-19T10:32:03+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
+node19     Fatal     2020-11-19T10:31:37+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
+node2      Fatal     2020-11-19T10:31:14+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
+node3      Fatal     2020-11-27T17:36:53+08:00   KubeletNotReady     Container runtime not ready: RuntimeReady=false reason:DockerDaemonNotReady message:docker: failed to get docker version: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
 
 NAME        SEVERITY   TIME                        MESSAGE
-scheduler   danger     2020-11-27T17:09:59+08:00   Get http://127.0.0.1:10251/healthz: dial tcp 127.0.0.1:10251: connect: connection refused
-etcd-0      danger     2020-11-27T17:56:37+08:00   Get https://192.168.13.8:2379/health: dial tcp 192.168.13.8:2379: connect: connection refused
+scheduler   Fatal     2020-11-27T17:09:59+08:00   Get http://127.0.0.1:10251/healthz: dial tcp 127.0.0.1:10251: connect: connection refused
+etcd-0      Fatal     2020-11-27T17:56:37+08:00   Get https://192.168.13.8:2379/health: dial tcp 192.168.13.8:2379: connect: connection refused
 
-NAMESPACE        NODENAME                                EVENTTIME                   REASON                MESSAGE
-default          node3.164b53d23ea79fc7                  2020-11-27T17:37:34+08:00   ContainerGCFailed     rpc error: code = Unknown desc = Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
-default          node3.164b553ca5740aae                  2020-11-27T18:03:31+08:00   FreeDiskSpaceFailed   failed to garbage collect required amount of images. Wanted to free 5399374233 bytes, but freed 416077545 bytes
-default          nginx-b8ffcf679-q4n9v.16491643e6b68cd7  2020-11-27T17:09:24+08:00   Failed                Error: ImagePullBackOff
-default          node3.164b5861e041a60e                  2020-11-27T19:01:09+08:00   SystemOOM             System OOM encountered, victim process: stress, pid: 16713
-default          node3.164b58660f8d4590                  2020-11-27T19:01:27+08:00   OOMKilling            Out of memory: Kill process 16711 (stress) score 205 or sacrifice child Killed process 16711 (stress), UID 0, total-vm:826516kB, anon-rss:819296kB, file-rss:0kB, shmem-rss:0kB
-insights-agent   workloads-1606467120.164b519ca8c67416   2020-11-27T16:57:05+08:00   DeadlineExceeded      Job was active longer than specified deadline
-kube-system      calico-node-zvl9t.164b3dc50580845d      2020-11-27T17:09:35+08:00   DNSConfigForming      Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
-kube-system      kube-proxy-4bnn7.164b3dc4f4c4125d       2020-11-27T17:09:09+08:00   DNSConfigForming      Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
-kube-system      nodelocaldns-2zbhh.164b3dc4f42d358b     2020-11-27T17:09:14+08:00   DNSConfigForming      Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
+NAMESPACE       SEVERITY   NODENAME                                         EVENTTIME                   REASON                MESSAGE
+default         Warning    node3.164b53d23ea79fc7                           2020-11-27T17:37:34+08:00   ContainerGCFailed     rpc error: code = Unknown desc = Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
+default         Warning    node3.164b553ca5740aae                           2020-11-27T18:03:31+08:00   FreeDiskSpaceFailed   failed to garbage collect required amount of images. Wanted to free 5399374233 bytes, but freed 416077545 bytes
+default         Warning    nginx-b8ffcf679-q4n9v.16491643e6b68cd7           2020-11-27T17:09:24+08:00   Failed                Error: ImagePullBackOff
+default         Warning    node3.164b5861e041a60e                           2020-11-27T19:01:09+08:00   SystemOOM             System OOM encountered, victim process: stress, pid: 16713
+default         Warning    node3.164b58660f8d4590                           2020-11-27T19:01:27+08:00   OOMKilling            Out of memory: Kill process 16711 (stress) score 205 or sacrifice child Killed process 16711 (stress), UID 0, total-vm:826516kB, anon-rss:819296kB, file-rss:0kB, shmem-rss:0kB
+insights-agent  Warning    workloads-1606467120.164b519ca8c67416            2020-11-27T16:57:05+08:00   DeadlineExceeded      Job was active longer than specified deadline
+kube-system     Warning    calico-node-zvl9t.164b3dc50580845d               2020-11-27T17:09:35+08:00   DNSConfigForming      Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
+kube-system     Warning    kube-proxy-4bnn7.164b3dc4f4c4125d                2020-11-27T17:09:09+08:00   DNSConfigForming      Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
+kube-system     Warning    nodelocaldns-2zbhh.164b3dc4f42d358b              2020-11-27T17:09:14+08:00   DNSConfigForming      Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
 
 
-NAMESPACE        NAME                      KIND         TIME                        MESSAGE
-kube-system      node-problem-detector     DaemonSet    2020-11-27T17:09:59+08:00   [livenessProbeMissing runAsPrivileged]
-kube-system      calico-node               DaemonSet    2020-11-27T17:09:59+08:00   [runAsPrivileged cpuLimitsMissing]
-kube-system      nodelocaldns              DaemonSet    2020-11-27T17:09:59+08:00   [cpuLimitsMissing runAsPrivileged]
-default          nginx                     Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing livenessProbeMissing tagNotSpecified]
-insights-agent   workloads                 CronJob      2020-11-27T17:09:59+08:00   [livenessProbeMissing]
-insights-agent   cronjob-executor          Job          2020-11-27T17:09:59+08:00   [livenessProbeMissing]
-kube-system      calico-kube-controllers   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing livenessProbeMissing]
-kube-system      coredns                   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing]   
+NAMESPACE       SEVERITY     NAME                      KIND         TIME                        MESSAGE
+kube-system     Warning      node-problem-detector     DaemonSet    2020-11-27T17:09:59+08:00   [livenessProbeMissing runAsPrivileged]
+kube-system     Warning      calico-node               DaemonSet    2020-11-27T17:09:59+08:00   [runAsPrivileged cpuLimitsMissing]
+kube-system     Warning      nodelocaldns              DaemonSet    2020-11-27T17:09:59+08:00   [cpuLimitsMissing runAsPrivileged]
+default         Warning      nginx                     Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing livenessProbeMissing tagNotSpecified]
+insights-agent  Warning     workloads                 CronJob      2020-11-27T17:09:59+08:00   [livenessProbeMissing]
+insights-agent  Warning     cronjob-executor          Job          2020-11-27T17:09:59+08:00   [livenessProbeMissing]
+kube-system     Warning     calico-kube-controllers   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing livenessProbeMissing]
+kube-system     Warning     coredns                   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing]   
 ```
 
 ## What kubeye can do
@@ -124,17 +124,17 @@ kube-system      coredns                   Deployment   2020-11-27T17:09:59+08:0
 ```
  kubectl edit cm -n kube-system node-problem-detector-config
 ```
-3. Add exception log information under the rule of configMap, rules follow regular expressions.
+-  Add exception log information under the rule of configMap, rules follow regular expressions.
 
 
-### Audit with your own custom best practice rules
+### Fault with your own custom best practice rules
 - Prepare a rule yaml, for example, the following rule will validate your pod spec to make sure image are only from authorized registries.
 ```
 checks:
-  imageRegistry: warning
+  imageFromUnauthorizedRegistry: warning
 
 customChecks:
-  imageRegistry:
+  imageFromUnauthorizedRegistry:
     successMessage: Image from an authorized registriy.
     failureMessage: Image from an unauthorized registry. 
     category: Images
@@ -152,13 +152,13 @@ customChecks:
 - Save the above rule as a yaml, for example, `rule.yaml`.
 - Run kubeye with `rule.yaml`
 ```shell
-root:# ke audit -f rule.yaml --kubeconfig ~/.kube/config
-NAMESPACE     NAME                      KIND         TIME                        MESSAGE
-default       nginx                     Deployment   2020-11-27T17:18:31+08:00   [imageRegistry]
-kube-system   node-problem-detector     DaemonSet    2020-11-27T17:18:31+08:00   [livenessProbeMissing runAsPrivileged]
-kube-system   calico-node               DaemonSet    2020-11-27T17:18:31+08:00   [cpuLimitsMissing runAsPrivileged]
-kube-system   calico-kube-controllers   Deployment   2020-11-27T17:18:31+08:00   [cpuLimitsMissing livenessProbeMissing]
-kube-system   nodelocaldns              DaemonSet    2020-11-27T17:18:31+08:00   [runAsPrivileged cpuLimitsMissing]
-default       nginx                     Deployment   2020-11-27T17:18:31+08:00   [livenessProbeMissing cpuLimitsMissing]
-kube-system   coredns                   Deployment   2020-11-27T17:18:31+08:00   [cpuLimitsMissing]
+root:# ke fault -f rule.yaml --kubeconfig ~/.kube/config
+NAMESPACE     SEVERITY    NAME                      KIND         TIME                        MESSAGE
+default       Warning     nginx                     Deployment   2020-11-27T17:18:31+08:00   [imageFromUnauthorizedRegistry]
+kube-system   Warning     node-problem-detector     DaemonSet    2020-11-27T17:18:31+08:00   [livenessProbeMissing runAsPrivileged]
+kube-system   Warning     calico-node               DaemonSet    2020-11-27T17:18:31+08:00   [cpuLimitsMissing runAsPrivileged]
+kube-system   Warning     calico-kube-controllers   Deployment   2020-11-27T17:18:31+08:00   [cpuLimitsMissing livenessProbeMissing]
+kube-system   Warning     nodelocaldns              DaemonSet    2020-11-27T17:18:31+08:00   [runAsPrivileged cpuLimitsMissing]
+default       Warning     nginx                     Deployment   2020-11-27T17:18:31+08:00   [livenessProbeMissing cpuLimitsMissing]
+kube-system   Warning     coredns                   Deployment   2020-11-27T17:18:31+08:00   [cpuLimitsMissing]
 ```

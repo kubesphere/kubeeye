@@ -34,19 +34,19 @@ func Cluster(configuration string, ctx context.Context) error {
 		return errors.Wrap(err, "Failed to get cluster information")
 	}
 
-	basicComponentStatus, err := ComponentStatusResult(k.ComponentStatus)
-	if err != nil {
-		return errors.Wrap(err, "Failed to get BasicComponentStatus information")
+	basicComponentStatus, err1 := ComponentStatusResult(k.ComponentStatus)
+	if err1 != nil {
+		return errors.Wrap(err1, "Failed to get BasicComponentStatus information")
 	}
 
-	clusterCheckResults, err := ProblemDetectorResult(k.ProblemDetector)
-	if err != nil {
-		return errors.Wrap(err, "Failed to get clusterCheckResults information")
+	clusterCheckResults, err2 := ProblemDetectorResult(k.ProblemDetector)
+	if err2 != nil {
+		return errors.Wrap(err2, "Failed to get clusterCheckResults information")
 	}
 
-	nodeStatus, err := NodeStatusResult(k.Nodes)
-	if err != nil {
-		return errors.Wrap(err, "Failed to get nodeStatus information")
+	nodeStatus, err3 := NodeStatusResult(k.Nodes)
+	if err3 != nil {
+		return errors.Wrap(err3, "Failed to get nodeStatus information")
 	}
 
 	var config conf.Configuration
@@ -99,10 +99,11 @@ func Cluster(configuration string, ctx context.Context) error {
 	}
 
 	if len(clusterCheckResults) != 0 {
-		fmt.Fprintln(w, "\nNAMESPACE\tNODENAME\tEVENTTIME\tREASON\tMESSAGE")
+		fmt.Fprintln(w, "\nNAMESPACE\tSEVERITY\tNODENAME\tEVENTTIME\tREASON\tMESSAGE")
 		for _, clusterCheckResult := range clusterCheckResults {
-			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%-8v",
+			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%-8v",
 				clusterCheckResult.Namespace,
+				clusterCheckResult.Severity,
 				clusterCheckResult.Name,
 				clusterCheckResult.EventTime.Format(time.RFC3339),
 				clusterCheckResult.Reason,
@@ -114,10 +115,11 @@ func Cluster(configuration string, ctx context.Context) error {
 	}
 
 	if len(goodPractice) != 0 {
-		fmt.Fprintln(w, "\nNAMESPACE\tNAME\tKIND\tTIME\tMESSAGE")
+		fmt.Fprintln(w, "\nNAMESPACE\tSEVERITY\tNAME\tKIND\tTIME\tMESSAGE")
 		for _, goodpractice := range goodPractice {
-			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%-8v",
+			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%-8v",
 				goodpractice.Namespace,
+				goodpractice.Severity,
 				goodpractice.Name,
 				goodpractice.Kind,
 				goodpractice.CreatedTime,
@@ -152,6 +154,7 @@ func Cluster(configuration string, ctx context.Context) error {
 
 }
 
+//Get kubernetes core component status result
 func ComponentStatusResult(cs []v1.ComponentStatus) ([]BasicComponentStatus, error) {
 	var crs []BasicComponentStatus
 	for i := 0; i < len(cs); i++ {
@@ -163,12 +166,14 @@ func ComponentStatusResult(cs []v1.ComponentStatus) ([]BasicComponentStatus, err
 			Time:     time.Now().Format(time.RFC3339),
 			Name:     cs[i].ObjectMeta.Name,
 			Message:  cs[i].Conditions[0].Message,
-			Severity: "danger",
+			Severity: "Fatal",
 		}
 		crs = append(crs, cr)
 	}
 	return crs, nil
 }
+
+//Get kubernetes pod result
 func ProblemDetectorResult(event []v1.Event) ([]ClusterCheckResults, error) {
 	var pdrs []ClusterCheckResults
 	for j := 0; j < len(event); j++ {
@@ -179,12 +184,15 @@ func ProblemDetectorResult(event []v1.Event) ([]ClusterCheckResults, error) {
 				EventTime: event[j].LastTimestamp.Time,
 				Reason:    event[j].Reason,
 				Message:   event[j].Message,
+				Severity:  "Warning",
 			}
 			pdrs = append(pdrs, pdr)
 		}
 	}
 	return pdrs, nil
 }
+
+//Get kubernetes node status result
 func NodeStatusResult(nodes []v1.Node) ([]AllNodeStatusResults, error) {
 	var nodestatus []AllNodeStatusResults
 	for k := 0; k < len(nodes); k++ {
@@ -197,7 +205,7 @@ func NodeStatusResult(nodes []v1.Node) ([]AllNodeStatusResults, error) {
 			Status:        nodes[k].Status.Conditions[len(nodes[k].Status.Conditions)-1].Status,
 			Reason:        nodes[k].Status.Conditions[len(nodes[k].Status.Conditions)-1].Reason,
 			Message:       nodes[k].Status.Conditions[len(nodes[k].Status.Conditions)-1].Message,
-			Severity:      "danger",
+			Severity:      "Fatal",
 		}
 
 		nodestatus = append(nodestatus, nodestate)

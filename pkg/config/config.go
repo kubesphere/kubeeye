@@ -69,7 +69,7 @@ func ParseFile1(fp string) (Configuration, error) {
 	var rawBytes []byte
 	var err error
 
-	rawBytes, err = getConfigBox1(fp).Find("config.yaml")
+	rawBytes, err = getConfigBox1(fp).Find("rule.yaml")
 	if err != nil {
 		return Configuration{}, err
 	}
