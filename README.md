@@ -49,10 +49,10 @@ kube-system     Warning      node-problem-detector     DaemonSet    2020-11-27T1
 kube-system     Warning      calico-node               DaemonSet    2020-11-27T17:09:59+08:00   [runAsPrivileged cpuLimitsMissing]
 kube-system     Warning      nodelocaldns              DaemonSet    2020-11-27T17:09:59+08:00   [cpuLimitsMissing runAsPrivileged]
 default         Warning      nginx                     Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing livenessProbeMissing tagNotSpecified]
-insights-agent  Warning     workloads                 CronJob      2020-11-27T17:09:59+08:00   [livenessProbeMissing]
-insights-agent  Warning     cronjob-executor          Job          2020-11-27T17:09:59+08:00   [livenessProbeMissing]
-kube-system     Warning     calico-kube-controllers   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing livenessProbeMissing]
-kube-system     Warning     coredns                   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing]   
+insights-agent  Warning      workloads                 CronJob      2020-11-27T17:09:59+08:00   [livenessProbeMissing]
+insights-agent  Warning      cronjob-executor          Job          2020-11-27T17:09:59+08:00   [livenessProbeMissing]
+kube-system     Warning      calico-kube-controllers   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing livenessProbeMissing]
+kube-system     Warning      coredns                   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing]   
 ```
 
 ## What kubeye can do
