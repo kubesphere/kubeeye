@@ -3,7 +3,7 @@ checks:
   #cpuLimitsMissing: warning
   #image
   # tagNotSpecified: danger
-  imageRegistry: warning
+  imageFromUnauthorizedRegistry: warning
   #healthChecks
   #livenessProbeMissing: warning
   #network
@@ -12,7 +12,7 @@ checks:
   #  runningAsPrivileged: warning
 
 customChecks:
-  imageRegistry:
+  imageFromUnauthorizedRegistry:
     successMessage: Image comes from allowed registries
     failureMessage: Image should not be from disallowed registry
     category: Images
