@@ -42,7 +42,7 @@ var (
 		//"memoryRequestsMissing",
 		"cpuLimitsMissing",
 		//"cpuRequestsMissing",
-		//"readinessProbeMissing",
+		"readinessProbeMissing",
 		"livenessProbeMissing",
 		//"pullPolicyNotAlways",
 		"tagNotSpecified",

@@ -23,6 +23,7 @@ import (
 )
 
 func ValidatePods(ctx context.Context, conf *config.Configuration, kubeResource *kube.ResourceProvider) ([]PodResult, error) {
+	//controllers value includ kind(pod, daemonset, deployment), podSpec, ObjectMeta and OriginalObjectJSON
 	podToAudit := kubeResource.Controllers
 
 	results := []PodResult{}

@@ -21,6 +21,7 @@ import (
 	"kubeye/pkg/kube"
 )
 
+//ValidateContainer validates a single container from a given controller
 func ValidateContainer(ctx context.Context, conf *config.Configuration, controller kube.GenericWorkload, container *corev1.Container, isInit bool) (ContainerResult, error) {
 	results, err := applyContainerSchemaChecks(ctx, conf, controller, container, isInit)
 	if err != nil {
@@ -32,6 +33,8 @@ func ValidateContainer(ctx context.Context, conf *config.Configuration, controll
 	}
 	return cRes, nil
 }
+
+//ValidateAllContainers validates regular containers
 func ValidateAllContainers(ctx context.Context, conf *config.Configuration, controller kube.GenericWorkload) ([]ContainerResult, error) {
 	results := []ContainerResult{}
 	pod := controller.PodSpec

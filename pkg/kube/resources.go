@@ -45,6 +45,7 @@ func CreateResourceProvider(ctx context.Context) (*ResourceProvider, error) {
 	return CreateResourceProviderFromCluster(ctx)
 }
 
+//Get kubeConfig
 func CreateResourceProviderFromCluster(ctx context.Context) (*ResourceProvider, error) {
 	kubeConf, configError := config.GetConfig()
 	if configError != nil {
@@ -66,6 +67,7 @@ func CreateResourceProviderFromCluster(ctx context.Context) (*ResourceProvider, 
 	return CreateResourceProviderFromAPI(ctx, api, kubeConf.Host, &dynamicInterface)
 }
 
+//Get serverVersion, nodes, namespaces, pods, problemDetectors, componentStatus, controllers
 func CreateResourceProviderFromAPI(ctx context.Context, kube kubernetes.Interface, auditAddress string, dynamic *dynamic.Interface) (*ResourceProvider, error) {
 	listOpts := metav1.ListOptions{}
 	//var configmap = []corev1.ConfigMap{}
