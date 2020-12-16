@@ -34,26 +34,26 @@ var (
 	// tests as we migrate toward JSON schema
 	checkOrder = []string{
 		// Pod checks
-		//"hostIPCSet",
-		//"hostPIDSet",
-		//"hostNetworkSet",
+		"hostIPCSet",
+		"hostPIDSet",
+		"hostNetworkSet",
 		// Container checks
-		//"memoryLimitsMissing",
-		//"memoryRequestsMissing",
+		"memoryLimitsMissing",
+		"memoryRequestsMissing",
 		"cpuLimitsMissing",
-		//"cpuRequestsMissing",
+		"cpuRequestsMissing",
 		"readinessProbeMissing",
 		"livenessProbeMissing",
-		//"pullPolicyNotAlways",
+		"pullPolicyNotAlways",
 		"tagNotSpecified",
-		//"hostPortSet",
-		//"runAsRootAllowed",
+		"hostPortSet",
+		"runAsRootAllowed",
 		"runAsPrivileged",
-		//"notReadOnlyRootFilesystem",
-		//"privilegeEscalationAllowed",
-		//"dangerousCapabilities",
-		//"insecureCapabilities",
-		//"priorityClassNotSet",
+		"notReadOnlyRootFilesystem",
+		"privilegeEscalationAllowed",
+		"dangerousCapabilities",
+		"insecureCapabilities",
+		"priorityClassNotSet",
 	}
 )
 

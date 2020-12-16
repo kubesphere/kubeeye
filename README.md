@@ -99,19 +99,19 @@ kube-system     Warning      coredns                   Deployment   2020-11-27T1
 |                    | NodeTokenExpired                | Token certificate expired|
 |                    | NodeApiServerExpired            | kube-apiserver certificate expired|
 |                    | NodeKubeletExpired              | Kubelet certificate expired|
-|                    | PodSetCpuRequestsMissing        | The CPU Resource Request value was not declared|
-|                    | PodSetHostIPCSet                | Set the hostIP|
-|                    | PodSetHostNetworkSet            | Set the hostNetwork|
-|                    | PodHostPIDSet                   | Set the hostPID|
-|                    | PodMemoryRequestsMiss           | No memory Resource Request value is declared|
-|                    | PodSetHostPort                  | Set the hostPort|
-|                    | PodSetMemoryLimitsMissing       | No memory Resource limit value is declared|
-|                    | PodNotReadOnlyRootFiles         | The file system is not set to read-only|
-|                    | PodSetPullPolicyNotAlways       | The mirror pull strategy is not always|
-|                    | PodSetRunAsRootAllowed          | Executed as a root account|
-|                    | PodDangerousCapabilities        | You have the dangerous option in capabilities such as ALL/SYS_ADMIN/NET_ADMIN|
-|                    | PodlivenessProbeMissing        | ReadinessProbe was not declared|
-|                    | privilegeEscalationAllowed        | Privilege escalation is allowed|
+| :white_check_mark: | PodSetCpuRequestsMissing        | The CPU Resource Request value was not declared|
+| :white_check_mark: | PodSetHostIPCSet                | Set the hostIP|
+| :white_check_mark: | PodSetHostNetworkSet            | Set the hostNetwork|
+| :white_check_mark: | PodHostPIDSet                   | Set the hostPID|
+| :white_check_mark: | PodMemoryRequestsMiss           | No memory Resource Request value is declared|
+| :white_check_mark: | PodSetHostPort                  | Set the hostPort|
+| :white_check_mark: | PodSetMemoryLimitsMissing       | No memory Resource limit value is declared|
+| :white_check_mark: | PodNotReadOnlyRootFiles         | The file system is not set to read-only|
+| :white_check_mark: | PodSetPullPolicyNotAlways       | The mirror pull strategy is not always|
+| :white_check_mark: | PodSetRunAsRootAllowed          | Executed as a root account|
+| :white_check_mark: | PodDangerousCapabilities        | You have the dangerous option in capabilities such as ALL/SYS_ADMIN/NET_ADMIN|
+| :white_check_mark: | PodlivenessProbeMissing        | ReadinessProbe was not declared|
+| :white_check_mark: | privilegeEscalationAllowed        | Privilege escalation is allowed|
 > unmarked items are under heavy development
 
 

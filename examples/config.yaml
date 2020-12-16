@@ -1,16 +1,33 @@
 checks:
+
   #resource
   cpuLimitsMissing: warning
+  cpuRequestsMissing: warning
+  memoryLimitsMissing: warning
+  memoryRequestsMissing: warning
+  #reliability
+  priorityClassNotSet: warning
   #image
-  tagNotSpecified: danger
-  #imageRegistry: warning
+  tagNotSpecified: warning
+  pullPolicyNotAlways: warning
+
   #healthChecks
   livenessProbeMissing: warning
   readinessProbeMissing: warning
+
   #network
-  #hostPortSet: warning
+  hostPortSet: warning
+  hostNetworkSet: warning
+
   #security
   runAsPrivileged: warning
+  hostIPCSet: warning
+  hostPIDSet: warning
+  notReadOnlyRootFilesystem: warning
+  privilegeEscalationAllowed: warning
+  runAsRootAllowed: warning
+  dangerousCapabilities: warning
+  insecureCapabilities: warning
 
 customChecks:
 #  imageRegistry:
