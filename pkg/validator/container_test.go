@@ -164,3 +164,212 @@ func TestValidateHealthChecks(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateImage(t *testing.T) {
+	emptyConf := make(map[string]conf.Severity)
+	standardConf := map[string]conf.Severity{
+		"tagNotSpecified":     conf.SeverityWarning,
+		"pullPolicyNotAlways": conf.SeverityIgnore,
+	}
+	strongConf := map[string]conf.Severity{
+		"tagNotSpecified":     conf.SeverityWarning,
+		"pullPolicyNotAlways": conf.SeverityWarning,
+	}
+
+	emptyContainer := &corev1.Container{}
+	badContainer := &corev1.Container{Image: "test"}
+	lessBadContainer := &corev1.Container{Image: "test:latest", ImagePullPolicy: ""}
+	goodContainer := &corev1.Container{Image: "test:1.0.0", ImagePullPolicy: "Always"}
+
+	var testCases = []struct {
+		name      string
+		image     map[string]conf.Severity
+		container *corev1.Container
+		expected  []ResultMessage
+	}{
+		{
+			name:      "emptyConf + emptyCV",
+			image:     emptyConf,
+			container: emptyContainer,
+			expected:  []ResultMessage{},
+		},
+		{
+			name:      "standardConf + emptyCV",
+			image:     standardConf,
+			container: emptyContainer,
+			expected: []ResultMessage{{
+				ID:       "tagNotSpecified",
+				Message:  "Image tag should be specified",
+				Success:  false,
+				Severity: "warning",
+				Category: "Images",
+			}},
+		},
+		{
+			name:      "standardConf + badCV",
+			image:     standardConf,
+			container: badContainer,
+			expected: []ResultMessage{{
+				ID:       "tagNotSpecified",
+				Message:  "Image tag should be specified",
+				Success:  false,
+				Severity: "warning",
+				Category: "Images",
+			}},
+		},
+		{
+			name:      "standardConf + lessBadCV",
+			image:     standardConf,
+			container: lessBadContainer,
+			expected: []ResultMessage{{
+				ID:       "tagNotSpecified",
+				Message:  "Image tag should be specified",
+				Success:  false,
+				Severity: "warning",
+				Category: "Images",
+			}},
+		},
+		{
+			name:      "strongConf + badCV",
+			image:     strongConf,
+			container: badContainer,
+			expected: []ResultMessage{{
+				ID:       "pullPolicyNotAlways",
+				Message:  "Image pull policy should be \"Always\"",
+				Success:  false,
+				Severity: "warning",
+				Category: "Images",
+			}, {
+				ID:       "tagNotSpecified",
+				Message:  "Image tag should be specified",
+				Success:  false,
+				Severity: "warning",
+				Category: "Images",
+			}},
+		},
+		{
+			name:      "strongConf + goodCV",
+			image:     strongConf,
+			container: goodContainer,
+			expected:  []ResultMessage{},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			controller := getEmptyWorkload(t, "")
+			results, err := applyContainerSchemaChecks(context.Background(), &conf.Configuration{Checks: tt.image}, controller, tt.container, false)
+			if err != nil {
+				panic(err)
+			}
+			warnings := results.GetWarnings()
+			assert.Len(t, warnings, len(tt.expected))
+			assert.ElementsMatch(t, warnings, tt.expected)
+		})
+	}
+}
+
+func TestValidateNetworking(t *testing.T) {
+	// Test setup.
+	emptyConf := make(map[string]conf.Severity)
+	standardConf := map[string]conf.Severity{
+		"hostPortSet": conf.SeverityWarning,
+	}
+
+	emptyContainer := &corev1.Container{Name: ""}
+	badContainer := &corev1.Container{
+		Ports: []corev1.ContainerPort{{
+			ContainerPort: 3000,
+			HostPort:      443,
+		}},
+	}
+	goodContainer := &corev1.Container{
+		Ports: []corev1.ContainerPort{{
+			ContainerPort: 3000,
+		}},
+	}
+
+	var testCases = []struct {
+		name            string
+		networkConf     map[string]conf.Severity
+		container       *corev1.Container
+		expectedResults []ResultMessage
+	}{
+		{
+			name:            "empty ports + empty validation config",
+			networkConf:     emptyConf,
+			container:       emptyContainer,
+			expectedResults: []ResultMessage{},
+		},
+		{
+			name:        "empty ports + standard validation config",
+			networkConf: standardConf,
+			container:   emptyContainer,
+			expectedResults: []ResultMessage{{
+				ID:       "hostPortSet",
+				Message:  "Host port is not configured",
+				Success:  true,
+				Severity: "warning",
+				Category: "Networking",
+			}},
+		},
+		{
+			name:        "empty ports + strong validation config",
+			networkConf: standardConf,
+			container:   emptyContainer,
+			expectedResults: []ResultMessage{{
+				ID:       "hostPortSet",
+				Message:  "Host port is not configured",
+				Success:  true,
+				Severity: "warning",
+				Category: "Networking",
+			}},
+		},
+		{
+			name:            "host ports + empty validation config",
+			networkConf:     emptyConf,
+			container:       badContainer,
+			expectedResults: []ResultMessage{},
+		},
+		{
+			name:        "host ports + standard validation config",
+			networkConf: standardConf,
+			container:   badContainer,
+			expectedResults: []ResultMessage{{
+				ID:       "hostPortSet",
+				Message:  "Host port should not be configured",
+				Success:  false,
+				Severity: "warning",
+				Category: "Networking",
+			}},
+		},
+		{
+			name:        "no host ports + standard validation config",
+			networkConf: standardConf,
+			container:   goodContainer,
+			expectedResults: []ResultMessage{{
+				ID:       "hostPortSet",
+				Message:  "Host port is not configured",
+				Success:  true,
+				Severity: "warning",
+				Category: "Networking",
+			}},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			controller := getEmptyWorkload(t, "")
+			results, err := applyContainerSchemaChecks(context.Background(), &conf.Configuration{Checks: tt.networkConf}, controller, tt.container, false)
+			if err != nil {
+				panic(err)
+			}
+			messages := []ResultMessage{}
+			for _, msg := range results {
+				messages = append(messages, msg)
+			}
+			assert.Len(t, messages, len(tt.expectedResults))
+			assert.ElementsMatch(t, messages, tt.expectedResults)
+		})
+	}
+}
