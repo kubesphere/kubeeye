@@ -373,3 +373,452 @@ func TestValidateNetworking(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateSecurity(t *testing.T) {
+	trueVar := true
+	falseVar := false
+
+	// Test setup.
+	emptyConf := map[string]conf.Severity{}
+	standardConf := map[string]conf.Severity{
+		"runAsRootAllowed":           conf.SeverityWarning,
+		"runAsPrivileged":            conf.SeverityWarning,
+		"notReadOnlyRootFilesystem":  conf.SeverityWarning,
+		"privilegeEscalationAllowed": conf.SeverityWarning,
+		"dangerousCapabilities":      conf.SeverityWarning,
+		"insecureCapabilities":       conf.SeverityWarning,
+	}
+
+	emptyContainer := &corev1.Container{Name: ""}
+	badContainer := &corev1.Container{
+		Name: "",
+		SecurityContext: &corev1.SecurityContext{
+			RunAsNonRoot:             &falseVar,
+			ReadOnlyRootFilesystem:   &falseVar,
+			Privileged:               &trueVar,
+			AllowPrivilegeEscalation: &trueVar,
+			Capabilities: &corev1.Capabilities{
+				Add: []corev1.Capability{"AUDIT_WRITE", "SYS_ADMIN", "NET_ADMIN"},
+			},
+		},
+	}
+	emptyPodSpec := &corev1.PodSpec{}
+	goodPodSpec := &corev1.PodSpec{
+		SecurityContext: &corev1.PodSecurityContext{
+			RunAsNonRoot: &trueVar,
+		},
+	}
+	badPodSpec := &corev1.PodSpec{
+		SecurityContext: &corev1.PodSecurityContext{
+			RunAsNonRoot: &falseVar,
+		},
+	}
+
+	goodContainer := &corev1.Container{
+		Name: "",
+		SecurityContext: &corev1.SecurityContext{
+			RunAsNonRoot:             &trueVar,
+			ReadOnlyRootFilesystem:   &trueVar,
+			Privileged:               &falseVar,
+			AllowPrivilegeEscalation: &falseVar,
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"NET_BIND_SERVICE", "FOWNER"},
+			},
+		},
+	}
+
+	var testCases = []struct {
+		name            string
+		securityConf    map[string]conf.Severity
+		container       *corev1.Container
+		pod             *corev1.PodSpec
+		expectedResults []ResultMessage
+	}{
+		{
+			name:            "empty security context + empty validation config",
+			securityConf:    emptyConf,
+			container:       emptyContainer,
+			pod:             emptyPodSpec,
+			expectedResults: []ResultMessage{},
+		},
+		{
+			name:         "empty security context + standard validation config",
+			securityConf: standardConf,
+			container:    emptyContainer,
+			pod:          emptyPodSpec,
+			expectedResults: []ResultMessage{{
+				ID:       "runAsRootAllowed",
+				Message:  "Should not be allowed to run as root",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "notReadOnlyRootFilesystem",
+				Message:  "Filesystem should be read only",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "runAsPrivileged",
+				Message:  "Not running as privileged",
+				Success:  true,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "privilegeEscalationAllowed",
+				Message:  "Privilege escalation not allowed",
+				Success:  true,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "insecureCapabilities",
+				Message:  "Container does not have any insecure capabilities",
+				Success:  true,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "dangerousCapabilities",
+				Message:  "Container does not have any dangerous capabilities",
+				Success:  true,
+				Severity: "warning",
+				Category: "Security",
+			}},
+		},
+		{
+			name:         "bad security context + standard validation config",
+			securityConf: standardConf,
+			container:    badContainer,
+			pod:          emptyPodSpec,
+			expectedResults: []ResultMessage{{
+				ID:       "dangerousCapabilities",
+				Message:  "Container should not have dangerous capabilities",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "privilegeEscalationAllowed",
+				Message:  "Privilege escalation should not be allowed",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "runAsPrivileged",
+				Message:  "Should not be running as privileged",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "insecureCapabilities",
+				Message:  "Container should not have insecure capabilities",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "runAsRootAllowed",
+				Message:  "Should not be allowed to run as root",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "notReadOnlyRootFilesystem",
+				Message:  "Filesystem should be read only",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}},
+		},
+		{
+			name:         "bad security context + standard validation config with good settings in podspec",
+			securityConf: standardConf,
+			container:    badContainer,
+			pod:          goodPodSpec,
+			expectedResults: []ResultMessage{{
+				ID:       "dangerousCapabilities",
+				Message:  "Container should not have dangerous capabilities",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "privilegeEscalationAllowed",
+				Message:  "Privilege escalation should not be allowed",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "runAsPrivileged",
+				Message:  "Should not be running as privileged",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "insecureCapabilities",
+				Message:  "Container should not have insecure capabilities",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "runAsRootAllowed",
+				Message:  "Should not be allowed to run as root",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "notReadOnlyRootFilesystem",
+				Message:  "Filesystem should be read only",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}},
+		},
+		{
+			name:         "bad security context + standard validation config from default set in podspec",
+			securityConf: standardConf,
+			container:    badContainer,
+			pod:          badPodSpec,
+			expectedResults: []ResultMessage{{
+				ID:       "dangerousCapabilities",
+				Message:  "Container should not have dangerous capabilities",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "insecureCapabilities",
+				Message:  "Container should not have insecure capabilities",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "privilegeEscalationAllowed",
+				Message:  "Privilege escalation should not be allowed",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "runAsPrivileged",
+				Message:  "Should not be running as privileged",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "runAsRootAllowed",
+				Message:  "Should not be allowed to run as root",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "notReadOnlyRootFilesystem",
+				Message:  "Filesystem should be read only",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			}},
+		},
+		{
+			name:         "good security context + standard validation config",
+			securityConf: standardConf,
+			container:    goodContainer,
+			pod:          emptyPodSpec,
+			expectedResults: []ResultMessage{{
+				ID:       "runAsRootAllowed",
+				Message:  "Is not allowed to run as root",
+				Success:  true,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "notReadOnlyRootFilesystem",
+				Message:  "Filesystem is read only",
+				Success:  true,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "runAsPrivileged",
+				Message:  "Not running as privileged",
+				Success:  true,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "privilegeEscalationAllowed",
+				Message:  "Privilege escalation not allowed",
+				Success:  true,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "dangerousCapabilities",
+				Message:  "Container does not have any dangerous capabilities",
+				Success:  true,
+				Severity: "warning",
+				Category: "Security",
+			}, {
+				ID:       "insecureCapabilities",
+				Message:  "Container does not have any insecure capabilities",
+				Success:  true,
+				Severity: "warning",
+				Category: "Security",
+			}},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			workload, err := kube.NewGenericWorkloadFromPod(corev1.Pod{Spec: *tt.pod}, nil)
+			assert.NoError(t, err)
+			results, err := applyContainerSchemaChecks(context.Background(), &conf.Configuration{Checks: tt.securityConf}, workload, tt.container, false)
+			if err != nil {
+				panic(err)
+			}
+			messages := []ResultMessage{}
+			for _, msg := range results {
+				messages = append(messages, msg)
+			}
+			assert.Len(t, messages, len(tt.expectedResults))
+			assert.ElementsMatch(t, tt.expectedResults, messages)
+		})
+	}
+}
+
+func TestValidateRunAsRoot(t *testing.T) {
+	falseVar := false
+	trueVar := true
+	nonRootUser := int64(1000)
+	rootUser := int64(0)
+	config := conf.Configuration{
+		Checks: map[string]conf.Severity{
+			"runAsRootAllowed": conf.SeverityWarning,
+		},
+	}
+
+	goodContainer := &corev1.Container{
+		SecurityContext: &corev1.SecurityContext{
+			RunAsNonRoot: &trueVar,
+		},
+	}
+	badContainer := &corev1.Container{
+		SecurityContext: &corev1.SecurityContext{
+			RunAsNonRoot: &falseVar,
+		},
+	}
+	inheritContainer := &corev1.Container{
+		SecurityContext: &corev1.SecurityContext{
+			RunAsNonRoot: nil,
+		},
+	}
+	runAsUserContainer := &corev1.Container{
+		SecurityContext: &corev1.SecurityContext{
+			RunAsUser: &nonRootUser,
+		},
+	}
+	runAsUser0Container := &corev1.Container{
+		SecurityContext: &corev1.SecurityContext{
+			RunAsUser: &rootUser,
+		},
+	}
+	badPod := &corev1.PodSpec{
+		SecurityContext: &corev1.PodSecurityContext{
+			RunAsNonRoot: &falseVar,
+		},
+	}
+	runAsUserPod := &corev1.PodSpec{
+		SecurityContext: &corev1.PodSecurityContext{
+			RunAsUser: &nonRootUser,
+		},
+	}
+	emptyPod := &corev1.PodSpec{}
+
+	testCases := []struct {
+		name      string
+		container *corev1.Container
+		pod       *corev1.PodSpec
+		message   ResultMessage
+	}{
+		{
+			name:      "pod=false,container=nil",
+			container: inheritContainer,
+			pod:       badPod,
+			message: ResultMessage{
+				ID:       "runAsRootAllowed",
+				Message:  "Should not be allowed to run as root",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			},
+		},
+		{
+			name:      "pod=false,container=true",
+			container: goodContainer,
+			pod:       badPod,
+			message: ResultMessage{
+				ID:       "runAsRootAllowed",
+				Message:  "Is not allowed to run as root",
+				Success:  true,
+				Severity: "warning",
+				Category: "Security",
+			},
+		},
+		{
+			name:      "pod=nil,container=runAsUser",
+			container: runAsUserContainer,
+			pod:       emptyPod,
+			message: ResultMessage{
+				ID:       "runAsRootAllowed",
+				Message:  "Is not allowed to run as root",
+				Success:  true,
+				Severity: "warning",
+				Category: "Security",
+			},
+		},
+		{
+			name:      "pod=runAsUser,container=nil",
+			container: inheritContainer,
+			pod:       runAsUserPod,
+			message: ResultMessage{
+				ID:       "runAsRootAllowed",
+				Message:  "Is not allowed to run as root",
+				Success:  true,
+				Severity: "warning",
+				Category: "Security",
+			},
+		},
+		{
+			name:      "pod=runAsUser,container=runAsUser0",
+			container: runAsUser0Container,
+			pod:       runAsUserPod,
+			message: ResultMessage{
+				ID:       "runAsRootAllowed",
+				Message:  "Should not be allowed to run as root",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			},
+		},
+		{
+			name:      "pod=runAsUser,container=false",
+			pod:       runAsUserPod,
+			container: badContainer,
+			message: ResultMessage{
+				ID:       "runAsRootAllowed",
+				Message:  "Should not be allowed to run as root",
+				Success:  false,
+				Severity: "warning",
+				Category: "Security",
+			},
+		},
+	}
+	for idx, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			workload, err := kube.NewGenericWorkloadFromPod(corev1.Pod{Spec: *tt.pod}, nil)
+			assert.NoError(t, err)
+			results, err := applyContainerSchemaChecks(context.Background(), &config, workload, tt.container, false)
+			if err != nil {
+				panic(err)
+			}
+			messages := []ResultMessage{}
+			for _, msg := range results {
+				messages = append(messages, msg)
+			}
+			assert.Len(t, messages, 1)
+			if len(messages) > 0 {
+				assert.Equal(t, tt.message, messages[0], fmt.Sprintf("Test case %d failed", idx))
+			}
+		})
+	}
+}
