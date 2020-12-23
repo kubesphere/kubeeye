@@ -87,16 +87,16 @@ func Parse(rawBytes []byte) (Configuration, error) {
 			return conf, fmt.Errorf("Decoding config failed: %v", err)
 		}
 	}
-	//for key, check := range conf.CustomChecks {
-	//	err := check.Initialize(key)
-	//	if err != nil {
-	//		return conf, err
-	//	}
-	//	conf.CustomChecks[key] = check
-	//	if _, ok := conf.Checks[key]; !ok {
-	//		return conf, fmt.Errorf("no severity specified for custom kubeye %s. Please add the following to your configuration:\n\nchecks:\n  %s: warning # or danger/ignore\n\nto enable your kubeye", key, key)
-	//	}
-	//}
+	for key, check := range conf.CustomChecks {
+		err := check.Initialize(key)
+		if err != nil {
+			return conf, err
+		}
+		conf.CustomChecks[key] = check
+		if _, ok := conf.Checks[key]; !ok {
+			return conf, fmt.Errorf("no severity specified for custom kubeye %s. Please add the following to your configuration:\n\nchecks:\n  %s: warning # or danger/ignore\n\nto enable your kubeye", key, key)
+		}
+	}
 	return conf, conf.Validate()
 }
 func (c Configuration) Validate() error {
