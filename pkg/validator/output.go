@@ -70,6 +70,7 @@ type PodResult struct {
 	Message          []string          `yaml:"message" json:"message,omitempty"`
 	ContainerResults []ContainerResult `yaml:"containerResults" json:"containerResults,omitempty"`
 	Severity         config.Severity   `yaml:"severity" json:"severity,omitempty"`
+	Results          ResultSet
 }
 
 type ContainerResult struct {
