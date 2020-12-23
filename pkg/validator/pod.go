@@ -38,8 +38,14 @@ func ValidatePods(ctx context.Context, conf *config.Configuration, kubeResource 
 		if len(result.ContainerResults[0].Results) == 0 || result.ContainerResults == nil {
 			continue
 		}
+
 		for key, _ := range result.ContainerResults[0].Results {
 			messages = append(messages, key)
+		}
+		for key1, value1 := range result.Results {
+			if value1.Success == false {
+				messages = append(messages, key1)
+			}
 		}
 		result.Message = messages
 		result.Severity = "Warning"
@@ -49,12 +55,13 @@ func ValidatePods(ctx context.Context, conf *config.Configuration, kubeResource 
 }
 
 func ValidatePod(ctx context.Context, c *config.Configuration, pod kube.GenericWorkload) (PodResult, error) {
-	_, err := applyPodSchemaChecks(c, pod)
+	podResults, err := applyPodSchemaChecks(c, pod)
 	if err != nil {
 		return PodResult{}, err
 	}
+
 	pRes := PodResult{
-		//Results:          podResults,
+		Results:          podResults,
 		ContainerResults: []ContainerResult{},
 	}
 
@@ -69,6 +76,7 @@ func ValidatePod(ctx context.Context, c *config.Configuration, pod kube.GenericW
 		Name:             pod.ObjectMeta.GetName(),
 		Namespace:        pod.ObjectMeta.GetNamespace(),
 		ContainerResults: pRes.ContainerResults,
+		Results:          podResults,
 		Severity:         "Warning",
 	}
 	return result, nil

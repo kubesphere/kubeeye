@@ -51,6 +51,7 @@ func ValidateAllContainers(ctx context.Context, conf *config.Configuration, cont
 			return nil, err
 		}
 
+		// delete success results
 		for key, deleteTrue := range result.Results {
 			if true == deleteTrue.Success {
 				delete(result.Results, key)
