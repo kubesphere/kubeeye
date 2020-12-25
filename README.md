@@ -3,7 +3,7 @@
 Kubeye aims to find various problems on Kubernetes, such as application misconfiguration, cluster components unhealthy and node problems(using [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)). Besides predefined rules, it also supports custom defined rules.
 
 ## How to use
--  Install kubeye on your machine 
+-  Install Kubeye on your machine 
     - Download pre built executables from [Releases](https://github.com/kubesphere/kubeye/releases).
     
     - Or you can build from source code
@@ -17,11 +17,11 @@ Kubeye aims to find various problems on Kubernetes, such as application misconfi
 > Note: This line will install npd on your cluster, only required if you want detailed report.
 
 ```shell script
-ke install npd --kubeconfig ~/.kube/config
+ke install npd
 ```
 - Run kubeye
 ```shell
-root@node1:# ke fault --kubeconfig ~/.kube/config
+root@node1:# ke diags
 NODENAME   SEVERITY   HEARTBEATTIME               REASON              MESSAGE
 node18     Fatal     2020-11-19T10:32:03+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
 node19     Fatal     2020-11-19T10:31:37+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
@@ -119,7 +119,7 @@ kube-system     Warning      coredns                   Deployment   2020-11-27T1
 
 ### Add custom npd rule
 
-- Install NPD with `ke install npd --kubeconfig ~/.kube/config`
+- Install NPD with `ke install npd`
 - Edit configmap kube-system/node-problem-detector-config with kubectl, 
 ```
  kubectl edit cm -n kube-system node-problem-detector-config

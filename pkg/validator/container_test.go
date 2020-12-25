@@ -54,7 +54,7 @@ func (rs ResultSet) GetWarnings() []ResultMessage {
 var resourceConfMinimal = `---
 checks:
   cpuLimitsMissing: warning
-  livenessProbeMissing: warning
+ 
 `
 
 func getEmptyWorkload(t *testing.T, name string) kube.GenericWorkload {
@@ -307,7 +307,7 @@ func TestValidateNetworking(t *testing.T) {
 			container:   emptyContainer,
 			expectedResults: []ResultMessage{{
 				ID:       "hostPortSet",
-				Message:  "Host port is not configured",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Networking",
@@ -319,7 +319,7 @@ func TestValidateNetworking(t *testing.T) {
 			container:   emptyContainer,
 			expectedResults: []ResultMessage{{
 				ID:       "hostPortSet",
-				Message:  "Host port is not configured",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Networking",
@@ -349,7 +349,7 @@ func TestValidateNetworking(t *testing.T) {
 			container:   goodContainer,
 			expectedResults: []ResultMessage{{
 				ID:       "hostPortSet",
-				Message:  "Host port is not configured",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Networking",
@@ -460,25 +460,25 @@ func TestValidateSecurity(t *testing.T) {
 				Category: "Security",
 			}, {
 				ID:       "runAsPrivileged",
-				Message:  "Not running as privileged",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Security",
 			}, {
 				ID:       "privilegeEscalationAllowed",
-				Message:  "Privilege escalation not allowed",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Security",
 			}, {
 				ID:       "insecureCapabilities",
-				Message:  "Container does not have any insecure capabilities",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Security",
 			}, {
 				ID:       "dangerousCapabilities",
-				Message:  "Container does not have any dangerous capabilities",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Security",
@@ -620,37 +620,37 @@ func TestValidateSecurity(t *testing.T) {
 			pod:          emptyPodSpec,
 			expectedResults: []ResultMessage{{
 				ID:       "runAsRootAllowed",
-				Message:  "Is not allowed to run as root",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Security",
 			}, {
 				ID:       "notReadOnlyRootFilesystem",
-				Message:  "Filesystem is read only",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Security",
 			}, {
 				ID:       "runAsPrivileged",
-				Message:  "Not running as privileged",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Security",
 			}, {
 				ID:       "privilegeEscalationAllowed",
-				Message:  "Privilege escalation not allowed",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Security",
 			}, {
 				ID:       "dangerousCapabilities",
-				Message:  "Container does not have any dangerous capabilities",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Security",
 			}, {
 				ID:       "insecureCapabilities",
-				Message:  "Container does not have any insecure capabilities",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Security",
@@ -748,7 +748,7 @@ func TestValidateRunAsRoot(t *testing.T) {
 			pod:       badPod,
 			message: ResultMessage{
 				ID:       "runAsRootAllowed",
-				Message:  "Is not allowed to run as root",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Security",
@@ -760,7 +760,7 @@ func TestValidateRunAsRoot(t *testing.T) {
 			pod:       emptyPod,
 			message: ResultMessage{
 				ID:       "runAsRootAllowed",
-				Message:  "Is not allowed to run as root",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Security",
@@ -772,7 +772,7 @@ func TestValidateRunAsRoot(t *testing.T) {
 			pod:       runAsUserPod,
 			message: ResultMessage{
 				ID:       "runAsRootAllowed",
-				Message:  "Is not allowed to run as root",
+				Message:  "success",
 				Success:  true,
 				Severity: "warning",
 				Category: "Security",

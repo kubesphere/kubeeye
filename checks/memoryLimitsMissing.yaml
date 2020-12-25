@@ -1,5 +1,5 @@
-successMessage: Memory limits are set
-failureMessage: Memory limits should be set
+#successMessage: Memory limits are set
+promptMessage: Memory limits should be set
 category: Resources
 target: Container
 containers:

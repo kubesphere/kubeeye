@@ -1,5 +1,5 @@
-successMessage: Filesystem is read only
-failureMessage: Filesystem should be read only
+#successMessage: Filesystem is read only
+promptMessage: Filesystem should be read only
 category: Security
 target: Container
 schema:

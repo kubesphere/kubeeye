@@ -1,5 +1,5 @@
-successMessage: Not running as privileged
-failureMessage: Should not be running as privileged
+#successMessage: Not running as privileged
+promptMessage: Should not be running as privileged
 category: Security
 target: Container
 schema:

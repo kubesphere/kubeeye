@@ -1,5 +1,5 @@
-successMessage: Container does not have any insecure capabilities
-failureMessage: Container should not have insecure capabilities
+#successMessage: Container does not have any insecure capabilities
+promptMessage: Container should not have insecure capabilities
 category: Security
 target: Container
 schema:

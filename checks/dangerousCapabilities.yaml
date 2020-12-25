@@ -1,5 +1,5 @@
-successMessage: Container does not have any dangerous capabilities
-failureMessage: Container should not have dangerous capabilities
+#successMessage: Container does not have any dangerous capabilities
+promptMessage: Container should not have dangerous capabilities
 category: Security
 target: Container
 schema:

@@ -1,5 +1,5 @@
-successMessage: CPU requests are set
-failureMessage: CPU requests should be set
+#successMessage: CPU requests are set
+promptMessage: CPU requests should be set
 category: Resources
 target: Container
 containers:

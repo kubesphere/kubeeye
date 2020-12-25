@@ -1,5 +1,5 @@
-successMessage: Image tag is specified
-failureMessage: Image tag should be specified
+#successMessage: Image tag is specified
+promptMessage: Image tag should be specified
 category: Images
 target: Container
 schema:

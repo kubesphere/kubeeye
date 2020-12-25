@@ -1,5 +1,5 @@
-successMessage: Host network is not configured
-failureMessage: Host network should not be configured
+#successMessage: Host network is not configured
+promptMessage: Host network should not be configured
 category: Networking
 target: Pod
 schema:
