@@ -30,15 +30,15 @@ const (
 )
 
 type SchemaCheck struct {
-	ID             string                `yaml:"id"`
-	Category       string                `yaml:"category"`
-	SuccessMessage string                `yaml:"successMessage"`
-	FailureMessage string                `yaml:"failureMessage"`
-	Containers     includeExcludeList    `yaml:"containers"`
-	Target         TargetKind            `yaml:"target"`
-	SchemaTarget   TargetKind            `yaml:"schemaTarget"`
-	Schema         jsonschema.RootSchema `yaml:"schema"`
-	JSONSchema     string                `yaml:"jsonSchema"`
+	ID       string `yaml:"id"`
+	Category string `yaml:"category"`
+	//SuccessMessage string                `yaml:"successMessage"`
+	PromptMessage string                `yaml:"promptMessage"`
+	Containers    includeExcludeList    `yaml:"containers"`
+	Target        TargetKind            `yaml:"target"`
+	SchemaTarget  TargetKind            `yaml:"schemaTarget"`
+	Schema        jsonschema.RootSchema `yaml:"schema"`
+	JSONSchema    string                `yaml:"jsonSchema"`
 }
 
 type includeExcludeList struct {

@@ -1,5 +1,5 @@
-successMessage: Host PID is not configured
-failureMessage: Host PID should not be configured
+#successMessage: Host PID is not configured
+promptMessage: Host PID should not be configured
 category: Security
 target: Pod
 schema:

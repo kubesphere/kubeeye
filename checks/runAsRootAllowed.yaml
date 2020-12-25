@@ -1,5 +1,5 @@
-successMessage: Is not allowed to run as root
-failureMessage: Should not be allowed to run as root
+#successMessage: Is not allowed to run as root
+promptMessage: Should not be allowed to run as root
 category: Security
 target: Container
 schemaTarget: Pod

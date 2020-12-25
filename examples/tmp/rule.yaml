@@ -13,8 +13,7 @@ checks:
 
 customChecks:
   imageFromUnauthorizedRegistry:
-    successMessage: Image comes from allowed registries
-    failureMessage: Image should not be from disallowed registry
+    promptMessage: Image should not be from disallowed registry
     category: Images
     target: Container
     schema:
