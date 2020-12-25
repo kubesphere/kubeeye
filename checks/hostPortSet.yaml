@@ -1,5 +1,5 @@
-successMessage: Host port is not configured
-failureMessage: Host port should not be configured
+#successMessage: Host port is not configured
+promptMessage: Host port should not be configured
 category: Networking
 target: Container
 schema:

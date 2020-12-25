@@ -1,5 +1,5 @@
-successMessage: Privilege escalation not allowed
-failureMessage: Privilege escalation should not be allowed
+#successMessage: Privilege escalation not allowed
+promptMessage: Privilege escalation should not be allowed
 category: Security
 target: Container
 schema:

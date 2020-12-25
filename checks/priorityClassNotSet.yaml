@@ -1,5 +1,5 @@
-successMessage: Priority class has been set
-failureMessage: Priority class should be set
+#successMessage: Priority class has been set
+promptMessage: Priority class should be set
 category: Security
 target: Pod
 schema:

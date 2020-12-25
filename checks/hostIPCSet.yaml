@@ -1,5 +1,5 @@
-successMessage: Host IPC is not configured
-failureMessage: Host IPC should not be configured
+#successMessage: Host IPC is not configured
+promptMessage: Host IPC should not be configured
 category: Security
 target: Pod
 schema:

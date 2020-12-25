@@ -1,5 +1,5 @@
-successMessage: Liveness probe is configured
-failureMessage: Liveness probe should be configured
+#successMessage: Liveness probe is configured
+promptMessage: Liveness probe should be configured
 category: Health Checks
 controllers:
   exclude:

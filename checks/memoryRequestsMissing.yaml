@@ -1,5 +1,5 @@
-successMessage: Memory requests are set
-failureMessage: Memory requests should be set
+#successMessage: Memory requests are set
+promptMessage: Memory requests should be set
 category: Resources
 target: Container
 containers:

@@ -58,7 +58,7 @@ var (
 )
 
 func init() {
-	schemaBox = packr.New("Schemas", "../../checks")
+	schemaBox = packr.New("Schema", "../../checks")
 	for _, checkID := range checkOrder {
 		contents, err := schemaBox.Find(checkID + ".yaml")
 		if err != nil {
@@ -132,9 +132,9 @@ func makeResult(conf *config.Configuration, check *config.SchemaCheck, passes bo
 		Success:  passes,
 	}
 	if passes {
-		result.Message = check.SuccessMessage
+		result.Message = "success"
 	} else {
-		result.Message = check.FailureMessage
+		result.Message = check.PromptMessage
 	}
 	return result
 }
