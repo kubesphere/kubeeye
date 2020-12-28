@@ -96,9 +96,8 @@ kube-system     Warning      coredns                   Deployment   2020-11-27T1
 | :white_check_mark: | PodFileExists                   | Check for existing files|             
 | :white_check_mark: | PodTooManyOpenFiles             | The number of file /socket connections opened by the program exceeds the system set value|
 | :white_check_mark: | PodNoSpaceLeftOnDevice          | Check for disk and inode usage|
-|                    | NodeTokenExpired                | Token certificate expired|
-|                    | NodeApiServerExpired            | kube-apiserver certificate expired|
-|                    | NodeKubeletExpired              | Kubelet certificate expired|
+|                    | NodeTokenExpiredPeriod          | Check Token expiration period is one month|
+|                    | NodeKubeletExpiredPeriod        | Check Kubelet period is one month|
 | :white_check_mark: | PodSetCpuRequestsMissing        | The CPU Resource Request value was not declared|
 | :white_check_mark: | PodSetHostIPCSet                | Set the hostIP|
 | :white_check_mark: | PodSetHostNetworkSet            | Set the hostNetwork|
@@ -135,8 +134,7 @@ checks:
 
 customChecks:
   imageFromUnauthorizedRegistry:
-    successMessage: Image from an authorized registriy.
-    failureMessage: Image from an unauthorized registry. 
+    promptMessage: When the corresponding rule does not match. Show that image from an unauthorized registry.
     category: Images
     target: Container
     schema:
@@ -152,7 +150,7 @@ customChecks:
 - Save the above rule as a yaml, for example, `rule.yaml`.
 - Run kubeye with `rule.yaml`
 ```shell
-root:# ke fault -f rule.yaml --kubeconfig ~/.kube/config
+root:# ke diags -f rule.yaml --kubeconfig ~/.kube/config
 NAMESPACE     SEVERITY    NAME                      KIND         TIME                        MESSAGE
 default       Warning     nginx                     Deployment   2020-11-27T17:18:31+08:00   [imageFromUnauthorizedRegistry]
 kube-system   Warning     node-problem-detector     DaemonSet    2020-11-27T17:18:31+08:00   [livenessProbeMissing runAsPrivileged]

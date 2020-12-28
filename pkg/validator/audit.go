@@ -28,7 +28,7 @@ import (
 	"time"
 )
 
-func Cluster(configuration string, ctx context.Context) error {
+func Cluster(configuration string, ctx context.Context, allInformation bool) error {
 	k, err := kube.CreateResourceProvider(ctx)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get cluster information")
@@ -117,13 +117,32 @@ func Cluster(configuration string, ctx context.Context) error {
 	if len(goodPractice) != 0 {
 		fmt.Fprintln(w, "\nNAMESPACE\tSEVERITY\tNAME\tKIND\tTIME\tMESSAGE")
 		for _, goodpractice := range goodPractice {
+			var message []string
+			if allInformation {
+				for _, tmpMessage := range goodpractice.ContainerResults[0].Results {
+					message = append(message, tmpMessage.Message, "")
+				}
+				if len(goodpractice.Results) != 0 {
+					for _, tmpResult := range goodpractice.Results {
+						if tmpResult.Success == false {
+							message = append(message, tmpResult.Message, "")
+						}
+					}
+					message = message[:len(message)-1]
+				} else {
+					message = message[:len(message)-1]
+				}
+
+			} else {
+				message = goodpractice.Message
+			}
 			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%-8v",
 				goodpractice.Namespace,
 				goodpractice.Severity,
 				goodpractice.Name,
 				goodpractice.Kind,
 				goodpractice.CreatedTime,
-				goodpractice.Message,
+				message,
 			)
 			fmt.Fprintln(w, s)
 			continue
