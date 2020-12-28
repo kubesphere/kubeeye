@@ -23,12 +23,13 @@ import (
 )
 
 var config string
+var allInformation bool
 
 var auditCmd = &cobra.Command{
 	Use:   "diags",
 	Short: "diagnostic information from the cluster",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := validator.Cluster(config, cmd.Context())
+		err := validator.Cluster(config, cmd.Context(), allInformation)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -39,4 +40,5 @@ func init() {
 	rootCmd.AddCommand(auditCmd)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	auditCmd.Flags().StringVarP(&config, "filename", "f", "", "Customize best practice configuration")
+	auditCmd.Flags().BoolVarP(&allInformation, "all", "a", false, "Show more specific information")
 }
