@@ -99,7 +99,7 @@ func Cluster(configuration string, ctx context.Context, allInformation bool) err
 	}
 
 	if len(clusterCheckResults) != 0 {
-		fmt.Fprintln(w, "\nNAMESPACE\tSEVERITY\tNODENAME\tEVENTTIME\tREASON\tMESSAGE")
+		fmt.Fprintln(w, "\nNAMESPACE\tSEVERITY\tPODNAME\tEVENTTIME\tREASON\tMESSAGE")
 		for _, clusterCheckResult := range clusterCheckResults {
 			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%-8v",
 				clusterCheckResult.Namespace,

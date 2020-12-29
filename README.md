@@ -32,7 +32,7 @@ NAME        SEVERITY   TIME                        MESSAGE
 scheduler   Fatal     2020-11-27T17:09:59+08:00   Get http://127.0.0.1:10251/healthz: dial tcp 127.0.0.1:10251: connect: connection refused
 etcd-0      Fatal     2020-11-27T17:56:37+08:00   Get https://192.168.13.8:2379/health: dial tcp 192.168.13.8:2379: connect: connection refused
 
-NAMESPACE       SEVERITY   NODENAME                                         EVENTTIME                   REASON                MESSAGE
+NAMESPACE       SEVERITY   PODNAME                                          EVENTTIME                   REASON                MESSAGE
 default         Warning    node3.164b53d23ea79fc7                           2020-11-27T17:37:34+08:00   ContainerGCFailed     rpc error: code = Unknown desc = Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
 default         Warning    node3.164b553ca5740aae                           2020-11-27T18:03:31+08:00   FreeDiskSpaceFailed   failed to garbage collect required amount of images. Wanted to free 5399374233 bytes, but freed 416077545 bytes
 default         Warning    nginx-b8ffcf679-q4n9v.16491643e6b68cd7           2020-11-27T17:09:24+08:00   Failed                Error: ImagePullBackOff
@@ -54,6 +54,7 @@ insights-agent  Warning      cronjob-executor          Job          2020-11-27T1
 kube-system     Warning      calico-kube-controllers   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing livenessProbeMissing]
 kube-system     Warning      coredns                   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing]   
 ```
+> You can refer to the [FAQ](./docs/FAQ.md) content to optimize your cluster.
 
 ## What kubeye can do
 
@@ -111,6 +112,7 @@ kube-system     Warning      coredns                   Deployment   2020-11-27T1
 | :white_check_mark: | PodDangerousCapabilities        | You have the dangerous option in capabilities such as ALL/SYS_ADMIN/NET_ADMIN|
 | :white_check_mark: | PodlivenessProbeMissing        | ReadinessProbe was not declared|
 | :white_check_mark: | privilegeEscalationAllowed        | Privilege escalation is allowed|
+|                    | NodeNotReadyAndUseOfClosedNetworkConnection        | http2-max-streams-per-connection |
 > unmarked items are under heavy development
 
 
