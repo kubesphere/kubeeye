@@ -40,5 +40,5 @@ func init() {
 	rootCmd.AddCommand(auditCmd)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	auditCmd.Flags().StringVarP(&config, "filename", "f", "", "Customize best practice configuration")
-	auditCmd.Flags().BoolVarP(&allInformation, "all", "a", false, "Show more specific information")
+	auditCmd.Flags().BoolVarP(&allInformation, "all", "A", false, "Show more specific information")
 }

@@ -2,36 +2,73 @@ The main purpose of this document is how to recover and eliminate the problem wh
 
 ## Node-level issues
 
-1. Container runtime not ready: RuntimeReady=false reason:DockerDaemonNotReady message:docker: failed to get docker version: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
-```
-Message: There is a problem with the docker service that causes the node NotReady.
-Solution Ideas:
-1. On the corresponding node, such as: systemctl status docker, see if the service is Running or exist?
-2. If it's not running, start it. such as: systemctl start docker.
-3. If it's not exist, it means that the corresponding node is reset and need to add node or delete node.
-4. If start fails, such as: journalctl -u docker -f, see detailed docker logs.
-```
+#### 1. Node is not ready due to docker service exception
+##### Symptoms:
+Node not ready. The error log shows the following error message:   
+
+`Container runtime not ready: failed to get docker version: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?`
+##### Cause: 
+Docker service exception
+##### Resolving the problem:
+1. On the corresponding node, see if the docker service is Running or exist?, such as the following command:  
+`systemctl status docker`
+2. If it's not running, start it, such as the following command:  
+`systemctl start docker`
+3. If it's not exist, it means that the corresponding node is reset and need to add node or delete node. prefer to [add/delete](https://github.com/kubesphere/kubekey#add-nodes)
+4. If start fails, you can open two terminals on the same machine, one with the command view docker logs and the other with start docker command. such as the following command:   
+one terminal: `journalctl -u docker -f`, other terminal: `systemctl start docker`
 
 ## Pod-level issues
 
-1. message: Error, ImagePullBackOff
+#### 1. Pod is not Running due to image pull failure
+##### Symptoms:
+The status of Pod is ErrImagePull. The error log shows the following error message:  
+ 
+`Error, ImagePullBackOff`
+##### Cause: 
+Pod is dispatched to that node and the pull image fails
+##### Resolving the problem:
+1. kubectl describe the corresponding pod with namespace, see the image that cannot be pulled. such as the following command:  
+`kubectl describe pod -n <namespace> <podName>` 
+2. Compare the pulled image with the actual one needed, note the image format.
+3. Check the image repository or try to pull it manually on corresponding node to see if it succeeds.  
+`docker pull <registry>/workspace/imageName:imageTag`
+4. If you can not pull, check if the corresponding node is configured to pull the image repository trust source.
 ```
-Message: ImagePullBackOff
-Solution Ideas:
-1. kubectl describe pod -n <namespace> <podName>, such as: kubectl describe pod -n default nginx-b8ffcf679-q4n9v.16491643e6b68cd7, see event's log.
-2. Compare the pulled image with the actual one needed.
-3. Whether the pulled image exists in the mirror repositroy?
-4. Check the mirror repositroy or try pulling it manually on another node in the cluster to see if it succeeds.
-5. If another node can pull, check if the corresponding node is configured to pull the mirror repository trust source.
+cat /etc/docker/daemon.json 
+{
+  "log-opts": {
+    "max-size": "5m",
+    "max-file":"3"
+  },
+  "registry-mirrors": ["https://*****.mirror.aliyuncs.com"],
+  "exec-opts": ["native.cgroupdriver=systemd"]
+}
+```
+5. If you can not pull, check the the machine network.  
+`curl www.baidu.com`
+6. Need images are re-pushed to the repository or tag existing images as need images or copy from another node.
+```shell script
+docker push <registry>/workspace/imageName:imageTag
+or
+docker tag <existingImage> <needImage>
+or
+another node: docker save -o needImage.tar existingImage
+corresponding node: docker load -i needImage.tar
 ```
 
 ## Best Practice issues
 
-1. message: cpuLimitsMissing
+#### 1. The CPU Limits parameter is not set at the corresponding pod resource
+##### Symptoms:
+When this parameter is not set, pod service exceptions may require unlimited CPU, resulting in high node CPU usage and downtime. The log shows the following message:  
+ 
+`cpuLimitsMissing or CPU limits should be set`
+##### Cause: 
+The CPU Limits parameter is not set at the corresponding pod resource
+##### Resolving the problem:
+1. To specify a CPU limit, include resources:limits. Usually cpu limits do not exceed 1 core. refer to [CPU limits](https://kubernetes.io/docs/tasks/configure-pod-container/assign-cpu-resource/)
 ```
-Message: The CPU Limits parameter is not set at the corresponding pod resource
-Solution Ideas:
-Specific values refer to the actual application, such as, 
 spec:
   containers:
   - image: nginx:latest
