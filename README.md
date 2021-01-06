@@ -97,8 +97,7 @@ kube-system     Warning      coredns                   Deployment   2020-11-27T1
 | :white_check_mark: | PodFileExists                   | Check for existing files|             
 | :white_check_mark: | PodTooManyOpenFiles             | The number of file /socket connections opened by the program exceeds the system set value|
 | :white_check_mark: | PodNoSpaceLeftOnDevice          | Check for disk and inode usage|
-|                    | NodeTokenExpiredPeriod          | Check Token expiration period is one month|
-|                    | NodeKubeletExpiredPeriod        | Check Kubelet period is one month|
+| :white_check_mark: | NodeApiServerExpiredPeriod      | ApiServer certificate expiration date less than 30 days will be checked|
 | :white_check_mark: | PodSetCpuRequestsMissing        | The CPU Resource Request value was not declared|
 | :white_check_mark: | PodSetHostIPCSet                | Set the hostIP|
 | :white_check_mark: | PodSetHostNetworkSet            | Set the hostNetwork|
@@ -113,6 +112,7 @@ kube-system     Warning      coredns                   Deployment   2020-11-27T1
 | :white_check_mark: | PodlivenessProbeMissing        | ReadinessProbe was not declared|
 | :white_check_mark: | privilegeEscalationAllowed        | Privilege escalation is allowed|
 |                    | NodeNotReadyAndUseOfClosedNetworkConnection        | http2-max-streams-per-connection |
+|                    | NodeNotReady        | Failed to start ContainerManager Cannot set property TasksAccounting, or unknown property |
 > unmarked items are under heavy development
 
 

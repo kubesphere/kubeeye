@@ -19,10 +19,13 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	certutil "k8s.io/client-go/util/cert"
 	conf "kubeye/pkg/config"
 	"kubeye/pkg/kube"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -47,6 +50,27 @@ func Cluster(configuration string, ctx context.Context, allInformation bool) err
 	nodeStatus, err3 := NodeStatusResult(k.Nodes)
 	if err3 != nil {
 		return errors.Wrap(err3, "Failed to get nodeStatus information")
+	}
+
+	// Get kube-apiserver certificate expiration
+	var certExpires []Certificate
+	cmd := fmt.Sprintf("cat /etc/kubernetes/pki/%s", "apiserver.crt")
+	output, _ := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
+	if output != nil {
+		certs, _ := certutil.ParseCertsPEM([]byte(output))
+		certExpire := Certificate{
+			Name:     "kube-apiserver",
+			Expires:  certs[0].NotAfter.Format("Jan 02, 2006 15:04 MST"),
+			Residual: ResidualTime(certs[0].NotAfter),
+		}
+		if strings.Contains(certExpire.Residual, "d") {
+			tmpTime, _ := strconv.Atoi(strings.TrimRight(certExpire.Residual, "d"))
+			if tmpTime < 30 {
+				certExpires = append(certExpires, certExpire)
+			}
+		} else {
+			certExpires = append(certExpires, certExpire)
+		}
 	}
 
 	var config conf.Configuration
@@ -148,6 +172,18 @@ func Cluster(configuration string, ctx context.Context, allInformation bool) err
 			continue
 		}
 	}
+	if len(certExpires) != 0 {
+		fmt.Fprintln(w, "\nNAME\tEXPIRES\tRESIDUAL")
+		for _, certExpire := range certExpires {
+			s := fmt.Sprintf("%s\t%s\t%-8v",
+				certExpire.Name,
+				certExpire.Expires,
+				certExpire.Residual,
+			)
+			fmt.Fprintln(w, s)
+			continue
+		}
+	}
 	w.Flush()
 
 	//auditData := AuditData{
@@ -230,4 +266,22 @@ func NodeStatusResult(nodes []v1.Node) ([]AllNodeStatusResults, error) {
 		nodestatus = append(nodestatus, nodestate)
 	}
 	return nodestatus, nil
+}
+
+func ResidualTime(t time.Time) string {
+	d := time.Until(t)
+	if seconds := int(d.Seconds()); seconds < -1 {
+		return fmt.Sprintf("<invalid>")
+	} else if seconds < 0 {
+		return fmt.Sprintf("0s")
+	} else if seconds < 60 {
+		return fmt.Sprintf("%ds", seconds)
+	} else if minutes := int(d.Minutes()); minutes < 60 {
+		return fmt.Sprintf("%dm", minutes)
+	} else if hours := int(d.Hours()); hours < 24 {
+		return fmt.Sprintf("%dh", hours)
+	} else if hours < 24*365 {
+		return fmt.Sprintf("%dd", hours/24)
+	}
+	return fmt.Sprintf("%dy", int(d.Hours()/24/365))
 }

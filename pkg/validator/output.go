@@ -86,3 +86,9 @@ type ResultMessage struct {
 	Severity config.Severity `yaml:"severity" json:"severity,omitempty"`
 	Category string          `yaml:"category" json:"category,omitempty"`
 }
+
+type Certificate struct {
+	Name     string `yaml:"name" json:"name,omitempty"`
+	Expires  string `yaml:"expires" json:"expires,omitempty"`
+	Residual string `yaml:"residual" json:"residual,omitempty"`
+}
