@@ -1,15 +1,10 @@
-name: CI
+name: Build
 
 on:
   push:
-    branches:
-      - 'master'
-      - 'release*'
-    tags:
-      - 'v*'
+    branches: [ main ]
   pull_request:
-    branches:
-      - 'master'
+    branches: [ main ]
 
 jobs:
   build:
