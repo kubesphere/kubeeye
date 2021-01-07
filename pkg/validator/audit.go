@@ -58,18 +58,20 @@ func Cluster(configuration string, ctx context.Context, allInformation bool) err
 	output, _ := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
 	if output != nil {
 		certs, _ := certutil.ParseCertsPEM([]byte(output))
-		certExpire := Certificate{
-			Name:     "kube-apiserver",
-			Expires:  certs[0].NotAfter.Format("Jan 02, 2006 15:04 MST"),
-			Residual: ResidualTime(certs[0].NotAfter),
-		}
-		if strings.Contains(certExpire.Residual, "d") {
-			tmpTime, _ := strconv.Atoi(strings.TrimRight(certExpire.Residual, "d"))
-			if tmpTime < 30 {
+		if len(certs) != 0 {
+			certExpire := Certificate{
+				Name:     "kube-apiserver",
+				Expires:  certs[0].NotAfter.Format("Jan 02, 2006 15:04 MST"),
+				Residual: ResidualTime(certs[0].NotAfter),
+			}
+			if strings.Contains(certExpire.Residual, "d") {
+				tmpTime, _ := strconv.Atoi(strings.TrimRight(certExpire.Residual, "d"))
+				if tmpTime < 30 {
+					certExpires = append(certExpires, certExpire)
+				}
+			} else {
 				certExpires = append(certExpires, certExpire)
 			}
-		} else {
-			certExpires = append(certExpires, certExpire)
 		}
 	}
 
