@@ -34,6 +34,10 @@ snapshot:
 archives:
 - format: zip
   name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}'
+  files:
+    - README.md
+    - LICENSE
+    - checks
 checksum:
   name_template: '{{ .ProjectName }}_checksum.txt'
   algorithm: sha256
