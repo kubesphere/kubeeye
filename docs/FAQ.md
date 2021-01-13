@@ -10,12 +10,12 @@ Node not ready. The error log shows the following error message:
 ##### Cause: 
 Docker service exception
 ##### Resolving the problem:
-1. On the corresponding node, see if the docker service is Running or exist?, such as the following command:  
+1. Go to the corresponding node and check if the docker service is running or exist by the following command:  
 `systemctl status docker`
-2. If it's not running, start it, such as the following command:  
+2. If it's not running, start the docker service with the following command:  
 `systemctl start docker`
-3. If it's not exist, it means that the corresponding node is reset and need to add node or delete node. prefer to [add/delete](https://github.com/kubesphere/kubekey#add-nodes)
-4. If start fails, you can open two terminals on the same machine, one with the command view docker logs and the other with start docker command. such as the following command:   
+3. If does not exist, it means that the corresponding node is reset and need to be added or deleted. prefer to [add/delete](https://github.com/kubesphere/kubekey#add-nodes)
+4. If start fails, open two terminals on the same machine, one with the command view docker logs and the other with start docker command. such as the following command:   
 one terminal: `journalctl -u docker -f`, other terminal: `systemctl start docker`
 
 ## Pod-level issues

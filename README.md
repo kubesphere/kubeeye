@@ -2,6 +2,11 @@
 
 Kubeye aims to find various problems on Kubernetes, such as application misconfiguration, cluster components unhealthy and node problems(using [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)). Besides predefined rules, it also supports custom defined rules.
 
+## Architecture
+Kubeye gets cluster diagnostic data by calling the Kubernetes API, by regular matching of key error messages in logs and by rule matching of container syntax. See Architecture for details.
+
+![Image](./docs/Kubeye-Architecture.jpg?raw=true)
+
 ## How to use
 -  Install Kubeye on your machine 
     - Download pre built executables from [Releases](https://github.com/kubesphere/kubeye/releases).
