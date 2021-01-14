@@ -37,3 +37,5 @@ Session.vim
 # Generate by makefile
 bin
 dist
+packrd
+ke

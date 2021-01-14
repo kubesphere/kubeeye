@@ -4,13 +4,16 @@ project_name: ke
 before:
   hooks:
     # this is just an example and not a requirement for provider building/publishing
-    # - go mod tidy
+    - make install-packr2
+    - rm -f pkg/config/config-packr.go
+    - rm -f pkg/validator/validator-packr.go
 builds:
 - env:
     # goreleaser does not work with CGO, it could also complicate
     # usage by users in CI/CD systems like Terraform Cloud where
     # they are unable to install libraries.
     - CGO_ENABLED=0
+    - GO111MODULE=on
   mod_timestamp: '{{ .CommitTimestamp }}'
   flags:
     - -trimpath
@@ -30,15 +33,12 @@ builds:
     - goos: darwin
       goarch: '386'
   binary: '{{ .ProjectName }}'
+  main: main.go
 snapshot:
   name_template: ""
 archives:
 - format: tar.gz
   name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}'
-  files:
-    - README.md
-    - LICENSE
-    - checks
 checksum:
   name_template: '{{ .ProjectName }}_checksum.txt'
   algorithm: sha256
