@@ -6,8 +6,8 @@ fmt:
 	gofmt -w ./pkg ./cmd
 
 ke:
-	GO111MODULE=on GOPROXY=https://proxy.golang.org CGO_ENABLED=0 go get -u github.com/gobuffalo/packr/v2/packr2 
-    $(GOBIN)/packr2 build -a -o ${BINARY} main.go
+	GO111MODULE=on GOPROXY=https://proxy.golang.org CGO_ENABLED=0 go get -u github.com/gobuffalo/packr/v2/packr2
+	$(GOBIN)/packr2 build -a -o ${BINARY} main.go
 
 # install kubeye
 install: ke
