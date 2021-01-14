@@ -32,7 +32,7 @@ builds:
 snapshot:
   name_template: ""
 archives:
-- format: zip
+- format: tar.gz
   name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}'
   files:
     - README.md
