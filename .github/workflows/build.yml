@@ -31,4 +31,4 @@ jobs:
         if: github.event_name == 'push'
         with:
           name: kubeye
-          path: dist/*.zip
+          path: dist/*.tar.gz
