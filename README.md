@@ -26,7 +26,7 @@ ke install npd
 ```
 - Run kubeye
 ```shell
-root@node1:# ke diags
+root@node1:# ke diag
 NODENAME   SEVERITY   HEARTBEATTIME               REASON              MESSAGE
 node18     Fatal     2020-11-19T10:32:03+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
 node19     Fatal     2020-11-19T10:31:37+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
@@ -157,7 +157,7 @@ customChecks:
 - Save the above rule as a yaml, for example, `rule.yaml`.
 - Run kubeye with `rule.yaml`
 ```shell
-root:# ke diags -f rule.yaml --kubeconfig ~/.kube/config
+root:# ke diag -f rule.yaml --kubeconfig ~/.kube/config
 NAMESPACE     SEVERITY    NAME                      KIND         TIME                        MESSAGE
 default       Warning     nginx                     Deployment   2020-11-27T17:18:31+08:00   [imageFromUnauthorizedRegistry]
 kube-system   Warning     node-problem-detector     DaemonSet    2020-11-27T17:18:31+08:00   [livenessProbeMissing runAsPrivileged]
