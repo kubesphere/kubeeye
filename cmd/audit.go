@@ -26,7 +26,7 @@ var config string
 var allInformation bool
 
 var auditCmd = &cobra.Command{
-	Use:   "diags",
+	Use:   "diag",
 	Short: "diagnostic information from the cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := validator.Cluster(config, cmd.Context(), allInformation)
