@@ -1,6 +1,6 @@
 # Kubeye
 
-Kubeye aims to find various problems on Kubernetes, such as application misconfiguration, cluster components unhealthy and node problems(using [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)). Besides predefined rules, it also supports custom defined rules.
+Kubeye aims to find various problems on Kubernetes, such as application misconfiguration(using [Polaris](https://github.com/FairwindsOps/polaris)), cluster components unhealthy and node problems(using [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)). Besides predefined rules, it also supports custom defined rules.
 
 ## Architecture
 Kubeye gets cluster diagnostic data by calling the Kubernetes API, by regular matching of key error messages in logs and by rule matching of container syntax. See Architecture for details.
