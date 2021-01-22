@@ -10,10 +10,9 @@ test: fmt
 
 install-packr2:
 	GO111MODULE=on GOPROXY=https://proxy.golang.org CGO_ENABLED=0 go get -u github.com/gobuffalo/packr/v2/packr2
-	$(GOBIN)/packr2
+	$(GOBIN)/packr2 build -a -o ${BINARY} *.go
 
 ke: install-packr2
-	GO111MODULE=on CGO_ENABLED=0 go build -o ${BINARY}
 
 # install kubeye
 install: ke

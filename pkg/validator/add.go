@@ -17,6 +17,7 @@ package validator
 import (
 	"bytes"
 	"context"
+	"fmt"
 	packr "github.com/gobuffalo/packr/v2"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -283,8 +284,13 @@ func createDaemonSet(ctx context.Context, conf *ds.DaemonSet) (*ds.DaemonSet, er
 	getOpts := metav1.GetOptions{}
 	_, err2 := api.AppsV1().DaemonSets(conf.ObjectMeta.Namespace).Get(ctx, conf.ObjectMeta.Name, getOpts)
 	if err2 != nil {
-		_, _ = api.AppsV1().DaemonSets(conf.ObjectMeta.Namespace).Create(ctx, conf, listOpts)
-		return nil, err2
+		fmt.Println("Installing NPD ...")
+		_, err3 := api.AppsV1().DaemonSets(conf.ObjectMeta.Namespace).Create(ctx, conf, listOpts)
+		if err3 != nil {
+			return nil, err3
+		}
+		fmt.Println("Installation is successful. ")
+		return nil, err3
 	}
 	return nil, nil
 }
