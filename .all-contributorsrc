@@ -10,6 +10,16 @@
   "commit": true,
   "commitConvention": "none",
   "contributors": [
+  {
+      "login": "Forest-L",
+      "name": "Forest",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50984129?v=4",
+      "profile": "https://github.com/Forest-L",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
     {
       "login": "zryfish",
       "name": "zryfish",
@@ -26,16 +36,6 @@
       "profile": "https://www.chenshaowen.com/",
       "contributions": [
         "code"
-      ]
-    },
-    {
-      "login": "Forest-L",
-      "name": "Forest",
-      "avatar_url": "https://avatars.githubusercontent.com/u/50984129?v=4",
-      "profile": "https://github.com/Forest-L",
-      "contributions": [
-        "code",
-        "doc"
       ]
     },
     {
