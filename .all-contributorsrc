@@ -9,6 +9,18 @@
   "imageSize": 100,
   "commit": true,
   "commitConvention": "none",
-  "contributors": [],
-  "contributorsPerLine": 7
+  "contributors": [
+    {
+      "login": "Forest-L",
+      "name": "Forest",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50984129?v=4",
+      "profile": "https://github.com/Forest-L",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true
 }
