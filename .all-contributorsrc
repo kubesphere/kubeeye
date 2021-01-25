@@ -9,6 +9,17 @@
   "imageSize": 100,
   "commit": true,
   "commitConvention": "none",
-  "contributors": [],
-  "contributorsPerLine": 7
+  "contributors": [
+    {
+      "login": "zryfish",
+      "name": "zryfish",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3326354?v=4",
+      "profile": "https://github.com/zryfish",
+      "contributions": [
+        "doc"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true
 }
