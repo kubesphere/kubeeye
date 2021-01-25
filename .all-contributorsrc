@@ -17,7 +17,7 @@
       "profile": "https://github.com/zryfish",
       "contributions": [
         "doc"
-        ]
+      ]
     },
     {
       "login": "shaowenchen",
@@ -35,6 +35,15 @@
       "profile": "https://github.com/Forest-L",
       "contributions": [
         "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "pixiake",
+      "name": "pixiake",
+      "avatar_url": "https://avatars.githubusercontent.com/u/22290449?v=4",
+      "profile": "https://github.com/pixiake",
+      "contributions": [
         "doc"
       ]
     }
