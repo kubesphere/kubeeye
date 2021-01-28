@@ -27,7 +27,7 @@ KubeEye gets cluster diagnostic data by calling the Kubernetes API, by regular m
 ```shell script
 ke install npd
 ```
-- Run kubeeye
+- Run KubeEye
 ```shell
 root@node1:# ke diag
 NODENAME        SEVERITY     HEARTBEATTIME               REASON              MESSAGE
