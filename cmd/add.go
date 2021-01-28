@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"kubeye/pkg/validator"
+	"kubeeye/pkg/validator"
 )
 
 var addCmd = &cobra.Command{

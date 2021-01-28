@@ -15,7 +15,7 @@
 package main
 
 import (
-	"kubeye/cmd"
+	"kubeeye/cmd"
 )
 
 func main() {

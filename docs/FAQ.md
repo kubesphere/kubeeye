@@ -1,4 +1,4 @@
-The main purpose of this document is how to recover and eliminate the problem when you diagnose certain problems by executing the Kubeye command.
+The main purpose of this document is how to recover and eliminate the problem when you diagnose certain problems by executing the KubeEye command.
 
 ## Node-level issues
 

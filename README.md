@@ -1,23 +1,23 @@
-# Kubeye
+# KubeEye
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 [![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-Kubeye aims to find various problems on Kubernetes, such as application misconfiguration(using [Polaris](https://github.com/FairwindsOps/polaris)), cluster components unhealthy and node problems(using [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)). Besides predefined rules, it also supports custom defined rules.
+KubeEye aims to find various problems on Kubernetes, such as application misconfiguration(using [Polaris](https://github.com/FairwindsOps/polaris)), cluster components unhealthy and node problems(using [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)). Besides predefined rules, it also supports custom defined rules.
 
 ## Architecture
-Kubeye gets cluster diagnostic data by calling the Kubernetes API, by regular matching of key error messages in logs and by rule matching of container syntax. See Architecture for details.
+KubeEye gets cluster diagnostic data by calling the Kubernetes API, by regular matching of key error messages in logs and by rule matching of container syntax. See Architecture for details.
 
-![Image](./docs/Kubeye-Architecture.jpg?raw=true)
+![Image](./docs/KubeEye-Architecture.jpg?raw=true)
 
 ## How to use
--  Install Kubeye on your machine 
-    - Download pre built executables from [Releases](https://github.com/kubesphere/kubeye/releases).
+-  Install KubeEye on your machine 
+    - Download pre built executables from [Releases](https://github.com/kubesphere/kubeeye/releases).
     
     - Or you can build from source code
     ```shell
-    git clone https://github.com/kubesphere/kubeye.git
-    cd kubeye 
+    git clone https://github.com/kubesphere/kubeeye.git
+    cd kubeeye 
     make install
     ```
    
@@ -27,7 +27,7 @@ Kubeye gets cluster diagnostic data by calling the Kubernetes API, by regular ma
 ```shell script
 ke install npd
 ```
-- Run kubeye
+- Run kubeeye
 ```shell
 root@node1:# ke diag
 NODENAME        SEVERITY     HEARTBEATTIME               REASON              MESSAGE
@@ -64,11 +64,11 @@ kube-system     Warning      coredns                   Deployment   2020-11-27T1
 ```
 > You can refer to the [FAQ](./docs/FAQ.md) content to optimize your cluster.
 
-## What kubeye can do
+## What KubeEye can do
 
-- Kubeye can find problems of your cluster control plane, including kube-apiserver/kube-controller-manager/etcd, etc.
-- Kubeye helps you detect all kinds of node problems, including memory/cpu/disk pressure, unexpected kernel error logs, etc.
-- Kubeye validates your workloads yaml specs against industry best practice, helps you make your cluster stable.
+- KubeEye can find problems of your cluster control plane, including kube-apiserver/kube-controller-manager/etcd, etc.
+- KubeEye helps you detect all kinds of node problems, including memory/cpu/disk pressure, unexpected kernel error logs, etc.
+- KubeEye validates your workloads yaml specs against industry best practice, helps you make your cluster stable.
 
 ## Checklist
 |YES/NO|CHECK ITEM |Description|
@@ -158,7 +158,7 @@ customChecks:
 ```
 
 - Save the above rule as a yaml, for example, `rule.yaml`.
-- Run kubeye with `rule.yaml`
+- Run KubeEye with `rule.yaml`
 ```shell
 root:# ke diag -f rule.yaml --kubeconfig ~/.kube/config
 NAMESPACE     SEVERITY    NAME                      KIND         TIME                        MESSAGE
@@ -180,10 +180,10 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <!-- markdownlint-disable -->
 <table>
   <tr>
-    <td align="center"><a href="https://github.com/Forest-L"><img src="https://avatars.githubusercontent.com/u/50984129?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Forest</b></sub></a><br /><a href="https://github.com/kubesphere/kubeye/commits?author=Forest-L" title="Code">💻</a> <a href="https://github.com/kubesphere/kubeye/commits?author=Forest-L" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/zryfish"><img src="https://avatars.githubusercontent.com/u/3326354?v=4?s=100" width="100px;" alt=""/><br /><sub><b>zryfish</b></sub></a><br /><a href="https://github.com/kubesphere/kubeye/commits?author=zryfish" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://www.chenshaowen.com/"><img src="https://avatars.githubusercontent.com/u/43693241?v=4?s=100" width="100px;" alt=""/><br /><sub><b>shaowenchen</b></sub></a><br /><a href="https://github.com/kubesphere/kubeye/commits?author=shaowenchen" title="Code">💻</a></td>
-    <td align="center"><a href="https://github.com/pixiake"><img src="https://avatars.githubusercontent.com/u/22290449?v=4?s=100" width="100px;" alt=""/><br /><sub><b>pixiake</b></sub></a><br /><a href="https://github.com/kubesphere/kubeye/commits?author=pixiake" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/Forest-L"><img src="https://avatars.githubusercontent.com/u/50984129?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Forest</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=Forest-L" title="Code">💻</a> <a href="https://github.com/kubesphere/kubeeye/commits?author=Forest-L" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/zryfish"><img src="https://avatars.githubusercontent.com/u/3326354?v=4?s=100" width="100px;" alt=""/><br /><sub><b>zryfish</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=zryfish" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://www.chenshaowen.com/"><img src="https://avatars.githubusercontent.com/u/43693241?v=4?s=100" width="100px;" alt=""/><br /><sub><b>shaowenchen</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=shaowenchen" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/pixiake"><img src="https://avatars.githubusercontent.com/u/22290449?v=4?s=100" width="100px;" alt=""/><br /><sub><b>pixiake</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=pixiake" title="Documentation">📖</a></td>
   </tr>
 </table>
 

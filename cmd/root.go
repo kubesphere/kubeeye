@@ -25,7 +25,7 @@ var Verbose bool
 
 var rootCmd = &cobra.Command{
 	Use:   "ke",
-	Short: "Kubeye finds various problems on Kubernetes cluster.",
+	Short: "KubeEye finds various problems on Kubernetes cluster.",
 }
 
 func Execute() {

@@ -22,8 +22,8 @@ import (
 	"io"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"kubeye/pkg/config"
-	"kubeye/pkg/kube"
+	"kubeeye/pkg/config"
+	"kubeeye/pkg/kube"
 	"sort"
 )
 
@@ -81,7 +81,7 @@ func parseCheck(rawBytes []byte) (config.SchemaCheck, error) {
 			if err == io.EOF {
 				return check, nil
 			}
-			return check, fmt.Errorf("Decoding schema kubeye failed: %v", err)
+			return check, fmt.Errorf("Decoding schema KubeEye failed: %v", err)
 		}
 	}
 }
