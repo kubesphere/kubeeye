@@ -14,13 +14,13 @@ install-packr2:
 
 ke: install-packr2
 
-# install kubeye
+# install KubeEye
 install: ke
 	mv ${BINARY} /usr/local/bin/
 
 clean:
 	rm ${BINARY}
 
-# uninstall kubeye from local computer
+# uninstall KubeEye from local computer
 uninstall:
 	rm /usr/local/bin/${BINARY} 2> /dev/null

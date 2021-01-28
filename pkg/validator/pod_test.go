@@ -16,9 +16,9 @@ package validator
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
-	conf "kubeye/pkg/config"
-	"kubeye/pkg/kube"
-	"kubeye/test"
+	conf "kubeeye/pkg/config"
+	"kubeeye/pkg/kube"
+	"kubeeye/test"
 	"testing"
 )
 

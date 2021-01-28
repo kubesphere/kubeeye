@@ -16,7 +16,7 @@ package kube
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
-	"kubeye/test"
+	"kubeeye/test"
 	"testing"
 )
 

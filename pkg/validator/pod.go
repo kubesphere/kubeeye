@@ -17,8 +17,8 @@ package validator
 import (
 	"context"
 	"github.com/pkg/errors"
-	"kubeye/pkg/config"
-	"kubeye/pkg/kube"
+	"kubeeye/pkg/config"
+	"kubeeye/pkg/kube"
 	"time"
 )
 

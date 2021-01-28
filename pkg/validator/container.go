@@ -17,8 +17,8 @@ package validator
 import (
 	"context"
 	corev1 "k8s.io/api/core/v1"
-	"kubeye/pkg/config"
-	"kubeye/pkg/kube"
+	"kubeeye/pkg/config"
+	"kubeeye/pkg/kube"
 )
 
 //ValidateContainer validates a single container from a given controller
