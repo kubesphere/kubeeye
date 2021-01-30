@@ -3,12 +3,16 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
+![kubeeye-logo](./docs/images/kubeeye-logo.png?raw=true)
+
+> English | [中文](README_zh.md)
+
 KubeEye aims to find various problems on Kubernetes, such as application misconfiguration(using [Polaris](https://github.com/FairwindsOps/polaris)), cluster components unhealthy and node problems(using [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)). Besides predefined rules, it also supports custom defined rules.
 
 ## Architecture
 KubeEye gets cluster diagnostic data by calling the Kubernetes API, by regular matching of key error messages in logs and by rule matching of container syntax. See Architecture for details.
 
-![Image](./docs/KubeEye-Architecture.jpg?raw=true)
+![kubeeye-architecture](./docs/images/kubeeye-architecture.png?raw=true)
 
 ## How to use
 -  Install KubeEye on your machine 
