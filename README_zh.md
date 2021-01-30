@@ -1,3 +1,7 @@
+![kubeeye-logo](./docs/images/kubeeye-logo.png?raw=true)
+
+> English | [中文](README_zh.md)
+
 # KubeEye
 
 KubeEye 旨在发现 Kubernetes 上的各种问题，比如应用配置错误（使用[Polaris](https://github.com/FairwindsOps/polaris)）、集群组件不健康和节点问题（使用[Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)）。除了预定义的规则，它还支持自定义规则。
@@ -5,7 +9,8 @@ KubeEye 旨在发现 Kubernetes 上的各种问题，比如应用配置错误（
 ## 架构图
 
 KubeEye 通过调用Kubernetes API，通过常规匹配日志中的关键错误信息和容器语法的规则匹配来获取集群诊断数据，详见架构。
-![Image](./docs/KubeEye-Architecture.jpg?raw=true)
+
+![kubeeye-architecture](./docs/images/kubeeye-architecture.png?raw=true)
 
 ## 怎么使用
 
