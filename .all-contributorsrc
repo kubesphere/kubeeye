@@ -10,7 +10,7 @@
   "commit": true,
   "commitConvention": "none",
   "contributors": [
-  {
+    {
       "login": "Forest-L",
       "name": "Forest",
       "avatar_url": "https://avatars.githubusercontent.com/u/50984129?v=4",
@@ -43,6 +43,15 @@
       "name": "pixiake",
       "avatar_url": "https://avatars.githubusercontent.com/u/22290449?v=4",
       "profile": "https://github.com/pixiake",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "FeynmanZhou",
+      "name": "pengfei",
+      "avatar_url": "https://avatars.githubusercontent.com/u/40452856?v=4",
+      "profile": "https://kubesphere.io",
       "contributions": [
         "doc"
       ]
