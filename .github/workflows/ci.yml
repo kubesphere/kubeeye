@@ -1,15 +1,10 @@
-name: Test
+name: ci
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [push, pull_request]
 
 jobs:
-
   build:
-    name: Test
+    name: ci
     runs-on: ubuntu-latest
     env:
       GO111MODULE: on
