@@ -9,7 +9,7 @@ test: fmt
 	GO111MODULE=on go test -v ./pkg/...
 
 install-packr2:
-	GO111MODULE=on GOPROXY=https://proxy.golang.org CGO_ENABLED=0 go get -u github.com/gobuffalo/packr/v2/packr2
+	GO111MODULE=on GOPROXY=https://goproxy.io CGO_ENABLED=0 go get -u github.com/gobuffalo/packr/v2/packr2
 	$(GOBIN)/packr2 build -a -o ${BINARY} *.go
 
 ke: install-packr2
