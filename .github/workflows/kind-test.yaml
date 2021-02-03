@@ -19,6 +19,7 @@ jobs:
         uses: helm/kind-action@v1.0.0-rc.1
       - name: Run KubeEye
         run: |
-          rm -rf temp & mkdir temp
+          rm -rf temp
+          mkdir temp
           mv ke temp/
           ./temp/ke diag
