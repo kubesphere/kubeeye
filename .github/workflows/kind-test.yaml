@@ -16,7 +16,7 @@ jobs:
       - name: Build KubeEye
         run: make ke
       - name: Creating kind cluster
-        uses: helm/kind-action@v1.0.0-rc.1
+        uses: helm/kind-action@v1.1.0
       - name: Run KubeEye
         run: |
           rm -rf temp
