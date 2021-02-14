@@ -22,6 +22,8 @@ import (
 	"kubeeye/pkg/validator"
 )
 
+var npdImage string
+
 var addCmd = &cobra.Command{
 	Use:   "install npd",
 	Short: "install the npd",
@@ -36,4 +38,5 @@ var addCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(addCmd)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	auditCmd.Flags().StringVarP(&npdImage, "image", "i", "k8s.gcr.io/node-problem-detector:v0.8.1", "Customize npd image")
 }
