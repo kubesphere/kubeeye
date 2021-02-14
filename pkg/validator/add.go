@@ -29,12 +29,19 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"text/template"
 )
 
 var configBox = (*packr.Box)(nil)
 
-func Add(ctx context.Context) error {
+type ImageName struct {
+	NpdImage string
+}
+
+func Add(ctx context.Context, npdImage string) error {
 	var rawBytes []byte
+
+	imageName := ImageName{ NpdImage: npdImage }
 
 	// configMap create
 	rawBytes, err := getConfigBox().Find("npd-rule.yaml")
@@ -80,11 +87,24 @@ func Add(ctx context.Context) error {
 		return errors.Wrap(err4, "Failed to create clusterRoleBinding")
 	}
 	// daemonSet create
-	dsBytes, err := getConfigBox().Find("daemonSet.yaml")
+	var tplWriter bytes.Buffer
+	dsTmplString, err := getConfigBox().FindString("daemonSet.yaml")
 	if err != nil {
 		return errors.Wrap(err, "Failed to get daemonSet.yaml")
 	}
-	ds := dsParse(dsBytes)
+
+	dsTemplate, err := template.New("npd").Parse(dsTmplString)
+	if dsTemplate == nil || err != nil{
+		return errors.Wrap(err, "Failed to get daemonSet.yaml template")
+	}
+	err = dsTemplate.Execute(&tplWriter, imageName)
+	if err != nil{
+		return errors.Wrap(err, "Failed to render daemonSet.yaml template")
+	}
+
+	tplWriter.Bytes()
+
+	ds := dsParse(tplWriter.Bytes())
 	_, err5 := createDaemonSet(ctx, ds)
 	if err5 != nil {
 		return errors.Wrap(err5, "Failed to create daemonSet")

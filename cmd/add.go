@@ -28,7 +28,7 @@ var addCmd = &cobra.Command{
 	Use:   "install npd",
 	Short: "install the npd",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := validator.Add(cmd.Context())
+		err := validator.Add(cmd.Context(), npdImage)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -38,5 +38,5 @@ var addCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(addCmd)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	auditCmd.Flags().StringVarP(&npdImage, "image", "i", "k8s.gcr.io/node-problem-detector:v0.8.1", "Customize npd image")
+	addCmd.Flags().StringVarP(&npdImage, "image", "i", "k8s.gcr.io/node-problem-detector:v0.8.1", "Customize npd image")
 }
