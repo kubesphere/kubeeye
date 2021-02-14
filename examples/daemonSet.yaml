@@ -22,7 +22,7 @@ spec:
             - --logtostderr
             - --apiserver-wait-timeout=10s
             - --config.system-log-monitor=/config/kernel-monitor.json,/config/docker-monitor.json
-          image: k8s.gcr.io/node-problem-detector:v0.8.1
+          image: {{.NpdImage}}
           resources:
             limits:
               cpu: 10m
