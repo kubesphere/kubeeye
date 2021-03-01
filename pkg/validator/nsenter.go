@@ -103,25 +103,6 @@ func createNtpPodSet(ctx context.Context, conf *v1.Pod) (*v1.Pod, error) {
 	return nil, nil
 }
 
-func deleteNtpPodSet(ctx context.Context, conf *v1.Pod) (*v1.Pod, error) {
-	kubeConf, configError := config.GetConfig()
-
-	if configError != nil {
-		logrus.Errorf("Error fetching KubeConfig: %v", configError)
-		return nil, configError
-	}
-
-	api, err1 := kubernetes.NewForConfig(kubeConf)
-	if err1 != nil {
-		logrus.Errorf("Error fetching api: %v", err1)
-		return nil, err1
-	}
-
-	deleteOpts := metav1.DeleteOptions{}
-	api.CoreV1().Pods(conf.ObjectMeta.Namespace).Delete(ctx, conf.ObjectMeta.Name, deleteOpts)
-	fmt.Println("Delete Ntp")
-	return nil, nil
-}
 func podParse(rawBytes []byte) *v1.Pod {
 	reader := bytes.NewReader(rawBytes)
 	var conf *v1.Pod
