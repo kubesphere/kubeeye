@@ -8,12 +8,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"io"
-	v1 "k8s.io/api/core/v1"
+	ds "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 	"os/exec"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"strings"
 	"text/template"
 	"time"
 )
@@ -47,7 +48,7 @@ func CheckNtp(ctx context.Context, ntpImage string) error {
 	pod := podParse(tplWriter.Bytes())
 
 	//Create ntp
-	_, err5 := createNtpPodSet(ctx, pod)
+	_, err5 := createNtpDsSet(ctx, pod)
 	if err5 != nil {
 		return errors.Wrap(err5, "Failed to create ntp")
 	}
@@ -61,7 +62,7 @@ func getNtpBox() *packr.Box {
 	return ntpBox
 }
 
-func createNtpPodSet(ctx context.Context, conf *v1.Pod) (*v1.Pod, error) {
+func createNtpDsSet(ctx context.Context, conf *ds.DaemonSet) (*ds.DaemonSet, error) {
 	kubeConf, configError := config.GetConfig()
 
 	if configError != nil {
@@ -77,35 +78,50 @@ func createNtpPodSet(ctx context.Context, conf *v1.Pod) (*v1.Pod, error) {
 	listOpts := metav1.CreateOptions{}
 	getOpts := metav1.GetOptions{}
 	deleteOpts := metav1.DeleteOptions{}
-	_, err2 := api.CoreV1().Pods(conf.ObjectMeta.Namespace).Get(ctx, conf.ObjectMeta.Name, getOpts)
+	_, err2 := api.AppsV1().DaemonSets(conf.ObjectMeta.Namespace).Get(ctx, conf.ObjectMeta.Name, getOpts)
 	if err2 != nil {
 		fmt.Println("Installing Ntp ...")
-		_, err3 := api.CoreV1().Pods(conf.ObjectMeta.Namespace).Create(ctx, conf, listOpts)
+		_, err3 := api.AppsV1().DaemonSets(conf.ObjectMeta.Namespace).Create(ctx, conf, listOpts)
 		if err3 != nil {
 			return nil, err3
 		}
 		fmt.Println("Ntp Installation is successful. ")
 		for i := 10; i > 0; i-- {
-			status, err4 := api.CoreV1().Pods(conf.ObjectMeta.Namespace).Get(ctx, conf.ObjectMeta.Name, getOpts)
+			status, err4 := api.AppsV1().DaemonSets(conf.ObjectMeta.Namespace).Get(ctx, conf.ObjectMeta.Name, getOpts)
 			if err4 != nil {
 				return nil, err4
 			}
 			time.Sleep(time.Second * 5)
-			if status.Status.Phase == "Running" {
-				output, _ := exec.Command("/bin/sh", "-c", "/usr/local/bin/kubectl logs ntp").CombinedOutput()
-				fmt.Println(string(output))
-				api.CoreV1().Pods(conf.ObjectMeta.Namespace).Delete(ctx, conf.ObjectMeta.Name, deleteOpts)
+
+			if status.Status.DesiredNumberScheduled == status.Status.NumberReady {
+				var podNames []string
+				var nodeNames []string
+				output, _ := exec.Command("/bin/sh", "-c", fmt.Sprintf("/usr/local/bin/kubectl --no-headers=true get pod -o wide | grep ntp | awk '{print $7}'")).CombinedOutput()
+				nodeNames = strings.Split(string(output), "\n")
+				//nodeNames = append(nodeNames,string(output))
+				output1, _ := exec.Command("/bin/sh", "-c", fmt.Sprintf("/usr/local/bin/kubectl get pod | grep ntp | awk '{print $1}'")).CombinedOutput()
+				podNames = strings.Split(string(output1), "\n")
+				for i := 0; i < len(podNames)-1; i++ {
+					output2, _ := exec.Command("/bin/sh", "-c", fmt.Sprintf("/usr/local/bin/kubectl logs %s", podNames[i])).CombinedOutput()
+					fmt.Println(fmt.Sprintf("%s:", strings.TrimRight(string(nodeNames[i]), "\n")))
+					fmt.Println(string(output2))
+					time.Sleep(time.Millisecond * 500)
+				}
+
+				api.AppsV1().DaemonSets(conf.ObjectMeta.Namespace).Delete(ctx, conf.ObjectMeta.Name, deleteOpts)
 				break
 			}
 		}
 		return nil, err3
+	} else {
+		fmt.Println("Please delete NTP service and try again.")
 	}
 	return nil, nil
 }
 
-func podParse(rawBytes []byte) *v1.Pod {
+func podParse(rawBytes []byte) *ds.DaemonSet {
 	reader := bytes.NewReader(rawBytes)
-	var conf *v1.Pod
+	var conf *ds.DaemonSet
 	d := yaml.NewYAMLOrJSONDecoder(reader, 4096)
 	for {
 		if err := d.Decode(&conf); err != nil {
