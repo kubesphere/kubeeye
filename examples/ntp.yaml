@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ntp
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      name: ntp-check
+  template:
+    metadata:
+      labels:
+        name: ntp-check
+    spec:
+      containers:
+      - command: ["sh"]
+        args: ["-c", "cp /tmp/check_ntp.sh /tmp/ntp; echo 'chmod +x /tmp/ntp/check_ntp.sh && sh /tmp/ntp/check_ntp.sh' | nsenter -t 1 -m -u -i -n;sleep 600"]
+        image: {{.NtpImage}}
+        name: ntp
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: ntpdir
+          mountPath: /tmp/ntp
+      hostIPC: true
+      hostNetwork: true
+      hostPID: true
+      volumes:
+      - name: ntpdir
+        hostPath:
+          path: /tmp/ntp
