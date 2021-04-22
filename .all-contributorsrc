@@ -55,6 +55,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "RealHarshThakur",
+      "name": "Harsh Thakur",
+      "avatar_url": "https://avatars.githubusercontent.com/u/38140305?v=4",
+      "profile": "https://github.com/RealHarshThakur",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
