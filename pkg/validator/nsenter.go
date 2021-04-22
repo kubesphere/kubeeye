@@ -4,19 +4,22 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"os/exec"
+	"strings"
+	"text/template"
+	"time"
+
 	"github.com/gobuffalo/packr/v2"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"io"
+
 	ds "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
-	"os/exec"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"strings"
-	"text/template"
-	"time"
 )
 
 var ntpBox = (*packr.Box)(nil)

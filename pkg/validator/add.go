@@ -18,18 +18,21 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"text/template"
+
 	packr "github.com/gobuffalo/packr/v2"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"io"
+
 	ds "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"text/template"
 )
 
 var configBox = (*packr.Box)(nil)
@@ -41,7 +44,7 @@ type ImageName struct {
 func Add(ctx context.Context, npdImage string) error {
 	var rawBytes []byte
 
-	imageName := ImageName{ NpdImage: npdImage }
+	imageName := ImageName{NpdImage: npdImage}
 
 	// configMap create
 	rawBytes, err := getConfigBox().Find("npd-rule.yaml")
@@ -94,11 +97,11 @@ func Add(ctx context.Context, npdImage string) error {
 	}
 
 	dsTemplate, err := template.New("npd").Parse(dsTmplString)
-	if dsTemplate == nil || err != nil{
+	if dsTemplate == nil || err != nil {
 		return errors.Wrap(err, "Failed to get daemonSet.yaml template")
 	}
 	err = dsTemplate.Execute(&tplWriter, imageName)
-	if err != nil{
+	if err != nil {
 		return errors.Wrap(err, "Failed to render daemonSet.yaml template")
 	}
 
