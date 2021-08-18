@@ -22,6 +22,10 @@ KubeEye gets cluster diagnostic data by calling the Kubernetes API, by regular m
     ```shell
     git clone https://github.com/kubesphere/kubeeye.git
     cd kubeeye 
+    make ke
+    ```
+    Install ke to /usr/local/bin/
+    ```shell
     make install
     ```
    
