@@ -22,7 +22,7 @@ KubeEye 通过调用Kubernetes API，通过常规匹配日志中的关键错误�
   cd kubeeye 
   make install
   ```
-- [可选] 安装 Node-problem-Detector  
+- [可选] 安装 [Node-problem-Detector](https://github.com/kubernetes/node-problem-detector)
 注意：这一行将在你的集群上安装 npd，只有当你想要详细的报告时才需要。  
 `ke install npd`  
 
