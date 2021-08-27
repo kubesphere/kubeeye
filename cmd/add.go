@@ -17,9 +17,10 @@ package cmd
 import (
 	"flag"
 	"fmt"
+
+	"github.com/kubesphere/Kubeeye/pkg/validator"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"kubeeye/pkg/validator"
 )
 
 var npdImage string
