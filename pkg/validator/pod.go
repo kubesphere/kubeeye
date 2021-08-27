@@ -16,69 +16,46 @@ package validator
 
 import (
 	"context"
-	"github.com/pkg/errors"
-	"kubeeye/pkg/config"
-	"kubeeye/pkg/kube"
-	"time"
+	"sync"
+
+	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/regorules"
+	"github.com/open-policy-agent/opa/rego"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func ValidatePods(ctx context.Context, conf *config.Configuration, kubeResource *kube.ResourceProvider) ([]PodResult, error) {
+func ValidatePods(ctx context.Context, kubeResources *kube.ResourceProvider, wg *sync.WaitGroup) {
 	//controllers value includ kind(pod, daemonset, deployment), podSpec, ObjectMeta and OriginalObjectJSON
-	podToAudit := kubeResource.Controllers
+	workloadsToAudit := kubeResources.Workloads
 
-	results := []PodResult{}
-
-	for _, pod := range podToAudit {
-		result, err := ValidatePod(ctx, conf, pod)
-		var messages []string
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed to get result")
+	for _, workload := range workloadsToAudit {
+		// set resource name, kind, namespace
+		result := regorules.Result{
+			Name:      workload.ObjectMeta.GetName(),
+			Namespace: workload.ObjectMeta.GetNamespace(),
+			Kind:      workload.Kind,
 		}
 
-		if len(result.ContainerResults[0].Results) == 0 || result.ContainerResults == nil {
-			continue
-		}
+		// go through the list of rules
+		// work by goroutine, get OPA check results.
+		wg.Add(1)
+		go func(ctx context.Context, rules regorules.RulesList, pod corev1.Pod, result regorules.Result) {
 
-		for key, _ := range result.ContainerResults[0].Results {
-			messages = append(messages, key)
-		}
-		for key1, value1 := range result.Results {
-			if value1.Success == false {
-				messages = append(messages, key1)
+			for _, rule := range rules.Rules {
+				regoRule := rule.Rule                                                                                   //get the rule
+				queryRule := "data." + rule.Pkg + ".allow"                                                              //set the query rule
+				query, _ := rego.New(rego.Query(queryRule), rego.Module("examples.rego", regoRule)).PrepareForEval(ctx) //creat a rego and execute rego query
+				results, err := query.Eval(ctx, rego.EvalInput(pod))                                                    // execute rego evaluation
+				if err != nil {
+					panic(err)
+				}
+
+				if results[0].Expressions[0].Value == true { // if the rego evaluation result is true, that means something should be set or not should be set, put result into the struck of Result.
+					//rule.PromptMessage = rule.PromptMessage + "\t"
+					result.PromptMessage = append(result.PromptMessage, rule.PromptMessage)
+				}
 			}
-		}
-		result.Message = messages
-		result.Severity = "Warning"
-		results = append(results, result)
+			resultChan <- result
+		}(ctx, regorules.PodRulelist, workload.Pod, result)
 	}
-	return results, nil
-}
-
-func ValidatePod(ctx context.Context, c *config.Configuration, pod kube.GenericWorkload) (PodResult, error) {
-	podResults, err := applyPodSchemaChecks(c, pod)
-	if err != nil {
-		return PodResult{}, err
-	}
-
-	pRes := PodResult{
-		Results:          podResults,
-		ContainerResults: []ContainerResult{},
-	}
-
-	pRes.ContainerResults, err = ValidateAllContainers(ctx, c, pod)
-	if err != nil {
-		return pRes, err
-	}
-
-	result := PodResult{
-		CreatedTime:      time.Now().Format(time.RFC3339),
-		Kind:             pod.Kind,
-		Name:             pod.ObjectMeta.GetName(),
-		Namespace:        pod.ObjectMeta.GetNamespace(),
-		ContainerResults: pRes.ContainerResults,
-		Results:          podResults,
-		Severity:         "Warning",
-	}
-	return result, nil
-
 }

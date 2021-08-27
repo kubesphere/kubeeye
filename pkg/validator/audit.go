@@ -17,37 +17,37 @@ package validator
 import (
 	"context"
 	"fmt"
+	"sync"
+
+	"github.com/kubesphere/kubeeye/regorules"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	certutil "k8s.io/client-go/util/cert"
-	conf "kubeeye/pkg/config"
-	"kubeeye/pkg/kube"
+
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
+
+	"github.com/kubesphere/kubeeye/pkg/kube"
 )
 
-func Cluster(configuration string, ctx context.Context, allInformation bool) error {
-	k, err := kube.CreateResourceProvider(ctx)
+var resultChan = make(chan regorules.Result)
+
+func Cluster(ctx context.Context) error {
+	resources, err := kube.CreateResourceProvider(ctx)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get cluster information")
 	}
 
-	basicComponentStatus, err1 := ComponentStatusResult(k.ComponentStatus)
-	if err1 != nil {
-		return errors.Wrap(err1, "Failed to get BasicComponentStatus information")
-	}
-
-	clusterCheckResults, err2 := ProblemDetectorResult(k.ProblemDetector)
+	clusterCheckResults, err2 := ProblemDetectorResult(resources.ProblemDetector)
 	if err2 != nil {
 		return errors.Wrap(err2, "Failed to get clusterCheckResults information")
 	}
 
-	nodeStatus, err3 := NodeStatusResult(k.Nodes)
+	nodeStatus, err3 := NodeStatusResult(resources.Nodes)
 	if err3 != nil {
 		return errors.Wrap(err3, "Failed to get nodeStatus information")
 	}
@@ -75,24 +75,26 @@ func Cluster(configuration string, ctx context.Context, allInformation bool) err
 		}
 	}
 
-	var config conf.Configuration
-	var goodPractice []PodResult
-	if len(configuration) != 0 {
-		fp, err := filepath.Abs(configuration)
-		if err != nil {
-			return errors.Wrap(err, "Failed to look up current directory")
-		}
-		config1, err := conf.ParseFile1(fp)
-		goodPractice1, err := ValidatePods(ctx, &config1, k)
-		goodPractice = append(goodPractice, goodPractice1...)
+	wg := &sync.WaitGroup{}
+	defer close(resultChan)
 
-	}
-	config, err = conf.ParseFile()
-	goodPractice2, err := ValidatePods(ctx, &config, k)
-	goodPractice = append(goodPractice, goodPractice2...)
-	if err != nil {
-		errors.Wrap(err, "Failed to get goodPractice information")
-	}
+	ValidatePods(ctx, resources, wg)
+
+	var podResults regorules.ResultsList
+	// get results by goroutine
+	go func(resultChan chan regorules.Result, podResults *regorules.ResultsList) {
+		for {
+			select {
+			case result := <-resultChan:
+				podResults.Results = append(podResults.Results, result)
+				wg.Done()
+			}
+		}
+
+	}(resultChan, &podResults)
+	wg.Wait()
+
+	goodPractice := podResults.Results
 
 	w := tabwriter.NewWriter(os.Stdout, 10, 4, 3, ' ', 0)
 	if len(nodeStatus) != 0 {
@@ -104,20 +106,6 @@ func Cluster(configuration string, ctx context.Context, allInformation bool) err
 				nodestatus.HeartbeatTime.Format(time.RFC3339),
 				nodestatus.Reason,
 				nodestatus.Message,
-			)
-			fmt.Fprintln(w, s)
-			continue
-		}
-	}
-
-	if len(basicComponentStatus) != 0 {
-		fmt.Fprintln(w, "\nNAME\tSEVERITY\tTIME\tMESSAGE")
-		for _, basiccomponentStatus := range basicComponentStatus {
-			s := fmt.Sprintf("%s\t%s\t%s\t%-8v",
-				basiccomponentStatus.Name,
-				basiccomponentStatus.Severity,
-				basiccomponentStatus.Time,
-				basiccomponentStatus.Message,
 			)
 			fmt.Fprintln(w, s)
 			continue
@@ -141,34 +129,13 @@ func Cluster(configuration string, ctx context.Context, allInformation bool) err
 	}
 
 	if len(goodPractice) != 0 {
-		fmt.Fprintln(w, "\nNAMESPACE\tSEVERITY\tNAME\tKIND\tTIME\tMESSAGE")
+		fmt.Fprintln(w, "\nNAMESPACE\tNAME\tKIND\tMESSAGE")
 		for _, goodpractice := range goodPractice {
-			var message []string
-			if allInformation {
-				for _, tmpMessage := range goodpractice.ContainerResults[0].Results {
-					message = append(message, tmpMessage.Message, "")
-				}
-				if len(goodpractice.Results) != 0 {
-					for _, tmpResult := range goodpractice.Results {
-						if tmpResult.Success == false {
-							message = append(message, tmpResult.Message, "")
-						}
-					}
-					message = message[:len(message)-1]
-				} else {
-					message = message[:len(message)-1]
-				}
-
-			} else {
-				message = goodpractice.Message
-			}
-			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%-8v",
+			s := fmt.Sprintf("%s\t%s\t%s\t%-8v",
 				goodpractice.Namespace,
-				goodpractice.Severity,
 				goodpractice.Name,
 				goodpractice.Kind,
-				goodpractice.CreatedTime,
-				message,
+				goodpractice.PromptMessage,
 			)
 			fmt.Fprintln(w, s)
 			continue
@@ -209,25 +176,6 @@ func Cluster(configuration string, ctx context.Context, allInformation bool) err
 	//os.Stdout.Write(outputBytes)
 	return nil
 
-}
-
-//Get kubernetes core component status result
-func ComponentStatusResult(cs []v1.ComponentStatus) ([]BasicComponentStatus, error) {
-	var crs []BasicComponentStatus
-	for i := 0; i < len(cs); i++ {
-		if strings.Contains(cs[i].Conditions[0].Message, "ok") == true || strings.Contains(cs[i].Conditions[0].Message, "true") == true {
-			continue
-		}
-
-		cr := BasicComponentStatus{
-			Time:     time.Now().Format(time.RFC3339),
-			Name:     cs[i].ObjectMeta.Name,
-			Message:  cs[i].Conditions[0].Message,
-			Severity: "Fatal",
-		}
-		crs = append(crs, cr)
-	}
-	return crs, nil
 }
 
 //Get kubernetes pod result
