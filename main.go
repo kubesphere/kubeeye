@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/kubesphere/Kubeeye/cmd"
+	"kubeeye/cmd"
 )
 
 func main() {

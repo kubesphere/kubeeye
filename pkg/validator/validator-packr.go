@@ -3,6 +3,6 @@
 
 // You can use the "packr clean" command to clean up this,
 // and any other packr generated files.
-package config
+package validator
 
 import _ "kubeeye/packrd"

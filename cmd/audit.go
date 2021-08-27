@@ -17,17 +17,19 @@ package cmd
 import (
 	"flag"
 	"fmt"
-
-	"github.com/kubesphere/Kubeeye/pkg/validator"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"kubeeye/pkg/validator"
 )
 
+var config string
+var allInformation bool
+
 var auditCmd = &cobra.Command{
-	Use:   "audit",
-	Short: "audit resources from the cluster",
+	Use:   "diag",
+	Short: "diagnostic information from the cluster",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := validator.Cluster(cmd.Context())
+		err := validator.Cluster(config, cmd.Context(), allInformation)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -37,4 +39,6 @@ var auditCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(auditCmd)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	auditCmd.Flags().StringVarP(&config, "filename", "f", "", "Customize best practice configuration")
+	auditCmd.Flags().BoolVarP(&allInformation, "all", "A", false, "Show more specific information")
 }

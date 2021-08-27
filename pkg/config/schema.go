@@ -16,7 +16,6 @@ package config
 
 import (
 	"encoding/json"
-
 	"github.com/qri-io/jsonschema"
 	corev1 "k8s.io/api/core/v1"
 )
