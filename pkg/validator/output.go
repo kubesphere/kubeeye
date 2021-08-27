@@ -15,8 +15,8 @@
 package validator
 
 import (
+	"github.com/kubesphere/kubeeye/pkg/config"
 	corev1 "k8s.io/api/core/v1"
-	"kubeeye/pkg/config"
 	"time"
 )
 

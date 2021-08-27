@@ -5,4 +5,4 @@
 // and any other packr generated files.
 package config
 
-import _ "kubeeye/packrd"
+import _ "github.com/gobuffalo/packr/v2"
