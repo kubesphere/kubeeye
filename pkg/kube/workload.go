@@ -16,74 +16,53 @@ package kube
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+
 	"github.com/sirupsen/logrus"
-	kubeAPICoreV1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	kubeAPIMetaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 )
 
-type GenericWorkload struct {
-	Kind               string
-	PodSpec            kubeAPICoreV1.PodSpec
-	ObjectMeta         kubeAPIMetaV1.Object
-	OriginalObjectJSON []byte
+func LoadWorkloads(ctx context.Context, pods *corev1.PodList, dynamicREST *dynamic.Interface, restMapper *meta.RESTMapper) ([]Workload, error) {
+	var workloads []Workload
+	for _, pod := range pods.Items {
+		workload := getWorkLoad(pod, dynamicREST, restMapper, ctx)
+		workloads = append(workloads, workload)
+	}
+	return removeDuplicateWorkloads(workloads), nil
 }
 
-func NewGenericWorkload(ctx context.Context, podResource kubeAPICoreV1.Pod, dynamicClient *dynamic.Interface, restMapper *meta.RESTMapper, objectCache map[string]unstructured.Unstructured) (GenericWorkload, error) {
-	workload, err := newGenericWorkload(ctx, podResource, dynamicClient, restMapper, objectCache)
-	if err != nil {
-		return workload, err
-	}
-	if len(workload.OriginalObjectJSON) == 0 {
-		return NewGenericWorkloadFromPod(podResource, podResource)
-	}
-	return workload, err
-}
-func NewGenericWorkloadFromPod(podResource kubeAPICoreV1.Pod, originalObject interface{}) (GenericWorkload, error) {
-	workload := GenericWorkload{
+func getWorkLoad(pod corev1.Pod, dynamicREST *dynamic.Interface, restMapper *meta.RESTMapper, ctx context.Context) Workload {
+	objectCache := map[string]unstructured.Unstructured{}
+	// set default kind to Pod.
+	workload := Workload{
 		Kind:       "Pod",
-		PodSpec:    podResource.Spec,
-		ObjectMeta: podResource.ObjectMeta.GetObjectMeta(),
+		Pod:        pod,
+		PodSpec:    pod.Spec,
+		ObjectMeta: pod.ObjectMeta.GetObjectMeta(),
 	}
-	if originalObject != nil {
-		bytes, err := json.Marshal(originalObject)
-		if err != nil {
-			return workload, err
-		}
-		workload.OriginalObjectJSON = bytes
-	}
-	return workload, nil
-}
-func newGenericWorkload(ctx context.Context, podResource kubeAPICoreV1.Pod, dynamicClient *dynamic.Interface, restMapper *meta.RESTMapper, objectCache map[string]unstructured.Unstructured) (GenericWorkload, error) {
-	workload, err := NewGenericWorkloadFromPod(podResource, nil)
-	if err != nil {
-		return workload, err
-	}
-	// If an owner exists then set the name to the workload.
-	// This allows us to handle CRDs creating Workloads or DeploymentConfigs in OpenShift.
+
 	owners := workload.ObjectMeta.GetOwnerReferences()
-	lastKey := ""
+
 	for len(owners) > 0 {
 		if len(owners) > 1 {
 			logrus.Warn("More than 1 owner found")
 		}
-		firstOwner := owners[0]
-		if firstOwner.Kind == "Node" {
+		if owners[0].Kind == "Node" {
 			break
 		}
-		workload.Kind = firstOwner.Kind
-		key := fmt.Sprintf("%s/%s/%s", firstOwner.Kind, workload.ObjectMeta.GetNamespace(), firstOwner.Name)
-		lastKey = key
+		workload.Kind = owners[0].Kind
+		key := fmt.Sprintf("%s/%s/%s", owners[0].Kind, pod.ObjectMeta.GetObjectMeta().GetNamespace(), owners[0].Name)
+
 		abstractObject, ok := objectCache[key]
 		if !ok {
-			err = cacheAllObjectsOfKind(ctx, firstOwner.APIVersion, firstOwner.Kind, dynamicClient, restMapper, objectCache)
+			err := cacheAllObjectsOfKind(ctx, owners[0].APIVersion, owners[0].Kind, dynamicREST, restMapper, objectCache)
 			if err != nil {
-				logrus.Warnf("Error caching objects of Kind %s %v", firstOwner.Kind, err)
+				logrus.Warnf("Error caching objects of Kind %s %v", owners[0].Kind, err)
 				break
 			}
 			abstractObject, ok = objectCache[key]
@@ -92,47 +71,48 @@ func newGenericWorkload(ctx context.Context, podResource kubeAPICoreV1.Pod, dyna
 				break
 			}
 		}
-
-		objMeta, err := meta.Accessor(&abstractObject)
-		if err != nil {
-			logrus.Warnf("Error retrieving parent metadata %s of API %s and Kind %s because of error: %v ", firstOwner.Name, firstOwner.APIVersion, firstOwner.Kind, err)
-			return workload, err
-		}
+		objMeta, _ := meta.Accessor(&abstractObject)
 		workload.ObjectMeta = objMeta
 		owners = abstractObject.GetOwnerReferences()
 	}
-
-	if lastKey != "" {
-		bytes, err := json.Marshal(objectCache[lastKey])
-		if err != nil {
-			return workload, err
-		}
-		workload.OriginalObjectJSON = bytes
-	} else {
-		bytes, err := json.Marshal(podResource)
-		if err != nil {
-			return workload, err
-		}
-		workload.OriginalObjectJSON = bytes
-	}
-	return workload, nil
+	return workload
 }
-func cacheAllObjectsOfKind(ctx context.Context, apiVersion, kind string, dynamicClient *dynamic.Interface, restMapper *meta.RESTMapper, objectCache map[string]unstructured.Unstructured) error {
-	fqKind := schema.FromAPIVersionAndKind(apiVersion, kind)
-	mapping, err := (*restMapper).RESTMapping(fqKind.GroupKind(), fqKind.Version)
+
+func cacheAllObjectsOfKind(ctx context.Context, apiVersion string, kind string, dynamicREST *dynamic.Interface, restMapper *meta.RESTMapper, objectCache map[string]unstructured.Unstructured) error {
+
+	fqkind := schema.FromAPIVersionAndKind(apiVersion, kind)
+	mapping, err := (*restMapper).RESTMapping(fqkind.GroupKind(), fqkind.Version)
 	if err != nil {
 		logrus.Warnf("Error retrieving mapping of API %s and Kind %s because of error: %v ", apiVersion, kind, err)
 		return err
 	}
-
-	objects, err := (*dynamicClient).Resource(mapping.Resource).Namespace("").List(ctx, kubeAPIMetaV1.ListOptions{})
+	objects, err := (*dynamicREST).Resource(mapping.Resource).Namespace("").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		logrus.Warnf("Error retrieving parent object API %s and Kind %s because of error: %v ", mapping.Resource.Version, mapping.Resource.Resource, err)
 		return err
 	}
+
 	for idx, object := range objects.Items {
 		key := fmt.Sprintf("%s/%s/%s", object.GetKind(), object.GetNamespace(), object.GetName())
 		objectCache[key] = objects.Items[idx]
 	}
 	return nil
+}
+
+func removeDuplicateWorkloads(workloads []Workload) []Workload {
+	workloadsList := make(map[string]Workload)
+	for _, workload := range workloads {
+		key := workload.ObjectMeta.GetNamespace() + "/" + workload.Kind + workload.ObjectMeta.GetName()
+		_, ok := workloadsList[key]
+		if !ok {
+			workloadsList[key] = workload
+		}
+	}
+
+	var NewWorkloads []Workload
+	for _, workload := range workloadsList {
+		NewWorkloads = append(NewWorkloads, workload)
+	}
+
+	return NewWorkloads
 }
