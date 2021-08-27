@@ -2,9 +2,8 @@ package cmd
 
 import (
 	"fmt"
-
-	"github.com/kubesphere/Kubeeye/pkg/validator"
 	"github.com/spf13/cobra"
+	"kubeeye/pkg/validator"
 )
 
 var ntpImage string
