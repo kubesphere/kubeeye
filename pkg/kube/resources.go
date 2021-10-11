@@ -15,25 +15,94 @@
 package kube
 
 import (
-	"context"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/restmapper"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
+
+var K8sResourcesChan = make(chan K8SResource)
+var RegoRulesListChan = make(chan RegoRulesList)
+var ResultChan = make(chan ValidateResult)
+var DeploymentsResultsChan = make(chan DeploymentsValidateResults)
+var DaemonSetsResultsChan = make(chan DaemonSetsValidateResults)
+var StatefulSetsResultsChan = make(chan StatefulSetsValidateResults)
+var JobsResultsChan = make(chan JobsValidateResults)
+var CronjobsResultsChan = make(chan CronjobsValidateResults)
+var RolesResultsChan = make(chan RolesValidateResults)
+var ClusterRolesResultsChan = make(chan ClusterRolesValidateResults)
+
+type K8SResource struct {
+	ServerVersion   string
+	CreationTime    time.Time
+	AuditAddress    string
+	Nodes           *corev1.NodeList
+	Namespaces      []unstructured.Unstructured
+	Deployments		[]unstructured.Unstructured
+	DaemonSets		[]unstructured.Unstructured
+	StatefulSets	[]unstructured.Unstructured
+	Jobs			[]unstructured.Unstructured
+	CronJobs		[]unstructured.Unstructured
+	Roles 			[]unstructured.Unstructured
+	ClusterRoles    []unstructured.Unstructured
+	ProblemDetector []corev1.Event
+}
+
+type RegoRulesList struct {
+	RegoRules []string
+}
 
 type Workload struct {
 	Kind       string
 	Pod        corev1.Pod
 	PodSpec    corev1.PodSpec
 	ObjectMeta metav1.Object
+}
+
+type ValidateResult struct {
+	Name		string
+	Namespace	string
+	Type    	string
+	Message 	string
+}
+
+type ResultReceiver struct {
+	Name		string `json:"name"`
+	Namespace	string	`json:"namespace,omitempty"`
+	Type    	string	`json:"kind"`
+	Message 	[]string	`json:"message"`
+	Reason      string  `json:"reason,omitempty"`
+}
+
+type DeploymentsValidateResults struct {
+	ValidateResults 	[]ResultReceiver
+}
+
+type DaemonSetsValidateResults struct {
+	ValidateResults 	[]ResultReceiver
+}
+
+type StatefulSetsValidateResults struct {
+	ValidateResults 	[]ResultReceiver
+}
+
+type JobsValidateResults struct {
+	ValidateResults 	[]ResultReceiver
+}
+
+type CronjobsValidateResults struct {
+	ValidateResults 	[]ResultReceiver
+}
+
+type RolesValidateResults struct {
+	ValidateResults 	[]ResultReceiver
+}
+
+type ClusterRolesValidateResults struct {
+	ValidateResults 	[]ResultReceiver
 }
 
 type ResourceProvider struct {
@@ -46,86 +115,4 @@ type ResourceProvider struct {
 	ConfigMap       []corev1.ConfigMap
 	ProblemDetector []corev1.Event
 	Workloads       []Workload
-}
-
-func CreateResourceProvider(ctx context.Context) (*ResourceProvider, error) {
-	return SetClient(ctx)
-}
-
-//Get kubeConfig
-func SetClient(ctx context.Context) (*ResourceProvider, error) {
-	kubeConf, configError := config.GetConfig()
-	if configError != nil {
-		logrus.Errorf("Error fetching KubeConfig: %v", configError)
-		return nil, configError
-	}
-
-	clientSet, err1 := kubernetes.NewForConfig(kubeConf)
-	if err1 != nil {
-		logrus.Errorf("Error fetching api: %v", err1)
-		return nil, err1
-	}
-
-	dynamicREST, err := dynamic.NewForConfig(kubeConf)
-	if err != nil {
-		logrus.Errorf("Error fetching dynamicInterface: %v", err)
-		return nil, err
-	}
-	return GetResources(ctx, clientSet, kubeConf.Host, &dynamicREST)
-}
-
-//Get serverVersion, nodes, namespaces, pods, problemDetectors, componentStatus, controllers
-func GetResources(ctx context.Context, clientSet kubernetes.Interface, auditAddress string, dynamicREST *dynamic.Interface) (*ResourceProvider, error) {
-	listOpts := metav1.ListOptions{}
-
-	serverVersion, err := clientSet.Discovery().ServerVersion()
-	if err != nil {
-		logrus.Errorf("Error fetching serverVersion: %v", err)
-		return nil, err
-	}
-
-	nodes, err := clientSet.CoreV1().Nodes().List(ctx, listOpts)
-	if err != nil {
-		logrus.Errorf("Error fetching nodes: %v", err)
-		return nil, err
-	}
-
-	namespaces, err := clientSet.CoreV1().Namespaces().List(ctx, listOpts)
-	if err != nil {
-		logrus.Errorf("Error fetching namespaces: %v", err)
-		return nil, err
-	}
-
-	pods, err := clientSet.CoreV1().Pods("").List(ctx, listOpts)
-	if err != nil {
-		logrus.Errorf("Error fetching pods: %v", err)
-		return nil, err
-	}
-
-	problemDetectors, _ := clientSet.CoreV1().Events("").List(ctx, listOpts)
-
-	APIGroupResources, err := restmapper.GetAPIGroupResources(clientSet.Discovery())
-	if err != nil {
-		logrus.Errorf("Error fetching resources: %v", err)
-		return nil, err
-	}
-	restMapper := restmapper.NewDiscoveryRESTMapper(APIGroupResources)
-
-	workloads, err := LoadWorkloads(ctx, pods, dynamicREST, &restMapper)
-	if err != nil {
-		logrus.Errorf("Error loading controllers from pods: %v", err)
-		return nil, err
-	}
-
-	resources := ResourceProvider{
-		ServerVersion:   serverVersion.Major + "." + serverVersion.Minor,
-		AuditAddress:    auditAddress,
-		CreationTime:    time.Now(),
-		Nodes:           nodes.Items,
-		Namespaces:      namespaces.Items,
-		Pods:            pods,
-		ProblemDetector: problemDetectors.Items,
-		Workloads:       workloads,
-	}
-	return &resources, nil
 }

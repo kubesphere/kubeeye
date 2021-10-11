@@ -17,37 +17,39 @@ package validator
 import (
 	"context"
 	"fmt"
-	"sync"
 
-	"github.com/kubesphere/kubeeye/regorules"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	certutil "k8s.io/client-go/util/cert"
 
-	"os"
 	"os/exec"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	"github.com/kubesphere/kubeeye/pkg/kube"
 )
 
-var resultChan = make(chan regorules.Result)
 
-func Cluster(ctx context.Context) error {
-	resources, err := kube.CreateResourceProvider(ctx)
-	if err != nil {
-		return errors.Wrap(err, "Failed to get cluster information")
-	}
 
-	clusterCheckResults, err2 := ProblemDetectorResult(resources.ProblemDetector)
+func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh string, output string) error {
+
+	go func(ctx context.Context,kubeconfig string) {
+		kube.GetK8SResourcesProvider(ctx, kubeconfig)
+	}(ctx, kubeconfig)
+
+	go func(additionalregoruleputh string) {
+		kube.GetRegoRules(additionalregoruleputh)
+	}(additionalregoruleputh)
+
+	defer close(kube.K8sResourcesChan)
+	k8sResources :=  <- kube.K8sResourcesChan
+	clusterCheckResults, err2 := ProblemDetectorResult(k8sResources.ProblemDetector)
 	if err2 != nil {
 		return errors.Wrap(err2, "Failed to get clusterCheckResults information")
 	}
 
-	nodeStatus, err3 := NodeStatusResult(resources.Nodes)
+	nodeStatus, err3 := NodeStatusResult(k8sResources.Nodes.Items)
 	if err3 != nil {
 		return errors.Wrap(err3, "Failed to get nodeStatus information")
 	}
@@ -55,9 +57,9 @@ func Cluster(ctx context.Context) error {
 	// Get kube-apiserver certificate expiration
 	var certExpires []Certificate
 	cmd := fmt.Sprintf("cat /etc/kubernetes/pki/%s", "apiserver.crt")
-	output, _ := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
-	if output != nil {
-		certs, _ := certutil.ParseCertsPEM([]byte(output))
+	combinedoutput, _ := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
+	if combinedoutput != nil {
+		certs, _ := certutil.ParseCertsPEM([]byte(combinedoutput))
 		if len(certs) != 0 {
 			certExpire := Certificate{
 				Name:     "kube-apiserver",
@@ -75,110 +77,23 @@ func Cluster(ctx context.Context) error {
 		}
 	}
 
-	wg := &sync.WaitGroup{}
-	defer close(resultChan)
+	// ValidateResources Validate Kubernetes Resource
+	ValidateResources(ctx,k8sResources)
 
-	ValidatePods(ctx, resources, wg)
-
-	var podResults regorules.ResultsList
-	// get results by goroutine
-	go func(resultChan chan regorules.Result, podResults *regorules.ResultsList) {
-		for {
-			select {
-			case result := <-resultChan:
-				podResults.Results = append(podResults.Results, result)
-				wg.Done()
-			}
-		}
-
-	}(resultChan, &podResults)
-	wg.Wait()
-
-	goodPractice := podResults.Results
-
-	w := tabwriter.NewWriter(os.Stdout, 10, 4, 3, ' ', 0)
-	if len(nodeStatus) != 0 {
-		fmt.Fprintln(w, "NODENAME\tSEVERITY\tHEARTBEATTIME\tREASON\tMESSAGE")
-		for _, nodestatus := range nodeStatus {
-			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%-8v",
-				nodestatus.Name,
-				nodestatus.Severity,
-				nodestatus.HeartbeatTime.Format(time.RFC3339),
-				nodestatus.Reason,
-				nodestatus.Message,
-			)
-			fmt.Fprintln(w, s)
-			continue
-		}
+	//defaultOutput(clusterCheckResults, nodeStatus, certExpires)
+	switch output {
+	case "JSON", "json", "Json":
+		JSONOutput(clusterCheckResults, nodeStatus, certExpires)
+	case "CSV","csv","Csv":
+		CSVOutput(clusterCheckResults, nodeStatus, certExpires)
+	default:
+		defaultOutput(clusterCheckResults, nodeStatus, certExpires)
 	}
 
-	if len(clusterCheckResults) != 0 {
-		fmt.Fprintln(w, "\nNAMESPACE\tSEVERITY\tPODNAME\tEVENTTIME\tREASON\tMESSAGE")
-		for _, clusterCheckResult := range clusterCheckResults {
-			s := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%-8v",
-				clusterCheckResult.Namespace,
-				clusterCheckResult.Severity,
-				clusterCheckResult.Name,
-				clusterCheckResult.EventTime.Format(time.RFC3339),
-				clusterCheckResult.Reason,
-				clusterCheckResult.Message,
-			)
-			fmt.Fprintln(w, s)
-			continue
-		}
-	}
-
-	if len(goodPractice) != 0 {
-		fmt.Fprintln(w, "\nNAMESPACE\tNAME\tKIND\tMESSAGE")
-		for _, goodpractice := range goodPractice {
-			s := fmt.Sprintf("%s\t%s\t%s\t%-8v",
-				goodpractice.Namespace,
-				goodpractice.Name,
-				goodpractice.Kind,
-				goodpractice.PromptMessage,
-			)
-			fmt.Fprintln(w, s)
-			continue
-		}
-	}
-	if len(certExpires) != 0 {
-		fmt.Fprintln(w, "\nNAME\tEXPIRES\tRESIDUAL")
-		for _, certExpire := range certExpires {
-			s := fmt.Sprintf("%s\t%s\t%-8v",
-				certExpire.Name,
-				certExpire.Expires,
-				certExpire.Residual,
-			)
-			fmt.Fprintln(w, s)
-			continue
-		}
-	}
-	w.Flush()
-
-	//auditData := AuditData{
-	//	AuditTime:       k.CreationTime.Format(time.RFC3339),
-	//	AuditAddress:      k.AuditAddress,
-	//BasicComponentStatus: basicComponentStatus,
-	//BasicClusterInformation: BasicClusterInformation{
-	//	K8sVersion:   k.ServerVersion,
-	//	PodNum:       len(k.Pods),
-	//	NodeNum:      len(k.Nodes),
-	//	NamespaceNum: len(k.Namespaces),
-	//},
-
-	//ClusterConfigurationResults: goodPractice,
-	//AllNodeStatusResults:        nodeStatus,
-	//ClusterCheckResults:         clusterCheckResults,
-	//}
-
-	//jsonBytes, err := json.Marshal(auditData)
-	//outputBytes, err := yaml.JSONToYAML(jsonBytes)
-	//os.Stdout.Write(outputBytes)
 	return nil
-
 }
 
-//Get kubernetes pod result
+// ProblemDetectorResult Get kubernetes pod result
 func ProblemDetectorResult(event []v1.Event) ([]ClusterCheckResults, error) {
 	var pdrs []ClusterCheckResults
 	for j := 0; j < len(event); j++ {
@@ -197,7 +112,7 @@ func ProblemDetectorResult(event []v1.Event) ([]ClusterCheckResults, error) {
 	return pdrs, nil
 }
 
-//Get kubernetes node status result
+//NodeStatusResult Get kubernetes node status result
 func NodeStatusResult(nodes []v1.Node) ([]AllNodeStatusResults, error) {
 	var nodestatus []AllNodeStatusResults
 	for k := 0; k < len(nodes); k++ {
