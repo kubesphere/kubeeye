@@ -13,7 +13,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v image tag not specified, do not use 'latest'.", [resourcename])
+        "Message": "ImageTagIsLatest"
     }
 }
 
@@ -35,7 +35,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v image tag not specified, do not use 'latest'.", [resourcename])
+        "Message": "ImageTagIsLatest"
     }
 }
 
@@ -56,7 +56,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v image tag not specified, do not use 'latest'.", [resourcename])
+        "Message": "ImageTagIsLatest"
     }
 }
 

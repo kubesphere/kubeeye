@@ -13,7 +13,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v have HighRisk capabilities.", [resourcename])
+        "Message": "HighRiskCapabilities"
     }
 }
 
@@ -40,7 +40,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v have HighRisk capabilities.", [resourcename])
+        "Message": "HighRiskCapabilities"
     }
 }
 
@@ -66,7 +66,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v have HighRisk capabilities.", [resourcename])
+        "Message": "HighRiskCapabilities"
     }
 }
 

@@ -13,7 +13,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v memory limits should be set.", [resourcename])
+        "Message": "NoMemoryLimits"
     }
 }
 
@@ -36,7 +36,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v memory limits should be set.", [resourcename])
+        "Message": "NoMemoryLimits"
     }
 }
 
@@ -58,7 +58,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v memory limits should be set.", [resourcename])
+        "Message": "NoMemoryLimits"
     }
 }
 

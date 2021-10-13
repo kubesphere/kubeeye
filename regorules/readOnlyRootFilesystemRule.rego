@@ -13,7 +13,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v root file system should be set read only.", [resourcename])
+        "Message": "NotReadOnlyRootFilesystem"
     }
 }
 
@@ -52,7 +52,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v root file system should be set read only.", [resourcename])
+        "Message": "NotReadOnlyRootFilesystem"
     }
 }
 
@@ -90,7 +90,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v root file system should be set read only.", [resourcename])
+        "Message": "NotReadOnlyRootFilesystem"
     }
 }
 

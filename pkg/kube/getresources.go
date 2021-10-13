@@ -24,7 +24,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func GetK8SResourcesProvider(ctx context.Context, kubeconfig string)  {
+// GetK8SResourcesProvider get kubeconfig by KubernetesAPI, get kubernetes resources by GetK8SResources.
+func GetK8SResourcesProvider(ctx context.Context, kubeconfig string) {
+	// get kubernetes client
 	kubernetesClient := KubernetesAPI(kubeconfig)
 	err := GetK8SResources(ctx, kubernetesClient)
 	if err != nil {
@@ -33,6 +35,7 @@ func GetK8SResourcesProvider(ctx context.Context, kubeconfig string)  {
 	}
 }
 
+// GetK8SResources get kubernetes resources by GroupVersionResource, put the resources into the channel K8sResourcesChan, return error.
 func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) error {
 	kubeconfig := kubernetesClient.kubeconfig
 	clientSet := kubernetesClient.ClientSet
@@ -113,20 +116,19 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) er
 	}
 
 	K8sResourcesChan <- K8SResource{
-		ServerVersion: serverVersion.Major + "." + serverVersion.Minor,
-		CreationTime: time.Now(),
-		AuditAddress: kubeconfig.Host,
-		Nodes: nodes,
-		Namespaces: namespaces.Items,
-		Deployments: deployments.Items,
-		DaemonSets: daemonSets.Items,
-		StatefulSets: statefulSets.Items,
-		Jobs: jobs.Items,
-		CronJobs: cronjobs.Items,
-		Roles: roles.Items,
-		ClusterRoles: clusterRoles.Items,
+		ServerVersion:   serverVersion.Major + "." + serverVersion.Minor,
+		CreationTime:    time.Now(),
+		AuditAddress:    kubeconfig.Host,
+		Nodes:           nodes,
+		Namespaces:      namespaces.Items,
+		Deployments:     deployments.Items,
+		DaemonSets:      daemonSets.Items,
+		StatefulSets:    statefulSets.Items,
+		Jobs:            jobs.Items,
+		CronJobs:        cronjobs.Items,
+		Roles:           roles.Items,
+		ClusterRoles:    clusterRoles.Items,
 		ProblemDetector: problemDetectors.Items,
 	}
 	return nil
 }
-

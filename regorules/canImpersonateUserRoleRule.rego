@@ -15,7 +15,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v can impersonate user.", [resourcename])
+        "Message": "CanImpersonateUser"
     }
 }
 
@@ -32,7 +32,7 @@ deny[msg] {
     msg := {
         "Name": sprintf("%v", [resourcename]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v can impersonate user.", [resourcename])
+        "Message": "CanImpersonateUser"
     }
 }
 

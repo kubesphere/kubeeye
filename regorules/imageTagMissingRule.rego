@@ -7,18 +7,18 @@ deny[msg] {
     resourcenamespace := resource.Object.metadata.namespace
     type == "Pod"
 
-    PodSethostPort(resource)
+    not PodImageTagRule(resource)
 
     msg := {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": "HostPortAllowed"
+        "Message": "ImageTagMiss"
     }
 }
 
-PodSethostPort(resource) {
-    resource.Object.spec.containers[_].ports[_].hostPort
+PodImageTagRule(resource) {
+    regex.match("^.+:.+$", input.Object.spec.containers[_].image)
 }
 
 deny[msg] {
@@ -29,18 +29,18 @@ deny[msg] {
     workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
     workloadsType[type]
 
-    workloadsSethostPort(resource)
+    not workloadsImageTagRule(resource)
 
     msg := {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": "HostPortAllowed"
+        "Message": "ImageTagMiss"
     }
 }
 
-workloadsSethostPort(resource) {
-    resource.Object.spec.template.spec.containers[_].ports[_].hostPort
+workloadsImageTagRule(resource) {
+    regex.match("^.+:.+$", resource.Object.spec.template.spec.containers[_].image)
 }
 
 deny[msg] {
@@ -50,16 +50,16 @@ deny[msg] {
     resourcenamespace := resource.Object.metadata.namespace
     type == "CronJob"
 
-    CronJobSethostPort(resource)
+    not CronJobImageTagRule(resource)
 
     msg := {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": "HostPortAllowed"
+        "Message": "ImageTagMiss"
     }
 }
 
-CronJobSethostPort(resource) {
-    resource.Object.spec.jobTemplate.spec.template.spec.containers[_].ports[_].hostPort
+CronJobImageTagRule(resource) {
+    regex.match("^.+:.+", resource.Object.spec.jobTemplate.spec.template.spec.containers[_].image)
 }

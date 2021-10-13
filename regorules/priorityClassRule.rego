@@ -13,7 +13,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v priorityClassName can be set.", [resourcename])
+        "Message": "NoPriorityClassName"
     }
 }
 
@@ -35,7 +35,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v priorityClassName can be set.", [resourcename])
+        "Message": "NoPriorityClassName"
     }
 }
 
@@ -56,7 +56,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v priorityClassName can be set.", [resourcename])
+        "Message": "NoPriorityClassName"
     }
 }
 

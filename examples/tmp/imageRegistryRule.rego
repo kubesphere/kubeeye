@@ -7,18 +7,18 @@ deny[msg] {
     resourcenamespace := resource.Object.metadata.namespace
     type == "Pod"
 
-    PodSethostPort(resource)
+    PodImageRegistryRule(resource)
 
     msg := {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": "HostPortAllowed"
+        "Message": "ImageTagIsLatest"
     }
 }
 
-PodSethostPort(resource) {
-    resource.Object.spec.containers[_].ports[_].hostPort
+PodImageRegistryRule(resource) {
+    regex.match("^myregistry.public.kubesphere/basic/.+", input.Object.spec.containers[_].image)
 }
 
 deny[msg] {
@@ -29,18 +29,18 @@ deny[msg] {
     workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
     workloadsType[type]
 
-    workloadsSethostPort(resource)
+    not workloadsImageRegistryRule(resource)
 
     msg := {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": "HostPortAllowed"
+        "Message": "ImageRegistryNotmyregistry"
     }
 }
 
-workloadsSethostPort(resource) {
-    resource.Object.spec.template.spec.containers[_].ports[_].hostPort
+workloadsImageRegistryRule(resource) {
+    regex.match("^myregistry.public.kubesphere/basic/.+", resource.Object.spec.template.spec.containers[_].image)
 }
 
 deny[msg] {
@@ -50,16 +50,16 @@ deny[msg] {
     resourcenamespace := resource.Object.metadata.namespace
     type == "CronJob"
 
-    CronJobSethostPort(resource)
+    CronJobImageRegistryRule(resource)
 
     msg := {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": "HostPortAllowed"
+        "Message": "ImageTagIsLatest"
     }
 }
 
-CronJobSethostPort(resource) {
-    resource.Object.spec.jobTemplate.spec.template.spec.containers[_].ports[_].hostPort
+CronJobImageRegistryRule(resource) {
+    regex.match("^myregistry.public.kubesphere/basic/.+", resource.Object.spec.jobTemplate.spec.template.spec.containers[_].image)
 }

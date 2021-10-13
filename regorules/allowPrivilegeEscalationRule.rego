@@ -13,7 +13,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%' allowPrivilegeEscalation should be set false.", [resourcename])
+        "Message": "PrivilegeEscalationAllowed"
     }
 }
 
@@ -37,7 +37,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v allowPrivilegeEscalation should be set false.", [resourcename])
+        "Message": "PrivilegeEscalationAllowed"
     }
 }
 
@@ -60,7 +60,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v allowPrivilegeEscalation should be set false.", [resourcename])
+        "Message": "PrivilegeEscalationAllowed"
     }
 }
 

@@ -13,7 +13,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v livenessProbe should be set.", [resourcename])
+        "Message": "NoLivenessProbe"
     }
 }
 
@@ -36,7 +36,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v livenessProbe should be set.", [resourcename])
+        "Message": "NoLivenessProbe"
     }
 }
 
@@ -58,7 +58,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v livenessProbe should be set.", [resourcename])
+        "Message": "NoLivenessProbe"
     }
 }
 

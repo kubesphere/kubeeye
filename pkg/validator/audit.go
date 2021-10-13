@@ -30,31 +30,38 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/kube"
 )
 
-
-
 func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh string, output string) error {
 
-	go func(ctx context.Context,kubeconfig string) {
+	// get kubernetes resources and put into the channel.
+	go func(ctx context.Context, kubeconfig string) {
 		kube.GetK8SResourcesProvider(ctx, kubeconfig)
 	}(ctx, kubeconfig)
 
+	// get rego rules and put into the channel.
 	go func(additionalregoruleputh string) {
 		kube.GetRegoRules(additionalregoruleputh)
 	}(additionalregoruleputh)
 
 	defer close(kube.K8sResourcesChan)
-	k8sResources :=  <- kube.K8sResourcesChan
+	// get the kubernetes resources from the channel K8sResourcesChan.
+	k8sResources := <-kube.K8sResourcesChan
+
+	// todo
+	// audit the events of cluster, it will be recode.
 	clusterCheckResults, err2 := ProblemDetectorResult(k8sResources.ProblemDetector)
 	if err2 != nil {
 		return errors.Wrap(err2, "Failed to get clusterCheckResults information")
 	}
 
+	// todo
+	// audit the nodes of cluster, it will be recode.
 	nodeStatus, err3 := NodeStatusResult(k8sResources.Nodes.Items)
 	if err3 != nil {
 		return errors.Wrap(err3, "Failed to get nodeStatus information")
 	}
 
-	// Get kube-apiserver certificate expiration
+	// todo
+	// Get kube-apiserver certificate expiration, it will be recode.
 	var certExpires []Certificate
 	cmd := fmt.Sprintf("cat /etc/kubernetes/pki/%s", "apiserver.crt")
 	combinedoutput, _ := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
@@ -77,23 +84,22 @@ func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh stri
 		}
 	}
 
-	// ValidateResources Validate Kubernetes Resource
-	ValidateResources(ctx,k8sResources)
+	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
+	ValidateResources(ctx, k8sResources)
 
-	//defaultOutput(clusterCheckResults, nodeStatus, certExpires)
+	// Set the output mode, support default output JSON and CSV.
 	switch output {
 	case "JSON", "json", "Json":
 		JSONOutput(clusterCheckResults, nodeStatus, certExpires)
-	case "CSV","csv","Csv":
+	case "CSV", "csv", "Csv":
 		CSVOutput(clusterCheckResults, nodeStatus, certExpires)
 	default:
 		defaultOutput(clusterCheckResults, nodeStatus, certExpires)
 	}
-
 	return nil
 }
 
-// ProblemDetectorResult Get kubernetes pod result
+// ProblemDetectorResult Get kubernetes pod result, it will be recode.
 func ProblemDetectorResult(event []v1.Event) ([]ClusterCheckResults, error) {
 	var pdrs []ClusterCheckResults
 	for j := 0; j < len(event); j++ {
@@ -112,7 +118,7 @@ func ProblemDetectorResult(event []v1.Event) ([]ClusterCheckResults, error) {
 	return pdrs, nil
 }
 
-//NodeStatusResult Get kubernetes node status result
+//NodeStatusResult Get kubernetes node status result, it will be recode.
 func NodeStatusResult(nodes []v1.Node) ([]AllNodeStatusResults, error) {
 	var nodestatus []AllNodeStatusResults
 	for k := 0; k < len(nodes); k++ {

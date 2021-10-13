@@ -29,23 +29,26 @@ import (
 var KubeConfig *rest.Config
 
 type KubernetesClient struct {
-	kubeconfig      *rest.Config
-	ClientSet 		kubernetes.Interface
-	DynamicClient   dynamic.Interface
+	kubeconfig    *rest.Config
+	ClientSet     kubernetes.Interface
+	DynamicClient dynamic.Interface
 }
 
-func GetKubeConfig(kubeconfigPath string) *rest.Config  {
+// GetKubeConfig get the kubeconfig from path or by GetConfig
+func GetKubeConfig(kubeconfigPath string) *rest.Config {
 	if kubeconfigPath != "" {
 		kubeconfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		if err != nil {
-			fmt.Errorf("failed to load kubernetes config: %s\n", strings.ReplaceAll(err.Error(), "KUBERNETES_MASTER", "KUBECONFIG"))
+			err = fmt.Errorf("failed to load kubernetes config: %s\n", strings.ReplaceAll(err.Error(), "KUBERNETES_MASTER", "KUBECONFIG"))
+			fmt.Println(err)
 			os.Exit(1)
 		}
 		KubeConfig = kubeconfig
 	} else {
-		kubeconfig, err :=  config.GetConfig()
+		kubeconfig, err := config.GetConfig()
 		if err != nil {
-			fmt.Errorf("failed to load kubernetes config: %s\n", strings.ReplaceAll(err.Error(), "KUBERNETES_MASTER", "KUBECONFIG"))
+			err = fmt.Errorf("failed to load kubernetes config: %s\n", strings.ReplaceAll(err.Error(), "KUBERNETES_MASTER", "KUBECONFIG"))
+			fmt.Println(err)
 			os.Exit(1)
 		}
 		KubeConfig = kubeconfig
@@ -53,6 +56,7 @@ func GetKubeConfig(kubeconfigPath string) *rest.Config  {
 	return KubeConfig
 }
 
+// ClientSet return clientset
 func ClientSet(path string) *kubernetes.Clientset {
 	k8sconfig := GetKubeConfig(path)
 
@@ -64,6 +68,7 @@ func ClientSet(path string) *kubernetes.Clientset {
 	return clientset
 }
 
+// DynamicClient return dynamicClient
 func DynamicClient(path string) dynamic.Interface {
 	k8sconfig := GetKubeConfig(path)
 
@@ -75,6 +80,7 @@ func DynamicClient(path string) dynamic.Interface {
 	return dynamicClient
 }
 
+// KubernetesAPI return kubeconfig clientset and dynamicClient.
 func KubernetesAPI(kubeconfigPath string) *KubernetesClient {
 	k8sconfig := GetKubeConfig(kubeconfigPath)
 
@@ -90,8 +96,8 @@ func KubernetesAPI(kubeconfigPath string) *KubernetesClient {
 		os.Exit(1)
 	}
 	return &KubernetesClient{
-		kubeconfig: k8sconfig,
-		ClientSet: clientset,
+		kubeconfig:    k8sconfig,
+		ClientSet:     clientset,
 		DynamicClient: dynamicClient,
 	}
 }

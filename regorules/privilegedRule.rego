@@ -13,7 +13,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v privileged should be set false.", [resourcename])
+        "Message": "PrivilegedAllowed"
     }
 }
 
@@ -35,7 +35,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v privileged should be set false.", [resourcename])
+        "Message": "PrivilegedAllowed"
     }
 }
 
@@ -56,7 +56,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v privileged should be set false.", [resourcename])
+        "Message": "PrivilegedAllowed"
     }
 }
 

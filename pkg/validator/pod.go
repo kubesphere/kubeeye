@@ -25,13 +25,11 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-/*ValidateResources Validate Resources
-get rego RulesList from RegoRulesListChan,
-the query is validated through goroutine,
-*/
-func ValidateResources(ctx context.Context,k8sResources kube.K8SResource) {
+// ValidateResources Validate kubernetes cluster Resources, put the results into channels.
+func ValidateResources(ctx context.Context, k8sResources kube.K8SResource) {
 	defer close(kube.RegoRulesListChan)
-	regoRulesList := <- kube.RegoRulesListChan
+	// get the rego rules from channel RegoRulesListChan.
+	regoRulesList := <-kube.RegoRulesListChan
 	go func(ctx context.Context, kubeResources kube.K8SResource, regoRulesList kube.RegoRulesList) {
 		ValidateDeployments(ctx, kubeResources.Deployments, regoRulesList)
 	}(ctx, k8sResources, regoRulesList)
@@ -61,8 +59,8 @@ func ValidateResources(ctx context.Context,k8sResources kube.K8SResource) {
 	}(ctx, k8sResources, regoRulesList)
 }
 
+// ValidateDeployments validate deployments of kubernetes by ValidateK8SResource, put the results into the channel DeploymentsResultsChan.
 func ValidateDeployments(ctx context.Context, deployments []unstructured.Unstructured, regoRulesList kube.RegoRulesList) {
-
 	var validateDeploymentsResults kube.DeploymentsValidateResults
 	queryRule := "data.kubeeye_workloads_rego"
 	for _, deployment := range deployments {
@@ -72,6 +70,7 @@ func ValidateDeployments(ctx context.Context, deployments []unstructured.Unstruc
 	kube.DeploymentsResultsChan <- validateDeploymentsResults
 }
 
+// ValidateDaemonSets validate daemonSets of kubernetes by ValidateK8SResource, put the results into the channel validateDaemonSetsResults.
 func ValidateDaemonSets(ctx context.Context, daemonSets []unstructured.Unstructured, regoRulesList kube.RegoRulesList) {
 	var validateDaemonSetsResults kube.DaemonSetsValidateResults
 	queryRule := "data.kubeeye_workloads_rego"
@@ -82,6 +81,7 @@ func ValidateDaemonSets(ctx context.Context, daemonSets []unstructured.Unstructu
 	kube.DaemonSetsResultsChan <- validateDaemonSetsResults
 }
 
+// ValidateStatefulSets validate StatefulSets of kubernetes by ValidateK8SResource, put the results into the channel StatefulSetsResultsChan.
 func ValidateStatefulSets(ctx context.Context, statefulSets []unstructured.Unstructured, regoRulesList kube.RegoRulesList) {
 	var validateStatefulSetsResults kube.StatefulSetsValidateResults
 	queryRule := "data.kubeeye_workloads_rego"
@@ -92,6 +92,7 @@ func ValidateStatefulSets(ctx context.Context, statefulSets []unstructured.Unstr
 	kube.StatefulSetsResultsChan <- validateStatefulSetsResults
 }
 
+// ValidateJobs validate Jobs of kubernetes by ValidateK8SResource, put the results into the channel JobsResultsChan.
 func ValidateJobs(ctx context.Context, jobs []unstructured.Unstructured, regoRulesList kube.RegoRulesList) {
 	var validateReplicaJobs kube.JobsValidateResults
 	queryRule := "data.kubeeye_workloads_rego"
@@ -102,6 +103,7 @@ func ValidateJobs(ctx context.Context, jobs []unstructured.Unstructured, regoRul
 	kube.JobsResultsChan <- validateReplicaJobs
 }
 
+// ValidateCronJobs validate cronjobs of kubernetes by ValidateK8SResource, put the results into the channel CronjobsResultsChan.
 func ValidateCronJobs(ctx context.Context, cronjobs []unstructured.Unstructured, regoRulesList kube.RegoRulesList) {
 	var validateCronjobsResults kube.CronjobsValidateResults
 	queryRule := "data.kubeeye_workloads_rego"
@@ -112,6 +114,7 @@ func ValidateCronJobs(ctx context.Context, cronjobs []unstructured.Unstructured,
 	kube.CronjobsResultsChan <- validateCronjobsResults
 }
 
+// ValidateRoles validate roles of kubernetes by ValidateK8SResource, put the results into the channel RolesResultsChan.
 func ValidateRoles(ctx context.Context, roles []unstructured.Unstructured, regoRulesList kube.RegoRulesList) {
 	var validateRolesResults kube.RolesValidateResults
 	queryRule := "data.kubeeye_RBAC_rego"
@@ -122,6 +125,7 @@ func ValidateRoles(ctx context.Context, roles []unstructured.Unstructured, regoR
 	kube.RolesResultsChan <- validateRolesResults
 }
 
+// ValidateClusterRoles validate clusterroles of kubernetes by ValidateK8SResource, put the results into the channel ClusterRolesResultsChan.
 func ValidateClusterRoles(ctx context.Context, clusterroles []unstructured.Unstructured, regoRulesList kube.RegoRulesList) {
 	var validateClusterRolesResults kube.ClusterRolesValidateResults
 	queryRule := "data.kubeeye_RBAC_rego"
@@ -132,6 +136,7 @@ func ValidateClusterRoles(ctx context.Context, clusterroles []unstructured.Unstr
 	kube.ClusterRolesResultsChan <- validateClusterRolesResults
 }
 
+// ValidateK8SResource validate kubernetes resource by rego, return the validate results.
 func ValidateK8SResource(ctx context.Context, resource unstructured.Unstructured, regoRulesList kube.RegoRulesList, queryRule string) kube.ResultReceiver {
 	var resultReceiver kube.ResultReceiver
 	for _, regoRule := range regoRulesList.RegoRules {
@@ -158,7 +163,7 @@ func ValidateK8SResource(ctx context.Context, resource unstructured.Unstructured
 						fmt.Println(err)
 						os.Exit(1)
 					}
-					if err := json.Unmarshal(jsonresult,&results); err != nil {
+					if err := json.Unmarshal(jsonresult, &results); err != nil {
 						fmt.Println(err)
 						os.Exit(1)
 					}
@@ -169,7 +174,7 @@ func ValidateK8SResource(ctx context.Context, resource unstructured.Unstructured
 							resultReceiver.Message = append(resultReceiver.Message, result.Message)
 						} else {
 							resultReceiver.Name = result.Name
-							resultReceiver.Namespace= result.Namespace
+							resultReceiver.Namespace = result.Namespace
 							resultReceiver.Type = result.Type
 							resultReceiver.Message = append(resultReceiver.Message, result.Message)
 						}

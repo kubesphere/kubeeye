@@ -13,7 +13,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v runAsNonRoot can be set.", [resourcename])
+        "Message": "NotRunAsNonRoot"
     }
 }
 
@@ -52,7 +52,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v runAsNonRoot can be set.", [resourcename])
+        "Message": "NotRunAsNonRoot"
     }
 }
 
@@ -90,7 +90,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v runAsNonRoot can be set.", [resourcename])
+        "Message": "NotRunAsNonRoot"
     }
 }
 

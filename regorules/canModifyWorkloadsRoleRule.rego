@@ -16,7 +16,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v can modify workloads.", [resourcename])
+        "Message": "CanModifyWorkloads"
     }
 }
 
@@ -34,7 +34,7 @@ deny[msg] {
     msg := {
         "Name": sprintf("%v", [resourcename]),
         "Type": sprintf("%v", [type]),
-        "Message": sprintf("%v can modify workloads.", [resourcename])
+        "Message": "CanModifyWorkloads"
     }
 }
 
