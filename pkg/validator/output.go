@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 package validator
 
 import (
@@ -28,12 +27,12 @@ import (
 )
 
 // defaultOutput get the results from channels, and then print out.
-func defaultOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeStatusResults, certExpires []Certificate)  {
+func defaultOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeStatusResults, certExpires []Certificate) {
 	w := tabwriter.NewWriter(os.Stdout, 10, 4, 3, ' ', 0)
 
 	fmt.Fprintln(w, "\nNAMESPACE\tNAME\tKIND\tMESSAGE")
 	defer close(kube.DeploymentsResultsChan)
-	deploymentsResults := <- kube.DeploymentsResultsChan
+	deploymentsResults := <-kube.DeploymentsResultsChan
 	for _, deploymentResult := range deploymentsResults.ValidateResults {
 		if len(deploymentResult.Message) != 0 {
 			s := fmt.Sprintf("%s\t%s\t%s\t%-8v",
@@ -48,7 +47,7 @@ func defaultOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNo
 	}
 
 	defer close(kube.DaemonSetsResultsChan)
-	daemonSetsResults := <- kube.DaemonSetsResultsChan
+	daemonSetsResults := <-kube.DaemonSetsResultsChan
 	for _, daemonSetResult := range daemonSetsResults.ValidateResults {
 		if len(daemonSetResult.Message) != 0 {
 			s := fmt.Sprintf("%s\t%s\t%s\t%-8v",
@@ -63,7 +62,7 @@ func defaultOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNo
 	}
 
 	defer close(kube.StatefulSetsResultsChan)
-	statefulSetsResults := <- kube.StatefulSetsResultsChan
+	statefulSetsResults := <-kube.StatefulSetsResultsChan
 	for _, statefulSetResult := range statefulSetsResults.ValidateResults {
 		if len(statefulSetResult.Message) != 0 {
 			s := fmt.Sprintf("%s\t%s\t%s\t%-8v",
@@ -78,7 +77,7 @@ func defaultOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNo
 	}
 
 	defer close(kube.JobsResultsChan)
-	jobsResults := <- kube.JobsResultsChan
+	jobsResults := <-kube.JobsResultsChan
 	for _, jobResult := range jobsResults.ValidateResults {
 		if len(jobResult.Message) != 0 {
 			s := fmt.Sprintf("%s\t%s\t%s\t%-8v",
@@ -93,7 +92,7 @@ func defaultOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNo
 	}
 
 	defer close(kube.CronjobsResultsChan)
-	cronjobsResults := <- kube.CronjobsResultsChan
+	cronjobsResults := <-kube.CronjobsResultsChan
 	for _, cronjobResult := range cronjobsResults.ValidateResults {
 		if len(cronjobResult.Message) != 0 {
 			s := fmt.Sprintf("%s\t%s\t%s\t%-8v",
@@ -108,7 +107,7 @@ func defaultOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNo
 	}
 
 	defer close(kube.RolesResultsChan)
-	rolesResults := <- kube.RolesResultsChan
+	rolesResults := <-kube.RolesResultsChan
 	for _, roleResult := range rolesResults.ValidateResults {
 		if len(roleResult.Message) != 0 {
 			s := fmt.Sprintf("%s\t%s\t%s\t%-8v",
@@ -123,7 +122,7 @@ func defaultOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNo
 	}
 
 	defer close(kube.ClusterRolesResultsChan)
-	clusterRolesResults := <- kube.ClusterRolesResultsChan
+	clusterRolesResults := <-kube.ClusterRolesResultsChan
 	for _, clusterRoleResult := range clusterRolesResults.ValidateResults {
 		if len(clusterRoleResult.Message) != 0 {
 			s := fmt.Sprintf("%s\t%s\t%s\t%-8v",
@@ -136,7 +135,6 @@ func defaultOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNo
 			continue
 		}
 	}
-
 
 	if len(nodeStatus) != 0 {
 		fmt.Fprintln(w, "NODENAME\tSEVERITY\tHEARTBEATTIME\tREASON\tMESSAGE")
@@ -169,7 +167,6 @@ func defaultOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNo
 		}
 	}
 
-
 	if len(certExpires) != 0 {
 		fmt.Fprintln(w, "\nNAME\tEXPIRES\tRESIDUAL")
 		for _, certExpire := range certExpires {
@@ -186,11 +183,11 @@ func defaultOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNo
 }
 
 // JSONOutput get the results from channels, output by sjon.
-func JSONOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeStatusResults, certExpires []Certificate)  {
+func JSONOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeStatusResults, certExpires []Certificate) {
 	var output []kube.ResultReceiver
 
 	defer close(kube.DeploymentsResultsChan)
-	deploymentsResults := <- kube.DeploymentsResultsChan
+	deploymentsResults := <-kube.DeploymentsResultsChan
 	for _, deploymentResult := range deploymentsResults.ValidateResults {
 		if len(deploymentResult.Message) != 0 {
 			output = append(output, deploymentResult)
@@ -198,16 +195,15 @@ func JSONOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeS
 	}
 
 	defer close(kube.DaemonSetsResultsChan)
-	daemonSetsResults := <- kube.DaemonSetsResultsChan
+	daemonSetsResults := <-kube.DaemonSetsResultsChan
 	for _, daemonSetResult := range daemonSetsResults.ValidateResults {
 		if len(daemonSetResult.Message) != 0 {
 			output = append(output, daemonSetResult)
 		}
 	}
 
-
 	defer close(kube.StatefulSetsResultsChan)
-	statefulSetsResults := <- kube.StatefulSetsResultsChan
+	statefulSetsResults := <-kube.StatefulSetsResultsChan
 	for _, statefulSetResult := range statefulSetsResults.ValidateResults {
 		if len(statefulSetResult.Message) != 0 {
 			output = append(output, statefulSetResult)
@@ -215,7 +211,7 @@ func JSONOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeS
 	}
 
 	defer close(kube.JobsResultsChan)
-	jobsResults := <- kube.JobsResultsChan
+	jobsResults := <-kube.JobsResultsChan
 	for _, jobResult := range jobsResults.ValidateResults {
 		if len(jobResult.Message) != 0 {
 			output = append(output, jobResult)
@@ -223,7 +219,7 @@ func JSONOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeS
 	}
 
 	defer close(kube.CronjobsResultsChan)
-	cronjobsResults := <- kube.CronjobsResultsChan
+	cronjobsResults := <-kube.CronjobsResultsChan
 	for _, cronjobResult := range cronjobsResults.ValidateResults {
 		if len(cronjobResult.Message) != 0 {
 			output = append(output, cronjobResult)
@@ -231,7 +227,7 @@ func JSONOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeS
 	}
 
 	defer close(kube.RolesResultsChan)
-	rolesResults := <- kube.RolesResultsChan
+	rolesResults := <-kube.RolesResultsChan
 	for _, roleResult := range rolesResults.ValidateResults {
 		if len(roleResult.Message) != 0 {
 			output = append(output, roleResult)
@@ -239,7 +235,7 @@ func JSONOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeS
 	}
 
 	defer close(kube.ClusterRolesResultsChan)
-	clusterRolesResults := <- kube.ClusterRolesResultsChan
+	clusterRolesResults := <-kube.ClusterRolesResultsChan
 	for _, clusterRoleResult := range clusterRolesResults.ValidateResults {
 		if len(clusterRoleResult.Message) != 0 {
 			output = append(output, clusterRoleResult)
@@ -289,16 +285,16 @@ func JSONOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeS
 	}
 
 	// output json
-	jsonOutput, _ := json.MarshalIndent(output,"","    ")
+	jsonOutput, _ := json.MarshalIndent(output, "", "    ")
 	fmt.Println(string(jsonOutput))
 }
 
 // CSVOutput get the results from channels, write to csv file.
-func CSVOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeStatusResults, certExpires []Certificate)  {
+func CSVOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeStatusResults, certExpires []Certificate) {
 	var output []kube.ResultReceiver
 
 	defer close(kube.DeploymentsResultsChan)
-	deploymentsResults := <- kube.DeploymentsResultsChan
+	deploymentsResults := <-kube.DeploymentsResultsChan
 	for _, deploymentResult := range deploymentsResults.ValidateResults {
 		if len(deploymentResult.Message) != 0 {
 			output = append(output, deploymentResult)
@@ -306,16 +302,15 @@ func CSVOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeSt
 	}
 
 	defer close(kube.DaemonSetsResultsChan)
-	daemonSetsResults := <- kube.DaemonSetsResultsChan
+	daemonSetsResults := <-kube.DaemonSetsResultsChan
 	for _, daemonSetResult := range daemonSetsResults.ValidateResults {
 		if len(daemonSetResult.Message) != 0 {
 			output = append(output, daemonSetResult)
 		}
 	}
 
-
 	defer close(kube.StatefulSetsResultsChan)
-	statefulSetsResults := <- kube.StatefulSetsResultsChan
+	statefulSetsResults := <-kube.StatefulSetsResultsChan
 	for _, statefulSetResult := range statefulSetsResults.ValidateResults {
 		if len(statefulSetResult.Message) != 0 {
 			output = append(output, statefulSetResult)
@@ -323,7 +318,7 @@ func CSVOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeSt
 	}
 
 	defer close(kube.JobsResultsChan)
-	jobsResults := <- kube.JobsResultsChan
+	jobsResults := <-kube.JobsResultsChan
 	for _, jobResult := range jobsResults.ValidateResults {
 		if len(jobResult.Message) != 0 {
 			output = append(output, jobResult)
@@ -331,7 +326,7 @@ func CSVOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeSt
 	}
 
 	defer close(kube.CronjobsResultsChan)
-	cronjobsResults := <- kube.CronjobsResultsChan
+	cronjobsResults := <-kube.CronjobsResultsChan
 	for _, cronjobResult := range cronjobsResults.ValidateResults {
 		if len(cronjobResult.Message) != 0 {
 			output = append(output, cronjobResult)
@@ -339,7 +334,7 @@ func CSVOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeSt
 	}
 
 	defer close(kube.RolesResultsChan)
-	rolesResults := <- kube.RolesResultsChan
+	rolesResults := <-kube.RolesResultsChan
 	for _, roleResult := range rolesResults.ValidateResults {
 		if len(roleResult.Message) != 0 {
 			output = append(output, roleResult)
@@ -347,7 +342,7 @@ func CSVOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeSt
 	}
 
 	defer close(kube.ClusterRolesResultsChan)
-	clusterRolesResults := <- kube.ClusterRolesResultsChan
+	clusterRolesResults := <-kube.ClusterRolesResultsChan
 	for _, clusterRoleResult := range clusterRolesResults.ValidateResults {
 		if len(clusterRoleResult.Message) != 0 {
 			output = append(output, clusterRoleResult)
@@ -396,7 +391,6 @@ func CSVOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeSt
 		}
 	}
 
-
 	filename := "kubeEyeAuditResult.csv"
 	// create csv file
 	newFile, err := os.Create(filename)
@@ -427,7 +421,7 @@ func CSVOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeSt
 					msg,
 					receiver.Reason,
 				}
-				data = append(data,contexts)
+				data = append(data, contexts)
 				testname = receiver.Name
 			} else {
 				contexts := []string{
@@ -437,7 +431,7 @@ func CSVOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeSt
 					msg,
 					receiver.Reason,
 				}
-				data = append(data,contexts)
+				data = append(data, contexts)
 			}
 
 		}
@@ -445,6 +439,6 @@ func CSVOutput(clusterCheckResults []ClusterCheckResults, nodeStatus []AllNodeSt
 
 	// WriteAll writes multiple CSV records to w using Write and then calls Flush,
 	if err := w.WriteAll(data); err != nil {
-
+		fmt.Println("The result is exported to kubeeyeauditResult.CSV, please check it for audit result.")
 	}
 }

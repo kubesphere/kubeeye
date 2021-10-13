@@ -21,7 +21,9 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 // GetK8SResourcesProvider get kubeconfig by KubernetesAPI, get kubernetes resources by GetK8SResources.
@@ -41,6 +43,16 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) er
 	clientSet := kubernetesClient.ClientSet
 	dynamicClient := kubernetesClient.DynamicClient
 	listOpts := metav1.ListOptions{}
+	excludedNamespaces := []string{"kube-system", "kubesphere-system"}
+	fieldSelectorString := listOpts.FieldSelector
+	for _, excludedNamespace := range excludedNamespaces {
+		fieldSelectorString += ",metadata.namespace!=" + excludedNamespace
+	}
+	fieldSelector, _ := fields.ParseSelector(fieldSelectorString)
+	listOptsExcludedNamespace := metav1.ListOptions{
+		FieldSelector: fieldSelectorString,
+		LabelSelector: fieldSelector.String(),
+	}
 
 	serverVersion, err := clientSet.Discovery().ServerVersion()
 	if err != nil {
@@ -61,48 +73,48 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) er
 	}
 
 	deploymentsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
-	deployments, err := dynamicClient.Resource(deploymentsGVR).List(ctx, listOpts)
+	deployments, err := dynamicClient.Resource(deploymentsGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
 		err := fmt.Errorf("failed to fetch deployments: %s", err.Error())
 		return err
 	}
 
 	daemonSetsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}
-	daemonSets, err := dynamicClient.Resource(daemonSetsGVR).List(ctx, listOpts)
+	daemonSets, err := dynamicClient.Resource(daemonSetsGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
 		err := fmt.Errorf("failed to fetch daemonSets: %s", err.Error())
 		return err
 	}
 
 	statefulSetsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}
-	statefulSets, err := dynamicClient.Resource(statefulSetsGVR).List(ctx, listOpts)
+	statefulSets, err := dynamicClient.Resource(statefulSetsGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
 		err := fmt.Errorf("failed to fetch statefulSets: %s", err.Error())
 		return err
 	}
 
 	jobsGVR := schema.GroupVersionResource{Group: "batch", Version: "v1", Resource: "jobs"}
-	jobs, err := dynamicClient.Resource(jobsGVR).List(ctx, listOpts)
+	jobs, err := dynamicClient.Resource(jobsGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
 		err := fmt.Errorf("failed to fetch jobs: %s", err.Error())
 		return err
 	}
 
 	cronjobsGVR := schema.GroupVersionResource{Group: "batch", Version: "v1beta1", Resource: "cronjobs"}
-	cronjobs, err := dynamicClient.Resource(cronjobsGVR).List(ctx, listOpts)
+	cronjobs, err := dynamicClient.Resource(cronjobsGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
 		err := fmt.Errorf("failed to fetch cronjobs: %s", err.Error())
 		return err
 	}
 
-	problemDetectors, err := clientSet.CoreV1().Events("").List(ctx, listOpts)
+	problemDetectors, err := clientSet.CoreV1().Events("").List(ctx, listOptsExcludedNamespace)
 	if err != nil {
 		err := fmt.Errorf("failed to fetch events: %s", err.Error())
 		return err
 	}
 
 	rolesGVR := schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1beta1", Resource: "roles"}
-	roles, err := dynamicClient.Resource(rolesGVR).List(ctx, listOpts)
+	roles, err := dynamicClient.Resource(rolesGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
 		err := fmt.Errorf("failed to fetch clusterRoles: %s", err.Error())
 		return err

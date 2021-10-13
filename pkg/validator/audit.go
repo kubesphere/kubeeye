@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kubesphere/kubeeye/regorules"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	certutil "k8s.io/client-go/util/cert"
@@ -39,7 +40,7 @@ func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh stri
 
 	// get rego rules and put into the channel.
 	go func(additionalregoruleputh string) {
-		kube.GetRegoRules(additionalregoruleputh)
+		regorules.GetRegoRules(additionalregoruleputh)
 	}(additionalregoruleputh)
 
 	defer close(kube.K8sResourcesChan)

@@ -21,7 +21,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 var K8sResourcesChan = make(chan K8SResource)
@@ -41,12 +40,12 @@ type K8SResource struct {
 	AuditAddress    string
 	Nodes           *corev1.NodeList
 	Namespaces      []unstructured.Unstructured
-	Deployments		[]unstructured.Unstructured
-	DaemonSets		[]unstructured.Unstructured
-	StatefulSets	[]unstructured.Unstructured
-	Jobs			[]unstructured.Unstructured
-	CronJobs		[]unstructured.Unstructured
-	Roles 			[]unstructured.Unstructured
+	Deployments     []unstructured.Unstructured
+	DaemonSets      []unstructured.Unstructured
+	StatefulSets    []unstructured.Unstructured
+	Jobs            []unstructured.Unstructured
+	CronJobs        []unstructured.Unstructured
+	Roles           []unstructured.Unstructured
 	ClusterRoles    []unstructured.Unstructured
 	ProblemDetector []corev1.Event
 }
@@ -63,46 +62,46 @@ type Workload struct {
 }
 
 type ValidateResult struct {
-	Name		string
-	Namespace	string
-	Type    	string
-	Message 	string
+	Name      string
+	Namespace string
+	Type      string
+	Message   string
 }
 
 type ResultReceiver struct {
-	Name		string `json:"name"`
-	Namespace	string	`json:"namespace,omitempty"`
-	Type    	string	`json:"kind"`
-	Message 	[]string	`json:"message"`
-	Reason      string  `json:"reason,omitempty"`
+	Name      string   `json:"name"`
+	Namespace string   `json:"namespace,omitempty"`
+	Type      string   `json:"kind"`
+	Message   []string `json:"message"`
+	Reason    string   `json:"reason,omitempty"`
 }
 
 type DeploymentsValidateResults struct {
-	ValidateResults 	[]ResultReceiver
+	ValidateResults []ResultReceiver
 }
 
 type DaemonSetsValidateResults struct {
-	ValidateResults 	[]ResultReceiver
+	ValidateResults []ResultReceiver
 }
 
 type StatefulSetsValidateResults struct {
-	ValidateResults 	[]ResultReceiver
+	ValidateResults []ResultReceiver
 }
 
 type JobsValidateResults struct {
-	ValidateResults 	[]ResultReceiver
+	ValidateResults []ResultReceiver
 }
 
 type CronjobsValidateResults struct {
-	ValidateResults 	[]ResultReceiver
+	ValidateResults []ResultReceiver
 }
 
 type RolesValidateResults struct {
-	ValidateResults 	[]ResultReceiver
+	ValidateResults []ResultReceiver
 }
 
 type ClusterRolesValidateResults struct {
-	ValidateResults 	[]ResultReceiver
+	ValidateResults []ResultReceiver
 }
 
 type ResourceProvider struct {
