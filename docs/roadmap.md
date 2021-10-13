@@ -6,10 +6,9 @@ KubeEye Roadmap demonstrates a list of open source product development plans, as
 
 ### Feature:
 
-- [x] Core component detection in the cluster, including controller-manager, scheduler, and ETCD exception detection.
-- [x] Node detection in the cluster, including Kubelet abnormalities, insufficient machine MEMORY/CPU/IO resources, docker service exceptions.
 - [x] Pod detection int the cluster, including pod best practices, pod exceptions information.
-- [ ] Support for more fine-grained patrolling, such as slow response
-- [ ] Support inspection report export CSV format or HTML file.
-
-
+- [x] Support inspection report export CSV format or JSON.
+- [ ] Change the way for node detection in the cluster, remove Node-Problem-Detector, including Kubelet abnormalities, insufficient machine MEMORY/CPU/IO resources, docker service exceptions.
+- [ ] Core component detection in the cluster, including controller-manager, scheduler, and ETCD exception detection.
+- [ ] Support for more fine-grained patrolling, such as slow response.
+- [ ] Add a UI.

@@ -7,37 +7,46 @@
 
 > English | [中文](README_zh.md)
 
-KubeEye aims to find various problems on Kubernetes, such as application misconfiguration(using [Polaris](https://github.com/FairwindsOps/polaris)), cluster components unhealthy and node problems(using [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)). Besides predefined rules, it also supports custom defined rules.
+KubeEye aims to find various problems on Kubernetes, such as application misconfiguration(using [OPA](https://github.com/open-policy-agent/opa)), cluster components unhealthy and node problems(using [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)). Besides predefined rules, it also supports custom defined rules.
 
 ## Architecture
-KubeEye gets cluster diagnostic data by calling the Kubernetes API, by regular matching of key error messages in logs and by rule matching of container syntax. See Architecture for details.
+KubeEye gets cluster diagnostic data by calling the Kubernetes API, by regular matching of key error messages in resources and by rule matching of container syntax. See Architecture for details.
 
-![kubeeye-architecture](./docs/images/kubeeye-architecture.png?raw=true)
+![kubeeye-architecture](./docs/images/kubeeye-architecture.svg?raw=true)
 
 ## How to use
--  Install KubeEye on your machine 
+-  Install KubeEye on your machine
     - Download pre built executables from [Releases](https://github.com/kubesphere/kubeeye/releases).
     
     - Or you can build from source code
+> Note: make install will create kubeeye in /usr/local/bin/ on your machine.
+
     ```shell
     git clone https://github.com/kubesphere/kubeeye.git
     cd kubeeye 
-    make ke
-    ```
-    Install ke to /usr/local/bin/
-    ```shell
     make install
     ```
-   
+
 - [Optional] Install Node-problem-Detector
 > Note: This line will install npd on your cluster, only required if you want detailed report.
 
-```shell script
+```shell
 ke install npd
 ```
 - Run KubeEye
+> Note: The results of kubeeye sort by resource kind.
+
 ```shell
-root@node1:# ke diag
+root@node1:# kubeeye audit
+NAMESPACE     NAME              KIND          MESSAGE
+default       nginx             Deployment    [nginx CPU limits should be set. nginx CPU requests should be set. nginx image tag not specified, do not use 'latest'. nginx livenessProbe should be set. nginx memory limits should be set. nginx memory requests should be set. nginx priorityClassName can be set. nginx root file system should be set read only. nginx readinessProbe should be set. nginx runAsNonRoot can be set.]
+default       testcronjob       CronJob       [testcronjob CPU limits should be set. testcronjob CPU requests should be set. testcronjob allowPrivilegeEscalation should be set false. testcronjob have HighRisk capabilities. testcronjob hostIPC should not be set. testcronjob hostNetwork should not be set. testcronjob hostPID should not be set. testcronjob hostPort should not be set. testcronjob imagePullPolicy should be set 'Always'. testcronjob image tag not specified, do not use 'latest'. testcronjob have insecure capabilities. testcronjob livenessProbe should be set. testcronjob memory limits should be set. testcronjob memory requests should be set. testcronjob priorityClassName can be set. testcronjob privileged should be set false. testcronjob root file system should be set read only. testcronjob readinessProbe should be set.]
+kube-system   testrole          Role          [testrole can impersonate user. testrole can delete resources. testrole can modify workloads.]
+              testclusterrole   ClusterRole   [testclusterrole can impersonate user. testclusterrole can delete resource. testclusterrole can modify workloads.]
+
+NAMESPACE     SEVERITY   PODNAME                              EVENTTIME                   REASON    MESSAGE
+kube-system   Warning    vpnkit-controller.16acd7f7536c62e8   2021-10-11T15:55:08+08:00   BackOff   Back-off restarting failed container
+
 NODENAME        SEVERITY     HEARTBEATTIME               REASON              MESSAGE
 node18          Fatal        2020-11-19T10:32:03+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
 node19          Fatal        2020-11-19T10:31:37+08:00   NodeStatusUnknown   Kubelet stopped posting node status.
@@ -47,64 +56,60 @@ node3           Fatal        2020-11-27T17:36:53+08:00   KubeletNotReady     Con
 NAME            SEVERITY     TIME                        MESSAGE
 scheduler       Fatal        2020-11-27T17:09:59+08:00   Get http://127.0.0.1:10251/healthz: dial tcp 127.0.0.1:10251: connect: connection refused
 etcd-0          Fatal        2020-11-27T17:56:37+08:00   Get https://192.168.13.8:2379/health: dial tcp 192.168.13.8:2379: connect: connection refused
-
-NAMESPACE       SEVERITY     PODNAME                                          EVENTTIME                   REASON                MESSAGE
-default         Warning      node3.164b53d23ea79fc7                           2020-11-27T17:37:34+08:00   ContainerGCFailed     rpc error: code = Unknown desc = Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
-default         Warning      node3.164b553ca5740aae                           2020-11-27T18:03:31+08:00   FreeDiskSpaceFailed   failed to garbage collect required amount of images. Wanted to free 5399374233 bytes, but freed 416077545 bytes
-default         Warning      nginx-b8ffcf679-q4n9v.16491643e6b68cd7           2020-11-27T17:09:24+08:00   Failed                Error: ImagePullBackOff
-default         Warning      node3.164b5861e041a60e                           2020-11-27T19:01:09+08:00   SystemOOM             System OOM encountered, victim process: stress, pid: 16713
-default         Warning      node3.164b58660f8d4590                           2020-11-27T19:01:27+08:00   OOMKilling            Out of memory: Kill process 16711 (stress) score 205 or sacrifice child Killed process 16711 (stress), UID 0, total-vm:826516kB, anon-rss:819296kB, file-rss:0kB, shmem-rss:0kB
-insights-agent  Warning      workloads-1606467120.164b519ca8c67416            2020-11-27T16:57:05+08:00   DeadlineExceeded      Job was active longer than specified deadline
-kube-system     Warning      calico-node-zvl9t.164b3dc50580845d               2020-11-27T17:09:35+08:00   DNSConfigForming      Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
-kube-system     Warning      kube-proxy-4bnn7.164b3dc4f4c4125d                2020-11-27T17:09:09+08:00   DNSConfigForming      Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
-kube-system     Warning      nodelocaldns-2zbhh.164b3dc4f42d358b              2020-11-27T17:09:14+08:00   DNSConfigForming      Nameserver limits were exceeded, some nameservers have been omitted, the applied nameserver line is: 100.64.11.3 114.114.114.114 119.29.29.29
-
-
-NAMESPACE       SEVERITY     NAME                      KIND         TIME                        MESSAGE
-kube-system     Warning      node-problem-detector     DaemonSet    2020-11-27T17:09:59+08:00   [livenessProbeMissing runAsPrivileged]
-kube-system     Warning      calico-node               DaemonSet    2020-11-27T17:09:59+08:00   [runAsPrivileged cpuLimitsMissing]
-kube-system     Warning      nodelocaldns              DaemonSet    2020-11-27T17:09:59+08:00   [cpuLimitsMissing runAsPrivileged]
-default         Warning      nginx                     Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing livenessProbeMissing tagNotSpecified]
-insights-agent  Warning      workloads                 CronJob      2020-11-27T17:09:59+08:00   [livenessProbeMissing]
-insights-agent  Warning      cronjob-executor          Job          2020-11-27T17:09:59+08:00   [livenessProbeMissing]
-kube-system     Warning      calico-kube-controllers   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing livenessProbeMissing]
-kube-system     Warning      coredns                   Deployment   2020-11-27T17:09:59+08:00   [cpuLimitsMissing]   
 ```
 > You can refer to the [FAQ](./docs/FAQ.md) content to optimize your cluster.
 
 ## What KubeEye can do
 
+- KubeEye validates your workloads yaml specs against industry best practice, helps you make your cluster stable.
 - KubeEye can find problems of your cluster control plane, including kube-apiserver/kube-controller-manager/etcd, etc.
 - KubeEye helps you detect all kinds of node problems, including memory/cpu/disk pressure, unexpected kernel error logs, etc.
-- KubeEye validates your workloads yaml specs against industry best practice, helps you make your cluster stable.
 
 ## Checklist
 |YES/NO|CHECK ITEM |Description|
 |---|---|---|
-| :white_check_mark: | ETCDHealthStatus | if etcd is up and running normally |
-| :white_check_mark: | ControllerManagerHealthStatus | if kubernetes kube-controller-manager is up and running normally. |
-| :white_check_mark: | SchedulerHealthStatus | if kubernetes kube-scheduler |           
-| :white_check_mark: | NodeMemory | if node memory usage is above threshold | 
-| :white_check_mark: | DockerHealthStatus | if docker is up and running|             
-| :white_check_mark: | NodeDisk | if node disk usage is above given threshold | 
-| :white_check_mark: | KubeletHealthStatus | if kubelet is active and running normally |            
-| :white_check_mark: | NodeCPU | if node cpu usage is above the given threshold |
-| :white_check_mark: | NodeCorruptOverlay2 | Overlay2 is not available|            
-| :white_check_mark: | NodeKernelNULLPointer | the node displays NotReady|
-| :white_check_mark: | NodeDeadlock | A deadlock is a phenomenon in which two or more processes are waiting for each other as they compete for resources|                  
-| :white_check_mark: | NodeOOM | Monitor processes that consume too much memory, especially those that consume a lot of memory very quickly, and the kernel kill them to prevent them from running out of memory|
-| :white_check_mark: | NodeExt4Error | Ext4 mount error|                  
-| :white_check_mark: | NodeTaskHung | Check to see if there is a process in state D for more than 120s|
-| :white_check_mark: | NodeUnregisterNetDevice | Check corresponding net|    
-| :white_check_mark: | NodeCorruptDockerImage          | Check docker image|
-| :white_check_mark: | NodeAUFSUmountHung            |  Check storage|
-| :white_check_mark: | NodeDockerHung                  | Docker hung, you can check docker log|
-| :white_check_mark: | PodSetLivenessProbe | if livenessProbe set for every container in a pod|
-| :white_check_mark: | PodSetTagNotSpecified | The mirror address does not declare tag or tag is latest|
-| :white_check_mark: | PodSetRunAsPrivileged | Running a pod in a privileged mode means that the pod can access the host’s resources and kernel capabilities|
+| :white_check_mark: | NodeDockerHung                 | Docker hung, you can check docker log|
+| :white_check_mark: | PrivilegeEscalationAllowed     | Privilege escalation is allowed |
+| :white_check_mark: | CanImpersonateUser             | The role/clusterrole can impersonate other user |
+| :white_check_mark: | CanDeleteResources             | The role/clusterrole can delete kubernetes resources |
+| :white_check_mark: | CanModifyWorkloads             | The role/clusterrole can modify kubernetes workloads |
+| :white_check_mark: | NoCPULimits                    | The resource does not set limits of CPU in containers.resources |
+| :white_check_mark: | NoCPURequests                  | The resource does not set requests of CPU in containers.resources |
+| :white_check_mark: | HighRiskCapabilities           | Have high-Risk options in capabilities such as ALL/SYS_ADMIN/NET_ADMIN |
+| :white_check_mark: | HostIPCAllowed                 | HostIPC Set to true |
+| :white_check_mark: | HostNetworkAllowed             | HostNetwork Set to true |
+| :white_check_mark: | HostPIDAllowed                 | HostPID Set to true |
+| :white_check_mark: | HostPortAllowed                | HostPort Set to true |
+| :white_check_mark: | ImagePullPolicyNotAlways       | Image pull policy not always |
+| :white_check_mark: | ImageTagIsLatest               | The image tag is latest |
+| :white_check_mark: | ImageTagMiss                   | The image tag do not declare |
+| :white_check_mark: | InsecureCapabilities           | Have insecure options in capabilities such as KILL/SYS_CHROOT/CHOWN |
+| :white_check_mark: | NoLivenessProbe                | The resource does not set livenessProbe |
+| :white_check_mark: | NoMemoryLimits                 | The resource does not set limits of memory in containers.resources |
+| :white_check_mark: | NoMemoryRequests               | The resource does not set requests of memory in containers.resources |
+| :white_check_mark: | NoPriorityClassName            | The resource does not set priorityClassName |
+| :white_check_mark: | PrivilegedAllowed              | Running a pod in a privileged mode means that the pod can access the host’s resources and kernel capabilities |
+| :white_check_mark: | NoReadinessProbe               | The resource does not set readinessProbe |
+| :white_check_mark: | NotReadOnlyRootFilesystem      | The resource does not set readOnlyRootFilesystem to true |
+| :white_check_mark: | NotRunAsNonRoot                | The resource does not set runAsNonRoot to true, maybe executed run as a root account |
+| :white_check_mark: | ETCDHealthStatus               | if etcd is up and running normally, please check etcd status |
+| :white_check_mark: | ControllerManagerHealthStatus  | if kubernetes kube-controller-manager is up and running normally, please check kube-controller-manager status |
+| :white_check_mark: | SchedulerHealthStatus          | if kubernetes kube-scheduler is up and running normally, please check kube-scheduler status |           
+| :white_check_mark: | NodeMemory                     | if node memory usage is above threshold, please check node memory usage |
+| :white_check_mark: | DockerHealthStatus             | if docker is up and running, please check docker status |             
+| :white_check_mark: | NodeDisk                       | if node disk usage is above given threshold, please check node disk usage |
+| :white_check_mark: | KubeletHealthStatus            | if kubelet is active and running normally |            
+| :white_check_mark: | NodeCPU                        | if node cpu usage is above the given threshold |
+| :white_check_mark: | NodeCorruptOverlay2            | Overlay2 is not available|            
+| :white_check_mark: | NodeKernelNULLPointer          | the node displays NotReady|
+| :white_check_mark: | NodeDeadlock                   | A deadlock is a phenomenon in which two or more processes are waiting for each other as they compete for resources|                  
+| :white_check_mark: | NodeOOM                        | Monitor processes that consume too much memory, especially those that consume a lot of memory very quickly, and the kernel kill them to prevent them from running out of memory|
+| :white_check_mark: | NodeExt4Error                  | Ext4 mount error|                  
+| :white_check_mark: | NodeTaskHung                   | Check to see if there is a process in state D for more than 120s|
+| :white_check_mark: | NodeUnregisterNetDevice        | Check corresponding net|    
+| :white_check_mark: | NodeCorruptDockerImage         | Check docker image|
+| :white_check_mark: | NodeAUFSUmountHung             | Check storage|
 | :white_check_mark: | PodSetImagePullBackOff          | Pod can't pull the image properly, so it can be pulled manually on the corresponding node|         
-| :white_check_mark: | PodSetImageRegistry             | Checks if the image form is at the beginning of the corresponding harbor|
-| :white_check_mark: | PodSetCpuLimitsMissing          |  No CPU Resource limit was declared|           
 | :white_check_mark: | PodNoSuchFileOrDirectory        | Go into the container to see if the corresponding file exists|
 | :white_check_mark: | PodIOError                      | This is usually due to file IO performance bottlenecks|
 | :white_check_mark: | PodNoSuchDeviceOrAddress        | Check corresponding net|
@@ -114,69 +119,57 @@ kube-system     Warning      coredns                   Deployment   2020-11-27T1
 | :white_check_mark: | PodTooManyOpenFiles             | The number of file /socket connections opened by the program exceeds the system set value|
 | :white_check_mark: | PodNoSpaceLeftOnDevice          | Check for disk and inode usage|
 | :white_check_mark: | NodeApiServerExpiredPeriod      | ApiServer certificate expiration date less than 30 days will be checked|
-| :white_check_mark: | PodSetCpuRequestsMissing        | The CPU Resource Request value was not declared|
-| :white_check_mark: | PodSetHostIPCSet                | Set the hostIP|
-| :white_check_mark: | PodSetHostNetworkSet            | Set the hostNetwork|
-| :white_check_mark: | PodHostPIDSet                   | Set the hostPID|
-| :white_check_mark: | PodMemoryRequestsMiss           | No memory Resource Request value is declared|
-| :white_check_mark: | PodSetHostPort                  | Set the hostPort|
-| :white_check_mark: | PodSetMemoryLimitsMissing       | No memory Resource limit value is declared|
-| :white_check_mark: | PodNotReadOnlyRootFiles         | The file system is not set to read-only|
-| :white_check_mark: | PodSetPullPolicyNotAlways       | The mirror pull strategy is not always|
-| :white_check_mark: | PodSetRunAsRootAllowed          | Executed as a root account|
-| :white_check_mark: | PodDangerousCapabilities        | You have the dangerous option in capabilities such as ALL/SYS_ADMIN/NET_ADMIN|
-| :white_check_mark: | PodlivenessProbeMissing        | ReadinessProbe was not declared|
-| :white_check_mark: | privilegeEscalationAllowed        | Privilege escalation is allowed|
 |                    | NodeNotReadyAndUseOfClosedNetworkConnection        | http2-max-streams-per-connection |
 |                    | NodeNotReady        | Failed to start ContainerManager Cannot set property TasksAccounting, or unknown property |
 > unmarked items are under heavy development
 
 
-## Add your own check rules
-
-### Add custom npd rule
-
-- Install NPD with `ke install npd`
-- Edit configmap kube-system/node-problem-detector-config with kubectl, 
+## Add your own audit rules
+### Add custom OPA rules
+- create a directory for OPA rules
+``` shell
+mkdir opa
 ```
- kubectl edit cm -n kube-system node-problem-detector-config
+- Add custom OPA rules files
+> Note: the OPA rule for workloads package name must be *kubeeye_workloads_rego*,
+> for RBAC package name must be *kubeeye_RBAC_rego*, for nodes package name must be *kubeeye_nodes_rego*.
+
+- Save the following rule to rule file such as *imageRegistryRule.rego* for audit the image registry address complies with rules.
+```rego
+package kubeeye_workloads_rego
+
+deny[msg] {
+    resource := input
+    type := resource.Object.kind
+    resourcename := resource.Object.metadata.name
+    resourcenamespace := resource.Object.metadata.namespace
+    workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
+    workloadsType[type]
+
+    not workloadsImageRegistryRule(resource)
+
+    msg := {
+        "Name": sprintf("%v", [resourcename]),
+        "Namespace": sprintf("%v", [resourcenamespace]),
+        "Type": sprintf("%v", [type]),
+        "Message": "ImageRegistryNotmyregistry"
+    }
+}
+
+workloadsImageRegistryRule(resource) {
+    regex.match("^myregistry.public.kubesphere/basic/.+", resource.Object.spec.template.spec.containers[_].image)
+}
 ```
--  Add exception log information under the rule of configMap, rules follow regular expressions.
 
+- Run KubeEye with custom rules
+> Note: Specify the path then Kubeeye will read all files in the directory that end with *.rego*.
 
-### Fault with your own custom best practice rules
-- Prepare a rule yaml, for example, the following rule will validate your pod spec to make sure image are only from authorized registries.
-```
-checks:
-  imageFromUnauthorizedRegistry: warning
-
-customChecks:
-  imageFromUnauthorizedRegistry:
-    promptMessage: When the corresponding rule does not match. Show that image from an unauthorized registry.
-    category: Images
-    target: Container
-    schema:
-      '$schema': http://json-schema.org/draft-07/schema
-      type: object
-      properties:
-        image:
-          type: string
-          not:
-            pattern: ^quay.io
-```
-
-- Save the above rule as a yaml, for example, `rule.yaml`.
-- Run KubeEye with `rule.yaml`
 ```shell
-root:# ke diag -f rule.yaml --kubeconfig ~/.kube/config
-NAMESPACE     SEVERITY    NAME                      KIND         TIME                        MESSAGE
-default       Warning     nginx                     Deployment   2020-11-27T17:18:31+08:00   [imageFromUnauthorizedRegistry]
-kube-system   Warning     node-problem-detector     DaemonSet    2020-11-27T17:18:31+08:00   [livenessProbeMissing runAsPrivileged]
-kube-system   Warning     calico-node               DaemonSet    2020-11-27T17:18:31+08:00   [cpuLimitsMissing runAsPrivileged]
-kube-system   Warning     calico-kube-controllers   Deployment   2020-11-27T17:18:31+08:00   [cpuLimitsMissing livenessProbeMissing]
-kube-system   Warning     nodelocaldns              DaemonSet    2020-11-27T17:18:31+08:00   [runAsPrivileged cpuLimitsMissing]
-default       Warning     nginx                     Deployment   2020-11-27T17:18:31+08:00   [livenessProbeMissing cpuLimitsMissing]
-kube-system   Warning     coredns                   Deployment   2020-11-27T17:18:31+08:00   [cpuLimitsMissing]
+root:# kubeeye audit -p ./opa -f ~/.kube/config
+NAMESPACE     NAME              KIND          MESSAGE
+default       nginx1            Deployment    [ImageRegistryNotmyregistry NotReadOnlyRootFilesystem NotRunAsNonRoot]
+default       nginx11           Deployment    [ImageRegistryNotmyregistry PrivilegeEscalationAllowed HighRiskCapabilities HostIPCAllowed HostPortAllowed ImagePullPolicyNotAlways ImageTagIsLatest InsecureCapabilities NoPriorityClassName PrivilegedAllowed NotReadOnlyRootFilesystem NotRunAsNonRoot]
+default       nginx111          Deployment    [ImageRegistryNotmyregistry NoCPULimits NoCPURequests ImageTagMiss NoLivenessProbe NoMemoryLimits NoMemoryRequests NoPriorityClassName NotReadOnlyRootFilesystem NoReadinessProbe NotRunAsNonRoot]
 ```
 
 ## Contributors ✨
@@ -188,9 +181,10 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <!-- markdownlint-disable -->
 <table>
   <tr>
-    <td align="center"><a href="https://github.com/Forest-L"><img src="https://avatars.githubusercontent.com/u/50984129?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Forest</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=Forest-L" title="Code">💻</a> <a href="https://github.com/kubesphere/kubeeye/commits?author=Forest-L" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/ruiyaoOps"><img src="https://avatars.githubusercontent.com/u/35256376?v=4?s=100" width="100px;" alt=""/><br /><sub><b>ruiyaoOps</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=ruiyaoOps" title="Code">💻</a> <a href="https://github.com/kubesphere/kubeeye/commits?author=ruiyaoOps" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/Forest-L"><img src="https://avatars.githubusercontent.com/u/50984129?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Forest</b></sub></a><br /> <a href="https://github.com/kubesphere/kubeeye/commits?author=Forest-L" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/zryfish"><img src="https://avatars.githubusercontent.com/u/3326354?v=4?s=100" width="100px;" alt=""/><br /><sub><b>zryfish</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=zryfish" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://www.chenshaowen.com/"><img src="https://avatars.githubusercontent.com/u/43693241?v=4?s=100" width="100px;" alt=""/><br /><sub><b>shaowenchen</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=shaowenchen" title="Code">💻</a></td>
+    <td align="center"><a href="https://www.chenshaowen.com/"><img src="https://avatars.githubusercontent.com/u/43693241?v=4?s=100" width="100px;" alt=""/><br /><sub><b>shaowenchen</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=shaowenchen" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/pixiake"><img src="https://avatars.githubusercontent.com/u/22290449?v=4?s=100" width="100px;" alt=""/><br /><sub><b>pixiake</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=pixiake" title="Documentation">📖</a></td>
     <td align="center"><a href="https://kubesphere.io"><img src="https://avatars.githubusercontent.com/u/40452856?v=4?s=100" width="100px;" alt=""/><br /><sub><b>pengfei</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=FeynmanZhou" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/RealHarshThakur"><img src="https://avatars.githubusercontent.com/u/38140305?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Harsh Thakur</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=RealHarshThakur" title="Code">💻</a></td>

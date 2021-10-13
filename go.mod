@@ -1,6 +1,6 @@
 module github.com/kubesphere/kubeeye
 
-go 1.15
+go 1.16
 
 require (
 	github.com/gobuffalo/logger v1.0.4 // indirect
@@ -8,12 +8,10 @@ require (
 	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/open-policy-agent/opa v0.30.2
 	github.com/pkg/errors v0.9.1
-	github.com/qri-io/jsonschema v0.1.1
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.7.0
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2 // indirect
 	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // indirect

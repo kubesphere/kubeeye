@@ -1,15 +1,14 @@
 approvers:
-    - Forest-L
+    - ruiyaoOps
     - pixiake
     - zryfish
     - rayzhou2017
 
 reviewers:
-    - Forest-L
+    - ruiyaoOps
     - pixiake
     - rayzhou2017
     - zryfish
-    - shaowenchen
     - benjaminhuo
     - calvinyv
     - FeynmanZhou
