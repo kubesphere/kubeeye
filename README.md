@@ -12,7 +12,7 @@ KubeEye aims to find various problems on Kubernetes, such as application misconf
 ## Architecture
 KubeEye gets cluster diagnostic data by calling the Kubernetes API, by regular matching of key error messages in resources and by rule matching of container syntax. See Architecture for details.
 
-![kubeeye-architecture](./docs/images/kubeeye-architecture.png?raw=true)
+![kubeeye-architecture](./docs/images/kubeeye-architecture.svg?raw=true)
 
 ## How to use
 -  Install KubeEye on your machine

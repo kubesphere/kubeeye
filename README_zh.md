@@ -10,7 +10,7 @@ KubeEye 旨在发现 Kubernetes 上的各种问题，比如应用配置错误（
 
 KubeEye 通过调用Kubernetes API，通过匹配资源中的关键字和容器语法的规则匹配来获取集群诊断数据，详见架构图。
 
-![kubeeye-architecture](./docs/images/kubeeye-architecture.png?raw=true)
+![kubeeye-architecture](./docs/images/kubeeye-architecture.svg?raw=true)
 
 ## 怎么使用
 
