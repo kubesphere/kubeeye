@@ -59,7 +59,9 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) er
 		err := fmt.Errorf("failed to fetch serverVersion: %s", err.Error())
 		return err
 	}
-	nodes, err := clientSet.CoreV1().Nodes().List(ctx, listOpts)
+
+	nodesGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}
+	nodes, err := dynamicClient.Resource(nodesGVR).List(ctx, listOpts)
 	if err != nil {
 		err := fmt.Errorf("failed to fetch nodes: %s", err.Error())
 		return err
@@ -107,7 +109,8 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) er
 		return err
 	}
 
-	problemDetectors, err := clientSet.CoreV1().Events("").List(ctx, listOptsExcludedNamespace)
+	eventsGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "events"}
+	events, err := dynamicClient.Resource(eventsGVR).List(ctx, listOpts)
 	if err != nil {
 		err := fmt.Errorf("failed to fetch events: %s", err.Error())
 		return err
@@ -128,19 +131,19 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) er
 	}
 
 	K8sResourcesChan <- K8SResource{
-		ServerVersion:   serverVersion.Major + "." + serverVersion.Minor,
-		CreationTime:    time.Now(),
-		AuditAddress:    kubeconfig.Host,
-		Nodes:           nodes,
-		Namespaces:      namespaces.Items,
-		Deployments:     deployments.Items,
-		DaemonSets:      daemonSets.Items,
-		StatefulSets:    statefulSets.Items,
-		Jobs:            jobs.Items,
-		CronJobs:        cronjobs.Items,
-		Roles:           roles.Items,
-		ClusterRoles:    clusterRoles.Items,
-		ProblemDetector: problemDetectors.Items,
+		ServerVersion: serverVersion.Major + "." + serverVersion.Minor,
+		CreationTime:  time.Now(),
+		AuditAddress:  kubeconfig.Host,
+		Nodes:         nodes.Items,
+		Namespaces:    namespaces.Items,
+		Deployments:   deployments.Items,
+		DaemonSets:    daemonSets.Items,
+		StatefulSets:  statefulSets.Items,
+		Jobs:          jobs.Items,
+		CronJobs:      cronjobs.Items,
+		Roles:         roles.Items,
+		ClusterRoles:  clusterRoles.Items,
+		Events:        events.Items,
 	}
 	return nil
 }
