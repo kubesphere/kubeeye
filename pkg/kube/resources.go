@@ -33,21 +33,23 @@ var JobsResultsChan = make(chan JobsValidateResults)
 var CronjobsResultsChan = make(chan CronjobsValidateResults)
 var RolesResultsChan = make(chan RolesValidateResults)
 var ClusterRolesResultsChan = make(chan ClusterRolesValidateResults)
+var NodesResultsChan = make(chan NodesValidateResults)
+var EventsResultsChan = make(chan EventsValidateResults)
 
 type K8SResource struct {
-	ServerVersion   string
-	CreationTime    time.Time
-	AuditAddress    string
-	Nodes           *corev1.NodeList
-	Namespaces      []unstructured.Unstructured
-	Deployments     []unstructured.Unstructured
-	DaemonSets      []unstructured.Unstructured
-	StatefulSets    []unstructured.Unstructured
-	Jobs            []unstructured.Unstructured
-	CronJobs        []unstructured.Unstructured
-	Roles           []unstructured.Unstructured
-	ClusterRoles    []unstructured.Unstructured
-	ProblemDetector []corev1.Event
+	ServerVersion string
+	CreationTime  time.Time
+	AuditAddress  string
+	Nodes         []unstructured.Unstructured
+	Namespaces    []unstructured.Unstructured
+	Deployments   []unstructured.Unstructured
+	DaemonSets    []unstructured.Unstructured
+	StatefulSets  []unstructured.Unstructured
+	Jobs          []unstructured.Unstructured
+	CronJobs      []unstructured.Unstructured
+	Roles         []unstructured.Unstructured
+	ClusterRoles  []unstructured.Unstructured
+	Events        []unstructured.Unstructured
 }
 
 type RegoRulesList struct {
@@ -104,6 +106,14 @@ type ClusterRolesValidateResults struct {
 	ValidateResults []ResultReceiver
 }
 
+type NodesValidateResults struct {
+	ValidateResults []ResultReceiver
+}
+
+type EventsValidateResults struct {
+	ValidateResults []ResultReceiver
+}
+
 type ResourceProvider struct {
 	ServerVersion   string
 	CreationTime    time.Time
@@ -114,4 +124,14 @@ type ResourceProvider struct {
 	ConfigMap       []corev1.ConfigMap
 	ProblemDetector []corev1.Event
 	Workloads       []Workload
+}
+
+type ReturnMsg struct {
+	what string
+}
+
+type Certificate struct {
+	Name     string `yaml:"name" json:"name,omitempty"`
+	Expires  string `yaml:"expires" json:"expires,omitempty"`
+	Residual string `yaml:"residual" json:"residual,omitempty"`
 }
