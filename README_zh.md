@@ -25,7 +25,7 @@ KubeEye 通过调用Kubernetes API，通过匹配资源中的关键字和容器�
   cd kubeeye 
   make install
   ```
-- [可选] [Node-problem-Detector](https://github.com/kubernetes/node-problem-detector) 
+- [可选] 安装 [Node-problem-Detector](https://github.com/kubernetes/node-problem-detector)
 注意：这一行将在你的集群上安装 npd，只有当你想要详细的报告时才需要。  
 `kubeeye install -e npd`  
 
