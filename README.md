@@ -26,12 +26,11 @@ KubeEye gets cluster diagnostic data by calling the Kubernetes API, by regular m
     cd kubeeye 
     make install
     ```
-
-- [Optional] Install Node-problem-Detector
+- [Optional] Install [Node-problem-Detector](https://github.com/kubernetes/node-problem-detector)
 > Note: This line will install npd on your cluster, only required if you want detailed report.
 
 ```shell
-ke install npd
+kubeeye install -e npd
 ```
 - Run KubeEye
 > Note: The results of kubeeye sort by resource kind.

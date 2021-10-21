@@ -25,13 +25,13 @@ KubeEye 通过调用Kubernetes API，通过匹配资源中的关键字和容器�
   cd kubeeye 
   make install
   ```
-- [可选] 安装 Node-problem-Detector  
+- [可选] [Node-problem-Detector](https://github.com/kubernetes/node-problem-detector) 
 注意：这一行将在你的集群上安装 npd，只有当你想要详细的报告时才需要。  
-`ke install npd`  
+`kubeeye install -e npd`  
 
 - KubeEye 执行
 ```
-root@node1:# ke audit
+root@node1:# kubeeye audit
 NAMESPACE     NAME              KIND          MESSAGE
 default       nginx             Deployment    [nginx CPU limits should be set. nginx CPU requests should be set. nginx image tag not specified, do not use 'latest'. nginx livenessProbe should be set. nginx memory limits should be set. nginx memory requests should be set. nginx priorityClassName can be set. nginx root file system should be set read only. nginx readinessProbe should be set. nginx runAsNonRoot can be set.]
 default       testcronjob       CronJob       [testcronjob CPU limits should be set. testcronjob CPU requests should be set. testcronjob allowPrivilegeEscalation should be set false. testcronjob have HighRisk capabilities. testcronjob hostIPC should not be set. testcronjob hostNetwork should not be set. testcronjob hostPID should not be set. testcronjob hostPort should not be set. testcronjob imagePullPolicy should be set 'Always'. testcronjob image tag not specified, do not use 'latest'. testcronjob have insecure capabilities. testcronjob livenessProbe should be set. testcronjob memory limits should be set. testcronjob memory requests should be set. testcronjob priorityClassName can be set. testcronjob privileged should be set false. testcronjob root file system should be set read only. testcronjob readinessProbe should be set.]

@@ -41,6 +41,6 @@ func init() {
 	rootCmd.AddCommand(installCmd)
 
 	// Here you will define your flags and configuration settings.
-	installCmd.PersistentFlags().StringVarP(&expandPackage, "expand", "p", "", "Install extension packages in the cluster.")
+	installCmd.PersistentFlags().StringVarP(&expandPackage, "expand", "e", "", "Install extension packages in the cluster.")
 
 }
