@@ -36,9 +36,4 @@ Session.vim
 
 # Generate by makefile
 bin
-dist
-packrd
-ke
-node_modules
-package.json
-yarn.lock
+kubeeye

@@ -17,19 +17,21 @@ package cmd
 import (
 	"flag"
 	"fmt"
+
+	"github.com/kubesphere/kubeeye/pkg/audit"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"kubeeye/pkg/validator"
 )
 
-var config string
-var allInformation bool
+var KubeConfig string
+var additionalregoruleputh string
+var output string
 
 var auditCmd = &cobra.Command{
-	Use:   "diag",
-	Short: "diagnostic information from the cluster",
+	Use:   "audit",
+	Short: "audit resources from the cluster",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := validator.Cluster(config, cmd.Context(), allInformation)
+		err := audit.Cluster(cmd.Context(), KubeConfig, additionalregoruleputh, output)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -39,6 +41,8 @@ var auditCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(auditCmd)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	auditCmd.Flags().StringVarP(&config, "filename", "f", "", "Customize best practice configuration")
-	auditCmd.Flags().BoolVarP(&allInformation, "all", "A", false, "Show more specific information")
+
+	rootCmd.PersistentFlags().StringVarP(&KubeConfig, "config", "f", "", "Specify the path of kubeconfig.")
+	auditCmd.PersistentFlags().StringVarP(&additionalregoruleputh, "additional-rego-rule-path", "p", "", "Specify the path of additional rego rule files director.")
+	auditCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "The format of result output, support JSON and CSV")
 }

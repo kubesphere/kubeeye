@@ -10,13 +10,22 @@
   "commit": true,
   "commitConvention": "none",
   "contributors": [
+      {
+        "login": "ruiyaoOps",
+        "name": "ruiyaoOps",
+        "avatar_url": "https://avatars.githubusercontent.com/u/35256376?v=4",
+        "profile": "https://github.com/ruiyaoOps",
+        "contributions": [
+          "code",
+          "doc"
+        ]
+      },
     {
       "login": "Forest-L",
       "name": "Forest",
       "avatar_url": "https://avatars.githubusercontent.com/u/50984129?v=4",
       "profile": "https://github.com/Forest-L",
       "contributions": [
-        "code",
         "doc"
       ]
     },
@@ -35,7 +44,7 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/43693241?v=4",
       "profile": "https://www.chenshaowen.com/",
       "contributions": [
-        "code"
+        "doc"
       ]
     },
     {
