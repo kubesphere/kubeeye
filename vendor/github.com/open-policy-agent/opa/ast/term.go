@@ -399,7 +399,7 @@ func (term *Term) Hash() int {
 	return term.Value.Hash()
 }
 
-// IsGround returns true if this terms' Value is ground.
+// IsGround returns true if this term's Value is ground.
 func (term *Term) IsGround() bool {
 	return term.Value.IsGround()
 }
@@ -544,7 +544,7 @@ func (null Null) Hash() int {
 }
 
 // IsGround always returns true.
-func (null Null) IsGround() bool {
+func (Null) IsGround() bool {
 	return true
 }
 
@@ -593,7 +593,7 @@ func (bol Boolean) Hash() int {
 }
 
 // IsGround always returns true.
-func (bol Boolean) IsGround() bool {
+func (Boolean) IsGround() bool {
 	return true
 }
 
@@ -685,7 +685,7 @@ func (num Number) Float64() (float64, bool) {
 }
 
 // IsGround always returns true.
-func (num Number) IsGround() bool {
+func (Number) IsGround() bool {
 	return true
 }
 
@@ -747,7 +747,7 @@ func (str String) Find(path Ref) (Value, error) {
 }
 
 // IsGround always returns true.
-func (str String) IsGround() bool {
+func (String) IsGround() bool {
 	return true
 }
 
@@ -801,7 +801,7 @@ func (v Var) Hash() int {
 }
 
 // IsGround always returns false.
-func (v Var) IsGround() bool {
+func (Var) IsGround() bool {
 	return false
 }
 
@@ -949,7 +949,7 @@ func (ref Ref) Compare(other Value) int {
 	return Compare(ref, other)
 }
 
-// Find returns the current value or a not found error.
+// Find returns the current value or a "not found" error.
 func (ref Ref) Find(path Ref) (Value, error) {
 	if len(path) == 0 {
 		return ref, nil
@@ -1177,11 +1177,16 @@ func (arr *Array) MarshalJSON() ([]byte, error) {
 }
 
 func (arr *Array) String() string {
-	var buf []string
-	for _, e := range arr.elems {
-		buf = append(buf, e.String())
+	var b strings.Builder
+	b.WriteRune('[')
+	for i, e := range arr.elems {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(e.String())
 	}
-	return "[" + strings.Join(buf, ", ") + "]"
+	b.WriteRune(']')
+	return b.String()
 }
 
 // Len returns the number of elements in the array.
@@ -1336,12 +1341,19 @@ func (s *set) String() string {
 	if s.Len() == 0 {
 		return "set()"
 	}
-	buf := []string{}
+	var b strings.Builder
+	b.WriteRune('{')
 	sorted := s.Sorted()
+	first := true
 	sorted.Foreach(func(x *Term) {
-		buf = append(buf, fmt.Sprint(x))
+		if !first {
+			b.WriteString(", ")
+		}
+		first = false
+		b.WriteString(x.Value.String())
 	})
-	return "{" + strings.Join(buf, ", ") + "}"
+	b.WriteRune('}')
+	return b.String()
 }
 
 // Compare compares s to other, return <0, 0, or >0 if it is less than, equal to,
@@ -1788,9 +1800,6 @@ func (obj *object) Compare(other Value) int {
 	}
 	a := obj
 	b := other.(*object)
-	// TODO: Ideally Compare would be immutable; the following sorts happen in place.
-	sort.Sort(a.keys)
-	sort.Sort(b.keys)
 	minLen := len(a.keys)
 	if len(b.keys) < len(a.keys) {
 		minLen = len(b.keys)
@@ -2040,12 +2049,19 @@ func (obj object) Len() int {
 }
 
 func (obj object) String() string {
-	var buf []string
-	sorted := objectElemSliceSorted(obj.keys)
-	for _, elem := range sorted {
-		buf = append(buf, fmt.Sprintf("%s: %s", elem.key, elem.value))
+	var b strings.Builder
+	b.WriteRune('{')
+
+	for i, elem := range obj.keys {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(elem.key.String())
+		b.WriteString(": ")
+		b.WriteString(elem.value.String())
 	}
-	return "{" + strings.Join(buf, ", ") + "}"
+	b.WriteRune('}')
+	return b.String()
 }
 
 func (obj *object) get(k *Term) *objectElem {
@@ -2240,7 +2256,15 @@ func (obj *object) insert(k, v *Term) {
 		next:  head,
 	}
 	obj.elems[hash] = elem
-	obj.keys = append(obj.keys, elem)
+	i := sort.Search(len(obj.keys), func(i int) bool { return Compare(elem.key, obj.keys[i].key) < 0 })
+	if i < len(obj.keys) {
+		// insert at position `i`:
+		obj.keys = append(obj.keys, nil)   // add some space
+		copy(obj.keys[i+1:], obj.keys[i:]) // move things over
+		obj.keys[i] = elem                 // drop it in position
+	} else {
+		obj.keys = append(obj.keys, elem)
+	}
 	obj.hash = 0
 
 	if k.IsGround() {
@@ -2537,15 +2561,6 @@ func (c Call) String() string {
 		args[i-1] = c[i].String()
 	}
 	return fmt.Sprintf("%v(%v)", c[0], strings.Join(args, ", "))
-}
-
-func objectElemSliceSorted(a objectElemSlice) objectElemSlice {
-	b := make(objectElemSlice, len(a))
-	for i := range b {
-		b[i] = a[i]
-	}
-	sort.Sort(b)
-	return b
 }
 
 func termSliceCopy(a []*Term) []*Term {
