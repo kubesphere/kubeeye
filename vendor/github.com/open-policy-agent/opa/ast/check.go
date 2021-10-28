@@ -28,6 +28,7 @@ type typeChecker struct {
 	exprCheckers map[string]exprChecker
 	varRewriter  rewriteVars
 	ss           *SchemaSet
+	allowNet     []string
 	input        types.Type
 }
 
@@ -55,11 +56,17 @@ func (tc *typeChecker) copy() *typeChecker {
 	return newTypeChecker().
 		WithVarRewriter(tc.varRewriter).
 		WithSchemaSet(tc.ss).
+		WithAllowNet(tc.allowNet).
 		WithInputType(tc.input)
 }
 
 func (tc *typeChecker) WithSchemaSet(ss *SchemaSet) *typeChecker {
 	tc.ss = ss
+	return tc
+}
+
+func (tc *typeChecker) WithAllowNet(hosts []string) *typeChecker {
+	tc.allowNet = hosts
 	return tc
 }
 
@@ -180,7 +187,7 @@ func (tc *typeChecker) checkRule(env *TypeEnv, as *annotationSet, rule *Rule) {
 
 	if schemaAnnots := getRuleAnnotation(as, rule); schemaAnnots != nil {
 		for _, schemaAnnot := range schemaAnnots {
-			ref, refType, err := processAnnotation(tc.ss, schemaAnnot, rule)
+			ref, refType, err := processAnnotation(tc.ss, schemaAnnot, rule, tc.allowNet)
 			if err != nil {
 				tc.err([]*Error{err})
 				continue
@@ -311,27 +318,27 @@ func (tc *typeChecker) checkExprBuiltin(env *TypeEnv, expr *Expr) *Error {
 		return NewError(TypeErr, expr.Location, "undefined function %v", name)
 	}
 
-	maxArgs := len(ftpe.Args())
-	expArgs := ftpe.Args()
+	fargs := ftpe.FuncArgs()
 
 	if ftpe.Result() != nil {
-		maxArgs++
-		expArgs = append(expArgs, ftpe.Result())
+		fargs.Args = append(fargs.Args, ftpe.Result())
 	}
 
-	if len(args) > maxArgs {
-		return newArgError(expr.Location, name, "too many arguments", pre, expArgs)
-	} else if len(args) < len(ftpe.Args()) {
-		return newArgError(expr.Location, name, "too few arguments", pre, expArgs)
+	if len(args) > len(fargs.Args) && fargs.Variadic == nil {
+		return newArgError(expr.Location, name, "too many arguments", pre, fargs)
+	}
+
+	if len(args) < len(ftpe.FuncArgs().Args) {
+		return newArgError(expr.Location, name, "too few arguments", pre, fargs)
 	}
 
 	for i := range args {
-		if !unify1(env, args[i], expArgs[i], false) {
+		if !unify1(env, args[i], fargs.Arg(i), false) {
 			post := make([]types.Type, len(args))
 			for i := range args {
 				post[i] = env.Get(args[i])
 			}
-			return newArgError(expr.Location, name, "invalid argument(s)", post, expArgs)
+			return newArgError(expr.Location, name, "invalid argument(s)", post, fargs)
 		}
 	}
 
@@ -341,11 +348,13 @@ func (tc *typeChecker) checkExprBuiltin(env *TypeEnv, expr *Expr) *Error {
 func (tc *typeChecker) checkExprEq(env *TypeEnv, expr *Expr) *Error {
 
 	pre := getArgTypes(env, expr.Operands())
-	exp := Equality.Decl.Args()
+	exp := Equality.Decl.FuncArgs()
 
-	if len(pre) < len(exp) {
+	if len(pre) < len(exp.Args) {
 		return newArgError(expr.Location, expr.Operator(), "too few arguments", pre, exp)
-	} else if len(exp) < len(pre) {
+	}
+
+	if len(exp.Args) < len(pre) {
 		return newArgError(expr.Location, expr.Operator(), "too many arguments", pre, exp)
 	}
 
@@ -873,15 +882,15 @@ func causedByNilType(err *Error) bool {
 
 // ArgErrDetail represents a generic argument error.
 type ArgErrDetail struct {
-	Have []types.Type `json:"have"`
-	Want []types.Type `json:"want"`
+	Have []types.Type   `json:"have"`
+	Want types.FuncArgs `json:"want"`
 }
 
 // Lines returns the string representation of the detail.
 func (d *ArgErrDetail) Lines() []string {
 	lines := make([]string, 2)
-	lines[0] = fmt.Sprint("have: ", formatArgs(d.Have))
-	lines[1] = fmt.Sprint("want: ", formatArgs(d.Want))
+	lines[0] = "have: " + formatArgs(d.Have)
+	lines[1] = "want: " + fmt.Sprint(d.Want)
 	return lines
 }
 
@@ -995,7 +1004,7 @@ func newRefError(loc *Location, ref Ref) *Error {
 	return NewError(TypeErr, loc, "undefined ref: %v", ref)
 }
 
-func newArgError(loc *Location, builtinName Ref, msg string, have []types.Type, want []types.Type) *Error {
+func newArgError(loc *Location, builtinName Ref, msg string, have []types.Type, want types.FuncArgs) *Error {
 	err := NewError(TypeErr, loc, "%v: %v", builtinName, msg)
 	err.Details = &ArgErrDetail{
 		Have: have,
@@ -1024,7 +1033,15 @@ func getOneOfForType(tpe types.Type) (result []Value) {
 			}
 			result = append(result, v)
 		}
+
+	case types.Any:
+		for _, object := range tpe {
+			objRes := getOneOfForType(object)
+			result = append(result, objRes...)
+		}
 	}
+
+	result = removeDuplicate(result)
 	sortValueSlice(result)
 	return result
 }
@@ -1033,6 +1050,18 @@ func sortValueSlice(sl []Value) {
 	sort.Slice(sl, func(i, j int) bool {
 		return sl[i].Compare(sl[j]) < 0
 	})
+}
+
+func removeDuplicate(list []Value) []Value {
+	seen := make(map[Value]bool)
+	var newResult []Value
+	for _, item := range list {
+		if !seen[item] {
+			newResult = append(newResult, item)
+			seen[item] = true
+		}
+	}
+	return newResult
 }
 
 func getArgTypes(env *TypeEnv, args []*Term) []types.Type {
@@ -1158,7 +1187,7 @@ func getRuleAnnotation(as *annotationSet, rule *Rule) (result []*SchemaAnnotatio
 	return result
 }
 
-func processAnnotation(ss *SchemaSet, annot *SchemaAnnotation, rule *Rule) (Ref, types.Type, *Error) {
+func processAnnotation(ss *SchemaSet, annot *SchemaAnnotation, rule *Rule, allowNet []string) (Ref, types.Type, *Error) {
 
 	var schema interface{}
 
@@ -1171,7 +1200,7 @@ func processAnnotation(ss *SchemaSet, annot *SchemaAnnotation, rule *Rule) (Ref,
 		schema = *annot.Definition
 	}
 
-	tpe, err := loadSchema(schema)
+	tpe, err := loadSchema(schema, allowNet)
 	if err != nil {
 		return nil, nil, NewError(TypeErr, rule.Location, err.Error())
 	}
