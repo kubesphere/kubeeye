@@ -13,13 +13,6 @@ github.com/Azure/go-autorest/logger
 github.com/Azure/go-autorest/tracing
 # github.com/OneOfOne/xxhash v1.2.8
 github.com/OneOfOne/xxhash
-# github.com/bytecodealliance/wasmtime-go v0.28.0
-github.com/bytecodealliance/wasmtime-go
-github.com/bytecodealliance/wasmtime-go/build/include
-github.com/bytecodealliance/wasmtime-go/build/include/wasmtime
-github.com/bytecodealliance/wasmtime-go/build/linux-x86_64
-github.com/bytecodealliance/wasmtime-go/build/macos-x86_64
-github.com/bytecodealliance/wasmtime-go/build/windows-x86_64
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -70,7 +63,7 @@ github.com/json-iterator/go
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/open-policy-agent/opa v0.30.2
+# github.com/open-policy-agent/opa v0.34.1
 ## explicit
 github.com/open-policy-agent/opa/ast
 github.com/open-policy-agent/opa/ast/internal/scanner
@@ -86,6 +79,7 @@ github.com/open-policy-agent/opa/internal/debug
 github.com/open-policy-agent/opa/internal/deepcopy
 github.com/open-policy-agent/opa/internal/file/archive
 github.com/open-policy-agent/opa/internal/file/url
+github.com/open-policy-agent/opa/internal/future
 github.com/open-policy-agent/opa/internal/gojsonschema
 github.com/open-policy-agent/opa/internal/ir
 github.com/open-policy-agent/opa/internal/jwx/buffer
@@ -100,6 +94,7 @@ github.com/open-policy-agent/opa/internal/merge
 github.com/open-policy-agent/opa/internal/planner
 github.com/open-policy-agent/opa/internal/rego/opa
 github.com/open-policy-agent/opa/internal/semver
+github.com/open-policy-agent/opa/internal/strings
 github.com/open-policy-agent/opa/internal/uuid
 github.com/open-policy-agent/opa/internal/version
 github.com/open-policy-agent/opa/internal/wasm/constant
@@ -107,11 +102,9 @@ github.com/open-policy-agent/opa/internal/wasm/encoding
 github.com/open-policy-agent/opa/internal/wasm/instruction
 github.com/open-policy-agent/opa/internal/wasm/module
 github.com/open-policy-agent/opa/internal/wasm/opcode
-github.com/open-policy-agent/opa/internal/wasm/sdk/internal/wasm
-github.com/open-policy-agent/opa/internal/wasm/sdk/opa
 github.com/open-policy-agent/opa/internal/wasm/sdk/opa/capabilities
-github.com/open-policy-agent/opa/internal/wasm/sdk/opa/errors
 github.com/open-policy-agent/opa/internal/wasm/types
+github.com/open-policy-agent/opa/internal/wasm/util
 github.com/open-policy-agent/opa/keys
 github.com/open-policy-agent/opa/loader
 github.com/open-policy-agent/opa/metrics
@@ -120,10 +113,13 @@ github.com/open-policy-agent/opa/resolver
 github.com/open-policy-agent/opa/resolver/wasm
 github.com/open-policy-agent/opa/storage
 github.com/open-policy-agent/opa/storage/inmem
+github.com/open-policy-agent/opa/storage/internal/errors
+github.com/open-policy-agent/opa/storage/internal/ptr
 github.com/open-policy-agent/opa/topdown
 github.com/open-policy-agent/opa/topdown/builtins
 github.com/open-policy-agent/opa/topdown/cache
 github.com/open-policy-agent/opa/topdown/copypropagation
+github.com/open-policy-agent/opa/topdown/print
 github.com/open-policy-agent/opa/types
 github.com/open-policy-agent/opa/util
 github.com/open-policy-agent/opa/version
@@ -147,22 +143,22 @@ github.com/yashtewari/glob-intersection
 # golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 ## explicit
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
+# golang.org/x/net v0.0.0-20210825183410-e898025ed96a
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
-# golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
+# golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 golang.org/x/oauth2
+golang.org/x/oauth2/authhandler
 golang.org/x/oauth2/google
 golang.org/x/oauth2/google/internal/externalaccount
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2
-## explicit
+# golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
@@ -170,7 +166,7 @@ golang.org/x/sys/windows
 # golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b
 ## explicit
 golang.org/x/term
-# golang.org/x/text v0.3.5
+# golang.org/x/text v0.3.6
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
@@ -188,7 +184,7 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/protobuf v1.26.0
+# google.golang.org/protobuf v1.27.1
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
