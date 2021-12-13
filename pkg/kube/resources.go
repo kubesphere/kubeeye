@@ -26,15 +26,7 @@ import (
 var K8sResourcesChan = make(chan K8SResource)
 var RegoRulesListChan = make(chan RegoRulesList)
 var ResultChan = make(chan ValidateResult)
-var DeploymentsResultsChan = make(chan DeploymentsValidateResults)
-var DaemonSetsResultsChan = make(chan DaemonSetsValidateResults)
-var StatefulSetsResultsChan = make(chan StatefulSetsValidateResults)
-var JobsResultsChan = make(chan JobsValidateResults)
-var CronjobsResultsChan = make(chan CronjobsValidateResults)
-var RolesResultsChan = make(chan RolesValidateResults)
-var ClusterRolesResultsChan = make(chan ClusterRolesValidateResults)
-var NodesResultsChan = make(chan NodesValidateResults)
-var EventsResultsChan = make(chan EventsValidateResults)
+var ValidateResultsChan = make(chan ValidateResults)
 
 type K8SResource struct {
 	ServerVersion string
@@ -72,45 +64,13 @@ type ValidateResult struct {
 
 type ResultReceiver struct {
 	Name      string   `json:"name"`
-	Namespace string   `json:"namespace,omitempty"`
+	Namespace string   `json:"namespace"`
 	Type      string   `json:"kind"`
 	Message   []string `json:"message"`
-	Reason    string   `json:"reason,omitempty"`
+	Reason    string   `json:"reason"`
 }
 
-type DeploymentsValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type DaemonSetsValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type StatefulSetsValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type JobsValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type CronjobsValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type RolesValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type ClusterRolesValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type NodesValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type EventsValidateResults struct {
+type ValidateResults struct {
 	ValidateResults []ResultReceiver
 }
 
@@ -130,8 +90,3 @@ type ReturnMsg struct {
 	what string
 }
 
-type Certificate struct {
-	Name     string `yaml:"name" json:"name,omitempty"`
-	Expires  string `yaml:"expires" json:"expires,omitempty"`
-	Residual string `yaml:"residual" json:"residual,omitempty"`
-}

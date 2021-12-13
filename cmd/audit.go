@@ -19,19 +19,26 @@ import (
 	"fmt"
 
 	"github.com/kubesphere/kubeeye/pkg/audit"
-	"github.com/spf13/cobra"
+	cobra "github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
 var KubeConfig string
-var additionalregoruleputh string
+var regorulepath string
+var regoruleconfigmapName string
 var output string
 
 var auditCmd = &cobra.Command{
 	Use:   "audit",
 	Short: "audit resources from the cluster",
+	Args: func (cmd *cobra.Command, args []string)  error {
+		if regoruleconfigmapName != "" && regorulepath != "" {
+			fmt.Println("regorulepath or regoruleconfigmapName only one")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		err := audit.Cluster(cmd.Context(), KubeConfig, additionalregoruleputh, output)
+		err := audit.Cluster(cmd.Context(), KubeConfig, regorulepath, output)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -43,6 +50,7 @@ func init() {
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 
 	rootCmd.PersistentFlags().StringVarP(&KubeConfig, "config", "f", "", "Specify the path of kubeconfig.")
-	auditCmd.PersistentFlags().StringVarP(&additionalregoruleputh, "additional-rego-rule-path", "p", "", "Specify the path of additional rego rule files director.")
+	auditCmd.PersistentFlags().StringVarP(&regorulepath, "rego-rule-path", "p", "", "Specify the path of additional rego rule files director.")
+	auditCmd.PersistentFlags().StringVarP(&regoruleconfigmapName, "rego-rule-configmap-name", "c", "", "Specify the name of additional rego rule configMap")
 	auditCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "The format of result output, support JSON and CSV")
 }

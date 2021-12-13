@@ -16,9 +16,9 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
+	"embed"
+	register "github.com/kubesphere/kubeeye/pkg/register"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var Verbose bool
@@ -28,9 +28,36 @@ var rootCmd = &cobra.Command{
 	Short: "KubeEye finds various problems on Kubernetes cluster.",
 }
 
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+func NewKubeEyeCommand() *KubeEyeCommand {
+	return &KubeEyeCommand{
+		commands: make([]*cobra.Command, 0),
 	}
+}
+
+type KubeEyeCommand struct {
+	commands []*cobra.Command
+}
+
+// add an additional command
+func (ke *KubeEyeCommand) WithCommand(command *cobra.Command) *KubeEyeCommand {
+	ke.commands = append(ke.commands, command)
+	return ke
+}
+
+func (ke *KubeEyeCommand) WithRegoRule(r embed.FS) *KubeEyeCommand {
+	register.RegoRuleRegistry(r)
+	return ke
+}
+
+func (ke *KubeEyeCommand) WithExecRule(e register.EXECRule) *KubeEyeCommand {
+	register.ExecRuleRegistry(e)
+	return ke
+}
+
+// new an kubeeye command
+func (ke KubeEyeCommand) DO() *cobra.Command {
+	for _, command := range ke.commands {
+		rootCmd.AddCommand(command)
+	}
+	return rootCmd
 }

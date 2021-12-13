@@ -19,5 +19,6 @@ import (
 )
 
 func main() {
+	cmd := cmd.NewKubeEyeCommand().DO()
 	cmd.Execute()
 }

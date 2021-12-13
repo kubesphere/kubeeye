@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubeeye-rego-rules
+  namespace: kube-system
+data:
+  version: "v1"
+  regorules: |
+    enable: 
+      - name: allowPrivilegeEscalationRule
+      - name: canImpersonateUserRoleRule
+    disable: 
+      - name: CPULimitsRule
+      - name: "*"
+  execrules: |
+    enable:
+      - name: nodeSSHConnection
+    disable:
+      - name: xxxxStatus
+    
+    
+    

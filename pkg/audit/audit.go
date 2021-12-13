@@ -16,17 +16,11 @@ package audit
 
 import (
 	"context"
-	"fmt"
-
-	regorules2 "github.com/kubesphere/kubeeye/pkg/regorules"
-	certutil "k8s.io/client-go/util/cert"
-
-	"os/exec"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/kubesphere/kubeeye/pkg/kube"
+	util "github.com/kubesphere/kubeeye/pkg/util"
+	_ "github.com/kubesphere/kubeeye/pkg/execrules"
+	_ "github.com/kubesphere/kubeeye/pkg/regorules"
+	register "github.com/kubesphere/kubeeye/pkg/register"
 )
 
 func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh string, output string) error {
@@ -38,62 +32,36 @@ func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh stri
 
 	// get rego rules and put into the channel.
 	go func(additionalregoruleputh string) {
-		regorules2.GetRegoRules(additionalregoruleputh)
+		// embed file
+		for _, emb := range *register.RegoRuleList() {
+			outOfTreeEmbFiles := util.ListRegoRuleFileName(emb)
+			embedRegoRules := kube.RegoRulesList{RegoRules: util.GetRegoRules(outOfTreeEmbFiles, emb)}
+			kube.RegoRulesListChan <- embedRegoRules
+		}
+		if additionalregoruleputh == "" {
+			return
+		}
+		// additation embed file
+		// addlFS := os.DirFS(additionalregoruleputh)
+		// ADDLEmbedFiles := regorules2.ListRegoRuleFileName(addlFS)
+		// ADDLEmbedRegoRules := kube.RegoRulesList{RegoRules: regorules2.GetRegoRules(ADDLEmbedFiles, addlFS)}
+		// fmt.Println("addl", ADDLEmbedRegoRules)
+
 	}(additionalregoruleputh)
 
-	// todo
-	// Get kube-apiserver certificate expiration, it will be recode.
-	var certExpires []kube.Certificate
-	cmd := fmt.Sprintf("cat /etc/kubernetes/pki/%s", "apiserver.crt")
-	combinedoutput, _ := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
-	if combinedoutput != nil {
-		certs, _ := certutil.ParseCertsPEM([]byte(combinedoutput))
-		if len(certs) != 0 {
-			certExpire := kube.Certificate{
-				Name:     "kube-apiserver",
-				Expires:  certs[0].NotAfter.Format("Jan 02, 2006 15:04 MST"),
-				Residual: ResidualTime(certs[0].NotAfter),
-			}
-			if strings.Contains(certExpire.Residual, "d") {
-				tmpTime, _ := strconv.Atoi(strings.TrimRight(certExpire.Residual, "d"))
-				if tmpTime < 30 {
-					certExpires = append(certExpires, certExpire)
-				}
-			} else {
-				certExpires = append(certExpires, certExpire)
-			}
-		}
-	}
-
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-	ValidateResources(ctx)
+	go ValidateResources(ctx)
+	// ValidateOther
+	// go other(ctx)
 
 	// Set the output mode, support default output JSON and CSV.
 	switch output {
 	case "JSON", "json", "Json":
-		JSONOutput(certExpires)
+		JsonOutput(kube.ValidateResultsChan)
 	case "CSV", "csv", "Csv":
-		CSVOutput(certExpires)
+		CSVOutput(kube.ValidateResultsChan)
 	default:
-		defaultOutput(certExpires)
+		defaultOutput(kube.ValidateResultsChan)
 	}
 	return nil
-}
-
-func ResidualTime(t time.Time) string {
-	d := time.Until(t)
-	if seconds := int(d.Seconds()); seconds < -1 {
-		return fmt.Sprintf("<invalid>")
-	} else if seconds < 0 {
-		return fmt.Sprintf("0s")
-	} else if seconds < 60 {
-		return fmt.Sprintf("%ds", seconds)
-	} else if minutes := int(d.Minutes()); minutes < 60 {
-		return fmt.Sprintf("%dm", minutes)
-	} else if hours := int(d.Hours()); hours < 24 {
-		return fmt.Sprintf("%dh", hours)
-	} else if hours < 24*365 {
-		return fmt.Sprintf("%dd", hours/24)
-	}
-	return fmt.Sprintf("%dy", int(d.Hours()/24/365))
 }

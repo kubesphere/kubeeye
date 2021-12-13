@@ -30,6 +30,7 @@ import (
 func GetK8SResourcesProvider(ctx context.Context, kubeconfig string) {
 	// get kubernetes client
 	kubernetesClient := KubernetesAPI(kubeconfig)
+	// 全局队列，因为要共享
 	err := GetK8SResources(ctx, kubernetesClient)
 	if err != nil {
 		fmt.Println(err)
