@@ -32,6 +32,7 @@ func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh stri
 
 	// get rego rules and put into the channel.
 	go func(additionalregoruleputh string) {
+		defer close(kube.RegoRulesListChan)
 		// embed file
 		for _, emb := range *register.RegoRuleList() {
 			outOfTreeEmbFiles := util.ListRegoRuleFileName(emb)
@@ -46,7 +47,6 @@ func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh stri
 		// ADDLEmbedFiles := regorules2.ListRegoRuleFileName(addlFS)
 		// ADDLEmbedRegoRules := kube.RegoRulesList{RegoRules: regorules2.GetRegoRules(ADDLEmbedFiles, addlFS)}
 		// fmt.Println("addl", ADDLEmbedRegoRules)
-
 	}(additionalregoruleputh)
 
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.

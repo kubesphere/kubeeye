@@ -29,9 +29,10 @@ import (
 // ValidateResources Validate kubernetes cluster Resources, put the results into channels.
 func ValidateResources(ctx context.Context) {
 
-	defer close(kube.RegoRulesListChan)
-	// get the rego rules from channel RegoRulesListChan.
-	regoRulesList := <-kube.RegoRulesListChan
+	regoRulesList := kube.RegoRulesList{RegoRules: make([]string, 0)}
+	for r := range kube.RegoRulesListChan {
+		regoRulesList.RegoRules = append(regoRulesList.RegoRules, r.RegoRules...)
+	}
 
 	defer close(kube.K8sResourcesChan)
 	// get the kubernetes resources from the channel K8sResourcesChan.
