@@ -16,11 +16,12 @@ package audit
 
 import (
 	"context"
+
+	_ "github.com/leonharetd/kubeeye/pkg/funcrules"
 	"github.com/leonharetd/kubeeye/pkg/kube"
-	util "github.com/leonharetd/kubeeye/pkg/util"
-	_ "github.com/leonharetd/kubeeye/pkg/execrules"
-	_ "github.com/leonharetd/kubeeye/pkg/regorules"
 	register "github.com/leonharetd/kubeeye/pkg/register"
+	_ "github.com/leonharetd/kubeeye/pkg/regorules"
+	util "github.com/leonharetd/kubeeye/pkg/util"
 )
 
 func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh string, output string) error {
@@ -39,6 +40,7 @@ func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh stri
 			embedRegoRules := kube.RegoRulesList{RegoRules: util.GetRegoRules(outOfTreeEmbFiles, emb)}
 			kube.RegoRulesListChan <- embedRegoRules
 		}
+
 		if additionalregoruleputh == "" {
 			return
 		}
@@ -49,6 +51,13 @@ func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh stri
 		// fmt.Println("addl", ADDLEmbedRegoRules)
 	}(additionalregoruleputh)
 
+	// embed func
+	go func() {
+		defer close(kube.FuncRulesListchan)
+		for _, embFunc := range *register.FuncRuleList() {
+			kube.FuncRulesListchan <- embFunc
+		}
+	}()
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
 	go ValidateResources(ctx)
 	// ValidateOther

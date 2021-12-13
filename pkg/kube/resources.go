@@ -22,9 +22,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+type FuncRule interface {
+	Exec() ValidateResults
+}
 
 var K8sResourcesChan = make(chan K8SResource)
 var RegoRulesListChan = make(chan RegoRulesList)
+var FuncRulesListchan = make(chan FuncRule)
 var ResultChan = make(chan ValidateResult)
 var ValidateResultsChan = make(chan ValidateResults)
 

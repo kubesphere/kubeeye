@@ -39,7 +39,7 @@ func ValidateResources(ctx context.Context) {
 	k8sResources := <-kube.K8sResourcesChan
 
 	var wg sync.WaitGroup
-	wg.Add(9)
+	wg.Add(10)
 
 	go func(ctx context.Context, kubeResources kube.K8SResource, regoRulesList kube.RegoRulesList) {
 		defer wg.Done()
@@ -85,6 +85,13 @@ func ValidateResources(ctx context.Context) {
 		defer wg.Done()
 		ValidateEvents(ctx, kubeResources.Events, regoRulesList)
 	}(ctx, k8sResources, regoRulesList)
+
+	go func(ctx context.Context, funcs chan kube.FuncRule){
+		defer wg.Done()
+		for RuleFunc := range kube.FuncRulesListchan {
+			VaildateFunc(ctx, RuleFunc)
+		}
+	}(ctx, kube.FuncRulesListchan)
 	wg.Wait()
 	defer close(kube.ValidateResultsChan)
 }
@@ -246,4 +253,10 @@ func ValidateK8SResource(ctx context.Context, resource unstructured.Unstructured
 		}
 	}
 	return resultReceiver, find
+}
+
+func VaildateFunc(ctx context.Context, funcs kube.FuncRule){
+	resultReceiver := funcs.Exec()
+	fmt.Println("vf end")
+	kube.ValidateResultsChan <- resultReceiver
 }

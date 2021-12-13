@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	register.ExecRuleRegistry(CertExpireRule{})
+	register.FuncRuleRegistry(CertExpireRule{})
 }
 
 type certificate struct {
@@ -25,7 +25,7 @@ type certificate struct {
 
 type CertExpireRule struct{}
 
-func (cer CertExpireRule) Exec() []kube.ResultReceiver {
+func (cer CertExpireRule) Exec() kube.ValidateResults {
 	var certExpires []certificate
 	cmd := fmt.Sprintf("cat /etc/kubernetes/pki/%s", "apiserver.crt")
 	combinedoutput, _ := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
@@ -47,7 +47,7 @@ func (cer CertExpireRule) Exec() []kube.ResultReceiver {
 			}
 		}
 	}
-	var output []kube.ResultReceiver
+	output := kube.ValidateResults{ValidateResults: make([]kube.ResultReceiver, 0)}
 	var certExpiresOutput kube.ResultReceiver
 	if len(certExpires) != 0 {
 		for _, certExpire := range certExpires {
@@ -55,8 +55,7 @@ func (cer CertExpireRule) Exec() []kube.ResultReceiver {
 				certExpiresOutput.Name = certExpire.Name
 				certExpiresOutput.Type = "certExpire"
 				certExpiresOutput.Message = append(certExpiresOutput.Message, certExpire.Expires, certExpire.Residual)
-
-				output = append(output, certExpiresOutput)
+				output.ValidateResults = append(output.ValidateResults, certExpiresOutput)
 			}
 		}
 	}

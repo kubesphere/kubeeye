@@ -12,7 +12,7 @@ data:
     disable: 
       - name: CPULimitsRule
       - name: "*"
-  execrules: |
+  funcrules: |
     enable:
       - name: nodeSSHConnection
     disable:

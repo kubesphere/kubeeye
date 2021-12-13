@@ -8,9 +8,9 @@ import (
 
 // Provide for user registration
 var (
-	execRules        = newExecRulesBuilder()
-	ExecRuleRegistry = execRules.Registry
-	ExecRuleList     = execRules.List
+	funcRules        = newFuncRulesBuilder()
+	FuncRuleRegistry = funcRules.Registry
+	FuncRuleList     = funcRules.List
 
 	// Provide for user registration
 	regoRules        = newRegoRulesBuilder()
@@ -18,23 +18,19 @@ var (
 	RegoRuleList     = regoRules.List
 )
 
-type EXECRule interface {
-	Exec() []kube.ResultReceiver
-}
+type funcRulesBuilder []kube.FuncRule
 
-type execRulesBuilder []EXECRule
-
-func newExecRulesBuilder() *execRulesBuilder {
-	var er execRulesBuilder
+func newFuncRulesBuilder() *funcRulesBuilder {
+	var er funcRulesBuilder
 	return &er
 }
 
-func (er *execRulesBuilder) Registry(e EXECRule) error{
+func (er *funcRulesBuilder) Registry(e kube.FuncRule) error {
 	*er = append(*er, e)
 	return nil
 }
 
-func (er *execRulesBuilder) List() *execRulesBuilder {
+func (er *funcRulesBuilder) List() *funcRulesBuilder {
 	return er
 }
 
@@ -45,7 +41,7 @@ func newRegoRulesBuilder() *regoRulesBuilder {
 	return &rr
 }
 
-func (rr *regoRulesBuilder) Registry(r embed.FS) error{
+func (rr *regoRulesBuilder) Registry(r embed.FS) error {
 	*rr = append(*rr, r)
 	return nil
 }

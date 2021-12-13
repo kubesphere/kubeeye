@@ -17,6 +17,8 @@ package cmd
 
 import (
 	"embed"
+
+	"github.com/leonharetd/kubeeye/pkg/kube"
 	register "github.com/leonharetd/kubeeye/pkg/register"
 	"github.com/spf13/cobra"
 )
@@ -49,8 +51,8 @@ func (ke *KubeEyeCommand) WithRegoRule(r embed.FS) *KubeEyeCommand {
 	return ke
 }
 
-func (ke *KubeEyeCommand) WithExecRule(e register.EXECRule) *KubeEyeCommand {
-	register.ExecRuleRegistry(e)
+func (ke *KubeEyeCommand) WithFuncRule(e kube.FuncRule) *KubeEyeCommand {
+	register.FuncRuleRegistry(e)
 	return ke
 }
 
