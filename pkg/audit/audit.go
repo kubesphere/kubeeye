@@ -16,11 +16,11 @@ package audit
 
 import (
 	"context"
-	"github.com/kubesphere/kubeeye/pkg/kube"
-	util "github.com/kubesphere/kubeeye/pkg/util"
-	_ "github.com/kubesphere/kubeeye/pkg/execrules"
-	_ "github.com/kubesphere/kubeeye/pkg/regorules"
-	register "github.com/kubesphere/kubeeye/pkg/register"
+	"github.com/leonharetd/kubeeye/pkg/kube"
+	util "github.com/leonharetd/kubeeye/pkg/util"
+	_ "github.com/leonharetd/kubeeye/pkg/execrules"
+	_ "github.com/leonharetd/kubeeye/pkg/regorules"
+	register "github.com/leonharetd/kubeeye/pkg/register"
 )
 
 func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh string, output string) error {

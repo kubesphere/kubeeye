@@ -3,7 +3,7 @@ package regorules
 import (
 	"embed"
 
-	"github.com/kubesphere/kubeeye/pkg/register"
+	"github.com/leonharetd/kubeeye/pkg/register"
 )
 
 //go:embed rules

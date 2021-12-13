@@ -21,7 +21,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/leonharetd/kubeeye/pkg/kube"
 	"github.com/open-policy-agent/opa/rego"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )

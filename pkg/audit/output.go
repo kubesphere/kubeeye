@@ -7,7 +7,7 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/leonharetd/kubeeye/pkg/kube"
 	"github.com/pkg/errors"
 )
 

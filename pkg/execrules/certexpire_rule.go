@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/register"
+	"github.com/leonharetd/kubeeye/pkg/kube"
+	"github.com/leonharetd/kubeeye/pkg/register"
 	"k8s.io/apimachinery/pkg/util/duration"
 	certutil "k8s.io/client-go/util/cert"
 )

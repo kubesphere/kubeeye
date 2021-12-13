@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/kubesphere/kubeeye/pkg/expend"
+	"github.com/leonharetd/kubeeye/pkg/expend"
 	"github.com/spf13/cobra"
 )
 

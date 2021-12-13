@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"embed"
-	register "github.com/kubesphere/kubeeye/pkg/register"
+	register "github.com/leonharetd/kubeeye/pkg/register"
 	"github.com/spf13/cobra"
 )
 

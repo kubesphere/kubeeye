@@ -3,7 +3,7 @@ package register
 import (
 	"embed"
 
-	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/leonharetd/kubeeye/pkg/kube"
 )
 
 // Provide for user registration
