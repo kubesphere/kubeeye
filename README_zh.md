@@ -173,7 +173,7 @@ Available Commands:
   uninstall   A brief description of your command
 ```
 
-## 添加嵌入式规则
+## 添加自定义规则
 ### 嵌入式规则支持
 - OPA 规则
 - Function 规则
