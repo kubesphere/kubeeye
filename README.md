@@ -178,10 +178,12 @@ Available Commands:
 ```
 ## Add your own embed rules
 ### embed rules
+>Embedded rules, package the rules into kubeeye for easy use
 - OPA rules
 - Function rules
 
 ### non-self-embeding rules
+>Separate management of commands and rules, specify the external OPA rule directory, kubeeye load the rules in the directory and merge them with the default rules.
 - OPA  rules
 ### OPA
 - Add custom OPA rules files

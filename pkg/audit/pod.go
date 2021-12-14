@@ -257,6 +257,5 @@ func ValidateK8SResource(ctx context.Context, resource unstructured.Unstructured
 
 func VaildateFunc(ctx context.Context, funcs kube.FuncRule){
 	resultReceiver := funcs.Exec()
-	fmt.Println("vf end")
 	kube.ValidateResultsChan <- resultReceiver
 }

@@ -175,12 +175,12 @@ Available Commands:
 
 ## 添加自定义规则
 ### 嵌入式规则支持
+>嵌入式规则，将规则打包至kubeeye中,方便使用.
 - OPA 规则
 - Function 规则
-
 ### 非嵌入式规则
+>命令和规则分离式管理，指定外部OPA规则目录，kubeeye加载目录中的规则并且和默认规则进行合并。
 - OPA 规则
-
 ### OPA
 - 添加OPA规则文件
 > opa package Note: 包名必须是下面中的一个 
@@ -304,7 +304,7 @@ func main() {
 ```shell
 kubeeye audit
 ```
-### 添加自定义 OPA 检查规则
+### 添加非嵌入式自定义 OPA 检查规则
 - 创建 OPA 规则存放目录
 ``` shell
 mkdir opa
