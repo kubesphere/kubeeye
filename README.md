@@ -181,6 +181,8 @@ Available Commands:
 >Embedded rules, package the rules into kubeeye for easy use
 - OPA rules
 - Function rules
+  
+Function check rules provide more customized rule checks. For example, by using a shell and calling a third-party interface, you can enclose the function and return the output according to the agreed format, which can be displayed uniformly in the report.
 
 ### non-self-embeding rules
 >Separate management of commands and rules, specify the external OPA rule directory, kubeeye load the rules in the directory and merge them with the default rules.

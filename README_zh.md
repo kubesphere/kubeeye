@@ -178,6 +178,8 @@ Available Commands:
 >嵌入式规则，将规则打包至kubeeye中,方便使用.
 - OPA 规则
 - Function 规则
+
+Function 检查规则，提供更加定制化的规则检查，如使用shell，调用第三方接口，都可以封入Function，按照约定的格式返回输出，即可在报表中统一展示。
 ### 非嵌入式规则
 >命令和规则分离式管理，指定外部OPA规则目录，kubeeye加载目录中的规则并且和默认规则进行合并。
 - OPA 规则
