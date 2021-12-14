@@ -12,3 +12,4 @@ KubeEye Roadmap demonstrates a list of open source product development plans, as
 - [ ] Core component detection in the cluster, including controller-manager, scheduler, and ETCD exception detection.
 - [ ] Support for more fine-grained patrolling, such as slow response.
 - [ ] Add a UI.
+- [ ] Add a config control the start and stop of rules in the kubeeye
