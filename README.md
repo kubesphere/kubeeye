@@ -123,17 +123,194 @@ etcd-0          Fatal        2020-11-27T17:56:37+08:00   Get https://192.168.13.
 |                    | NodeNotReady        | Failed to start ContainerManager Cannot set property TasksAccounting, or unknown property |
 > unmarked items are under heavy development
 
+## Add your own command
+``` text
+├── cmd
+│   └── testcmd.go
+├── main.go
+```
+testcmd.go
+```go
+package cmd
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
 
-## Add your own audit rules
-### Add custom OPA rules
+var TestCmd = &cobra.Command{
+	Use:   "test",
+	Short: "test",
+	Long:  `new command`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("new command")
+	},
+}
+```
+main.go
+``` go
+package main
+
+import (
+	"github.com/leonharetd/kubeeye/cmd"
+	kc "github.com/leonharetd/kubeeye_sample/cmd"
+)
+
+func main() {
+	cmd := cmd.NewKubeEyeCommand().WithCommand(kc.TestCmd).DO()
+	cmd.Execute()
+}
+```
+Use after build
+```shell
+>> kubeeye audit
+KubeEye finds various problems on Kubernetes cluster.
+
+Usage:
+  ke [command]
+
+Available Commands:
+  audit       audit resources from the cluster
+  completion  generate the autocompletion script for the specified shell
+  help        Help about any command
+  install     A brief description of your command
+  test        test
+  uninstall   A brief description of your command
+```
+## Add your own embed rules
+### embed rules
+- OPA rules
+- Function rules
+
+### non-self-embeding rules
+- OPA  rules
+### OPA
+- Add custom OPA rules files
+> opa package Note: package name must be select from tabel 
+
+|type|package|
+|---|---|
+|RBAC |kubeeye_RBAC_rego|
+|workloads|kubeeye_workloads_rego|
+|nodes|kubeeye_nodes_rego|
+|events|kubeeye_events_rego|
+- Save the following rule to rule file such as *imageRegistryRule.rego* for audit the image registry address complies with rules.
+```rego
+package kubeeye_workloads_rego
+
+deny[msg] {
+    resource := input
+    type := resource.Object.kind
+    resourcename := resource.Object.metadata.name
+    resourcenamespace := resource.Object.metadata.namespace
+    workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
+    workloadsType[type]
+
+    not workloadsImageRegistryRule(resource)
+
+    msg := {
+        "Name": sprintf("%v", [resourcename]),
+        "Namespace": sprintf("%v", [resourcenamespace]),
+        "Type": sprintf("%v", [type]),
+        "Message": "ImageRegistryNotmyregistry"
+    }
+}
+
+workloadsImageRegistryRule(resource) {
+    regex.match("^myregistry.public.kubesphere/basic/.+", resource.Object.spec.template.spec.containers[_].image)
+}
+```
+### Embed custom OPA rules
+``` text
+├── main.go
+└── regorules
+    ├── rules
+    │   ├── imageRegistryRule.rego
+    │   └── testRule.rego
+    └── testrule.go
+```
+testrule.go
+
+specify embed directory
+``` go
+package regorules
+
+import (
+	"embed"
+)
+
+//go:embed rules
+var EmbRegoRules embed.FS
+```
+``` go
+package main
+
+import (
+	"github.com/leonharetd/kubeeye/cmd"
+	"github.com/leonharetd/kubeeye_sample/regorules"
+)
+
+func main() {
+	cmd := cmd.NewKubeEyeCommand().WithRegoRule(regorules.EmbRegoRules).DO()
+	cmd.Execute()
+}
+```
+If you have multiple directories
+``` go 
+cmd := cmd.NewKubeEyeCommand().WithRegoRule(RulesA).WithRegoRule(RulesB).DO()
+```
+Use after build
+```shell
+kubeeye audit
+```
+### Embed custom function rules
+github.com/leonharetd/kubeeye_sample/expirerules/expirerule.go
+```go
+package funcrules
+
+import (
+	"fmt"
+	"strconv"
+	kube "github.com/leonharetd/kubeeye/pkg/kube"
+)
+
+type ExpireTestRule struct{}
+
+func (cer ExpireTestRule) Exec() kube.ValidateResults {
+	output := kube.ValidateResults{ValidateResults: make([]kube.ResultReceiver, 0)}
+	var certExpiresOutput kube.ResultReceiver
+	for i := range []int{1, 2, 3, 4} {
+		certExpiresOutput.Name = fmt.Sprint("test", strconv.Itoa(i))
+		certExpiresOutput.Type = "testExpire"
+		certExpiresOutput.Message = []string{strconv.Itoa(i), "expire"}
+		output.ValidateResults = append(output.ValidateResults, certExpiresOutput)
+	}
+	return output
+}
+```
+main.go
+``` go
+package main
+
+import (
+	"github.com/leonharetd/kubeeye/cmd"
+	"github.com/leonharetd/kubeeye_sample/funcrules"
+)
+
+func main() {
+	cmd := cmd.NewKubeEyeCommand().WithFuncRule(funcrules.FuncTestRule{}).DO()
+	cmd.Execute()
+}
+```
+Use after build
+```shell
+kubeeye audit
+```
+
+### non-self-embeding custom OPA rules
 - create a directory for OPA rules
 ``` shell
 mkdir opa
 ```
-- Add custom OPA rules files
-> Note: the OPA rule for workloads package name must be *kubeeye_workloads_rego*,
-> for RBAC package name must be *kubeeye_RBAC_rego*, for nodes package name must be *kubeeye_nodes_rego*.
-
 - Save the following rule to rule file such as *imageRegistryRule.rego* for audit the image registry address complies with rules.
 ```rego
 package kubeeye_workloads_rego
