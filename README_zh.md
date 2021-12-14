@@ -119,8 +119,191 @@ etcd-0          Fatal        2020-11-27T17:56:37+08:00   Get https://192.168.13.
 
 > 未标注的项目正在开发中
 
-## 添加自定义检查规则
+## 增加自定义命令
+``` text
+├── cmd
+│   └── testcmd.go
+├── main.go
+```
+testcmd.go
+```go
+package cmd
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
 
+var TestCmd = &cobra.Command{
+	Use:   "test",
+	Short: "test",
+	Long:  `new command`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("new command")
+	},
+}
+```
+main.go
+``` go
+package main
+
+import (
+	"github.com/leonharetd/kubeeye/cmd"
+	kc "github.com/leonharetd/kubeeye_sample/cmd"
+)
+
+func main() {
+	cmd := cmd.NewKubeEyeCommand().WithCommand(kc.TestCmd).DO()
+	cmd.Execute()
+}
+```
+重新构建之后
+```shell
+>> kubeeye audit
+KubeEye finds various problems on Kubernetes cluster.
+
+Usage:
+  ke [command]
+
+Available Commands:
+  audit       audit resources from the cluster
+  completion  generate the autocompletion script for the specified shell
+  help        Help about any command
+  install     A brief description of your command
+  test        test
+  uninstall   A brief description of your command
+```
+
+## 添加嵌入式规则
+### 嵌入式规则支持
+- OPA 规则
+- Function 规则
+
+### 非嵌入式规则
+- OPA 规则
+
+### OPA
+- 添加OPA规则文件
+> opa package Note: 包名必须是下面中的一个 
+
+|type|package|
+|---|---|
+|RBAC |kubeeye_RBAC_rego|
+|workloads|kubeeye_workloads_rego|
+|nodes|kubeeye_nodes_rego|
+|events|kubeeye_events_rego|
+
+- 以下为检查镜像仓库地址规则，保存以下规则到规则文件 *imageRegistryRule.rego*
+```rego
+package kubeeye_workloads_rego
+
+deny[msg] {
+    resource := input
+    type := resource.Object.kind
+    resourcename := resource.Object.metadata.name
+    resourcenamespace := resource.Object.metadata.namespace
+    workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
+    workloadsType[type]
+
+    not workloadsImageRegistryRule(resource)
+
+    msg := {
+        "Name": sprintf("%v", [resourcename]),
+        "Namespace": sprintf("%v", [resourcenamespace]),
+        "Type": sprintf("%v", [type]),
+        "Message": "ImageRegistryNotmyregistry"
+    }
+}
+
+workloadsImageRegistryRule(resource) {
+    regex.match("^myregistry.public.kubesphere/basic/.+", resource.Object.spec.template.spec.containers[_].image)
+}
+```
+### 嵌入式OPA规则
+``` text
+├── main.go
+└── regorules
+    ├── rules
+    │   ├── imageRegistryRule.rego
+    │   └── testRule.rego
+    └── testrule.go
+```
+testrule.go
+
+specify embed directory
+``` go
+package regorules
+
+import (
+	"embed"
+)
+
+//go:embed rules
+var EmbRegoRules embed.FS
+```
+``` go
+package main
+
+import (
+	"github.com/leonharetd/kubeeye/cmd"
+	"github.com/leonharetd/kubeeye_sample/regorules"
+)
+
+func main() {
+	cmd := cmd.NewKubeEyeCommand().WithRegoRule(regorules.EmbRegoRules).DO()
+	cmd.Execute()
+}
+```
+如果有多个规则文件
+``` go 
+cmd := cmd.NewKubeEyeCommand().WithRegoRule(RulesA).WithRegoRule(RulesB).DO()
+```
+编译后执行
+```shell
+kubeeye audit
+```
+### 嵌入式函数规则
+github.com/leonharetd/kubeeye_sample/expirerules/expirerule.go
+```go
+package funcrules
+
+import (
+	"fmt"
+	"strconv"
+	kube "github.com/leonharetd/kubeeye/pkg/kube"
+)
+
+type ExpireTestRule struct{}
+
+func (cer ExpireTestRule) Exec() kube.ValidateResults {
+	output := kube.ValidateResults{ValidateResults: make([]kube.ResultReceiver, 0)}
+	var certExpiresOutput kube.ResultReceiver
+	for i := range []int{1, 2, 3, 4} {
+		certExpiresOutput.Name = fmt.Sprint("test", strconv.Itoa(i))
+		certExpiresOutput.Type = "testExpire"
+		certExpiresOutput.Message = []string{strconv.Itoa(i), "expire"}
+		output.ValidateResults = append(output.ValidateResults, certExpiresOutput)
+	}
+	return output
+}
+```
+main.go
+``` go
+package main
+
+import (
+	"github.com/leonharetd/kubeeye/cmd"
+	"github.com/leonharetd/kubeeye_sample/funcrules"
+)
+
+func main() {
+	cmd := cmd.NewKubeEyeCommand().WithFuncRule(funcrules.FuncTestRule{}).DO()
+	cmd.Execute()
+}
+```
+编译后运行
+```shell
+kubeeye audit
+```
 ### 添加自定义 OPA 检查规则
 - 创建 OPA 规则存放目录
 ``` shell
@@ -156,10 +339,6 @@ workloadsImageRegistryRule(resource) {
     regex.match("^myregistry.public.kubesphere/basic/.+", resource.Object.spec.template.spec.containers[_].image)
 }
 ```
-
-- 使用额外的规则运行 kubeeye
-> 提示：kubeeye 将读取指定目录下所有 *.rego* 结尾的文件
-
 ```shell
 root:# kubeeye audit -p ./opa -f ~/.kube/config
 NAMESPACE     NAME              KIND          MESSAGE
