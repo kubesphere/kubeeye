@@ -176,7 +176,7 @@ Available Commands:
   test        test
   uninstall   A brief description of your command
 ```
-## Add your own embed rules
+## Add your own custom rules
 ### embed rules
 >Embedded rules, package the rules into kubeeye for easy use
 - OPA rules
