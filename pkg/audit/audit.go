@@ -200,9 +200,9 @@ func (c Cluster) Run(ctx context.Context, regoruleputh string, output string) er
 	go c.K8sResourcesProvider(ctx)
 	// get rego rules and put into the channel.
 	regoRuleChan := c.RegoRuleFanIn(ctx, c.getEmbedRegoRules(ctx))
-	// funcRuleChan := c.FuncRuleFanIn(ctx, c.getFuncRules(ctx))
+	funcRuleChan := c.FuncRuleFanIn(ctx, c.getFuncRules(ctx))
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-	validateResultChan := c.ValidateResultFanIn(ctx, c.ValidateRegoRules(ctx, regoRuleChan))
+	validateResultChan := c.ValidateResultFanIn(ctx, c.ValidateRegoRules(ctx, regoRuleChan), c.ValidateFuncRules(ctx, funcRuleChan))
 
 	switch output {
 	case "JSON", "json", "Json":

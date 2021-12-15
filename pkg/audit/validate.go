@@ -87,6 +87,7 @@ func ValidateRegoRules(ctx context.Context, K8sResourcesChan chan kube.K8SResour
 func ValidateFuncRules(ctx context.Context, funcRulesChan <-chan funcrules.FuncRule) <-chan funcrules.ValidateResults{
 	ch := make(chan funcrules.ValidateResults)
 	go func(ctx context.Context, funcs <-chan funcrules.FuncRule){
+		defer close(ch)
 		for RuleFunc := range funcRulesChan {
 			ch <- VaildateFunc(ctx, RuleFunc)
 		}
