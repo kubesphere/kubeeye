@@ -168,41 +168,15 @@ func (c Cluster) ValidateResultFanIn(ctx context.Context, channels ...<-chan fun
 	return fanIn
 }
 
-func (c Cluster) ValidateRegoRules(ctx context.Context, regoRulesChan <-chan string) <-chan funcrules.ValidateResults {
-	valida := make(chan funcrules.ValidateResults)
-	go func() {
-		defer close(valida)
-		regoRules := make([]string, 0)
-		for r := range regoRulesChan {
-			regoRules = append(regoRules, string(r))
-		}
-		for r := range ValidateRegoRules(ctx, c.K8sResourcesChan, regoRules) {
-			valida <- r
-		}
-	}()
-	return valida
-}
-
-func (c Cluster) ValidateFuncRules(ctx context.Context, funcRulesChan <-chan funcrules.FuncRule) <-chan funcrules.ValidateResults {
-	valida := make(chan funcrules.ValidateResults)
-	go func() {
-		defer close(valida)
-		for r := range ValidateFuncRules(ctx, funcRulesChan) {
-			valida <- r
-		}
-	}()
-	return valida
-}
-
 func (c Cluster) Run(ctx context.Context, regoruleputh string, output string) error {
 
 	// get kubernetes resources and put into the channel.
 	go c.K8sResourcesProvider(ctx)
 	// get rego rules and put into the channel.
-	regoRuleChan := c.RegoRuleFanIn(ctx, c.getEmbedRegoRules(ctx))
+	regoRuleChan := c.RegoRuleFanIn(ctx, c.getEmbedRegoRules(ctx), c.getAddRegoRules(ctx, regoruleputh))
 	funcRuleChan := c.FuncRuleFanIn(ctx, c.getFuncRules(ctx))
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-	validateResultChan := c.ValidateResultFanIn(ctx, c.ValidateRegoRules(ctx, regoRuleChan), c.ValidateFuncRules(ctx, funcRuleChan))
+	validateResultChan := c.ValidateResultFanIn(ctx, ValidateRegoRules(ctx, c.K8sResourcesChan, regoRuleChan), ValidateFuncRules(ctx, funcRuleChan))
 
 	switch output {
 	case "JSON", "json", "Json":

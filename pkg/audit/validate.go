@@ -27,80 +27,74 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func mergeValidateRegoRules(ctx context.Context, channels...funcrules.ValidateResults) <-chan funcrules.ValidateResults{
+func mergeValidateRegoRules(ctx context.Context, channels ...funcrules.ValidateResults) <-chan funcrules.ValidateResults {
 	ch := make(chan funcrules.ValidateResults)
 	var wg sync.WaitGroup
 	wg.Add(len(channels))
-	validate := func(ctx context.Context, valid funcrules.ValidateResults){
+	validate := func(ctx context.Context, valid funcrules.ValidateResults) {
 		defer wg.Done()
-			ch <- valid
+		ch <- valid
 	}
-	go func(){
+	go func() {
 		for _, c := range channels {
 			go validate(ctx, c)
 		}
 	}()
-	go func(){
+	go func() {
 		defer close(ch)
 		wg.Wait()
 	}()
 	return ch
 }
 
+type validateFunc func(ctx context.Context, workloads []unstructured.Unstructured, regoRulesList []string) funcrules.ValidateResults
+
+func validate(ctx context.Context, v validateFunc, Resources []unstructured.Unstructured, regoRulesList []string) funcrules.ValidateResults {
+	return v(ctx, Resources, regoRulesList)
+}
+
 // ValidateResources Validate kubernetes cluster Resources, put the results into channels.
-func ValidateRegoRules(ctx context.Context, K8sResourcesChan chan kube.K8SResource, regoRulesList []string) <-chan funcrules.ValidateResults{
+func ValidateRegoRules(ctx context.Context, K8sResourcesChan chan kube.K8SResource, regoRulesChan <-chan string) <-chan funcrules.ValidateResults {
 	// get the kubernetes resources from the channel K8sResourcesChan.
-	k8sResources := <- K8sResourcesChan
+	k8sResources := <-K8sResourcesChan
 
-	deployment := func(ctx context.Context, kubeResources kube.K8SResource, regoRulesList []string) funcrules.ValidateResults {
-        return ValidateWorkloads(ctx, kubeResources.Workloads.Deployments, regoRulesList)
-	}(ctx, k8sResources, regoRulesList)
-	statefulSets := func(ctx context.Context, kubeResources kube.K8SResource, regoRulesList []string) funcrules.ValidateResults {
-        return ValidateWorkloads(ctx, kubeResources.Workloads.StatefulSets, regoRulesList)
-	}(ctx, k8sResources, regoRulesList)
-	job := func(ctx context.Context, kubeResources kube.K8SResource, regoRulesList []string) funcrules.ValidateResults {
-		return ValidateWorkloads(ctx, kubeResources.Workloads.Jobs, regoRulesList)
-	}(ctx, k8sResources, regoRulesList)
-	cronJobs := func(ctx context.Context, kubeResources kube.K8SResource, regoRulesList []string) funcrules.ValidateResults {
-		return ValidateWorkloads(ctx, kubeResources.Workloads.CronJobs, regoRulesList)
-	}(ctx, k8sResources, regoRulesList)
+	regoRulesList := make([]string, 0)
+	for r := range regoRulesChan {
+		regoRulesList = append(regoRulesList, string(r))
+	}
+	// validate workloads
+	deployment := validate(ctx, workloads, k8sResources.Workloads.Deployments, regoRulesList)
+	statefulSets := validate(ctx, workloads, k8sResources.Workloads.StatefulSets, regoRulesList)
+	job := validate(ctx, workloads, k8sResources.Workloads.Jobs, regoRulesList)
+	cronJobs := validate(ctx,  workloads, k8sResources.Workloads.CronJobs,regoRulesList)
 
-	roles := func(ctx context.Context, kubeResources kube.K8SResource, regoRulesList []string) funcrules.ValidateResults {
-		return ValidateRBAC(ctx, kubeResources.Roles, regoRulesList)
-	}(ctx, k8sResources, regoRulesList)
-
-	clusterRoles := func(ctx context.Context, kubeResources kube.K8SResource, regoRulesList []string) funcrules.ValidateResults{
-		return ValidateRBAC(ctx, kubeResources.ClusterRoles, regoRulesList)
-	}(ctx, k8sResources, regoRulesList)
-
-	nodes := func(ctx context.Context, kubeResources kube.K8SResource, regoRulesList []string) funcrules.ValidateResults {
-		return ValidateNodes(ctx, kubeResources.Nodes, regoRulesList)
-	}(ctx, k8sResources, regoRulesList)
-
-	events := func(ctx context.Context, kubeResources kube.K8SResource, regoRulesList []string) funcrules.ValidateResults{
-		return ValidateEvents(ctx, kubeResources.Events, regoRulesList)
-	}(ctx, k8sResources, regoRulesList)
+	// validate roles
+	roles := validate(ctx, RBAC, k8sResources.Roles, regoRulesList)
+	clusterRoles := validate(ctx, RBAC, k8sResources.ClusterRoles, regoRulesList)
+    // cluster
+	nodes := validate(ctx, Nodes, k8sResources.Nodes,  regoRulesList)
+	events := validate(ctx, Events,k8sResources.Events, regoRulesList)
 
 	return mergeValidateRegoRules(ctx, deployment, statefulSets, job, cronJobs, roles, clusterRoles, nodes, events)
 }
 
-func ValidateFuncRules(ctx context.Context, funcRulesChan <-chan funcrules.FuncRule) <-chan funcrules.ValidateResults{
+func ValidateFuncRules(ctx context.Context, funcRulesChan <-chan funcrules.FuncRule) <-chan funcrules.ValidateResults {
 	ch := make(chan funcrules.ValidateResults)
-	go func(ctx context.Context, funcs <-chan funcrules.FuncRule){
+	go func(ctx context.Context, funcs <-chan funcrules.FuncRule) {
 		defer close(ch)
-		for RuleFunc := range funcRulesChan {
-			ch <- VaildateFunc(ctx, RuleFunc)
+		for funcRule := range funcRulesChan {
+			ch <- funcRule.Exec()
 		}
 	}(ctx, funcRulesChan)
 	return ch
 }
 
 // ValidateDeployments validate deployments of kubernetes by ValidateK8SResource, put the results into the channel DeploymentsResultsChan.
-func ValidateWorkloads(ctx context.Context, workloads []unstructured.Unstructured, regoRulesList []string) funcrules.ValidateResults{
+func workloads(ctx context.Context, workloads []unstructured.Unstructured, regoRulesList []string) funcrules.ValidateResults {
 	var validateWorkloadsResults funcrules.ValidateResults
 	queryRule := "data.kubeeye_workloads_rego"
 	for _, w := range workloads {
-		if validateResults, found := ValidateK8SResource(ctx, w, regoRulesList, queryRule); found {
+		if validateResults, found := validateK8SResource(ctx, w, regoRulesList, queryRule); found {
 			validateWorkloadsResults.ValidateResults = append(validateWorkloadsResults.ValidateResults, validateResults)
 		}
 	}
@@ -108,33 +102,33 @@ func ValidateWorkloads(ctx context.Context, workloads []unstructured.Unstructure
 }
 
 // ValidateRoles validate roles of kubernetes by ValidateK8SResource, put the results into the channel RolesResultsChan.
-func ValidateRBAC(ctx context.Context, roles []unstructured.Unstructured, regoRulesList []string) funcrules.ValidateResults{
+func RBAC(ctx context.Context, roles []unstructured.Unstructured, regoRulesList []string) funcrules.ValidateResults {
 	var validateRolesResults funcrules.ValidateResults
 	queryRule := "data.kubeeye_RBAC_rego"
 	for _, role := range roles {
-		if validateResults, found := ValidateK8SResource(ctx, role, regoRulesList, queryRule); found {
+		if validateResults, found := validateK8SResource(ctx, role, regoRulesList, queryRule); found {
 			validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
 		}
 	}
 	return validateRolesResults
 }
 
-func ValidateNodes(ctx context.Context, nodes []unstructured.Unstructured, regoRulesList []string) funcrules.ValidateResults{
+func Nodes(ctx context.Context, nodes []unstructured.Unstructured, regoRulesList []string) funcrules.ValidateResults {
 	var validateNodesResults funcrules.ValidateResults
 	queryRule := "data.kubeeye_nodes_rego"
 	for _, node := range nodes {
-		if validateResults, found := ValidateK8SResource(ctx, node, regoRulesList, queryRule); found {
+		if validateResults, found := validateK8SResource(ctx, node, regoRulesList, queryRule); found {
 			validateNodesResults.ValidateResults = append(validateNodesResults.ValidateResults, validateResults)
 		}
 	}
 	return validateNodesResults
 }
 
-func ValidateEvents(ctx context.Context, events []unstructured.Unstructured, regoRulesList []string) funcrules.ValidateResults{
+func Events(ctx context.Context, events []unstructured.Unstructured, regoRulesList []string) funcrules.ValidateResults {
 	var validateEventsResults funcrules.ValidateResults
 	queryRule := "data.kubeeye_events_rego"
 	for _, clusterrole := range events {
-		if validateResults, found := ValidateK8SResource(ctx, clusterrole, regoRulesList, queryRule); found {
+		if validateResults, found := validateK8SResource(ctx, clusterrole, regoRulesList, queryRule); found {
 			validateEventsResults.ValidateResults = append(validateEventsResults.ValidateResults, validateResults)
 		}
 	}
@@ -142,7 +136,7 @@ func ValidateEvents(ctx context.Context, events []unstructured.Unstructured, reg
 }
 
 // ValidateK8SResource validate kubernetes resource by rego, return the validate results.
-func ValidateK8SResource(ctx context.Context, resource unstructured.Unstructured, regoRulesList []string, queryRule string) (funcrules.ResultReceiver, bool) {
+func validateK8SResource(ctx context.Context, resource unstructured.Unstructured, regoRulesList []string, queryRule string) (funcrules.ResultReceiver, bool) {
 	var resultReceiver funcrules.ResultReceiver
 	find := false
 	for _, regoRule := range regoRulesList {
@@ -192,9 +186,4 @@ func ValidateK8SResource(ctx context.Context, resource unstructured.Unstructured
 		}
 	}
 	return resultReceiver, find
-}
-
-func VaildateFunc(ctx context.Context, funcs funcrules.FuncRule) funcrules.ValidateResults{
-	resultReceiver := funcs.Exec()
-	return resultReceiver
 }
