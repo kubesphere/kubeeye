@@ -7,11 +7,11 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/leonharetd/kubeeye/pkg/kube"
+	"github.com/leonharetd/kubeeye/pkg/funcrules"
 	"github.com/pkg/errors"
 )
 
-func defaultOutput(receiver <-chan kube.ValidateResults) {
+func defaultOutput(receiver <-chan funcrules.ValidateResults) {
 	w := tabwriter.NewWriter(os.Stdout, 10, 4, 3, ' ', 0)
 	fmt.Fprintln(w, "\nKIND\tNAMESPACE\tNAME\tMESSAGE")
 	for r := range receiver {
@@ -27,8 +27,8 @@ func defaultOutput(receiver <-chan kube.ValidateResults) {
 	w.Flush()
 }
 
-func JsonOutput(receiver <-chan kube.ValidateResults) {
-	var output []kube.ResultReceiver
+func JsonOutput(receiver <-chan funcrules.ValidateResults) {
+	var output []funcrules.ResultReceiver
 
 	for r := range receiver {
 		for _, result := range r.ValidateResults {
@@ -42,8 +42,8 @@ func JsonOutput(receiver <-chan kube.ValidateResults) {
 	fmt.Println(string(jsonOutput))
 }
 
-func CSVOutput(receiver <-chan kube.ValidateResults) {
-	var output []kube.ResultReceiver
+func CSVOutput(receiver <-chan funcrules.ValidateResults) {
+	var output []funcrules.ResultReceiver
 	for r := range receiver {
 		for _, result := range r.ValidateResults {
 			if len(result.Message) != 0 {

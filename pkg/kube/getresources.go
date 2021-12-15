@@ -17,7 +17,6 @@ package kube
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,20 +25,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-// GetK8SResourcesProvider get kubeconfig by KubernetesAPI, get kubernetes resources by GetK8SResources.
-func GetK8SResourcesProvider(ctx context.Context, kubeconfig string) {
-	// get kubernetes client
-	kubernetesClient := KubernetesAPI(kubeconfig)
-	// 全局队列，因为要共享
-	err := GetK8SResources(ctx, kubernetesClient)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
-
 // GetK8SResources get kubernetes resources by GroupVersionResource, put the resources into the channel K8sResourcesChan, return error.
-func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) error {
+func GetK8SResources(ctx context.Context, provider chan K8SResource, kubernetesClient *KubernetesClient) error {
 	kubeconfig := kubernetesClient.kubeconfig
 	clientSet := kubernetesClient.ClientSet
 	dynamicClient := kubernetesClient.DynamicClient
@@ -131,20 +118,22 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) er
 		return err
 	}
 
-	K8sResourcesChan <- K8SResource{
+	provider <- K8SResource{
 		ServerVersion: serverVersion.Major + "." + serverVersion.Minor,
 		CreationTime:  time.Now(),
 		AuditAddress:  kubeconfig.Host,
 		Nodes:         nodes.Items,
-		Namespaces:    namespaces.Items,
-		Deployments:   deployments.Items,
-		DaemonSets:    daemonSets.Items,
-		StatefulSets:  statefulSets.Items,
-		Jobs:          jobs.Items,
-		CronJobs:      cronjobs.Items,
-		Roles:         roles.Items,
-		ClusterRoles:  clusterRoles.Items,
-		Events:        events.Items,
+		Workloads: Workloads{
+			Deployments:  deployments.Items,
+			StatefulSets: statefulSets.Items,
+			DaemonSets:   daemonSets.Items,
+			Jobs:         jobs.Items,
+			CronJobs:     cronjobs.Items,
+		},
+		Namespaces:   namespaces.Items,
+		Roles:        roles.Items,
+		ClusterRoles: clusterRoles.Items,
+		Events:       events.Items,
 	}
 	return nil
 }

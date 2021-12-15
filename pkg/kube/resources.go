@@ -18,31 +18,29 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-type FuncRule interface {
-	Exec() ValidateResults
+type ValidateResult struct {
+	Name      string
+	Namespace string
+	Type      string
+	Message   string
 }
 
-var K8sResourcesChan = make(chan K8SResource)
-var RegoRulesListChan = make(chan RegoRulesList)
-var FuncRulesListchan = make(chan FuncRule)
-var ResultChan = make(chan ValidateResult)
-var ValidateResultsChan = make(chan ValidateResults)
+type Workloads struct {
+	Deployments  []unstructured.Unstructured
+	DaemonSets   []unstructured.Unstructured
+	StatefulSets []unstructured.Unstructured
+	Jobs         []unstructured.Unstructured
+	CronJobs     []unstructured.Unstructured
+}
 
 type K8SResource struct {
 	ServerVersion string
 	CreationTime  time.Time
 	AuditAddress  string
+	Workloads     Workloads
 	Nodes         []unstructured.Unstructured
 	Namespaces    []unstructured.Unstructured
-	Deployments   []unstructured.Unstructured
-	DaemonSets    []unstructured.Unstructured
-	StatefulSets  []unstructured.Unstructured
-	Jobs          []unstructured.Unstructured
-	CronJobs      []unstructured.Unstructured
 	Roles         []unstructured.Unstructured
 	ClusterRoles  []unstructured.Unstructured
 	Events        []unstructured.Unstructured
@@ -52,45 +50,4 @@ type RegoRulesList struct {
 	RegoRules []string
 }
 
-type Workload struct {
-	Kind       string
-	Pod        corev1.Pod
-	PodSpec    corev1.PodSpec
-	ObjectMeta metav1.Object
-}
-
-type ValidateResult struct {
-	Name      string
-	Namespace string
-	Type      string
-	Message   string
-}
-
-type ResultReceiver struct {
-	Name      string   `json:"name"`
-	Namespace string   `json:"namespace"`
-	Type      string   `json:"kind"`
-	Message   []string `json:"message"`
-	Reason    string   `json:"reason"`
-}
-
-type ValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type ResourceProvider struct {
-	ServerVersion   string
-	CreationTime    time.Time
-	AuditAddress    string
-	Nodes           []corev1.Node
-	Namespaces      []corev1.Namespace
-	Pods            *corev1.PodList
-	ConfigMap       []corev1.ConfigMap
-	ProblemDetector []corev1.Event
-	Workloads       []Workload
-}
-
-type ReturnMsg struct {
-	what string
-}
 

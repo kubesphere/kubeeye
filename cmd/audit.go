@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"context"
 	"flag"
 	"fmt"
 
@@ -38,7 +39,7 @@ var auditCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		err := audit.Cluster(cmd.Context(), KubeConfig, regorulepath, output)
+		err := audit.NewCluster(KubeConfig).Run(context.TODO(), regorulepath, output)
 		if err != nil {
 			fmt.Println(err)
 		}

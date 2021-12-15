@@ -2,9 +2,12 @@ package register
 
 import (
 	"embed"
-
-	"github.com/leonharetd/kubeeye/pkg/kube"
+	"github.com/leonharetd/kubeeye/pkg/funcrules"
+	"github.com/leonharetd/kubeeye/pkg/regorules"
 )
+
+var RegoRulesListChan = make(chan string)
+var FuncRulesListchan = make(chan funcrules.FuncRule)
 
 // Provide for user registration
 var (
@@ -18,14 +21,19 @@ var (
 	RegoRuleList     = regoRules.List
 )
 
-type funcRulesBuilder []kube.FuncRule
+func init() {
+	FuncRuleRegistry(funcrules.CertExpireRule{})
+	RegoRuleRegistry(regorules.DefaultEmbRegoRules)
+}
+
+type funcRulesBuilder []funcrules.FuncRule
 
 func newFuncRulesBuilder() *funcRulesBuilder {
 	var er funcRulesBuilder
 	return &er
 }
 
-func (er *funcRulesBuilder) Registry(e kube.FuncRule) error {
+func (er *funcRulesBuilder) Registry(e funcrules.FuncRule) error {
 	*er = append(*er, e)
 	return nil
 }

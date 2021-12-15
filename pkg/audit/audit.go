@@ -16,61 +16,201 @@ package audit
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sync"
 
-	_ "github.com/leonharetd/kubeeye/pkg/funcrules"
+	funcrules "github.com/leonharetd/kubeeye/pkg/funcrules"
 	"github.com/leonharetd/kubeeye/pkg/kube"
 	register "github.com/leonharetd/kubeeye/pkg/register"
 	_ "github.com/leonharetd/kubeeye/pkg/regorules"
 	util "github.com/leonharetd/kubeeye/pkg/util"
 )
 
-func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh string, output string) error {
+type Interface interface {
+	K8sResourcesProvider(ctx context.Context)
+	Output(ctx context.Context)
+}
 
-	// get kubernetes resources and put into the channel.
-	go func(ctx context.Context, kubeconfig string) {
-		kube.GetK8SResourcesProvider(ctx, kubeconfig)
-	}(ctx, kubeconfig)
+func NewCluster(KubeConfig string) Cluster {
+	return Cluster{
+		k8sClient:        *kube.KubernetesAPI(KubeConfig),
+		K8sResourcesChan: make(chan kube.K8SResource),
+	}
+}
 
-	// get rego rules and put into the channel.
-	go func(additionalregoruleputh string) {
-		defer close(kube.RegoRulesListChan)
-		// embed file
+type Cluster struct {
+	k8sClient        kube.KubernetesClient
+	K8sResourcesChan chan kube.K8SResource
+}
+
+func (c Cluster) K8sResourcesProvider(ctx context.Context) {
+	// 全局队列，因为要共享
+	err := kube.GetK8SResources(ctx, c.K8sResourcesChan, &c.k8sClient)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func (c Cluster) getEmbedRegoRules(ctx context.Context) <-chan string {
+	ch := make(chan string)
+	go func() {
+		defer close(ch)
 		for _, emb := range *register.RegoRuleList() {
 			outOfTreeEmbFiles := util.ListRegoRuleFileName(emb)
-			embedRegoRules := kube.RegoRulesList{RegoRules: util.GetRegoRules(outOfTreeEmbFiles, emb)}
-			kube.RegoRulesListChan <- embedRegoRules
-		}
-
-		if additionalregoruleputh == "" {
-			return
-		}
-		// additation embed file
-		// addlFS := os.DirFS(additionalregoruleputh)
-		// ADDLEmbedFiles := regorules2.ListRegoRuleFileName(addlFS)
-		// ADDLEmbedRegoRules := kube.RegoRulesList{RegoRules: regorules2.GetRegoRules(ADDLEmbedFiles, addlFS)}
-		// fmt.Println("addl", ADDLEmbedRegoRules)
-	}(additionalregoruleputh)
-
-	// embed func
-	go func() {
-		defer close(kube.FuncRulesListchan)
-		for _, embFunc := range *register.FuncRuleList() {
-			kube.FuncRulesListchan <- embFunc
+			for _, rego := range util.GetRegoRules(outOfTreeEmbFiles, emb) {
+				ch <- rego
+			}
 		}
 	}()
-	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-	go ValidateResources(ctx)
-	// ValidateOther
-	// go other(ctx)
+	return ch
+}
 
-	// Set the output mode, support default output JSON and CSV.
+// additation file
+func (c Cluster) getAddRegoRules(ctx context.Context, regorulePath string) <-chan string {
+	ch := make(chan string)
+	if regorulePath == "" {
+		defer close(ch)
+		return ch
+	}
+	go func() {
+		defer close(ch)
+		absPath, err := filepath.Abs(regorulePath)
+		if err != nil {
+			panic(err)
+		}
+		ADDLFS := os.DirFS(absPath)
+		ADDLEmbedFiles := util.ListRegoRuleFileName(ADDLFS)
+		for _, rego := range util.GetRegoRules(ADDLEmbedFiles, ADDLFS) {
+			ch <- rego
+		}
+	}()
+	return ch
+}
+
+func (c Cluster) getFuncRules(ctx context.Context) <-chan funcrules.FuncRule {
+	ch := make(chan funcrules.FuncRule)
+	go func() {
+		defer close(ch)
+		for _, f := range *register.FuncRuleList() {
+			ch <- f
+		}
+	}()
+	return ch
+}
+
+func (c Cluster) RegoRuleFanIn(ctx context.Context, channels ...<-chan string) <-chan string {
+	res := make(chan string)
+	var wg sync.WaitGroup
+	wg.Add(len(channels))
+
+	mergeRegoRuls := func(ctx context.Context, ch <-chan string) {
+		defer wg.Done()
+		for c := range ch {
+			res <- c
+		}
+	}
+
+	for _, c := range channels {
+		go mergeRegoRuls(ctx, c)
+	}
+
+	go func() {
+		wg.Wait()
+		defer close(res)
+	}()
+	return res
+}
+
+func (c Cluster) FuncRuleFanIn(ctx context.Context, channels ...<-chan funcrules.FuncRule) <-chan funcrules.FuncRule {
+	res := make(chan funcrules.FuncRule)
+	var wg sync.WaitGroup
+	wg.Add(len(channels))
+	mergeRegoRuls := func(ctx context.Context, ch <-chan funcrules.FuncRule) {
+		defer wg.Done()
+		for c := range ch {
+			res <- c
+		}
+	}
+
+	for _, c := range channels {
+		go mergeRegoRuls(ctx, c)
+	}
+
+	go func() {
+		defer close(res)
+		wg.Wait()
+	}()
+	return res
+}
+
+func (c Cluster) ValidateResultFanIn(ctx context.Context, channels ...<-chan funcrules.ValidateResults) <-chan funcrules.ValidateResults {
+	fanIn := make(chan funcrules.ValidateResults)
+	var wg sync.WaitGroup
+	wg.Add(len(channels))
+	mergeResult := func(ctx context.Context, ch <-chan funcrules.ValidateResults) {
+		defer wg.Done()
+		for c := range ch {
+			fanIn <- c
+		}
+	}
+
+	for _, c := range channels {
+		go mergeResult(ctx, c)
+	}
+
+	go func() {
+		defer close(fanIn)
+		wg.Wait()
+	}()
+	return fanIn
+}
+
+func (c Cluster) ValidateRegoRules(ctx context.Context, regoRulesChan <-chan string) <-chan funcrules.ValidateResults {
+	valida := make(chan funcrules.ValidateResults)
+	go func() {
+		defer close(valida)
+		regoRules := make([]string, 0)
+		for r := range regoRulesChan {
+			regoRules = append(regoRules, string(r))
+		}
+		for r := range ValidateRegoRules(ctx, c.K8sResourcesChan, regoRules) {
+			valida <- r
+		}
+	}()
+	return valida
+}
+
+func (c Cluster) ValidateFuncRules(ctx context.Context, funcRulesChan <-chan funcrules.FuncRule) <-chan funcrules.ValidateResults {
+	valida := make(chan funcrules.ValidateResults)
+	go func() {
+		defer close(valida)
+		for r := range ValidateFuncRules(ctx, funcRulesChan) {
+			valida <- r
+		}
+	}()
+	return valida
+}
+
+func (c Cluster) Run(ctx context.Context, regoruleputh string, output string) error {
+
+	// get kubernetes resources and put into the channel.
+	go c.K8sResourcesProvider(ctx)
+	// get rego rules and put into the channel.
+	regoRuleChan := c.RegoRuleFanIn(ctx, c.getEmbedRegoRules(ctx))
+	// funcRuleChan := c.FuncRuleFanIn(ctx, c.getFuncRules(ctx))
+	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
+	validateResultChan := c.ValidateResultFanIn(ctx, c.ValidateRegoRules(ctx, regoRuleChan))
+
 	switch output {
 	case "JSON", "json", "Json":
-		JsonOutput(kube.ValidateResultsChan)
+		JsonOutput(validateResultChan)
 	case "CSV", "csv", "Csv":
-		CSVOutput(kube.ValidateResultsChan)
+		CSVOutput(validateResultChan)
 	default:
-		defaultOutput(kube.ValidateResultsChan)
+		defaultOutput(validateResultChan)
 	}
 	return nil
 }

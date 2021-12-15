@@ -1,4 +1,4 @@
-package execrules
+package funcrules
 
 import (
 	"fmt"
@@ -7,15 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/leonharetd/kubeeye/pkg/kube"
-	"github.com/leonharetd/kubeeye/pkg/register"
 	"k8s.io/apimachinery/pkg/util/duration"
 	certutil "k8s.io/client-go/util/cert"
 )
 
-func init() {
-	register.FuncRuleRegistry(CertExpireRule{})
-}
 
 type certificate struct {
 	Name     string `yaml:"name" json:"name,omitempty"`
@@ -25,7 +20,7 @@ type certificate struct {
 
 type CertExpireRule struct{}
 
-func (cer CertExpireRule) Exec() kube.ValidateResults {
+func (cer CertExpireRule) Exec() ValidateResults {
 	var certExpires []certificate
 	cmd := fmt.Sprintf("cat /etc/kubernetes/pki/%s", "apiserver.crt")
 	combinedoutput, _ := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
@@ -47,8 +42,8 @@ func (cer CertExpireRule) Exec() kube.ValidateResults {
 			}
 		}
 	}
-	output := kube.ValidateResults{ValidateResults: make([]kube.ResultReceiver, 0)}
-	var certExpiresOutput kube.ResultReceiver
+	output := ValidateResults{ValidateResults: make([]ResultReceiver, 0)}
+	var certExpiresOutput ResultReceiver
 	if len(certExpires) != 0 {
 		for _, certExpire := range certExpires {
 			if len(certExpire.Expires) != 0 {
