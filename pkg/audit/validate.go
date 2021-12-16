@@ -21,8 +21,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/leonharetd/kubeeye/pkg/funcrules"
-	"github.com/leonharetd/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/funcrules"
+	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/open-policy-agent/opa/rego"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -66,14 +66,14 @@ func ValidateRegoRules(ctx context.Context, K8sResourcesChan chan kube.K8SResour
 	deployment := validate(ctx, workloads, k8sResources.Workloads.Deployments, regoRulesList)
 	statefulSets := validate(ctx, workloads, k8sResources.Workloads.StatefulSets, regoRulesList)
 	job := validate(ctx, workloads, k8sResources.Workloads.Jobs, regoRulesList)
-	cronJobs := validate(ctx,  workloads, k8sResources.Workloads.CronJobs,regoRulesList)
+	cronJobs := validate(ctx, workloads, k8sResources.Workloads.CronJobs, regoRulesList)
 
 	// validate roles
 	roles := validate(ctx, RBAC, k8sResources.Roles, regoRulesList)
 	clusterRoles := validate(ctx, RBAC, k8sResources.ClusterRoles, regoRulesList)
-    // cluster
-	nodes := validate(ctx, Nodes, k8sResources.Nodes,  regoRulesList)
-	events := validate(ctx, Events,k8sResources.Events, regoRulesList)
+	// cluster
+	nodes := validate(ctx, Nodes, k8sResources.Nodes, regoRulesList)
+	events := validate(ctx, Events, k8sResources.Events, regoRulesList)
 
 	return mergeValidateRegoRules(ctx, deployment, statefulSets, job, cronJobs, roles, clusterRoles, nodes, events)
 }

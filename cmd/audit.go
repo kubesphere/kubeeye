@@ -19,7 +19,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/leonharetd/kubeeye/pkg/audit"
+	"github.com/kubesphere/kubeeye/pkg/audit"
 	cobra "github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -32,7 +32,7 @@ var output string
 var auditCmd = &cobra.Command{
 	Use:   "audit",
 	Short: "audit resources from the cluster",
-	Args: func (cmd *cobra.Command, args []string)  error {
+	Args: func(cmd *cobra.Command, args []string) error {
 		if regoruleconfigmapName != "" && regorulepath != "" {
 			fmt.Println("regorulepath or regoruleconfigmapName only one")
 		}

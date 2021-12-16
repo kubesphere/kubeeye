@@ -1,4 +1,4 @@
-## Add your own command
+## 增加自定义命令
 ``` text
 ├── cmd
 │   └── testcmd.go
@@ -35,7 +35,7 @@ func main() {
 	cmd.Execute()
 }
 ```
-Use after build
+重新构建之后
 ```shell
 >> kubeeye audit
 KubeEye finds various problems on Kubernetes cluster.
@@ -51,8 +51,7 @@ Available Commands:
   test        test
   uninstall   A brief description of your command
 ```
-## Add your own custom rules
-### Embed custom OPA rules
+### 嵌入式OPA规则
 ``` text
 ├── main.go
 └── regorules
@@ -87,15 +86,15 @@ func main() {
 	cmd.Execute()
 }
 ```
-If you have multiple directories
+如果有多个规则文件
 ``` go 
 cmd := cmd.NewKubeEyeCommand().WithRegoRule(RulesA).WithRegoRule(RulesB).DO()
 ```
-Use after build
+编译后执行
 ```shell
 kubeeye audit
 ```
-### Embed custom function rules
+### 嵌入式函数规则
 github.com/kubesphere/kubeeye_sample/expirerules/expirerule.go
 ```go
 package funcrules
@@ -134,7 +133,7 @@ func main() {
 	cmd.Execute()
 }
 ```
-Use after build
+编译后运行
 ```shell
 kubeeye audit
 ```

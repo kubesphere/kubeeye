@@ -1,4 +1,4 @@
-module github.com/leonharetd/kubeeye
+module github.com/kubesphere/kubeeye
 
 go 1.16
 
