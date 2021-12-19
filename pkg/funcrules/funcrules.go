@@ -1,5 +1,7 @@
 package funcrules
 
+import "context"
+
 type ValidateResults struct {
 	ValidateResults []ResultReceiver
 }
@@ -13,5 +15,5 @@ type ResultReceiver struct {
 }
 
 type FuncRule interface {
-	Exec() ValidateResults
+	Exec(ctx context.Context) ValidateResults
 }

@@ -1,6 +1,7 @@
 package funcrules
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -20,7 +21,7 @@ type certificate struct {
 
 type CertExpireRule struct{}
 
-func (cer CertExpireRule) Exec() ValidateResults {
+func (cer CertExpireRule) Exec(ctx context.Context) ValidateResults {
 	var certExpires []certificate
 	cmd := fmt.Sprintf("cat /etc/kubernetes/pki/%s", "apiserver.crt")
 	combinedoutput, _ := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()

@@ -94,7 +94,7 @@ func ValidateFuncRules(ctx context.Context, funcRulesChan <-chan funcrules.FuncR
 	go func(ctx context.Context, funcs <-chan funcrules.FuncRule) {
 		defer close(ch)
 		for funcRule := range funcRulesChan {
-			ch <- funcRule.Exec()
+			ch <- funcRule.Exec(ctx)
 		}
 	}(ctx, funcRulesChan)
 	return ch
