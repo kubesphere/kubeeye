@@ -26,7 +26,7 @@ type ValidateResult struct {
 	Message   string
 }
 
-type Workloads struct {
+type workloads struct {
 	Deployments  []unstructured.Unstructured
 	DaemonSets   []unstructured.Unstructured
 	StatefulSets []unstructured.Unstructured
@@ -38,7 +38,7 @@ type K8SResource struct {
 	ServerVersion string
 	CreationTime  time.Time
 	AuditAddress  string
-	Workloads     Workloads
+	Workloads     workloads
 	Nodes         []unstructured.Unstructured
 	Namespaces    []unstructured.Unstructured
 	Roles         []unstructured.Unstructured

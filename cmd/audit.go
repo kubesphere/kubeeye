@@ -19,7 +19,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/kubesphere/kubeeye/pkg/audit"
+	"github.com/leonharetd/kubeeye/pkg/audit"
 	cobra "github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

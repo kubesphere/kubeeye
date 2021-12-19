@@ -21,11 +21,11 @@ import (
 	"path/filepath"
 	"sync"
 
-	funcrules "github.com/kubesphere/kubeeye/pkg/funcrules"
-	"github.com/kubesphere/kubeeye/pkg/kube"
-	register "github.com/kubesphere/kubeeye/pkg/register"
-	_ "github.com/kubesphere/kubeeye/pkg/regorules"
-	util "github.com/kubesphere/kubeeye/pkg/util"
+	funcrules "github.com/leonharetd/kubeeye/pkg/funcrules"
+	"github.com/leonharetd/kubeeye/pkg/kube"
+	register "github.com/leonharetd/kubeeye/pkg/register"
+	_ "github.com/leonharetd/kubeeye/pkg/regorules"
+	util "github.com/leonharetd/kubeeye/pkg/util"
 )
 
 type Interface interface {

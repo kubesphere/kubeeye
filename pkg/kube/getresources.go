@@ -123,7 +123,7 @@ func GetK8SResources(ctx context.Context, provider chan K8SResource, kubernetesC
 		CreationTime:  time.Now(),
 		AuditAddress:  kubeconfig.Host,
 		Nodes:         nodes.Items,
-		Workloads: Workloads{
+		Workloads: workloads{
 			Deployments:  deployments.Items,
 			StatefulSets: statefulSets.Items,
 			DaemonSets:   daemonSets.Items,

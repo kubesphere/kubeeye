@@ -14,7 +14,7 @@ Docker service exception
 `systemctl status docker`
 2. If it's not running, start the docker service with the following command:  
 `systemctl start docker`
-3. If does not exist, it means that the corresponding node is reset and need to be added or deleted. prefer to [add/delete](https://github.com/kubesphere/kubekey#add-nodes)
+3. If does not exist, it means that the corresponding node is reset and need to be added or deleted. prefer to [add/delete](https://github.com/leonharetd/kubekey#add-nodes)
 4. If start fails, open two terminals on the same machine, one with the command view docker logs and the other with start docker command. such as the following command:   
 one terminal: `journalctl -u docker -f`, other terminal: `systemctl start docker`
 

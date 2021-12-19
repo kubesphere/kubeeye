@@ -18,8 +18,8 @@ package cmd
 import (
 	"embed"
 
-	"github.com/kubesphere/kubeeye/pkg/funcrules"
-	register "github.com/kubesphere/kubeeye/pkg/register"
+	"github.com/leonharetd/kubeeye/pkg/funcrules"
+	register "github.com/leonharetd/kubeeye/pkg/register"
 	"github.com/spf13/cobra"
 )
 

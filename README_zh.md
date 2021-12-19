@@ -15,13 +15,13 @@ KubeEye 通过调用Kubernetes API，通过匹配资源中的关键字和容器�
 ## 怎么使用
 
 - 机器上安装 KubeEye
-  - 从 [Releases](https://github.com/kubesphere/kubeeye/releases) 中下载预构建的可执行文件。
+  - 从 [Releases](https://github.com/leonharetd/kubeeye/releases) 中下载预构建的可执行文件。
     
   - 或者你也可以从源代码构建
   > 提示：构建完成后将会在 /usr/local/bin/ 目录下生成 kubeeye 文件。
   
   ```
-  git clone https://github.com/kubesphere/kubeeye.git
+  git clone https://github.com/leonharetd/kubeeye.git
   cd kubeeye 
   make install
   ```
@@ -51,7 +51,7 @@ NAME            SEVERITY     TIME                        MESSAGE
 scheduler       Fatal        2020-11-27T17:09:59+08:00   Get http://127.0.0.1:10251/healthz: dial tcp 127.0.0.1:10251: connect: connection refused
 etcd-0          Fatal        2020-11-27T17:56:37+08:00   Get https://192.168.13.8:2379/health: dial tcp 192.168.13.8:2379: connect: connection refused
 ```
-您可以参考常见[FAQ](https://github.com/kubesphere/kubeeye/blob/main/docs/FAQ.md)内容来优化您的集群。
+您可以参考常见[FAQ](https://github.com/leonharetd/kubeeye/blob/main/docs/FAQ.md)内容来优化您的集群。
 
 ## KubeEye 能做什么
 

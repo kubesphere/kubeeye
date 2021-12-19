@@ -1,6 +1,6 @@
 # KubeEye's RoadMap
 
-KubeEye Roadmap demonstrates a list of open source product development plans, as well as KubeSphere community's anticipation. Obviously, it details the future's direction of KubeEye, but may change over time. We hope that can help you to get familiar with the project plans and vision through the Roadmap. Of course, if you have any better ideas, welcome to filing [Issues](https://github.com/kubesphere/kubeeye/issues).
+KubeEye Roadmap demonstrates a list of open source product development plans, as well as KubeSphere community's anticipation. Obviously, it details the future's direction of KubeEye, but may change over time. We hope that can help you to get familiar with the project plans and vision through the Roadmap. Of course, if you have any better ideas, welcome to filing [Issues](https://github.com/leonharetd/kubeeye/issues).
 
 ## v0.1.0
 

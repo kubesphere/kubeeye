@@ -3,8 +3,8 @@ package register
 import (
 	"embed"
 
-	"github.com/kubesphere/kubeeye/pkg/funcrules"
-	"github.com/kubesphere/kubeeye/pkg/regorules"
+	"github.com/leonharetd/kubeeye/pkg/funcrules"
+	"github.com/leonharetd/kubeeye/pkg/regorules"
 )
 
 var RegoRulesListChan = make(chan string)
