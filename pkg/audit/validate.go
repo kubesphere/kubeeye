@@ -21,17 +21,17 @@ import (
 	"os"
 	"sync"
 
-	"github.com/leonharetd/kubeeye/pkg/funcrules"
-	"github.com/leonharetd/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/funcrules"
+	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/open-policy-agent/opa/rego"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var (
 	workloads = "data.kubeeye_workloads_rego"
-	rbac = "data.kubeeye_RBAC_rego"
-	nodes = "data.kubeeye_nodes_rego"
-	events = "data.kubeeye_events_rego"
+	rbac      = "data.kubeeye_RBAC_rego"
+	nodes     = "data.kubeeye_nodes_rego"
+	events    = "data.kubeeye_events_rego"
 )
 
 func mergeValidateRegoRules(ctx context.Context, channels ...funcrules.ValidateResults) <-chan funcrules.ValidateResults {

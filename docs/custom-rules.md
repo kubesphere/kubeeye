@@ -26,8 +26,8 @@ main.go
 package main
 
 import (
-	"github.com/leonharetd/kubeeye/cmd"
-	kc "github.com/leonharetd/kubeeye_sample/cmd"
+	"github.com/kubesphere/kubeeye/cmd"
+	kc "github.com/kubesphere/kubeeye_sample/cmd"
 )
 
 func main() {
@@ -78,8 +78,8 @@ var EmbRegoRules embed.FS
 package main
 
 import (
-	"github.com/leonharetd/kubeeye/cmd"
-	"github.com/leonharetd/kubeeye_sample/regorules"
+	"github.com/kubesphere/kubeeye/cmd"
+	"github.com/kubesphere/kubeeye_sample/regorules"
 )
 
 func main() {
@@ -96,14 +96,14 @@ Use after build
 kubeeye audit
 ```
 ### Embed custom function rules
-github.com/leonharetd/kubeeye_sample/expirerules/expirerule.go
+github.com/kubesphere/kubeeye_sample/expirerules/expirerule.go
 ```go
 package funcrules
 
 import (
 	"fmt"
 	"strconv"
-	kube "github.com/leonharetd/kubeeye/pkg/kube"
+	kube "github.com/kubesphere/kubeeye/pkg/kube"
 )
 
 type ExpireTestRule struct{}
@@ -125,8 +125,8 @@ main.go
 package main
 
 import (
-	"github.com/leonharetd/kubeeye/cmd"
-	"github.com/leonharetd/kubeeye_sample/funcrules"
+	"github.com/kubesphere/kubeeye/cmd"
+	"github.com/kubesphere/kubeeye_sample/funcrules"
 )
 
 func main() {

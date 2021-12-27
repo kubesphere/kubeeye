@@ -7,7 +7,7 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/leonharetd/kubeeye/pkg/funcrules"
+	"github.com/kubesphere/kubeeye/pkg/funcrules"
 	"github.com/pkg/errors"
 )
 
