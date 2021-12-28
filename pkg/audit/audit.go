@@ -66,16 +66,16 @@ func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh stri
 	}
 
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-	ValidateResources(ctx)
+	validateResultChan := ValidateResources(ctx)
 
 	// Set the output mode, support default output JSON and CSV.
 	switch output {
 	case "JSON", "json", "Json":
-		JSONOutput(certExpires)
+		JSONOutput(validateResultChan)
 	case "CSV", "csv", "Csv":
-		CSVOutput(certExpires)
+		CSVOutput(validateResultChan)
 	default:
-		defaultOutput(certExpires)
+		defaultOutput(validateResultChan)
 	}
 	return nil
 }

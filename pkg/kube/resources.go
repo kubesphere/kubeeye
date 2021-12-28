@@ -26,15 +26,6 @@ import (
 var K8sResourcesChan = make(chan K8SResource)
 var RegoRulesListChan = make(chan RegoRulesList)
 var ResultChan = make(chan ValidateResult)
-var DeploymentsResultsChan = make(chan DeploymentsValidateResults)
-var DaemonSetsResultsChan = make(chan DaemonSetsValidateResults)
-var StatefulSetsResultsChan = make(chan StatefulSetsValidateResults)
-var JobsResultsChan = make(chan JobsValidateResults)
-var CronjobsResultsChan = make(chan CronjobsValidateResults)
-var RolesResultsChan = make(chan RolesValidateResults)
-var ClusterRolesResultsChan = make(chan ClusterRolesValidateResults)
-var NodesResultsChan = make(chan NodesValidateResults)
-var EventsResultsChan = make(chan EventsValidateResults)
 
 type K8SResource struct {
 	ServerVersion string
@@ -78,39 +69,7 @@ type ResultReceiver struct {
 	Reason    string   `json:"reason,omitempty"`
 }
 
-type DeploymentsValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type DaemonSetsValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type StatefulSetsValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type JobsValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type CronjobsValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type RolesValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type ClusterRolesValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type NodesValidateResults struct {
-	ValidateResults []ResultReceiver
-}
-
-type EventsValidateResults struct {
+type ValidateResults struct {
 	ValidateResults []ResultReceiver
 }
 
