@@ -19,8 +19,6 @@ func defaultOutput(receiver <-chan kube.ValidateResults) {
 			if len(result.Message) != 0 {
 				s := fmt.Sprintf("%s\t%s\t%s\t%-8v", result.Type, result.Namespace, result.Name, result.Message)
 				fmt.Fprintln(w, s)
-				// FIX ME continue???
-				continue
 			}
 		}
 	}
@@ -71,9 +69,9 @@ func CSVOutput(receiver <-chan kube.ValidateResults) {
 		header,
 	}
 	for _, receiver := range output {
-		var testname string
+		var resourcename string
 		for _, msg := range receiver.Message {
-			if testname == "" {
+			if resourcename == "" {
 				contexts := []string{
 					receiver.Name,
 					receiver.Namespace,
@@ -82,7 +80,7 @@ func CSVOutput(receiver <-chan kube.ValidateResults) {
 					receiver.Reason,
 				}
 				data = append(data, contexts)
-				testname = receiver.Name
+				resourcename = receiver.Name
 			} else {
 				contexts := []string{
 					"",
