@@ -131,19 +131,19 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) er
 	}
 
 	K8sResourcesChan <- K8SResource{
-		ServerVersion: serverVersion.Major + "." + serverVersion.Minor,
-		CreationTime:  time.Now(),
-		AuditAddress:  kubeconfig.Host,
-		Nodes:         nodes.Items,
-		Namespaces:    namespaces.Items,
-		Deployments:   deployments.Items,
-		DaemonSets:    daemonSets.Items,
-		StatefulSets:  statefulSets.Items,
-		Jobs:          jobs.Items,
-		CronJobs:      cronjobs.Items,
-		Roles:         roles.Items,
-		ClusterRoles:  clusterRoles.Items,
-		Events:        events.Items,
+		ServerVersion:    serverVersion.Major + "." + serverVersion.Minor,
+		CreationTime:     time.Now(),
+		APIServerAddress: kubeconfig.Host,
+		Nodes:            nodes.Items,
+		Namespaces:       namespaces.Items,
+		Deployments:      deployments.Items,
+		DaemonSets:       daemonSets.Items,
+		StatefulSets:     statefulSets.Items,
+		Jobs:             jobs.Items,
+		CronJobs:         cronjobs.Items,
+		Roles:            roles.Items,
+		ClusterRoles:     clusterRoles.Items,
+		Events:           events.Items,
 	}
 	return nil
 }

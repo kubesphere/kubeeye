@@ -5,7 +5,6 @@ import (
 	"embed"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -25,8 +24,8 @@ var defaultRegoRules embed.FS
 // 	kube.RegoRulesListChan <- regoRulesList
 // }
 
-// GetRegoRulesfiles get rego rules , put it into pointer of RegoRulesList
-func GetRegoRulesfiles(path string) []string{
+// GetAdditionalRegoRulesfiles get Additional rego rules , put it into pointer of RegoRulesList
+func GetAdditionalRegoRulesfiles(path string) []string {
 	var regoRules []string
 	if path == "" {
 		return regoRules
@@ -40,8 +39,8 @@ func GetRegoRulesfiles(path string) []string{
 	}
 	files, err := ioutil.ReadDir(pathabs)
 	if err != nil {
-		fmt.Println("Failed to read the dir of rego rule files.")
-		os.Exit(1)
+		fmt.Errorf("failed to read the dir of rego rule files")
+		panic(err)
 	}
 
 	for _, file := range files {
@@ -56,7 +55,7 @@ func GetRegoRulesfiles(path string) []string{
 	return regoRules
 }
 
-func GetDefaultRegofile(path string) []string{
+func GetDefaultRegofile(path string) []string {
 	var regoRules []string
 	files, err := defaultRegoRules.ReadDir(path)
 	if err != nil {
@@ -70,6 +69,7 @@ func GetDefaultRegofile(path string) []string{
 	return regoRules
 }
 
+// MergeRegoRules fun-out merge rego rules
 func MergeRegoRules(ctx context.Context, channels ...[]string) <-chan string {
 	res := make(chan string)
 	var wg sync.WaitGroup
