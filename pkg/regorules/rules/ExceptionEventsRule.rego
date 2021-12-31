@@ -7,7 +7,6 @@ deny[msg] {
     resourcenamespace := resource.Object.metadata.namespace
     type == "Event"
     Message := resource.Object.message
-    Reason := resource.Object.reason
 
     resource.Object.type != "Normal"
 
@@ -16,6 +15,5 @@ deny[msg] {
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
         "Message": sprintf("%v", [Message]),
-        "Reason": sprintf("%v", [Reason]),
     }
 }

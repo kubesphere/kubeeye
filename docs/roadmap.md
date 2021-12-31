@@ -6,40 +6,9 @@ KubeEye Roadmap demonstrates a list of open source product development plans, as
 
 ### Feature:
 
-- kubeeye command-line tool:
-
-Functional Requirements:
-
-- [x] Standalone operation.
-
-- [x] Check k8s cluster resource configuration and events.
-
-- [ ] Install the console.
-
-- [ ] Provide installation methods for installing more cluster review components, such as installing NPD, Kubebench, etc.
-
-- [ ] Able to collect node information and review through Kubeeye Collector.
-
-
-- Kubeeye Collector
-
-Functional Requirements:
-
-- [ ] Run as DaemonSet in the k8s cluster to collect node information.
-
-
-- Kubeeye console:
-
-Functional Requirements:
-
-- [ ] Able to call Kubeeye command-line tool to get audit results.
-
-- [ ] The web page displays the audit results.
-
-- [ ] Store audit results and view historical audit results on the web page.
-
-- [ ] The web page can reflect the changing trend of cluster audit.
-
-- [ ] The audit results can be downloaded on the web page.
-
-- [ ] Suggest amendments to each audit result.
+- [x] Pod detection int the cluster, including pod best practices, pod exceptions information.
+- [x] Support inspection report export CSV format or JSON.
+- [ ] Change the way for node detection in the cluster, remove Node-Problem-Detector, including Kubelet abnormalities, insufficient machine MEMORY/CPU/IO resources, docker service exceptions.
+- [ ] Core component detection in the cluster, including controller-manager, scheduler, and ETCD exception detection.
+- [ ] Support for more fine-grained patrolling, such as slow response.
+- [ ] Add a UI.

@@ -28,19 +28,19 @@ var RegoRulesListChan = make(chan RegoRulesList)
 var ResultChan = make(chan ValidateResult)
 
 type K8SResource struct {
-	ServerVersion    string
-	CreationTime     time.Time
-	APIServerAddress string
-	Nodes            []unstructured.Unstructured
-	Namespaces       []unstructured.Unstructured
-	Deployments      []unstructured.Unstructured
-	DaemonSets       []unstructured.Unstructured
-	StatefulSets     []unstructured.Unstructured
-	Jobs             []unstructured.Unstructured
-	CronJobs         []unstructured.Unstructured
-	Roles            []unstructured.Unstructured
-	ClusterRoles     []unstructured.Unstructured
-	Events           []unstructured.Unstructured
+	ServerVersion string
+	CreationTime  time.Time
+	AuditAddress  string
+	Nodes         []unstructured.Unstructured
+	Namespaces    []unstructured.Unstructured
+	Deployments   []unstructured.Unstructured
+	DaemonSets    []unstructured.Unstructured
+	StatefulSets  []unstructured.Unstructured
+	Jobs          []unstructured.Unstructured
+	CronJobs      []unstructured.Unstructured
+	Roles         []unstructured.Unstructured
+	ClusterRoles  []unstructured.Unstructured
+	Events        []unstructured.Unstructured
 }
 
 type RegoRulesList struct {
@@ -59,7 +59,6 @@ type ValidateResult struct {
 	Namespace string
 	Type      string
 	Message   string
-	Reason    string
 }
 
 type ResultReceiver struct {
