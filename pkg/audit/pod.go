@@ -16,10 +16,13 @@ package audit
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/open-policy-agent/opa/rego"
@@ -28,12 +31,62 @@ import (
 
 type validateFunc func(ctx context.Context, regoRulesList []string) kube.ValidateResults
 
-func RegoRulesValidate(ctx context.Context, queryRule string, Resources []unstructured.Unstructured) validateFunc {
-	
+func RegoRulesValidate(queryRule string, Resources kube.K8SResource) validateFunc {
+
 	return func(ctx context.Context, regoRulesList []string) kube.ValidateResults {
 		var validateRolesResults kube.ValidateResults
-		for _, resource := range Resources {
-			if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
+		if queryRule == workloads {
+			for _, resource := range Resources.Deployments {
+				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
+					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
+				}
+			}
+			for _, resource := range Resources.StatefulSets {
+				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
+					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
+				}
+			}
+			for _, resource := range Resources.DaemonSets {
+				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
+					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
+				}
+			}
+			for _, resource := range Resources.Jobs {
+				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
+					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
+				}
+			}
+			for _, resource := range Resources.CronJobs {
+				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
+					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
+				}
+			}
+		} else if queryRule == rbac {
+			for _, resource := range Resources.Roles {
+				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
+					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
+				}
+			}
+			for _, resource := range Resources.ClusterRoles {
+				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
+					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
+				}
+			}
+		} else if queryRule == nodes {
+			for _, resource := range Resources.Nodes {
+				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
+					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
+				}
+			}
+		} else if queryRule == events {
+			for _, resource := range Resources.Events {
+				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
+					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
+				}
+			}
+		} else if queryRule == certexp {
+			resource := Resources.APIServerAddress
+			if validateResults, found := validateCertExp(resource); found {
 				validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
 			}
 		}
@@ -41,7 +94,7 @@ func RegoRulesValidate(ctx context.Context, queryRule string, Resources []unstru
 	}
 }
 
-// ValidateResources Validate kubernetes cluster Resources, put the results into channels.
+// MergeRegoRulesValidate Validate kubernetes cluster Resources, put the results into channels.
 func MergeRegoRulesValidate(ctx context.Context, regoRulesChan <-chan string, vfuncs ...validateFunc) <-chan kube.ValidateResults {
 
 	resultChan := make(chan kube.ValidateResults)
@@ -58,7 +111,7 @@ func MergeRegoRulesValidate(ctx context.Context, regoRulesChan <-chan string, vf
 		defer wg.Done()
 		resultChan <- vf(ctx, regoRulesList)
 	}
-    for _, vf := range vfuncs {
+	for _, vf := range vfuncs {
 		go mergeResult(ctx, vf)
 	}
 
@@ -107,17 +160,54 @@ func validateK8SResource(ctx context.Context, resource unstructured.Unstructured
 							resultReceiver.Name = result.Name
 							resultReceiver.Type = result.Type
 							resultReceiver.Message = append(resultReceiver.Message, result.Message)
+						} else if result.Type == "Event" {
+							resultReceiver.Name = result.Name
+							resultReceiver.Namespace = result.Namespace
+							resultReceiver.Type = result.Type
+							resultReceiver.Message = append(resultReceiver.Message, result.Message)
+							resultReceiver.Reason = result.Reason
 						} else {
 							resultReceiver.Name = result.Name
 							resultReceiver.Namespace = result.Namespace
 							resultReceiver.Type = result.Type
 							resultReceiver.Message = append(resultReceiver.Message, result.Message)
 						}
-
 					}
 				}
 			}
 		}
 	}
 	return resultReceiver, find
+}
+
+// validateCertExp validate kube-apiserver certificate expiration
+func validateCertExp(ApiAddress string) (kube.ResultReceiver, bool) {
+	var result kube.ResultReceiver
+	find := false
+	if ApiAddress != "" {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+		resp, err := client.Get(ApiAddress)
+		defer resp.Body.Close()
+
+		if err != nil {
+			fmt.Errorf(ApiAddress, " 请求失败")
+			panic(err)
+		}
+
+		certInfo := resp.TLS.PeerCertificates[0]
+
+		tn := time.Now()
+		expDate := int(certInfo.NotAfter.Sub(tn).Hours() / 24)
+		if expDate <= 90 {
+			find = true
+			result.Name = "certificateExpire"
+			result.Type = "certificate"
+			result.Message = append(result.Message, "CertificateWillExpire")
+			result.Reason = "Certificate expiration time <= 90 days"
+		}
+	}
+	return result, find
 }

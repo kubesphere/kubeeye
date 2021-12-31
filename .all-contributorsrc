@@ -10,16 +10,16 @@
   "commit": true,
   "commitConvention": "none",
   "contributors": [
-      {
-        "login": "ruiyaoOps",
-        "name": "ruiyaoOps",
-        "avatar_url": "https://avatars.githubusercontent.com/u/35256376?v=4",
-        "profile": "https://github.com/ruiyaoOps",
-        "contributions": [
-          "code",
-          "doc"
-        ]
-      },
+    {
+      "login": "ruiyaoOps",
+      "name": "ruiyaoOps",
+      "avatar_url": "https://avatars.githubusercontent.com/u/35256376?v=4",
+      "profile": "https://github.com/ruiyaoOps",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
     {
       "login": "Forest-L",
       "name": "Forest",
@@ -70,6 +70,15 @@
       "name": "Harsh Thakur",
       "avatar_url": "https://avatars.githubusercontent.com/u/38140305?v=4",
       "profile": "https://github.com/RealHarshThakur",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "leonharetd",
+      "name": "leonharetd",
+      "avatar_url": "https://avatars.githubusercontent.com/u/10416045?v=4",
+      "profile": "https://github.com/leonharetd",
       "contributions": [
         "code"
       ]
