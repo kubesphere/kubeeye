@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/version"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,19 +29,19 @@ var RegoRulesListChan = make(chan RegoRulesList)
 var ResultChan = make(chan ValidateResult)
 
 type K8SResource struct {
-	ServerVersion    string
+	ServerVersion    *version.Info
 	CreationTime     time.Time
 	APIServerAddress string
-	Nodes            []unstructured.Unstructured
-	Namespaces       []unstructured.Unstructured
-	Deployments      []unstructured.Unstructured
-	DaemonSets       []unstructured.Unstructured
-	StatefulSets     []unstructured.Unstructured
-	Jobs             []unstructured.Unstructured
-	CronJobs         []unstructured.Unstructured
-	Roles            []unstructured.Unstructured
-	ClusterRoles     []unstructured.Unstructured
-	Events           []unstructured.Unstructured
+	Nodes            *unstructured.UnstructuredList
+	Namespaces       *unstructured.UnstructuredList
+	Deployments      *unstructured.UnstructuredList
+	DaemonSets       *unstructured.UnstructuredList
+	StatefulSets     *unstructured.UnstructuredList
+	Jobs             *unstructured.UnstructuredList
+	CronJobs         *unstructured.UnstructuredList
+	Roles            *unstructured.UnstructuredList
+	ClusterRoles     *unstructured.UnstructuredList
+	Events           *unstructured.UnstructuredList
 }
 
 type RegoRulesList struct {
