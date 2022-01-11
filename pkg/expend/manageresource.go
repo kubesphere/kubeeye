@@ -15,7 +15,10 @@ import (
 )
 
 func CreateResource(path string, ctx context.Context, resource []byte) (err error) {
-	kubernetesClient := kube.KubernetesAPI(path)
+	kubernetesClient, err := kube.KubernetesAPI(path)
+	if err != nil {
+		panic(err)
+	}
 	clientset := kubernetesClient.ClientSet
 	dynamicClient := kubernetesClient.DynamicClient
 	namespace := metav1.NamespaceDefault
@@ -72,7 +75,10 @@ func CreateResource(path string, ctx context.Context, resource []byte) (err erro
 }
 
 func RemoveResource(path string, ctx context.Context, resource []byte) (err error) {
-	kubernetesClient := kube.KubernetesAPI(path)
+	kubernetesClient, err := kube.KubernetesAPI(path)
+	if err != nil {
+		panic(err)
+	}
 	clientset := kubernetesClient.ClientSet
 	dynamicClient := kubernetesClient.DynamicClient
 	namespace := metav1.NamespaceDefault

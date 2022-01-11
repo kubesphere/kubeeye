@@ -36,69 +36,76 @@ type KubernetesClient struct {
 }
 
 // GetKubeConfig get the kubeconfig from path or by GetConfig
-func GetKubeConfig(kubeconfigPath string) *rest.Config {
-	if kubeconfigPath != "" {
+func GetKubeConfig(kubeconfigPath string) (*rest.Config, error) {
+	execEnv := os.Getenv("EXEC_ENV")
+	if execEnv == "K8SENV" {
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			return nil, err
+		}
+		KubeConfig = config
+	} else if kubeconfigPath != "" && execEnv != "K8SENV" {
 		kubeconfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		if err != nil {
 			err = fmt.Errorf("failed to load kubernetes config: %s\n", strings.ReplaceAll(err.Error(), "KUBERNETES_MASTER", "KUBECONFIG"))
-			fmt.Println(err)
-			os.Exit(1)
+			return nil, err
 		}
 		KubeConfig = kubeconfig
-	} else {
+	} else if kubeconfigPath == "" && execEnv != "K8SENV" {
 		kubeconfig, err := config.GetConfig()
 		if err != nil {
 			err = fmt.Errorf("failed to load kubernetes config: %s\n", strings.ReplaceAll(err.Error(), "KUBERNETES_MASTER", "KUBECONFIG"))
-			fmt.Println(err)
-			os.Exit(1)
+			return nil, err
 		}
 		KubeConfig = kubeconfig
 	}
-	return KubeConfig
+	return KubeConfig, nil
 }
 
 // ClientSet return clientset
-func ClientSet(path string) *kubernetes.Clientset {
-	k8sconfig := GetKubeConfig(path)
+func ClientSet(path string) (*kubernetes.Clientset, error) {
+	k8sconfig, err := GetKubeConfig(path)
 
 	clientset, err := kubernetes.NewForConfig(k8sconfig)
 	if err != nil {
-		fmt.Printf("Failed to load config file, reason: %s", err.Error())
-		os.Exit(1)
+		err := fmt.Errorf("Failed to load config file, reason: %s", err.Error())
+		return nil, err
 	}
-	return clientset
+	return clientset, nil
 }
 
 // DynamicClient return dynamicClient
-func DynamicClient(path string) dynamic.Interface {
-	k8sconfig := GetKubeConfig(path)
+func DynamicClient(path string) (dynamic.Interface, error) {
+	k8sconfig, err := GetKubeConfig(path)
 
 	dynamicClient, err := dynamic.NewForConfig(k8sconfig)
 	if err != nil {
-		fmt.Printf("Failed to load config file, reason: %s", err.Error())
-		os.Exit(1)
+		err := fmt.Errorf("Failed to load config file, reason: %s", err.Error())
+		return nil, err
 	}
-	return dynamicClient
+	return dynamicClient, nil
 }
 
 // KubernetesAPI return kubeconfig clientset and dynamicClient.
-func KubernetesAPI(kubeconfigPath string) *KubernetesClient {
-	k8sconfig := GetKubeConfig(kubeconfigPath)
-
+func KubernetesAPI(kubeconfigPath string) (*KubernetesClient, error) {
+	k8sconfig, err := GetKubeConfig(kubeconfigPath)
+	if err != nil {
+		return nil, err
+	}
 	clientset, err := kubernetes.NewForConfig(k8sconfig)
 	if err != nil {
-		fmt.Printf("Failed to load config file, reason: %s", err.Error())
-		os.Exit(1)
+		err := fmt.Errorf("Failed to load config file, reason: %s", err.Error())
+		return nil, err
 	}
 
 	dynamicClient, err := dynamic.NewForConfig(k8sconfig)
 	if err != nil {
-		fmt.Printf("Failed to load config file, reason: %s", err.Error())
-		os.Exit(1)
+		err := fmt.Errorf("Failed to load config file, reason: %s", err.Error())
+		return nil, err
 	}
 	return &KubernetesClient{
 		kubeconfig:    k8sconfig,
 		ClientSet:     clientset,
 		DynamicClient: dynamicClient,
-	}
+	}, nil
 }

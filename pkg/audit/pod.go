@@ -35,56 +35,70 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource) validateFun
 
 	return func(ctx context.Context, regoRulesList []string) kube.ValidateResults {
 		var validateRolesResults kube.ValidateResults
-		if queryRule == workloads {
-			for _, resource := range Resources.Deployments {
+		if queryRule == workloads && Resources.Deployments != nil {
+			for _, resource := range Resources.Deployments.Items {
 				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
 				}
 			}
-			for _, resource := range Resources.StatefulSets {
+		}
+		if queryRule == workloads && Resources.StatefulSets != nil {
+			for _, resource := range Resources.StatefulSets.Items {
 				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
 				}
 			}
-			for _, resource := range Resources.DaemonSets {
+		}
+		if queryRule == workloads && Resources.DaemonSets != nil {
+			for _, resource := range Resources.DaemonSets.Items {
 				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
 				}
 			}
-			for _, resource := range Resources.Jobs {
+		}
+		if queryRule == workloads && Resources.Jobs != nil {
+			for _, resource := range Resources.Jobs.Items {
 				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
 				}
 			}
-			for _, resource := range Resources.CronJobs {
+		}
+		if queryRule == workloads && Resources.CronJobs != nil {
+			for _, resource := range Resources.CronJobs.Items {
 				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
 				}
 			}
-		} else if queryRule == rbac {
-			for _, resource := range Resources.Roles {
+		}
+		if queryRule == rbac && Resources.Roles != nil {
+			for _, resource := range Resources.Roles.Items {
 				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
 				}
 			}
-			for _, resource := range Resources.ClusterRoles {
+		}
+		if queryRule == rbac && Resources.ClusterRoles != nil {
+			for _, resource := range Resources.ClusterRoles.Items {
 				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
 				}
 			}
-		} else if queryRule == nodes {
-			for _, resource := range Resources.Nodes {
+		}
+		if queryRule == nodes && Resources.Nodes != nil {
+			for _, resource := range Resources.Nodes.Items {
 				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
 				}
 			}
-		} else if queryRule == events {
-			for _, resource := range Resources.Events {
+		}
+		if queryRule == events && Resources.Events != nil {
+			for _, resource := range Resources.Events.Items {
 				if validateResults, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
 				}
 			}
-		} else if queryRule == certexp {
+		}
+		if queryRule == certexp && Resources.APIServerAddress != "" {
 			resource := Resources.APIServerAddress
 			if validateResults, found := validateCertExp(resource); found {
 				validateRolesResults.ValidateResults = append(validateRolesResults.ValidateResults, validateResults)
@@ -190,12 +204,11 @@ func validateCertExp(ApiAddress string) (kube.ResultReceiver, bool) {
 		}
 		client := &http.Client{Transport: tr}
 		resp, err := client.Get(ApiAddress)
-		defer resp.Body.Close()
-
 		if err != nil {
-			fmt.Errorf(ApiAddress, " 请求失败")
-			panic(err)
+			fmt.Printf("\033[1;33;49mFailed to get Kubernetes kube-apiserver certificate expiration.\033[0m\n")
+			return result, find
 		}
+		defer resp.Body.Close()
 
 		certInfo := resp.TLS.PeerCertificates[0]
 

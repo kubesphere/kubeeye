@@ -28,10 +28,11 @@ var defaultRegoRules embed.FS
 func GetAdditionalRegoRulesfiles(path string) []string {
 	var regoRules []string
 	if path == "" {
-		return regoRules
+		return nil
 	}
 	pathabs, err := filepath.Abs(path)
 	if err != nil {
+		// TODO
 		panic(err)
 	}
 	if strings.HasSuffix(pathabs, "/") == false {
@@ -39,7 +40,7 @@ func GetAdditionalRegoRulesfiles(path string) []string {
 	}
 	files, err := ioutil.ReadDir(pathabs)
 	if err != nil {
-		fmt.Errorf("failed to read the dir of rego rule files")
+		err := fmt.Errorf("failed to read the dir of rego rule files")
 		panic(err)
 	}
 
@@ -59,6 +60,7 @@ func GetDefaultRegofile(path string) []string {
 	var regoRules []string
 	files, err := defaultRegoRules.ReadDir(path)
 	if err != nil {
+		// TODO
 		panic(err)
 	}
 	for _, file := range files {
@@ -91,4 +93,9 @@ func MergeRegoRules(ctx context.Context, channels ...[]string) <-chan string {
 		defer close(res)
 	}()
 	return res
+}
+
+// ConsoleRegoRules get rego rules from kubeeye console
+func ConsoleRegoRules() {
+	// TODO
 }
