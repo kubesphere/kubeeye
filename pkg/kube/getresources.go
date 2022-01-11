@@ -17,7 +17,6 @@ package kube
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,18 +26,18 @@ import (
 )
 
 // GetK8SResourcesProvider get kubeconfig by KubernetesAPI, get kubernetes resources by GetK8SResources.
-func GetK8SResourcesProvider(ctx context.Context, kubeconfig string) {
+func GetK8SResourcesProvider(ctx context.Context, kubeconfig string) error {
 	// get kubernetes client
-	kubernetesClient := KubernetesAPI(kubeconfig)
-	err := GetK8SResources(ctx, kubernetesClient)
+	kubernetesClient, err := KubernetesAPI(kubeconfig)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
+	GetK8SResources(ctx, kubernetesClient)
+	return nil
 }
 
 // GetK8SResources get kubernetes resources by GroupVersionResource, put the resources into the channel K8sResourcesChan, return error.
-func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) error {
+func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 	kubeconfig := kubernetesClient.kubeconfig
 	clientSet := kubernetesClient.ClientSet
 	dynamicClient := kubernetesClient.DynamicClient
@@ -56,94 +55,83 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) er
 
 	serverVersion, err := clientSet.Discovery().ServerVersion()
 	if err != nil {
-		err := fmt.Errorf("failed to fetch serverVersion: %s", err.Error())
-		return err
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes serverVersion.\033[0m\n")
+		//fmt.Errorf("failed to fetch serverVersion: %s", err.Error())
 	}
 
 	nodesGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}
 	nodes, err := dynamicClient.Resource(nodesGVR).List(ctx, listOpts)
 	if err != nil {
-		err := fmt.Errorf("failed to fetch nodes: %s", err.Error())
-		return err
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes nodes.\033[0m\n")
 	}
 
 	namespacesGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
 	namespaces, err := dynamicClient.Resource(namespacesGVR).List(ctx, listOpts)
 	if err != nil {
-		err := fmt.Errorf("failed to fetch namespaces: %s", err.Error())
-		return err
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes namespaces.\033[0m\n")
 	}
 
 	deploymentsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
 	deployments, err := dynamicClient.Resource(deploymentsGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
-		err := fmt.Errorf("failed to fetch deployments: %s", err.Error())
-		return err
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes deployments.\033[0m\n")
 	}
 
 	daemonSetsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}
 	daemonSets, err := dynamicClient.Resource(daemonSetsGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
-		err := fmt.Errorf("failed to fetch daemonSets: %s", err.Error())
-		return err
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes daemonSets.\033[0m\n")
 	}
 
 	statefulSetsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}
 	statefulSets, err := dynamicClient.Resource(statefulSetsGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
-		err := fmt.Errorf("failed to fetch statefulSets: %s", err.Error())
-		return err
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes statefulSets.\033[0m\n")
 	}
 
 	jobsGVR := schema.GroupVersionResource{Group: "batch", Version: "v1", Resource: "jobs"}
 	jobs, err := dynamicClient.Resource(jobsGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
-		err := fmt.Errorf("failed to fetch jobs: %s", err.Error())
-		return err
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes jobs.\033[0m\n")
 	}
 
 	cronjobsGVR := schema.GroupVersionResource{Group: "batch", Version: "v1beta1", Resource: "cronjobs"}
 	cronjobs, err := dynamicClient.Resource(cronjobsGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
-		err := fmt.Errorf("failed to fetch cronjobs: %s", err.Error())
-		return err
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes cronjobs.\033[0m\n")
 	}
 
 	eventsGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "events"}
 	events, err := dynamicClient.Resource(eventsGVR).List(ctx, listOpts)
 	if err != nil {
-		err := fmt.Errorf("failed to fetch events: %s", err.Error())
-		return err
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes events.\033[0m\n")
 	}
 
 	rolesGVR := schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1beta1", Resource: "roles"}
 	roles, err := dynamicClient.Resource(rolesGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
-		err := fmt.Errorf("failed to fetch clusterRoles: %s", err.Error())
-		return err
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes roles.\033[0m\n")
 	}
 
 	clusterRolesGVR := schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1beta1", Resource: "clusterroles"}
 	clusterRoles, err := dynamicClient.Resource(clusterRolesGVR).List(ctx, listOpts)
 	if err != nil {
-		err := fmt.Errorf("failed to fetch clusterRoles: %s", err.Error())
-		return err
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes clusterroles.\033[0m\n")
 	}
 
 	K8sResourcesChan <- K8SResource{
-		ServerVersion:    serverVersion.Major + "." + serverVersion.Minor,
+		ServerVersion:    serverVersion,
 		CreationTime:     time.Now(),
 		APIServerAddress: kubeconfig.Host,
-		Nodes:            nodes.Items,
-		Namespaces:       namespaces.Items,
-		Deployments:      deployments.Items,
-		DaemonSets:       daemonSets.Items,
-		StatefulSets:     statefulSets.Items,
-		Jobs:             jobs.Items,
-		CronJobs:         cronjobs.Items,
-		Roles:            roles.Items,
-		ClusterRoles:     clusterRoles.Items,
-		Events:           events.Items,
+		Nodes:            nodes,
+		Namespaces:       namespaces,
+		Deployments:      deployments,
+		DaemonSets:       daemonSets,
+		StatefulSets:     statefulSets,
+		Jobs:             jobs,
+		CronJobs:         cronjobs,
+		Roles:            roles,
+		ClusterRoles:     clusterRoles,
+		Events:           events,
 	}
-	return nil
 }

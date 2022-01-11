@@ -19,7 +19,7 @@ import (
 	"sync"
 
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	regorules2 "github.com/kubesphere/kubeeye/pkg/regorules"
+	"github.com/kubesphere/kubeeye/pkg/regorules"
 )
 
 var (
@@ -34,11 +34,14 @@ func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh stri
 
 	// get kubernetes resources and put into the channel.
 	go func(ctx context.Context, kubeconfig string) {
-		kube.GetK8SResourcesProvider(ctx, kubeconfig)
+		err := kube.GetK8SResourcesProvider(ctx, kubeconfig)
+		if err != nil {
+			panic(err)
+		}
 	}(ctx, kubeconfig)
 
 	k8sResources := <-kube.K8sResourcesChan
-	regoRulesChan := regorules2.MergeRegoRules(ctx, regorules2.GetDefaultRegofile("rules"), regorules2.GetAdditionalRegoRulesfiles(additionalregoruleputh))
+	regoRulesChan := regorules.MergeRegoRules(ctx, regorules.GetDefaultRegofile("rules"), regorules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
 
 	RegoRulesValidateChan := MergeRegoRulesValidate(ctx, regoRulesChan,
 		RegoRulesValidate(workloads, k8sResources),
