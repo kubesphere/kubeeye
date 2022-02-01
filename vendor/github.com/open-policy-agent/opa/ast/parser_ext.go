@@ -22,7 +22,13 @@ import (
 // MustParseBody returns a parsed body.
 // If an error occurs during parsing, panic.
 func MustParseBody(input string) Body {
-	parsed, err := ParseBody(input)
+	return MustParseBodyWithOpts(input, ParserOptions{})
+}
+
+// MustParseBodyWithOpts returns a parsed body.
+// If an error occurs during parsing, panic.
+func MustParseBodyWithOpts(input string, opts ParserOptions) Body {
+	parsed, err := ParseBodyWithOpts(input, opts)
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +58,13 @@ func MustParseImports(input string) []*Import {
 // MustParseModule returns a parsed module.
 // If an error occurs during parsing, panic.
 func MustParseModule(input string) *Module {
-	parsed, err := ParseModule("", input)
+	return MustParseModuleWithOpts(input, ParserOptions{})
+}
+
+// MustParseModuleWithOpts returns a parsed module.
+// If an error occurs during parsing, panic.
+func MustParseModuleWithOpts(input string, opts ParserOptions) *Module {
+	parsed, err := ParseModuleWithOpts("", input, opts)
 	if err != nil {
 		panic(err)
 	}
@@ -435,7 +447,11 @@ func ParseModuleWithOpts(filename, input string, popts ParserOptions) (*Module, 
 // ParseBody returns exactly one body.
 // If multiple bodies are parsed, an error is returned.
 func ParseBody(input string) (Body, error) {
-	stmts, _, err := ParseStatements("", input)
+	return ParseBodyWithOpts(input, ParserOptions{})
+}
+
+func ParseBodyWithOpts(input string, popts ParserOptions) (Body, error) {
+	stmts, _, err := ParseStatementsWithOpts("", input, popts)
 	if err != nil {
 		return nil, err
 	}
@@ -556,11 +572,15 @@ func ParseStatements(filename, input string) ([]Statement, []*Comment, error) {
 // default return value from the parser.
 func ParseStatementsWithOpts(filename, input string, popts ParserOptions) ([]Statement, []*Comment, error) {
 
-	parser := NewParser().WithFilename(filename).WithReader(bytes.NewBufferString(input))
+	parser := NewParser().
+		WithFilename(filename).
+		WithReader(bytes.NewBufferString(input)).
+		WithProcessAnnotation(popts.ProcessAnnotation).
+		WithFutureKeywords(popts.FutureKeywords...).
+		WithAllFutureKeywords(popts.AllFutureKeywords).
+		WithCapabilities(popts.Capabilities).
+		withUnreleasedKeywords(popts.unreleasedKeywords)
 
-	if popts.ProcessAnnotation {
-		parser.WithProcessAnnotation(popts.ProcessAnnotation)
-	}
 	stmts, comments, errs := parser.Parse()
 
 	if len(errs) > 0 {
@@ -580,7 +600,7 @@ func parseModule(filename string, stmts []Statement, comments []*Comment) (*Modu
 
 	_package, ok := stmts[0].(*Package)
 	if !ok {
-		loc := stmts[0].(Statement).Loc()
+		loc := stmts[0].Loc()
 		errs = append(errs, NewError(ParseErr, loc, "package expected"))
 	}
 
@@ -749,7 +769,11 @@ func newParserErrorDetail(bs []byte, offset int) *ParserErrorDetail {
 func (d ParserErrorDetail) Lines() []string {
 	line := strings.TrimLeft(d.Line, "\t") // remove leading tabs
 	tabCount := len(d.Line) - len(line)
-	return []string{line, strings.Repeat(" ", d.Idx-tabCount) + "^"}
+	indent := d.Idx - tabCount
+	if indent < 0 {
+		indent = 0
+	}
+	return []string{line, strings.Repeat(" ", indent) + "^"}
 }
 
 func isNewLineChar(b byte) bool {

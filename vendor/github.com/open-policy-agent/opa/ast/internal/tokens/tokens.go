@@ -57,6 +57,7 @@ const (
 	Unify
 	Equal
 	Assign
+	In
 	Neq
 	Gt
 	Lt
@@ -64,6 +65,8 @@ const (
 	Lte
 	Dot
 	Semicolon
+
+	Every
 )
 
 var strings = [...]string{
@@ -103,6 +106,7 @@ var strings = [...]string{
 	Unify:      "eq",
 	Equal:      "equal",
 	Assign:     "assign",
+	In:         "in",
 	Neq:        "neq",
 	Gt:         "gt",
 	Lt:         "lt",
@@ -110,6 +114,7 @@ var strings = [...]string{
 	Lte:        "lte",
 	Dot:        ".",
 	Semicolon:  ";",
+	Every:      "every",
 }
 
 var keywords = map[string]Token{
@@ -126,13 +131,11 @@ var keywords = map[string]Token{
 	"false":   False,
 }
 
-// Keyword will return a token for the passed in
-// literal value. If the value is a Rego keyword
-// then the appropriate token is returned. Everything
-// else is an Ident.
-func Keyword(lit string) Token {
-	if tok, ok := keywords[lit]; ok {
-		return tok
+// Keywords returns a copy of the default string -> Token keyword map.
+func Keywords() map[string]Token {
+	cpy := make(map[string]Token, len(keywords))
+	for k, v := range keywords {
+		cpy[k] = v
 	}
-	return Ident
+	return cpy
 }
