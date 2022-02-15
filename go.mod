@@ -3,6 +3,7 @@ module github.com/kubesphere/kubeeye
 go 1.16
 
 require (
+	github.com/emicklei/go-restful v2.9.5+incompatible
 	github.com/open-policy-agent/opa v0.30.2
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.2.1
@@ -13,5 +14,6 @@ require (
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v0.18.6
+	k8s.io/klog v1.0.0
 	sigs.k8s.io/controller-runtime v0.6.3
 )

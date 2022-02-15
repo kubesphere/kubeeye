@@ -24,6 +24,10 @@ github.com/bytecodealliance/wasmtime-go/build/windows-x86_64
 github.com/davecgh/go-spew/spew
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
+# github.com/emicklei/go-restful v2.9.5+incompatible
+## explicit
+github.com/emicklei/go-restful
+github.com/emicklei/go-restful/log
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
 # github.com/go-logr/logr v0.1.0
@@ -378,6 +382,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/workqueue
 # k8s.io/klog v1.0.0
+## explicit
 k8s.io/klog
 # k8s.io/utils v0.0.0-20200603063816-c1c6865ac451
 k8s.io/utils/integer
