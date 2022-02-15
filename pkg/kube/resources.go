@@ -27,6 +27,7 @@ import (
 var K8sResourcesChan = make(chan K8SResource)
 var RegoRulesListChan = make(chan RegoRulesList)
 var ResultChan = make(chan ValidateResult)
+var K8sOverviewResourcesChan = make(chan K8SResource)
 
 type K8SResource struct {
 	ServerVersion    *version.Info

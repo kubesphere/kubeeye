@@ -135,3 +135,81 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 		Events:           events,
 	}
 }
+
+// GetK8SResourcesProviderForOverview get kubeconfig by KubernetesAPI, get kubernetes resources by GetK8SAllResources.
+func GetK8SResourcesProviderForOverview(ctx context.Context, kubeconfig string) error {
+	// get kubernetes client
+	kubernetesClient, err := KubernetesAPI(kubeconfig)
+	if err != nil {
+		return err
+	}
+	GetK8SAllResources(ctx, kubernetesClient)
+	return nil
+}
+
+func GetK8SAllResources(ctx context.Context, kubernetesClient *KubernetesClient) {
+	kubeconfig := kubernetesClient.kubeconfig
+	clientSet := kubernetesClient.ClientSet
+	dynamicClient := kubernetesClient.DynamicClient
+	listOpts := metav1.ListOptions{}
+
+	serverVersion, err := clientSet.Discovery().ServerVersion()
+	if err != nil {
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes serverVersion.\033[0m\n")
+		//fmt.Errorf("failed to fetch serverVersion: %s", err.Error())
+	}
+	nodesGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}
+	nodes, err := dynamicClient.Resource(nodesGVR).List(ctx, listOpts)
+	if err != nil {
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes nodes.\033[0m\n")
+	}
+
+	namespacesGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
+	namespaces, err := dynamicClient.Resource(namespacesGVR).List(ctx, listOpts)
+	if err != nil {
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes namespaces.\033[0m\n")
+	}
+
+	deploymentsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
+	deployments, err := dynamicClient.Resource(deploymentsGVR).List(ctx, listOpts)
+	if err != nil {
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes deployments.\033[0m\n")
+	}
+
+	daemonSetsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}
+	daemonSets, err := dynamicClient.Resource(daemonSetsGVR).List(ctx, listOpts)
+	if err != nil {
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes daemonSets.\033[0m\n")
+	}
+
+	statefulSetsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}
+	statefulSets, err := dynamicClient.Resource(statefulSetsGVR).List(ctx, listOpts)
+	if err != nil {
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes statefulSets.\033[0m\n")
+	}
+
+	jobsGVR := schema.GroupVersionResource{Group: "batch", Version: "v1", Resource: "jobs"}
+	jobs, err := dynamicClient.Resource(jobsGVR).List(ctx, listOpts)
+	if err != nil {
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes jobs.\033[0m\n")
+	}
+
+	cronjobsGVR := schema.GroupVersionResource{Group: "batch", Version: "v1beta1", Resource: "cronjobs"}
+	cronjobs, err := dynamicClient.Resource(cronjobsGVR).List(ctx, listOpts)
+	if err != nil {
+		fmt.Printf("\033[1;33;49mFailed to get Kubernetes cronjobs.\033[0m\n")
+	}
+
+	K8sOverviewResourcesChan <- K8SResource{
+		ServerVersion:    serverVersion,
+		CreationTime:     time.Now(),
+		APIServerAddress: kubeconfig.Host,
+		Nodes:            nodes,
+		Namespaces:       namespaces,
+		Deployments:      deployments,
+		DaemonSets:       daemonSets,
+		StatefulSets:     statefulSets,
+		Jobs:             jobs,
+		CronJobs:         cronjobs,
+	}
+}
