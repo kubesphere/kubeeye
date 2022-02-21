@@ -1,0 +1,21 @@
+mode: set
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:62.106,67.71 3 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:76.2,77.16 2 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:83.2,85.16 3 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:90.2,100.46 5 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:109.2,109.63 1 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:114.2,117.43 2 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:121.2,125.16 4 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:130.2,130.56 1 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:67.71,68.30 1 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:68.30,71.4 2 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:77.16,80.3 2 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:85.16,88.3 2 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:100.46,101.44 1 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:101.44,102.34 1 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:102.34,104.5 1 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:109.63,112.3 2 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:117.43,119.3 1 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:125.16,128.3 2 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:134.77,138.2 1 0
+github.com/kubesphere/kubeeye/controllers/kubeeye/clusterinsight_controller.go:140.93,147.2 6 0
