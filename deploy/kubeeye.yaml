@@ -433,10 +433,3 @@ spec:
         runAsNonRoot: true
       serviceAccountName: kubeeye-controller-manager
       terminationGracePeriodSeconds: 10
----
-apiVersion: kubeeye.kubesphere.io/v1alpha1
-kind: ClusterInsight
-metadata:
-  name: clusterinsight-sample
-spec:
-  auditPeriod: 24h
