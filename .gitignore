@@ -36,4 +36,4 @@ Session.vim
 
 # Generate by makefile
 bin
-kubeeye*
+kubeEyeAuditResult.csv
