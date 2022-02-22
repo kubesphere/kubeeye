@@ -14,13 +14,19 @@ Functional Requirements:
 
 - [x] Check k8s cluster resource configuration and events.
 
-- [x] Provide API interface.
-
 - [ ] Install the console.
 
 - [ ] Provide installation methods for installing more cluster review components, such as installing NPD, Kubebench, etc.
 
 - [ ] Able to collect node information and review through Kubeeye Collector.
+
+
+- Kubeeye Collector
+
+Functional Requirements:
+
+- [ ] Run as DaemonSet in the k8s cluster to collect node information.
+
 
 - Kubeeye console:
 
