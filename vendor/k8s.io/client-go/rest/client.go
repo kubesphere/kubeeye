@@ -94,10 +94,6 @@ type RESTClient struct {
 	// overridden.
 	rateLimiter flowcontrol.RateLimiter
 
-	// warningHandler is shared among all requests created by this client.
-	// If not set, defaultWarningHandler is used.
-	warningHandler WarningHandler
-
 	// Set specific behavior of the client.  If not set http.DefaultClient will be used.
 	Client *http.Client
 }
@@ -127,7 +123,7 @@ func NewRESTClient(baseURL *url.URL, versionedAPIPath string, config ClientConte
 	}, nil
 }
 
-// GetRateLimiter returns rate limiter for a given client, or nil if it's called on a nil client
+// GetRateLimiter returns rate limier for a given client, or nil if it's called on a nil client
 func (c *RESTClient) GetRateLimiter() flowcontrol.RateLimiter {
 	if c == nil {
 		return nil

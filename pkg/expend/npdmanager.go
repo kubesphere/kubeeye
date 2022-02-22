@@ -1,24 +1,50 @@
 package expend
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 )
 
-//go:embed deploymentfiles/npd-resources.yaml
-var npdResources []byte
+//go:embed deploymentfiles/npd-daemonSet.yaml
+var npdDaemonset []byte
 
-func InstallNPD(ctx context.Context, kubeconfig string) {
-	NPDResource := bytes.Split(npdResources, []byte("---"))
-	for _, resources := range NPDResource {
-		CreateResource(kubeconfig, ctx, resources)
-	}
+//go:embed deploymentfiles/npd-configmap.yaml
+var npdConfigmap []byte
+
+type NPD struct {
+	ctx        context.Context
+	kubeconfig string
 }
 
-func UninstallNPD(ctx context.Context, kubeconfig string) {
-	NPDResource := bytes.Split(npdResources, []byte("---"))
-	for _, resources := range NPDResource {
-		RemoveResource(kubeconfig, ctx, resources)
+func (npd NPD) install() {
+	ctx := npd.ctx
+	kubeconfig := npd.kubeconfig
+
+	// create npd configmap
+	err := CreateResource(kubeconfig, ctx, npdConfigmap)
+	if err != nil {
+		panic(err)
+	}
+	// create npd daemonset
+	err = CreateResource(kubeconfig, ctx, npdDaemonset)
+	if err != nil {
+		panic(err)
+	}
+
+}
+
+func (npd NPD) uninstall() {
+	ctx := npd.ctx
+	kubeconfig := npd.kubeconfig
+
+	// delete npd configmap
+	err := RemoveResource(kubeconfig, ctx, npdConfigmap)
+	if err != nil {
+		panic(err)
+	}
+	// delete npd daemonset
+	err = RemoveResource(kubeconfig, ctx, npdDaemonset)
+	if err != nil {
+		panic(err)
 	}
 }

@@ -60,6 +60,7 @@ func GetDefaultRegofile(path string) []string {
 	var regoRules []string
 	files, err := defaultRegoRules.ReadDir(path)
 	if err != nil {
+		// TODO
 		panic(err)
 	}
 	for _, file := range files {
@@ -92,4 +93,9 @@ func MergeRegoRules(ctx context.Context, channels ...[]string) <-chan string {
 		defer close(res)
 	}()
 	return res
+}
+
+// ConsoleRegoRules get rego rules from kubeeye console
+func ConsoleRegoRules() {
+	// TODO
 }

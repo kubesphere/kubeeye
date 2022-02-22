@@ -18,11 +18,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/regorules"
-	"github.com/pkg/errors"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
@@ -33,19 +30,29 @@ var (
 	certexp   = "data.kubeeye_certexpiration"
 )
 
-func Cluster(ctx context.Context, kubeConfigPath string, additionalregoruleputh string, output string) error {
-	kubeConfig, err := kube.GetKubeConfig(kubeConfigPath)
-	if err != nil {
-		return errors.Wrap(err, "Failed to load config file")
-	}
+func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh string, output string) error {
 
-	var kc kube.KubernetesClient
-	clients, err := kc.K8SClients(kubeConfig)
-	if err != nil {
-		return err
-	}
+	// get kubernetes resources and put into the channel.
+	go func(ctx context.Context, kubeconfig string) {
+		err := kube.GetK8SResourcesProvider(ctx, kubeconfig)
+		if err != nil {
+			panic(err)
+		}
+	}(ctx, kubeconfig)
 
-	_, validationResultsChan := ValidationResults(ctx, clients, additionalregoruleputh)
+	k8sResources := <-kube.K8sResourcesChan
+	regoRulesChan := regorules.MergeRegoRules(ctx, regorules.GetDefaultRegofile("rules"), regorules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
+
+	RegoRulesValidateChan := MergeRegoRulesValidate(ctx, regoRulesChan,
+		RegoRulesValidate(workloads, k8sResources),
+		RegoRulesValidate(rbac, k8sResources),
+		RegoRulesValidate(events, k8sResources),
+		RegoRulesValidate(nodes, k8sResources),
+		RegoRulesValidate(certexp, k8sResources),
+	)
+
+	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
+	validationResultsChan := MergeValidationResults(ctx, RegoRulesValidateChan)
 
 	// Set the output mode, support default output JSON and CSV.
 	switch output {
@@ -59,44 +66,13 @@ func Cluster(ctx context.Context, kubeConfigPath string, additionalregoruleputh 
 	return nil
 }
 
-func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, additionalregoruleputh string) (kube.K8SResource, <-chan v1alpha1.AuditResult) {
-	log := log.FromContext(ctx)
-
-	// get kubernetes resources and put into the channel.
-	log.Info("starting get kubernetes resources")
-	go func(ctx context.Context, kubernetesClient *kube.KubernetesClient) {
-		err := kube.GetK8SResourcesProvider(ctx, kubernetesClient)
-		if err != nil {
-			log.Error(err, "failed to get kubernetes resources")
-		}
-	}(ctx, kubernetesClient)
-
-	k8sResources := <-kube.K8sResourcesChan
-
-	log.Info("getting and merging the Rego rules")
-	regoRulesChan := regorules.MergeRegoRules(ctx, regorules.GetDefaultRegofile("rules"), regorules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
-
-	log.Info("starting audit kubernetes resources")
-	RegoRulesValidateChan := MergeRegoRulesValidate(ctx, regoRulesChan,
-		RegoRulesValidate(workloads, k8sResources),
-		RegoRulesValidate(rbac, k8sResources),
-		RegoRulesValidate(events, k8sResources),
-		RegoRulesValidate(nodes, k8sResources),
-		RegoRulesValidate(certexp, k8sResources),
-	)
-
-	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-	log.Info("return audit results")
-	return MergeValidationResults(ctx, k8sResources, RegoRulesValidateChan)
-}
-
 // MergeValidationResults merge all validate result from
-func MergeValidationResults(ctx context.Context, k8sResources kube.K8SResource, channels ...<-chan v1alpha1.AuditResult) (kube.K8SResource, <-chan v1alpha1.AuditResult) {
-	result := make(chan v1alpha1.AuditResult)
+func MergeValidationResults(ctx context.Context, channels ...<-chan kube.ValidateResults) <-chan kube.ValidateResults {
+	result := make(chan kube.ValidateResults)
 	var wg sync.WaitGroup
 	wg.Add(len(channels))
 
-	mergeResult := func(ctx context.Context, ch <-chan v1alpha1.AuditResult) {
+	mergeResult := func(ctx context.Context, ch <-chan kube.ValidateResults) {
 		defer wg.Done()
 		for c := range ch {
 			result <- c
@@ -112,5 +88,5 @@ func MergeValidationResults(ctx context.Context, k8sResources kube.K8SResource, 
 		wg.Wait()
 	}()
 
-	return k8sResources, result
+	return result
 }

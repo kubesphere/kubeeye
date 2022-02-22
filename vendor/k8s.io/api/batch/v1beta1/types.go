@@ -18,13 +18,11 @@ package v1beta1
 
 import (
 	batchv1 "k8s.io/api/batch/v1"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +k8s:prerelease-lifecycle-gen:introduced=1.8
-// +k8s:prerelease-lifecycle-gen:deprecated=1.22
 
 // JobTemplate describes a template for creating copies of a predefined pod.
 type JobTemplate struct {
@@ -55,10 +53,6 @@ type JobTemplateSpec struct {
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +k8s:prerelease-lifecycle-gen:introduced=1.8
-// +k8s:prerelease-lifecycle-gen:deprecated=1.21
-// +k8s:prerelease-lifecycle-gen:removed=1.25
-// +k8s:prerelease-lifecycle-gen:replacement=batch,v1,CronJob
 
 // CronJob represents the configuration of a single cron job.
 type CronJob struct {
@@ -80,10 +74,6 @@ type CronJob struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +k8s:prerelease-lifecycle-gen:introduced=1.8
-// +k8s:prerelease-lifecycle-gen:deprecated=1.21
-// +k8s:prerelease-lifecycle-gen:removed=1.25
-// +k8s:prerelease-lifecycle-gen:replacement=batch,v1,CronJobList
 
 // CronJobList is a collection of cron jobs.
 type CronJobList struct {
@@ -160,14 +150,9 @@ const (
 type CronJobStatus struct {
 	// A list of pointers to currently running jobs.
 	// +optional
-	// +listType=atomic
 	Active []v1.ObjectReference `json:"active,omitempty" protobuf:"bytes,1,rep,name=active"`
 
 	// Information when was the last time the job was successfully scheduled.
 	// +optional
 	LastScheduleTime *metav1.Time `json:"lastScheduleTime,omitempty" protobuf:"bytes,4,opt,name=lastScheduleTime"`
-
-	// Information when was the last time the job successfully completed.
-	// +optional
-	LastSuccessfulTime *metav1.Time `json:"lastSuccessfulTime,omitempty" protobuf:"bytes,5,opt,name=lastSuccessfulTime"`
 }
