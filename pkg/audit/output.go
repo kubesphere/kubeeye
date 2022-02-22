@@ -13,7 +13,7 @@ import (
 
 func defaultOutput(receiver <-chan v1alpha1.AuditResult) {
 	w := tabwriter.NewWriter(os.Stdout, 10, 4, 3, ' ', 0)
-	fmt.Fprintln(w, "\nKIND\tNAMESPACE\tNAME\tMESSAGE\tLEVEL\tREASON")
+	fmt.Fprintln(w, "\nKIND\tNAMESPACE\tNAME\tREASON\tLEVEL\tMESSAGE")
 	for r := range receiver {
 		for _, results := range r.Results {
 			for _, resultInfos := range results.ResultInfos {
@@ -21,7 +21,7 @@ func defaultOutput(receiver <-chan v1alpha1.AuditResult) {
 					for _, items := range resourceInfos.ResultItems {
 						if len(items.Message) != 0 {
 							s := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%-8v", results.ResourcesType, resultInfos.Namespace,
-								resourceInfos.Name, items.Message, items.Level, items.Reason)
+								resourceInfos.Name, items.Reason, items.Level, items.Message)
 							fmt.Fprintln(w, s)
 						}
 					}

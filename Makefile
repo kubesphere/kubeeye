@@ -220,3 +220,13 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+
+BINARY=kubeeye
+.PHONY: ke
+buildke:
+	GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o ${BINARY} cmd/main.go
+installke: buildke
+	mv ${BINARY} /usr/local/bin/
+uninstallke:
+	rm -f /usr/local/bin/${BINARY}
