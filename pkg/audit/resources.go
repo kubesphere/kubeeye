@@ -240,7 +240,7 @@ func validateCertExp(ApiAddress string) (kubeeyev1alpha1.ValidateResults, bool) 
 			find = true
 			auditResult.ResourcesType = resourceType
 			resourceInfos.Name = "certificateExpire"
-			resultItems.Message = "CertificateExpiredPeriod"
+			resultItems.Message = "CertificateWillExpire"
 			resultItems.Reason = "Certificate expiration time <= 90 days"
 		}
 	}
