@@ -20,8 +20,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var expandPackage string
-
 // installCmd represents the install command
 var installCmd = &cobra.Command{
 	Use:   "install",
@@ -48,6 +46,4 @@ func init() {
 	installCmd.AddCommand(installNPD)
 
 	// Here you will define your flags and configuration settings.
-	installCmd.PersistentFlags().StringVarP(&expandPackage, "expand", "e", "", "Install extension packages in the cluster.")
-
 }
