@@ -65,9 +65,6 @@ type DefaultRESTMapper struct {
 }
 
 func (m *DefaultRESTMapper) String() string {
-	if m == nil {
-		return "<nil>"
-	}
 	return fmt.Sprintf("DefaultRESTMapper{kindToPluralResource=%v}", m.kindToPluralResource)
 }
 
@@ -518,13 +515,4 @@ func (m *DefaultRESTMapper) RESTMappings(gk schema.GroupKind, versions ...string
 		return nil, &NoResourceMatchError{PartialResource: schema.GroupVersionResource{Group: gk.Group, Resource: gk.Kind}}
 	}
 	return mappings, nil
-}
-
-// MaybeResetRESTMapper calls Reset() on the mapper if it is a ResettableRESTMapper.
-func MaybeResetRESTMapper(mapper RESTMapper) bool {
-	m, ok := mapper.(ResettableRESTMapper)
-	if ok {
-		m.Reset()
-	}
-	return ok
 }

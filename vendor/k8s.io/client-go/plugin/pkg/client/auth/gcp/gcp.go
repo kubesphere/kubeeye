@@ -33,7 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/util/jsonpath"
-	"k8s.io/klog/v2"
+	"k8s.io/klog"
 )
 
 func init() {
@@ -113,16 +113,7 @@ type gcpAuthProvider struct {
 	persister   restclient.AuthProviderConfigPersister
 }
 
-var warnOnce sync.Once
-
 func newGCPAuthProvider(_ string, gcpConfig map[string]string, persister restclient.AuthProviderConfigPersister) (restclient.AuthProvider, error) {
-	// deprecated in v1.22, remove in v1.25
-	// this should be updated to use klog.Warningf in v1.24 to more actively warn consumers
-	warnOnce.Do(func() {
-		klog.V(1).Infof(`WARNING: the gcp auth plugin is deprecated in v1.22+, unavailable in v1.25+; use gcloud instead.
-To learn more, consult https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins`)
-	})
-
 	ts, err := tokenSource(isCmdTokenSource(gcpConfig), gcpConfig)
 	if err != nil {
 		return nil, err
@@ -197,7 +188,7 @@ func (g *gcpAuthProvider) Login() error { return nil }
 type cachedTokenSource struct {
 	lk          sync.Mutex
 	source      oauth2.TokenSource
-	accessToken string `datapolicy:"token"`
+	accessToken string
 	expiry      time.Time
 	persister   restclient.AuthProviderConfigPersister
 	cache       map[string]string
@@ -278,8 +269,8 @@ func (t *cachedTokenSource) baseCache() map[string]string {
 type commandTokenSource struct {
 	cmd       string
 	args      []string
-	tokenKey  string `datapolicy:"token"`
-	expiryKey string `datapolicy:"secret-key"`
+	tokenKey  string
+	expiryKey string
 	timeFmt   string
 }
 

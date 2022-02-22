@@ -1,54 +1,73 @@
 package expend
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/lithammer/dedent"
-	"github.com/pkg/errors"
-	kubeErr "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/restmapper"
 )
 
 func CreateResource(path string, ctx context.Context, resource []byte) (err error) {
-	kubeConfig, err := kube.GetKubeConfig(path)
+	kubernetesClient, err := kube.KubernetesAPI(path)
 	if err != nil {
-		return errors.Wrap(err, "failed to load config file")
+		panic(err)
 	}
+	clientset := kubernetesClient.ClientSet
+	dynamicClient := kubernetesClient.DynamicClient
+	namespace := metav1.NamespaceDefault
 
-	var kc kube.KubernetesClient
-	clients, err := kc.K8SClients(kubeConfig)
+	// decode resource for convert the resource to unstructur.
+	newreader := bytes.NewReader(resource)
+	decode := yaml.NewYAMLOrJSONDecoder(newreader, 4096)
+
+	// get resource kind and group
+	disc := clientset.Discovery()
+	restMapperRes, _ := restmapper.GetAPIGroupResources(disc)
+	restMapper := restmapper.NewDiscoveryRESTMapper(restMapperRes)
+	ext := runtime.RawExtension{}
+	if err := decode.Decode(&ext); err != nil {
+		err = fmt.Errorf("Decode error: %s\n", err.Error())
+		return err
+	}
+	// get resource.Object
+	obj, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, nil)
 	if err != nil {
+		err = fmt.Errorf("failed to get resource object: %s\n", err.Error())
+		return err
+	}
+	// identifies a preferred resource mapping
+	mapping, err := restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		err = fmt.Errorf("failed to get resource mapping: %s\n", err.Error())
 		return err
 	}
 
-	dynamicClient := clients.DynamicClient
-	clientset := clients.ClientSet
-
-	// Parse Resources,get the unstructured resource
-	mapping, unstructuredResource, err := ParseResources(clientset, resource)
+	// convert the resource.Object into unstructured
+	var unstruct unstructured.Unstructured
+	unstruct.Object, err = runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
 	if err != nil {
+		err = fmt.Errorf("failed to converts an object into unstructured representation: %s\n", err.Error())
 		return err
 	}
-
 	// get namespace from resource.Object
-	namespace := unstructuredResource.GetNamespace()
-	// create unstructured resource by dynamic client
-	result, err := dynamicClient.Resource(mapping.Resource).Namespace(namespace).Create(ctx, &unstructuredResource, metav1.CreateOptions{})
+	namespace = unstruct.GetNamespace()
+	// create resource by dynamic client
+	result, err := dynamicClient.Resource(mapping.Resource).Namespace(namespace).Create(ctx, &unstruct, metav1.CreateOptions{})
 	if err != nil {
-		if kubeErr.IsAlreadyExists(err) {
-			return errors.Wrap(err, "Create resource failed, resource is already exists")
+		if errors.IsAlreadyExists(err) {
+			err = fmt.Errorf("Create resource failed, resource is already exists: %s \n", err.Error())
+			return err
 		}
-	} else if kubeErr.IsInvalid(err) {
-		return errors.Wrap(err, "Create resource failed, resource is invalid")
+	} else if errors.IsInvalid(err) {
+		err = fmt.Errorf("Create resource failed, resource is invalid: %s \n", err.Error())
+		return err
 	}
 	fmt.Printf("%s \t %s \t %s \t created\n", result.GetNamespace(), result.GetKind(), result.GetName())
 
@@ -56,68 +75,57 @@ func CreateResource(path string, ctx context.Context, resource []byte) (err erro
 }
 
 func RemoveResource(path string, ctx context.Context, resource []byte) (err error) {
-	kubeConfig, err := kube.GetKubeConfig(path)
+	kubernetesClient, err := kube.KubernetesAPI(path)
 	if err != nil {
-		return errors.Wrap(err, "failed to load config file")
+		panic(err)
 	}
+	clientset := kubernetesClient.ClientSet
+	dynamicClient := kubernetesClient.DynamicClient
+	namespace := metav1.NamespaceDefault
 
-	var kc kube.KubernetesClient
-	clients, err := kc.K8SClients(kubeConfig)
-	if err != nil {
-		return err
-	}
-
-	clientset := clients.ClientSet
-	dynamicClient := clients.DynamicClient
-
-	mapping, unstructuredResource, err := ParseResources(clientset, resource)
-	if err != nil {
-		return err
-	}
-
-	name := unstructuredResource.GetName()
-	namespace := unstructuredResource.GetNamespace()
-
-	// delete resource by dynamic client
-	err = dynamicClient.Resource(mapping.Resource).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
-	if err != nil {
-		return errors.Wrap(err, "failed to remove resource")
-	}
-	fmt.Printf("%s \t %s \t %s \t deleted\n", namespace, unstructuredResource.GetKind(), name)
-	return nil
-}
-
-// ParseResources by parsing the resource, put the result into unstructuredResource and return it.
-func ParseResources(clientset kubernetes.Interface, resource []byte) (mapping *meta.RESTMapping, unstructuredResource unstructured.Unstructured, err error) {
-
-	r := dedent.Dedent(string(resource))
 	// decode resource for convert the resource to unstructur.
-	newreader := strings.NewReader(r)
+	newreader := bytes.NewReader(resource)
 	decode := yaml.NewYAMLOrJSONDecoder(newreader, 4096)
+
 	// get resource kind and group
 	disc := clientset.Discovery()
 	restMapperRes, _ := restmapper.GetAPIGroupResources(disc)
 	restMapper := restmapper.NewDiscoveryRESTMapper(restMapperRes)
 	ext := runtime.RawExtension{}
 	if err := decode.Decode(&ext); err != nil {
-		return nil, unstructuredResource, errors.Wrap(err, "decode error")
+		err = fmt.Errorf("Decode error: %s\n", err.Error())
+		return err
 	}
 	// get resource.Object
 	obj, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, nil)
 	if err != nil {
-		return nil, unstructuredResource, errors.Wrap(err, "failed to get resource object")
+		err = fmt.Errorf("failed to get resource object: %s\n", err.Error())
+		return err
 	}
 	// identifies a preferred resource mapping
-	mapping, err = restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	mapping, err := restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 	if err != nil {
-		return nil, unstructuredResource, errors.Wrap(err, "failed to get resource mapping")
+		err = fmt.Errorf("failed to get resource mapping: %s\n", err.Error())
+		return err
 	}
-
 	// convert the resource.Object into unstructured
-
-	unstructuredResource.Object, err = runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
+	var unstruct unstructured.Unstructured
+	unstruct.Object, err = runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
 	if err != nil {
-		return nil, unstructuredResource, errors.Wrap(err, "failed to converts an object into unstructured representation")
+		err = fmt.Errorf("failed to converts an object into unstructured representation: %s\n", err.Error())
+		return err
 	}
-	return mapping, unstructuredResource, nil
+	// get resource kind name and namespace
+	kind := unstruct.GetKind()
+	name := unstruct.GetName()
+	namespace = unstruct.GetNamespace()
+
+	// delete resource by dynamic client
+	err = dynamicClient.Resource(mapping.Resource).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil {
+		err = fmt.Errorf("failed to remove resource %s in %s: %s\n", name, namespace, err.Error())
+		return err
+	}
+	fmt.Printf("%s \t %s \t %s \t deleted\n", namespace, kind, name)
+	return nil
 }

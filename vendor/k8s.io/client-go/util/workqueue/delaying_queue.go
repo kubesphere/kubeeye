@@ -21,8 +21,8 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/clock"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/utils/clock"
 )
 
 // DelayingInterface is an Interface that can Add an item at a later time. This makes it easier to
@@ -38,12 +38,6 @@ func NewDelayingQueue() DelayingInterface {
 	return NewDelayingQueueWithCustomClock(clock.RealClock{}, "")
 }
 
-// NewDelayingQueueWithCustomQueue constructs a new workqueue with ability to
-// inject custom queue Interface instead of the default one
-func NewDelayingQueueWithCustomQueue(q Interface, name string) DelayingInterface {
-	return newDelayingQueue(clock.RealClock{}, q, name)
-}
-
 // NewNamedDelayingQueue constructs a new named workqueue with delayed queuing ability
 func NewNamedDelayingQueue(name string) DelayingInterface {
 	return NewDelayingQueueWithCustomClock(clock.RealClock{}, name)
@@ -51,13 +45,9 @@ func NewNamedDelayingQueue(name string) DelayingInterface {
 
 // NewDelayingQueueWithCustomClock constructs a new named workqueue
 // with ability to inject real or fake clock for testing purposes
-func NewDelayingQueueWithCustomClock(clock clock.WithTicker, name string) DelayingInterface {
-	return newDelayingQueue(clock, NewNamed(name), name)
-}
-
-func newDelayingQueue(clock clock.WithTicker, q Interface, name string) *delayingType {
+func NewDelayingQueueWithCustomClock(clock clock.Clock, name string) DelayingInterface {
 	ret := &delayingType{
-		Interface:       q,
+		Interface:       NewNamed(name),
 		clock:           clock,
 		heartbeat:       clock.NewTicker(maxWait),
 		stopCh:          make(chan struct{}),
@@ -66,6 +56,7 @@ func newDelayingQueue(clock clock.WithTicker, q Interface, name string) *delayin
 	}
 
 	go ret.waitingLoop()
+
 	return ret
 }
 

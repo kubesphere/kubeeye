@@ -75,11 +75,11 @@ import (
 // to be read/written from a file as a JSON object.
 type Info struct {
 	User        string
-	Password    string `datapolicy:"password"`
+	Password    string
 	CAFile      string
 	CertFile    string
 	KeyFile     string
-	BearerToken string `datapolicy:"token"`
+	BearerToken string
 	Insecure    *bool
 }
 

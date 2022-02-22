@@ -5,45 +5,13 @@ deny[msg] {
     type := resource.Object.kind
     resourcename := resource.Object.metadata.name
     type == "Node"
-    Level := "waring"
 
     resource.Object.status.conditions[i].status == "False"
-
-    contains(resource.Object.status.conditions[i].message, "has")
-    not contains(resource.Object.status.conditions[i].message, "has no")
-    Message := replace(resource.Object.status.conditions[i].message,"has", "has no")
-    contains(resource.Object.status.conditions[i].reason, "Has")
-    not contains(resource.Object.status.conditions[i].reason, "HasNo")
-    Reason := replace(resource.Object.status.conditions[i].reason,"Has", "HasNo")
+    Reason := resource.Object.status.conditions[i].reason
 
     msg := {
         "Name": sprintf("%v", [resourcename]),
         "Type": sprintf("%v", [type]),
-        "Level": sprintf("%v", [Level]),
         "Message": sprintf("%v", [Reason]),
-        "Reason": sprintf("%v", [Message]),
-    }
-}
-
-deny[msg] {
-    resource := input
-    type := resource.Object.kind
-    resourcename := resource.Object.metadata.name
-    type == "Node"
-    Level := "waring"
-
-    resource.Object.status.conditions[i].status == "False"
-
-    contains(resource.Object.status.conditions[i].message, "has no")
-    Message := replace(resource.Object.status.conditions[i].message,"has no", "has")
-    contains(resource.Object.status.conditions[i].reason, "HasNo")
-    Reason := replace(resource.Object.status.conditions[i].reason,"HasNo", "Has")
-
-    msg := {
-        "Name": sprintf("%v", [resourcename]),
-        "Type": sprintf("%v", [type]),
-        "Level": sprintf("%v", [Level]),
-        "Message": sprintf("%v", [Reason]),
-        "Reason": sprintf("%v", [Message]),
     }
 }
