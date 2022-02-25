@@ -1,12 +1,6 @@
 package dashboard
 
-import (
-	"context"
-	"fmt"
-	"github.com/kubesphere/kubeeye/pkg/kube"
-)
-
-func GetInfo(ctx context.Context) *OverviewResponse {
+/*func GetInfo(ctx context.Context) *OverviewResponse {
 	// get kubernetes resources and put into the channel.
 	go func(ctx context.Context, kubeconfig string) {
 		err := kube.GetK8SResourcesProviderForOverview(ctx, "")
@@ -36,4 +30,4 @@ func GetInfo(ctx context.Context) *OverviewResponse {
 	}
 	fmt.Println(overview)
 	return overview
-}
+}*/

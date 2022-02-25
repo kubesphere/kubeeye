@@ -17,11 +17,9 @@ package kube
 import (
 	"time"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/version"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var K8sResourcesChan = make(chan K8SResource)
@@ -30,16 +28,20 @@ var ResultChan = make(chan ValidateResult)
 var K8sOverviewResourcesChan = make(chan K8SResource)
 
 type K8SResource struct {
-	ServerVersion    *version.Info
+	ServerVersion    string
 	CreationTime     time.Time
 	APIServerAddress string
 	Nodes            *unstructured.UnstructuredList
+	NodesCount       int
 	Namespaces       *unstructured.UnstructuredList
+	NameSpacesCount  int
+	NameSpacesList   []string
 	Deployments      *unstructured.UnstructuredList
 	DaemonSets       *unstructured.UnstructuredList
 	StatefulSets     *unstructured.UnstructuredList
 	Jobs             *unstructured.UnstructuredList
 	CronJobs         *unstructured.UnstructuredList
+	WorkloadsCount   int
 	Roles            *unstructured.UnstructuredList
 	ClusterRoles     *unstructured.UnstructuredList
 	Events           *unstructured.UnstructuredList
@@ -60,20 +62,9 @@ type ValidateResult struct {
 	Name      string
 	Namespace string
 	Type      string
+	Level     string
 	Message   string
 	Reason    string
-}
-
-type ResultReceiver struct {
-	Name      string   `json:"name"`
-	Namespace string   `json:"namespace,omitempty"`
-	Type      string   `json:"kind"`
-	Message   []string `json:"message"`
-	Reason    string   `json:"reason,omitempty"`
-}
-
-type ValidateResults struct {
-	ValidateResults []ResultReceiver
 }
 
 type ResourceProvider struct {

@@ -26,43 +26,57 @@ import (
 )
 
 // GetK8SResourcesProvider get kubeconfig by KubernetesAPI, get kubernetes resources by GetK8SResources.
-func GetK8SResourcesProvider(ctx context.Context, kubeconfig string) error {
-	// get kubernetes client
-	kubernetesClient, err := KubernetesAPI(kubeconfig)
-	if err != nil {
-		return err
-	}
+func GetK8SResourcesProvider(ctx context.Context, kubernetesClient *KubernetesClient) error {
+
 	GetK8SResources(ctx, kubernetesClient)
 	return nil
 }
 
+// TODO
+//Add method to excluded namespaces in GetK8SResources.
+
 // GetK8SResources get kubernetes resources by GroupVersionResource, put the resources into the channel K8sResourcesChan, return error.
 func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
-	kubeconfig := kubernetesClient.kubeconfig
+	kubeconfig := kubernetesClient.KubeConfig
 	clientSet := kubernetesClient.ClientSet
 	dynamicClient := kubernetesClient.DynamicClient
 	listOpts := metav1.ListOptions{}
-	excludedNamespaces := []string{"kube-system", "kubesphere-system"}
+
+	var nodesCount int
+	var namespacesCount int
+	var namespacesList []string
+	var deploymentsCount int
+	var statefulsetsCount int
+	var daemonsetsCount int
+	var workloadsCount int
+
+	// TODO
+	// Implement method to excluded namespace.
+	//excludedNamespaces := []string{"kube-system", "kubesphere-system"}
 	fieldSelectorString := listOpts.FieldSelector
-	for _, excludedNamespace := range excludedNamespaces {
-		fieldSelectorString += ",metadata.namespace!=" + excludedNamespace
-	}
+	//for _, excludedNamespace := range excludedNamespaces {
+	//	fieldSelectorString += ",metadata.namespace!=" + excludedNamespace
+	//}
 	fieldSelector, _ := fields.ParseSelector(fieldSelectorString)
 	listOptsExcludedNamespace := metav1.ListOptions{
 		FieldSelector: fieldSelectorString,
 		LabelSelector: fieldSelector.String(),
 	}
 
-	serverVersion, err := clientSet.Discovery().ServerVersion()
+	versionInfo, err := clientSet.Discovery().ServerVersion()
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes serverVersion.\033[0m\n")
 		//fmt.Errorf("failed to fetch serverVersion: %s", err.Error())
 	}
+	serverVersion := versionInfo.Major + "." + versionInfo.Minor
 
 	nodesGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}
 	nodes, err := dynamicClient.Resource(nodesGVR).List(ctx, listOpts)
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes nodes.\033[0m\n")
+	}
+	for nodesItem := range nodes.Items {
+		nodesCount = nodesItem + 1
 	}
 
 	namespacesGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
@@ -70,11 +84,20 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes namespaces.\033[0m\n")
 	}
+	for namespacesItem := range namespaces.Items {
+		namespacesCount = namespacesItem + 1
+	}
+	for _, namespacesItem := range namespaces.Items {
+		namespacesList = append(namespacesList, namespacesItem.GetName())
+	}
 
 	deploymentsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
 	deployments, err := dynamicClient.Resource(deploymentsGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes deployments.\033[0m\n")
+	}
+	for deploymentsItems := range deployments.Items {
+		deploymentsCount = deploymentsItems + 1
 	}
 
 	daemonSetsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}
@@ -82,12 +105,19 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes daemonSets.\033[0m\n")
 	}
+	for daemonSetsItem := range daemonSets.Items {
+		daemonsetsCount = daemonSetsItem + 1
+	}
 
 	statefulSetsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}
 	statefulSets, err := dynamicClient.Resource(statefulSetsGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes statefulSets.\033[0m\n")
 	}
+	for statefulSetsItem := range statefulSets.Items {
+		statefulsetsCount = statefulSetsItem + 1
+	}
+	workloadsCount = deploymentsCount + daemonsetsCount + statefulsetsCount
 
 	jobsGVR := schema.GroupVersionResource{Group: "batch", Version: "v1", Resource: "jobs"}
 	jobs, err := dynamicClient.Resource(jobsGVR).List(ctx, listOptsExcludedNamespace)
@@ -95,7 +125,7 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes jobs.\033[0m\n")
 	}
 
-	cronjobsGVR := schema.GroupVersionResource{Group: "batch", Version: "v1beta1", Resource: "cronjobs"}
+	cronjobsGVR := schema.GroupVersionResource{Group: "batch", Version: "v1", Resource: "cronjobs"}
 	cronjobs, err := dynamicClient.Resource(cronjobsGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes cronjobs.\033[0m\n")
@@ -107,13 +137,13 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes events.\033[0m\n")
 	}
 
-	rolesGVR := schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1beta1", Resource: "roles"}
+	rolesGVR := schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "roles"}
 	roles, err := dynamicClient.Resource(rolesGVR).List(ctx, listOptsExcludedNamespace)
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes roles.\033[0m\n")
 	}
 
-	clusterRolesGVR := schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1beta1", Resource: "clusterroles"}
+	clusterRolesGVR := schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterroles"}
 	clusterRoles, err := dynamicClient.Resource(clusterRolesGVR).List(ctx, listOpts)
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes clusterroles.\033[0m\n")
@@ -124,18 +154,22 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 		CreationTime:     time.Now(),
 		APIServerAddress: kubeconfig.Host,
 		Nodes:            nodes,
+		NodesCount:       nodesCount,
 		Namespaces:       namespaces,
+		NameSpacesCount:  namespacesCount,
+		NameSpacesList:   namespacesList,
 		Deployments:      deployments,
 		DaemonSets:       daemonSets,
 		StatefulSets:     statefulSets,
 		Jobs:             jobs,
 		CronJobs:         cronjobs,
+		WorkloadsCount:   workloadsCount,
 		Roles:            roles,
 		ClusterRoles:     clusterRoles,
 		Events:           events,
 	}
 }
-
+/*
 // GetK8SResourcesProviderForOverview get kubeconfig by KubernetesAPI, get kubernetes resources by GetK8SAllResources.
 func GetK8SResourcesProviderForOverview(ctx context.Context, kubeconfig string) error {
 	// get kubernetes client
@@ -212,4 +246,4 @@ func GetK8SAllResources(ctx context.Context, kubernetesClient *KubernetesClient)
 		Jobs:             jobs,
 		CronJobs:         cronjobs,
 	}
-}
+}*/
