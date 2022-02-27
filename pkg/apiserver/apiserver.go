@@ -6,8 +6,14 @@ import (
 	"fmt"
 	"github.com/emicklei/go-restful"
 	"github.com/kubesphere/kubeeye/pkg/apiserver/v1"
-	urlruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"github.com/kubesphere/kubeeye/pkg/kube"
+	//"kubesphere.io/kubesphere/pkg/simple/client/k8s"
 
+	//"k8s.io/apimachinery/pkg/runtime/schema"
+	urlruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"github.com/kubesphere/kubeeye/pkg/apiserver/request"
+	"github.com/kubesphere/kubeeye/pkg/apiserver/filters"
+	"k8s.io/apimachinery/pkg/util/sets"
 	//urlruntime "k8s.io/apimachinery/pkg/util/runtime"
 	//"kubesphere.io/kubesphere/pkg/utils/iputil"
 
@@ -21,6 +27,7 @@ import (
 type APIServer struct {
 	Server    *http.Server
 	container *restful.Container
+	//KubernetesClient k8s.Client
 }
 
 func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
@@ -38,6 +45,7 @@ func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
 	}
 
 	s.Server.Handler = s.container
+	s.buildHandlerChain(stopCh)
 	klog.Infof("PrepareRun success")
 	return nil
 }
@@ -105,4 +113,24 @@ func logStackOnRecover(panicReason interface{}, w http.ResponseWriter) {
 
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Write([]byte("Internal server error"))
+}
+
+func (s *APIServer) buildHandlerChain(stopCh <-chan struct{}) {
+	klog.Infof("!!!!!!!!!!!!!!!!! buildHandlerChain coming")
+	requestInfoResolver := &request.RequestInfoFactory{
+		APIPrefixes:          sets.NewString("api", "apis", "kapis", "kapi"),
+		GrouplessAPIPrefixes: sets.NewString("api", "kapi"),
+	}
+
+	handler := s.Server.Handler
+	kubeConfig, err := kube.GetKubeConfig("")
+	klog.Infof("!!!!!!!!!!!!!!!!! kubeConfig :%v",kubeConfig)
+	if err != nil {
+		klog.Infof("!!!!!!!!!!!!!!!!! GetKubeConfig err:%+v",err)
+	}
+
+	handler = filters.WithKubeAPIServer(handler, kubeConfig, nil)
+	klog.Infof("!!!!!!!!!!!!!!!!! filters.WithAuthentication.handler:%+v",handler)
+	handler = filters.WithRequestInfo(handler, requestInfoResolver)
+	s.Server.Handler = handler
 }

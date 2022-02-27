@@ -19,6 +19,7 @@ package options
 import (
 	"crypto/tls"
 	"fmt"
+	//"kubesphere.io/kubesphere/pkg/simple/client/k8s"
 
 	"github.com/kubesphere/kubeeye/pkg/apiserver"
 
@@ -45,7 +46,7 @@ type ServerRunOptions struct {
 func NewServerRunOptions() *ServerRunOptions {
 	s := ServerRunOptions{
 		BindAddress:   "0.0.0.0",
-		InsecurePort:  9090,
+		InsecurePort:  9080,
 		SecurePort:    0,
 		TlsCertFile:   "",
 		TlsPrivateKey: "",
@@ -57,6 +58,12 @@ func NewServerRunOptions() *ServerRunOptions {
 // NewAPIServer creates an APIServer instance using given options
 func (s *ServerRunOptions) NewAPIServer(stopCh <-chan struct{}) (*apiserver.APIServer, error) {
 	apiServer := &apiserver.APIServer{}
+
+	/*kubernetesClient, err := k8s.NewKubernetesClient(s.KubernetesOptions)
+	if err != nil {
+		return nil, err
+	}
+	apiServer.KubernetesClient = kubernetesClient*/
 
 	server := &http.Server{
 		Addr: fmt.Sprintf(":%d", s.InsecurePort),

@@ -19,23 +19,12 @@ package app
 import (
 	"context"
 	"github.com/kubesphere/kubeeye/cmd/apiserver/app/options"
-	"github.com/spf13/cobra"
 	"k8s.io/klog"
 )
 
-func NewAPIServerCommand() *cobra.Command {
+func NewAPIServerCommand(){
 	s := options.NewServerRunOptions()
-
-	cmd := &cobra.Command{
-		Long: `The API Server services REST operations and provides the frontend to the
-cluster's basic information.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return Run(s, context.Background())
-		},
-		SilenceUsage: true,
-	}
-
-	return cmd
+	Run(s, context.Background())
 }
 
 func Run(s *options.ServerRunOptions, ctx context.Context) error {
@@ -48,8 +37,9 @@ func Run(s *options.ServerRunOptions, ctx context.Context) error {
 
 	err = apiserver.PrepareRun(ctx.Done())
 	if err != nil {
+		klog.Error("PrepareRun err %v",err)
 		return err
 	}
-
+	klog.Infof("Run prep!!!!!!!!!!!!!")
 	return apiserver.Run(ctx)
 }

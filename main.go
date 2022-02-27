@@ -19,20 +19,19 @@ package main
 import (
 	"flag"
 	"os"
-
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
+	"github.com/kubesphere/kubeeye/cmd/ctl"
+	kubeeyecontrollers "github.com/kubesphere/kubeeye/controllers/kubeeye"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
-	kubeeyecontrollers "github.com/kubesphere/kubeeye/controllers/kubeeye"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -42,6 +41,7 @@ var (
 )
 
 func init() {
+	ctl.Init()
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(kubeeyev1alpha1.AddToScheme(scheme))

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The KubeSphere Authors.
+Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package audit
 
-import (
-	"github.com/kubesphere/kubeeye/cmd/apiserver/app"
-	"log"
-)
+func ordLevel(l Level) int {
+	switch l {
+	case LevelMetadata:
+		return 1
+	case LevelRequest:
+		return 2
+	case LevelRequestResponse:
+		return 3
+	default:
+		return 0
+	}
+}
 
-func init() {
-	cmd := app.NewAPIServerCommand()
-	go func() {
-		if err := cmd.Execute(); err != nil {
-			log.Fatalln(err)
-		}
-	}()
+func (a Level) Less(b Level) bool {
+	return ordLevel(a) < ordLevel(b)
+}
+
+func (a Level) GreaterOrEqual(b Level) bool {
+	return ordLevel(a) >= ordLevel(b)
 }
