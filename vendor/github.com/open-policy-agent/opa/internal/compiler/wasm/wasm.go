@@ -21,13 +21,15 @@ import (
 	"github.com/open-policy-agent/opa/internal/wasm/instruction"
 	"github.com/open-policy-agent/opa/internal/wasm/module"
 	"github.com/open-policy-agent/opa/internal/wasm/types"
+	"github.com/open-policy-agent/opa/internal/wasm/util"
+	opatypes "github.com/open-policy-agent/opa/types"
 )
 
 // Record Wasm ABI version in exported global variable
 const (
 	opaWasmABIVersionVal      = 1
 	opaWasmABIVersionVar      = "opa_wasm_abi_version"
-	opaWasmABIMinorVersionVal = 1
+	opaWasmABIMinorVersionVal = 2
 	opaWasmABIMinorVersionVar = "opa_wasm_abi_minor_version"
 )
 
@@ -50,7 +52,6 @@ const (
 	opaNull              = "opa_null"
 	opaBoolean           = "opa_boolean"
 	opaNumberInt         = "opa_number_int"
-	opaNumberFloat       = "opa_number_float"
 	opaNumberRef         = "opa_number_ref"
 	opaNumberSize        = "opa_number_size"
 	opaArrayWithCap      = "opa_array_with_cap"
@@ -76,6 +77,7 @@ const (
 	opaMappingInit       = "opa_mapping_init"
 	opaMappingLookup     = "opa_mapping_lookup"
 	opaMPDInit           = "opa_mpd_init"
+	opaMallocInit        = "opa_malloc_init"
 )
 
 var builtinsFunctions = map[string]string{
@@ -89,6 +91,7 @@ var builtinsFunctions = map[string]string{
 	ast.Floor.Name:                      "opa_arith_floor",
 	ast.Rem.Name:                        "opa_arith_rem",
 	ast.ArrayConcat.Name:                "opa_array_concat",
+	ast.ArrayReverse.Name:               "opa_array_reverse",
 	ast.ArraySlice.Name:                 "opa_array_slice",
 	ast.SetDiff.Name:                    "opa_set_diff",
 	ast.And.Name:                        "opa_set_intersection",
@@ -134,6 +137,7 @@ var builtinsFunctions = map[string]string{
 	ast.GlobMatch.Name:                  "opa_glob_match",
 	ast.JSONMarshal.Name:                "opa_json_marshal",
 	ast.JSONUnmarshal.Name:              "opa_json_unmarshal",
+	ast.JSONIsValid.Name:                "opa_json_is_valid",
 	ast.ObjectFilter.Name:               "builtin_object_filter",
 	ast.ObjectGet.Name:                  "builtin_object_get",
 	ast.ObjectRemove.Name:               "builtin_object_remove",
@@ -147,6 +151,7 @@ var builtinsFunctions = map[string]string{
 	ast.Contains.Name:                   "opa_strings_contains",
 	ast.StartsWith.Name:                 "opa_strings_startswith",
 	ast.EndsWith.Name:                   "opa_strings_endswith",
+	ast.StringReverse.Name:              "opa_strings_reverse",
 	ast.Split.Name:                      "opa_strings_split",
 	ast.Replace.Name:                    "opa_strings_replace",
 	ast.ReplaceN.Name:                   "opa_strings_replace_n",
@@ -166,6 +171,8 @@ var builtinsFunctions = map[string]string{
 	ast.RegexFindAllStringSubmatch.Name: "opa_regex_find_all_string_submatch",
 	ast.JSONRemove.Name:                 "builtin_json_remove",
 	ast.JSONFilter.Name:                 "builtin_json_filter",
+	ast.Member.Name:                     "builtin_member",
+	ast.MemberWithKey.Name:              "builtin_member3",
 }
 
 // If none of these is called from a policy, the resulting wasm
@@ -176,6 +183,11 @@ var builtinsUsingRE2 = [...]string{
 	builtinsFunctions[ast.RegexMatchDeprecated.Name],
 	builtinsFunctions[ast.RegexFindAllStringSubmatch.Name],
 	builtinsFunctions[ast.GlobMatch.Name],
+}
+
+type externalFunc struct {
+	ID   int32
+	Decl *opatypes.Function
 }
 
 var builtinDispatchers = [...]string{
@@ -197,17 +209,17 @@ type Compiler struct {
 
 	funcsCode []funcCode // compile functions' code
 
-	builtinStringAddrs    map[int]uint32     // addresses of built-in string constants
-	externalFuncNameAddrs map[string]int32   // addresses of required built-in function names for listing
-	externalFuncs         map[string]int32   // required built-in function ids
-	entrypointNameAddrs   map[string]int32   // addresses of available entrypoint names for listing
-	entrypoints           map[string]int32   // available entrypoint ids
-	stringOffset          int32              // null-terminated string data base offset
-	stringAddrs           []uint32           // null-terminated string constant addresses
-	opaStringAddrs        []uint32           // addresses of interned opa_string_t
-	opaBoolAddrs          map[ir.Bool]uint32 // addresses of interned opa_boolean_t
-	fileAddrs             []uint32           // null-terminated string constant addresses, used for file names
-	funcs                 map[string]uint32  // maps imported and exported function names to function indices
+	builtinStringAddrs    map[int]uint32          // addresses of built-in string constants
+	externalFuncNameAddrs map[string]int32        // addresses of required built-in function names for listing
+	externalFuncs         map[string]externalFunc // required built-in function ids and types
+	entrypointNameAddrs   map[string]int32        // addresses of available entrypoint names for listing
+	entrypoints           map[string]int32        // available entrypoint ids
+	stringOffset          int32                   // null-terminated string data base offset
+	stringAddrs           []uint32                // null-terminated string constant addresses
+	opaStringAddrs        []uint32                // addresses of interned opa_string_t
+	opaBoolAddrs          map[ir.Bool]uint32      // addresses of interned opa_boolean_t
+	fileAddrs             []uint32                // null-terminated string constant addresses, used for file names
+	funcs                 map[string]uint32       // maps imported and exported function names to function indices
 
 	nextLocal uint32
 	locals    map[ir.Local]uint32
@@ -245,10 +257,12 @@ func New() *Compiler {
 	c.stages = []func() error{
 		c.initModule,
 		c.compileStringsAndBooleans,
+		c.addImportMemoryDecl,
 		c.compileExternalFuncDecls,
 		c.compileEntrypointDecls,
 		c.compileFuncs,
 		c.compilePlans,
+		c.emitABIVersionGlobals,
 
 		// "local" optimizations
 		c.removeUnusedCode,
@@ -314,8 +328,6 @@ func (c *Compiler) initModule() error {
 		return err
 	}
 
-	c.emitABIVersionGlobals()
-
 	c.funcs = make(map[string]uint32)
 	for _, fn := range c.module.Names.Functions {
 		name := fn.Name
@@ -360,19 +372,86 @@ func (c *Compiler) initModule() error {
 		Results: []types.ValueType{types.I32},
 	}, true)
 
-	c.module.Export.Exports = append(c.module.Export.Exports, module.Export{
-		Name: "memory",
-		Descriptor: module.ExportDescriptor{
-			Type:  module.MemoryExportType,
-			Index: 0,
+	// NOTE(sr): LLVM needs a section of linear memory to be zero'ed out and reserved,
+	// for static variables defined in the C code. When using imported memory, it adds
+	// a data segment to ensure that. When not using imported memory, it would ensure
+	// that a zero'ed out region is available by adjust the __heap_base address.
+	// Since we control "imported/not-imported" memory here, we make these adjustments
+	// here, too:
+	//
+	// a. the __heap_base exported variable is read,
+	// b. the __heap_base variable is removed from exports and globals
+	// c. a data segment filled with zeros of the proper length is added
+	var idx uint32
+	var del int
+	for i, exp := range c.module.Export.Exports {
+		if exp.Name == "__heap_base" {
+			idx = exp.Descriptor.Index
+			del = i
+		}
+	}
+	heapBase := c.module.Global.Globals[idx].Init.Instrs[0].(instruction.I32Const).Value
+
+	// (b) remove __heap_base export and global
+	c.module.Export.Exports = append(c.module.Export.Exports[:del], c.module.Export.Exports[del+1:]...)
+	c.module.Global.Globals = append(c.module.Global.Globals[:idx], c.module.Global.Globals[idx+1:]...)
+
+	// (c) add data segment with zeros
+	offset, err := getLowestFreeDataSegmentOffset(c.module)
+	if err != nil {
+		return err
+	}
+
+	c.module.Data.Segments = append(c.module.Data.Segments, module.DataSegment{
+		Index: 0,
+		Offset: module.Expr{
+			Instrs: []instruction.Instruction{
+				instruction.I32Const{
+					Value: offset,
+				},
+			},
 		},
+		Init: bytes.Repeat([]byte{0}, int(heapBase-offset)),
 	})
 
 	return nil
 }
 
+// NOTE(sr): The wasm module we start with, compiled via LLVM, has NO memory
+// import or export. Here, we change that: the OPA-generated wasm module will
+//
+// a. import its memory
+// b. re-export that memory
+// c. have no "own" memory (in its memory section)
+//
+// (b) is provided by the LLVM base module, it already has an export of memory[0]
+// (a) and (c) are taken care of here.
+//
+// In the future, we could change that, and here would be the place to do so.
+func (c *Compiler) addImportMemoryDecl() error {
+	offset, err := getLowestFreeDataSegmentOffset(c.module)
+	if err != nil {
+		return err
+	}
+
+	c.module.Import.Imports = append(c.module.Import.Imports, module.Import{
+		Module: "env",
+		Name:   "memory",
+		Descriptor: module.MemoryImport{
+			Mem: module.MemType{
+				Lim: module.Limit{
+					Min: util.Pages(uint32(offset)),
+				},
+			},
+		},
+	})
+	c.module.Memory.Memories = nil
+
+	return nil
+}
+
 // emitABIVersionGLobals adds globals for ABI [minor] version, exports them
-func (c *Compiler) emitABIVersionGlobals() {
+func (c *Compiler) emitABIVersionGlobals() error {
 	abiVersionGlobals := []module.Global{
 		{
 			Type:    types.I32,
@@ -411,6 +490,7 @@ func (c *Compiler) emitABIVersionGlobals() {
 	}
 	c.module.Global.Globals = append(c.module.Global.Globals, abiVersionGlobals...)
 	c.module.Export.Exports = append(c.module.Export.Exports, abiVersionExports...)
+	return nil
 }
 
 // compileStringsAndBooleans compiles various string constants (strings, file names,
@@ -566,7 +646,7 @@ func (c *Compiler) compileExternalFuncDecls() error {
 
 	c.appendInstr(instruction.Call{Index: c.function(opaObject)})
 	c.appendInstr(instruction.SetLocal{Index: lobj})
-	c.externalFuncs = make(map[string]int32)
+	c.externalFuncs = make(map[string]externalFunc)
 
 	for index, decl := range c.policy.Static.BuiltinFuncs {
 		if _, ok := builtinsFunctions[decl.Name]; !ok {
@@ -576,7 +656,7 @@ func (c *Compiler) compileExternalFuncDecls() error {
 			c.appendInstr(instruction.I64Const{Value: int64(index)})
 			c.appendInstr(instruction.Call{Index: c.function(opaNumberInt)})
 			c.appendInstr(instruction.Call{Index: c.function(opaObjectInsert)})
-			c.externalFuncs[decl.Name] = int32(index)
+			c.externalFuncs[decl.Name] = externalFunc{ID: int32(index), Decl: decl.Decl}
 		}
 	}
 
@@ -637,7 +717,7 @@ func (c *Compiler) compileFuncs() error {
 		}
 	}
 
-	if err := c.emitMapping(); err != nil {
+	if err := c.emitMappingAndStartFunc(); err != nil {
 		return fmt.Errorf("writing mapping: %w", err)
 	}
 
@@ -815,7 +895,7 @@ func mapFunc(mapping ast.Object, fn *ir.Func, index int) (ast.Object, bool) {
 	return mapping.Merge(curr)
 }
 
-func (c *Compiler) emitMapping() error {
+func (c *Compiler) emitMappingAndStartFunc() error {
 	var indices []uint32
 	var ok bool
 	mapping := ast.NewObject()
@@ -871,10 +951,17 @@ func (c *Compiler) emitMapping() error {
 	c.module.Table.Tables[0].Lim.Min = min
 	c.module.Table.Tables[0].Lim.Max = &max
 
+	heapBase, err := getLowestFreeDataSegmentOffset(c.module)
+	if err != nil {
+		return err
+	}
+
 	// create function that calls `void opa_mapping_initialize(const char *s, const int l)`
 	// with s being the offset of the data segment just written, and l its length
 	fName := "_initialize"
 	c.code = &module.CodeEntry{}
+	c.appendInstr(instruction.I32Const{Value: heapBase})
+	c.appendInstr(instruction.Call{Index: c.function(opaMallocInit)})
 	c.appendInstr(instruction.Call{Index: c.function(opaMPDInit)})
 	c.appendInstr(instruction.I32Const{Value: dataOffset})
 	c.appendInstr(instruction.I32Const{Value: int32(len(jsonMap))})
@@ -899,20 +986,7 @@ func (c *Compiler) replaceBooleanFunc() error {
 	c.appendInstr(instruction.GetLocal{Index: 0})
 	c.appendInstr(instruction.Select{})
 
-	// replace the code segment
-	var idx uint32
-	for _, fn := range c.module.Names.Functions {
-		if fn.Name == opaBoolean {
-			idx = fn.Index - uint32(c.functionImportCount())
-		}
-	}
-	var buf bytes.Buffer
-	if err := encoding.WriteCodeEntry(&buf, c.code); err != nil {
-		return err
-	}
-
-	c.module.Code.Segments[idx].Code = buf.Bytes()
-	return nil
+	return c.storeFunc(opaBoolean, c.code)
 }
 
 func (c *Compiler) compileBlock(block *ir.Block) ([]instruction.Instruction, error) {
@@ -921,7 +995,7 @@ func (c *Compiler) compileBlock(block *ir.Block) ([]instruction.Instruction, err
 
 	for _, stmt := range block.Stmts {
 		switch stmt := stmt.(type) {
-		case *ir.ResultSetAdd:
+		case *ir.ResultSetAddStmt:
 			instrs = append(instrs, instruction.GetLocal{Index: c.lrs})
 			instrs = append(instrs, instruction.GetLocal{Index: c.local(stmt.Value)})
 			instrs = append(instrs, instruction.Call{Index: c.function(opaSetAdd)})
@@ -992,7 +1066,7 @@ func (c *Compiler) compileBlock(block *ir.Block) ([]instruction.Instruction, err
 				return nil, err
 			}
 		case *ir.DotStmt:
-			if loc, ok := stmt.Source.(ir.Local); ok {
+			if loc, ok := stmt.Source.Value.(ir.Local); ok {
 				instrs = append(instrs, instruction.GetLocal{Index: c.local(loc)})
 				instrs = append(instrs, c.instrRead(stmt.Key))
 				instrs = append(instrs, instruction.Call{Index: c.function(opaValueGet)})
@@ -1022,13 +1096,13 @@ func (c *Compiler) compileBlock(block *ir.Block) ([]instruction.Instruction, err
 				instrs = append(instrs, instruction.Br{Index: 0})
 				continue
 			}
-			_, okA := stmt.A.(ir.Bool)
-			if _, okB := stmt.B.(ir.Bool); okA && okB {
+			_, okA := stmt.A.Value.(ir.Bool)
+			if _, okB := stmt.B.Value.(ir.Bool); okA && okB {
 				// not equal (checked above), but both booleans => not equal
 				continue
 			}
-			_, okA = stmt.A.(ir.StringIndex)
-			if _, okB := stmt.B.(ir.StringIndex); okA && okB {
+			_, okA = stmt.A.Value.(ir.StringIndex)
+			if _, okB := stmt.B.Value.(ir.StringIndex); okA && okB {
 				// not equal (checked above), but both strings => not equal
 				continue
 			}
@@ -1039,10 +1113,6 @@ func (c *Compiler) compileBlock(block *ir.Block) ([]instruction.Instruction, err
 			instrs = append(instrs, instruction.BrIf{Index: 0})
 		case *ir.MakeNullStmt:
 			instrs = append(instrs, instruction.Call{Index: c.function(opaNull)})
-			instrs = append(instrs, instruction.SetLocal{Index: c.local(stmt.Target)})
-		case *ir.MakeNumberFloatStmt:
-			instrs = append(instrs, instruction.F64Const{Value: stmt.Value})
-			instrs = append(instrs, instruction.Call{Index: c.function(opaNumberFloat)})
 			instrs = append(instrs, instruction.SetLocal{Index: c.local(stmt.Target)})
 		case *ir.MakeNumberIntStmt:
 			instrs = append(instrs, instruction.I64Const{Value: stmt.Value})
@@ -1064,7 +1134,7 @@ func (c *Compiler) compileBlock(block *ir.Block) ([]instruction.Instruction, err
 			instrs = append(instrs, instruction.Call{Index: c.function(opaSet)})
 			instrs = append(instrs, instruction.SetLocal{Index: c.local(stmt.Target)})
 		case *ir.IsArrayStmt:
-			if loc, ok := stmt.Source.(ir.Local); ok {
+			if loc, ok := stmt.Source.Value.(ir.Local); ok {
 				instrs = append(instrs, instruction.GetLocal{Index: c.local(loc)})
 				instrs = append(instrs, instruction.Call{Index: c.function(opaValueType)})
 				instrs = append(instrs, instruction.I32Const{Value: opaTypeArray})
@@ -1075,7 +1145,7 @@ func (c *Compiler) compileBlock(block *ir.Block) ([]instruction.Instruction, err
 				break
 			}
 		case *ir.IsObjectStmt:
-			if loc, ok := stmt.Source.(ir.Local); ok {
+			if loc, ok := stmt.Source.Value.(ir.Local); ok {
 				instrs = append(instrs, instruction.GetLocal{Index: c.local(loc)})
 				instrs = append(instrs, instruction.Call{Index: c.function(opaValueType)})
 				instrs = append(instrs, instruction.I32Const{Value: opaTypeObject})
@@ -1267,7 +1337,7 @@ func (c *Compiler) compileWithStmt(with *ir.WithStmt, result *[]instruction.Inst
 	return nil
 }
 
-func (c *Compiler) compileUpsert(local ir.Local, path []int, value ir.LocalOrConst, loc ir.Location, instrs []instruction.Instruction) []instruction.Instruction {
+func (c *Compiler) compileUpsert(local ir.Local, path []int, value ir.Operand, loc ir.Location, instrs []instruction.Instruction) []instruction.Instruction {
 
 	lcopy := c.genLocal() // holds copy of local
 	instrs = append(instrs, instruction.GetLocal{Index: c.local(local)})
@@ -1433,8 +1503,8 @@ func (c *Compiler) compileCallStmt(stmt *ir.CallStmt, result *[]instruction.Inst
 		return c.compileInternalCall(stmt, index, result)
 	}
 
-	if id, ok := c.externalFuncs[fn]; ok {
-		return c.compileExternalCall(stmt, id, result)
+	if ef, ok := c.externalFuncs[fn]; ok {
+		return c.compileExternalCall(stmt, ef, result)
 	}
 
 	c.errors = append(c.errors, fmt.Errorf("undefined function: %q", fn))
@@ -1462,7 +1532,7 @@ func (c *Compiler) compileInternalCall(stmt *ir.CallStmt, index uint32, result *
 	return nil
 }
 
-func (c *Compiler) compileExternalCall(stmt *ir.CallStmt, id int32, result *[]instruction.Instruction) error {
+func (c *Compiler) compileExternalCall(stmt *ir.CallStmt, ef externalFunc, result *[]instruction.Instruction) error {
 
 	if len(stmt.Args) >= len(builtinDispatchers) {
 		c.errors = append(c.errors, fmt.Errorf("too many built-in call arguments: %q", stmt.Func))
@@ -1470,7 +1540,7 @@ func (c *Compiler) compileExternalCall(stmt *ir.CallStmt, id int32, result *[]in
 	}
 
 	instrs := *result
-	instrs = append(instrs, instruction.I32Const{Value: id})
+	instrs = append(instrs, instruction.I32Const{Value: ef.ID})
 	instrs = append(instrs, instruction.I32Const{Value: 0}) // unused context parameter
 
 	for _, arg := range stmt.Args {
@@ -1478,20 +1548,32 @@ func (c *Compiler) compileExternalCall(stmt *ir.CallStmt, id int32, result *[]in
 	}
 
 	instrs = append(instrs, instruction.Call{Index: c.function(builtinDispatchers[len(stmt.Args)])})
-	instrs = append(instrs, instruction.TeeLocal{Index: c.local(stmt.Result)})
-	instrs = append(instrs, instruction.I32Eqz{})
-	instrs = append(instrs, instruction.BrIf{Index: 0})
+
+	if ef.Decl.Result() != nil {
+		instrs = append(instrs, instruction.TeeLocal{Index: c.local(stmt.Result)})
+		instrs = append(instrs, instruction.I32Eqz{})
+		instrs = append(instrs, instruction.BrIf{Index: 0})
+	} else {
+		instrs = append(instrs, instruction.Drop{})
+	}
+
 	*result = instrs
 	return nil
 }
 
 func (c *Compiler) emitFunctionDecl(name string, tpe module.FunctionType, export bool) {
 
-	typeIndex := c.emitFunctionType(tpe)
-	c.module.Function.TypeIndices = append(c.module.Function.TypeIndices, typeIndex)
-	c.module.Code.Segments = append(c.module.Code.Segments, module.RawCodeSegment{})
-	idx := uint32((len(c.module.Function.TypeIndices) - 1) + c.functionImportCount())
-	c.funcs[name] = idx
+	var idx uint32
+	if old, ok := c.funcs[name]; ok {
+		c.debug.Printf("function declaration for %v is being emitted multiple times (overwriting old index %d)", name, old)
+		idx = old
+	} else {
+		typeIndex := c.emitFunctionType(tpe)
+		c.module.Function.TypeIndices = append(c.module.Function.TypeIndices, typeIndex)
+		c.module.Code.Segments = append(c.module.Code.Segments, module.RawCodeSegment{})
+		idx = uint32((len(c.module.Function.TypeIndices) - 1) + c.functionImportCount())
+		c.funcs[name] = idx
+	}
 
 	if export {
 		c.module.Export.Exports = append(c.module.Export.Exports, module.Export{
@@ -1668,7 +1750,7 @@ func getLowestFreeElementSegmentOffset(m *module.Module) (int32, error) {
 // It returns the instructions that make up the function call with
 // arguments, followed by Unreachable.
 func (c *Compiler) runtimeErrorAbort(loc ir.Location, errType int) []instruction.Instruction {
-	index, row, col := loc.Index, loc.Row, loc.Col
+	index, row, col := loc.File, loc.Row, loc.Col
 	return []instruction.Instruction{
 		instruction.I32Const{Value: c.fileAddr(index)},
 		instruction.I32Const{Value: int32(row)},
@@ -1689,8 +1771,8 @@ func (c *Compiler) storeFunc(name string, code *module.CodeEntry) error {
 	return nil
 }
 
-func (c *Compiler) instrRead(lv ir.LocalOrConst) instruction.Instruction {
-	switch x := lv.(type) {
+func (c *Compiler) instrRead(lv ir.Operand) instruction.Instruction {
+	switch x := lv.Value.(type) {
 	case ir.Bool:
 		return instruction.I32Const{Value: c.opaBoolAddr(x)}
 	case ir.StringIndex:

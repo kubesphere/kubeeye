@@ -1,0 +1,24 @@
+# permissions for end users to edit clusterinsights.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: clusterinsight-editor-role
+rules:
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - clusterinsights
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - clusterinsights/status
+  verbs:
+  - get

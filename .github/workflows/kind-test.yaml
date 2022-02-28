@@ -8,18 +8,30 @@ jobs:
     env:
       GO111MODULE: on
     steps:
-      - name: Set up Go 1.14
-        uses: actions/setup-go@v1
+      - name: Set up Go 1.17
+        uses: actions/setup-go@v2
         with:
-          go-version: 1.14
-      - uses: actions/checkout@v2
-      - name: Build KubeEye
-        run: make ke
+          go-version: 1.17
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: deleting go vendor
+        run: rm -rf vendor
+
+      - name: Downloading go dependencies
+        run: go mod tidy
+
+      - name: Build KubeEye operator manager
+        run: GO111MODULE=on CGO_ENABLED=0 go build -v -o output/manager ./main.go
+
+      - name: Build command-line tool
+        run: GO111MODULE=on CGO_ENABLED=0  go build -v -o output/kubeeye ./cmd/main.go
+
       - name: Creating kind cluster
         uses: helm/kind-action@v1.1.0
+
       - name: Run KubeEye
         run: |
-          rm -rf temp
-          mkdir temp
-          mv ke temp/
-          ./temp/ke diag
+          ./output/kubeeye audit

@@ -18,8 +18,11 @@ import (
 	"context"
 	"sync"
 
+	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/regorules"
+	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
@@ -30,19 +33,56 @@ var (
 	certexp   = "data.kubeeye_certexpiration"
 )
 
-func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh string, output string) error {
+func Cluster(ctx context.Context, kubeConfigPath string, additionalregoruleputh string, output string) error {
+	kubeConfig, err := kube.GetKubeConfig(kubeConfigPath)
+	if err != nil {
+		return errors.Wrap(err, "Failed to load config file")
+	}
+
+	var kc kube.KubernetesClient
+	clients, err := kc.K8SClients(kubeConfig)
+	if err != nil {
+		return err
+	}
+
+	_, validationResultsChan := ValidationResults(ctx, clients, additionalregoruleputh)
+
+	// Set the output mode, support default output JSON and CSV.
+	switch output {
+	case "JSON", "json", "Json":
+		if err := JSONOutput(validationResultsChan); err != nil {
+			return err
+		}
+	case "CSV", "csv", "Csv":
+		if err := CSVOutput(validationResultsChan); err != nil {
+			return err
+		}
+	default:
+		if err := defaultOutput(validationResultsChan); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, additionalregoruleputh string) (kube.K8SResource, <-chan v1alpha1.AuditResult) {
+	logs := log.FromContext(ctx)
 
 	// get kubernetes resources and put into the channel.
-	go func(ctx context.Context, kubeconfig string) {
-		err := kube.GetK8SResourcesProvider(ctx, kubeconfig)
+	logs.Info("starting get kubernetes resources")
+	go func(ctx context.Context, kubernetesClient *kube.KubernetesClient) {
+		err := kube.GetK8SResourcesProvider(ctx, kubernetesClient)
 		if err != nil {
-			panic(err)
+			logs.Error(err, "failed to get kubernetes resources")
 		}
-	}(ctx, kubeconfig)
+	}(ctx, kubernetesClient)
 
 	k8sResources := <-kube.K8sResourcesChan
+
+	logs.Info("getting and merging the Rego rules")
 	regoRulesChan := regorules.MergeRegoRules(ctx, regorules.GetDefaultRegofile("rules"), regorules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
 
+	logs.Info("starting audit kubernetes resources")
 	RegoRulesValidateChan := MergeRegoRulesValidate(ctx, regoRulesChan,
 		RegoRulesValidate(workloads, k8sResources),
 		RegoRulesValidate(rbac, k8sResources),
@@ -52,27 +92,17 @@ func Cluster(ctx context.Context, kubeconfig string, additionalregoruleputh stri
 	)
 
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-	validationResultsChan := MergeValidationResults(ctx, RegoRulesValidateChan)
-
-	// Set the output mode, support default output JSON and CSV.
-	switch output {
-	case "JSON", "json", "Json":
-		JSONOutput(validationResultsChan)
-	case "CSV", "csv", "Csv":
-		CSVOutput(validationResultsChan)
-	default:
-		defaultOutput(validationResultsChan)
-	}
-	return nil
+	logs.Info("return audit results")
+	return MergeValidationResults(ctx, k8sResources, RegoRulesValidateChan)
 }
 
 // MergeValidationResults merge all validate result from
-func MergeValidationResults(ctx context.Context, channels ...<-chan kube.ValidateResults) <-chan kube.ValidateResults {
-	result := make(chan kube.ValidateResults)
+func MergeValidationResults(ctx context.Context, k8sResources kube.K8SResource, channels ...<-chan v1alpha1.AuditResult) (kube.K8SResource, <-chan v1alpha1.AuditResult) {
+	result := make(chan v1alpha1.AuditResult)
 	var wg sync.WaitGroup
 	wg.Add(len(channels))
 
-	mergeResult := func(ctx context.Context, ch <-chan kube.ValidateResults) {
+	mergeResult := func(ctx context.Context, ch <-chan v1alpha1.AuditResult) {
 		defer wg.Done()
 		for c := range ch {
 			result <- c
@@ -88,5 +118,5 @@ func MergeValidationResults(ctx context.Context, channels ...<-chan kube.Validat
 		wg.Wait()
 	}()
 
-	return result
+	return k8sResources, result
 }
