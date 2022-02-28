@@ -19,11 +19,11 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: deleting go vendor
-        run: rm -rf vendor
-
       - name: Downloading go dependencies
         run: go mod tidy
+
+      - name: sync the vendor directory
+        run: go mod vendor
 
       - name: Build command-line tool
         run: make buildke

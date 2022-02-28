@@ -73,36 +73,36 @@ ClusterRole                    vpnkit-controller                                
 
 ## Checklist
 
-|YES/NO|CHECK ITEM |Description|
-|---|---|---|
-| :white_check_mark: | PrivilegeEscalationAllowed     | Privilege escalation is allowed |
-| :white_check_mark: | CanImpersonateUser             | The role/clusterrole can impersonate other user |
-| :white_check_mark: | CanDeleteResources             | The role/clusterrole can delete kubernetes resources |
-| :white_check_mark: | CanModifyWorkloads             | The role/clusterrole can modify kubernetes workloads |
-| :white_check_mark: | NoCPULimits                    | The resource does not set limits of CPU in containers.resources |
-| :white_check_mark: | NoCPURequests                  | The resource does not set requests of CPU in containers.resources |
-| :white_check_mark: | HighRiskCapabilities           | Have high-Risk options in capabilities such as ALL/SYS_ADMIN/NET_ADMIN |
-| :white_check_mark: | HostIPCAllowed                 | HostIPC Set to true |
-| :white_check_mark: | HostNetworkAllowed             | HostNetwork Set to true |
-| :white_check_mark: | HostPIDAllowed                 | HostPID Set to true |
-| :white_check_mark: | HostPortAllowed                | HostPort Set to true |
-| :white_check_mark: | ImagePullPolicyNotAlways       | Image pull policy not always |
-| :white_check_mark: | ImageTagIsLatest               | The image tag is latest |
-| :white_check_mark: | ImageTagMiss                   | The image tag do not declare |
-| :white_check_mark: | InsecureCapabilities           | Have insecure options in capabilities such as KILL/SYS_CHROOT/CHOWN |
-| :white_check_mark: | NoLivenessProbe                | The resource does not set livenessProbe |
-| :white_check_mark: | NoMemoryLimits                 | The resource does not set limits of memory in containers.resources |
-| :white_check_mark: | NoMemoryRequests               | The resource does not set requests of memory in containers.resources |
-| :white_check_mark: | NoPriorityClassName            | The resource does not set priorityClassName |
-| :white_check_mark: | PrivilegedAllowed              | Running a pod in a privileged mode means that the pod can access the host’s resources and kernel capabilities |
-| :white_check_mark: | NoReadinessProbe               | The resource does not set readinessProbe |
-| :white_check_mark: | NotReadOnlyRootFilesystem      | The resource does not set readOnlyRootFilesystem to true |
-| :white_check_mark: | NotRunAsNonRoot                | The resource does not set runAsNonRoot to true, maybe executed run as a root account | 
-| :white_check_mark: | CertificateExpiredPeriod       | Certificate expiration date less than 30 days |
-| :white_check_mark: | EventAudit                     | Event audit  |
-| :white_check_mark: | NodeStatus                     | node status audit |
-| :white_check_mark: | DockerStatus                   | docker status audit |             
-| :white_check_mark: | KubeletStatus                  | kubelet status audit |
+|YES/NO|CHECK ITEM |Description|Level|
+|---|---|---|---|
+| :white_check_mark: | PrivilegeEscalationAllowed     | Privilege escalation is allowed | danger |
+| :white_check_mark: | CanImpersonateUser             | The role/clusterrole can impersonate other user | warning |
+| :white_check_mark: | CanDeleteResources             | The role/clusterrole can delete kubernetes resources | warning |
+| :white_check_mark: | CanModifyWorkloads             | The role/clusterrole can modify kubernetes workloads | warning |
+| :white_check_mark: | NoCPULimits                    | The resource does not set limits of CPU in containers.resources | danger |
+| :white_check_mark: | NoCPURequests                  | The resource does not set requests of CPU in containers.resources | danger |
+| :white_check_mark: | HighRiskCapabilities           | Have high-Risk options in capabilities such as ALL/SYS_ADMIN/NET_ADMIN | danger |
+| :white_check_mark: | HostIPCAllowed                 | HostIPC Set to true | danger |
+| :white_check_mark: | HostNetworkAllowed             | HostNetwork Set to true | danger |
+| :white_check_mark: | HostPIDAllowed                 | HostPID Set to true | danger |
+| :white_check_mark: | HostPortAllowed                | HostPort Set to true | danger |
+| :white_check_mark: | ImagePullPolicyNotAlways       | Image pull policy not always | warning |
+| :white_check_mark: | ImageTagIsLatest               | The image tag is latest | warning |
+| :white_check_mark: | ImageTagMiss                   | The image tag do not declare | danger |
+| :white_check_mark: | InsecureCapabilities           | Have insecure options in capabilities such as KILL/SYS_CHROOT/CHOWN | danger |
+| :white_check_mark: | NoLivenessProbe                | The resource does not set livenessProbe | warning |
+| :white_check_mark: | NoMemoryLimits                 | The resource does not set limits of memory in containers.resources | danger |
+| :white_check_mark: | NoMemoryRequests               | The resource does not set requests of memory in containers.resources | danger |
+| :white_check_mark: | NoPriorityClassName            | The resource does not set priorityClassName | ignore |
+| :white_check_mark: | PrivilegedAllowed              | Running a pod in a privileged mode means that the pod can access the host’s resources and kernel capabilities | danger |
+| :white_check_mark: | NoReadinessProbe               | The resource does not set readinessProbe | warning |
+| :white_check_mark: | NotReadOnlyRootFilesystem      | The resource does not set readOnlyRootFilesystem to true | warning |
+| :white_check_mark: | NotRunAsNonRoot                | The resource does not set runAsNonRoot to true, maybe executed run as a root account | warning |
+| :white_check_mark: | CertificateExpiredPeriod       | Certificate expiration date less than 30 days | danger |
+| :white_check_mark: | EventAudit                     | Event audit  | warning |
+| :white_check_mark: | NodeStatus                     | node status audit | warning |
+| :white_check_mark: | DockerStatus                   | docker status audit | warning |         
+| :white_check_mark: | KubeletStatus                  | kubelet status audit | warning |
 
 ## Add your own audit rules
 ### Add custom OPA rules
