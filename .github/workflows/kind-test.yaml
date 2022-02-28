@@ -30,7 +30,7 @@ jobs:
         run: GO111MODULE=on CGO_ENABLED=0  go build -v -o output/kubeeye ./cmd/main.go
 
       - name: Creating kind cluster
-        uses: helm/kind-action@v1.1.0
+        uses: helm/kind-action@v1.2.0
 
       - name: Run KubeEye
         run: |
