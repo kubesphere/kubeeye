@@ -6,6 +6,7 @@ deny[msg] {
     resourcename := resource.Object.metadata.name
     resourcenamespace := resource.Object.metadata.namespace
     type == "Pod"
+    level := "warning"
 
     PodSetInsecureCapabilities(resource)
 
@@ -13,6 +14,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "InsecureCapabilities"
     }
 }
@@ -33,6 +35,7 @@ deny[msg] {
     resourcenamespace := resource.Object.metadata.namespace
     workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
     workloadsType[type]
+    level := "warning"
 
     WorkloadsSetInsecureCapabilities(resource)
 
@@ -40,6 +43,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "InsecureCapabilities"
     }
 }
@@ -59,6 +63,7 @@ deny[msg] {
     resourcename := resource.Object.metadata.name
     resourcenamespace := resource.Object.metadata.namespace
     type == "CronJob"
+    level := "warning"
 
     CronjobSetInsecureCapabilities(resource)
 
@@ -66,6 +71,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "InsecureCapabilities"
     }
 }

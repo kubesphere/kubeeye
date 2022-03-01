@@ -6,6 +6,7 @@ deny[msg] {
     resourcename := resource.Object.metadata.name
     resourcenamespace := resource.Object.metadata.namespace
     type == "Pod"
+    level := "warning"
 
     PodSetreadOnlyRootFilesystem(resource)
 
@@ -13,6 +14,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "NotReadOnlyRootFilesystem"
     }
 }
@@ -45,6 +47,7 @@ deny[msg] {
     resourcenamespace := resource.Object.metadata.namespace
     workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
     workloadsType[type]
+    level := "warning"
 
     workloadsSetreadOnlyRootFilesystem(resource)
 
@@ -52,6 +55,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "NotReadOnlyRootFilesystem"
     }
 }
@@ -83,6 +87,7 @@ deny[msg] {
     resourcename := resource.Object.metadata.name
     resourcenamespace := resource.Object.metadata.namespace
     type == "CronJob"
+    level := "warning"
 
     CronJobSetreadOnlyRootFilesystem(resource)
 
@@ -90,6 +95,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "NotReadOnlyRootFilesystem"
     }
 }

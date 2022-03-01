@@ -16,6 +16,7 @@ limitations under the License.
 package ctl
 
 import (
+	"github.com/golang/glog"
 	"github.com/kubesphere/kubeeye/pkg/expend"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +39,7 @@ var installNPD = &cobra.Command{
 	Long:  `Automatic install the NPD resources, include a configmap and deploy in kube-system namespace `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := expend.InstallNPD(cmd.Context(), KubeConfig); err != nil {
-			panic(err)
+			glog.Fatal("Install npd failed with error: %v", err)
 		}
 	},
 }

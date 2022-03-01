@@ -6,6 +6,7 @@ deny[msg] {
     resourcename := resource.Object.metadata.name
     resourcenamespace := resource.Object.metadata.namespace
     type == "Pod"
+    level := "danger"
 
     PodSetHighRiskCapabilities(resource)
 
@@ -33,6 +34,7 @@ deny[msg] {
     resourcenamespace := resource.Object.metadata.namespace
     workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
     workloadsType[type]
+    level := "danger"
 
     WorkloadsSetHighRiskCapabilities(resource)
 
@@ -59,6 +61,7 @@ deny[msg] {
     resourcename := resource.Object.metadata.name
     resourcenamespace := resource.Object.metadata.namespace
     type == "CronJob"
+    level := "danger"
 
     CronjobSetHighRiskCapabilities(resource)
 

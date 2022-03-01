@@ -6,6 +6,7 @@ deny[msg] {
     resourcename := resource.Object.metadata.name
     resourcenamespace := resource.Object.metadata.namespace
     type == "Pod"
+    level := "danger"
 
     PodSethostPID(resource)
 
@@ -13,6 +14,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "HostPIDAllowed"
     }
 }
@@ -28,6 +30,7 @@ deny[msg] {
     resourcenamespace := resource.Object.metadata.namespace
     workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
     workloadsType[type]
+    level := "danger"
 
     workloadsSethostPID(resource)
 
@@ -35,6 +38,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "HostPIDAllowed"
     }
 }
@@ -49,6 +53,7 @@ deny[msg] {
     resourcename := resource.Object.metadata.name
     resourcenamespace := resource.Object.metadata.namespace
     type == "CronJob"
+    level := "danger"
 
     CronJobSethostPID(resource)
 
@@ -56,6 +61,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "HostPIDAllowed"
     }
 }

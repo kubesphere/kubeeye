@@ -6,6 +6,7 @@ deny[msg] {
     resourcename := resource.Object.metadata.name
     resourcenamespace := resource.Object.metadata.namespace
     type == "Role"
+    level := "warning"
 
     isNotDefaultRBAC(resource)
     canModifyResources(resource)
@@ -15,6 +16,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "CanDeleteResources"
     }
 }
@@ -24,6 +26,7 @@ deny[msg] {
     type := resource.Object.kind
     resourcename := resource.Object.metadata.name
     type == "ClusterRole"
+    level := "warning"
 
     isNotDefaultRBAC(resource)
     canModifyResources(resource)
@@ -32,6 +35,7 @@ deny[msg] {
     msg := {
         "Name": sprintf("%v", [resourcename]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "CanDeleteResources"
     }
 }

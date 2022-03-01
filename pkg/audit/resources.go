@@ -236,12 +236,13 @@ func validateCertExp(ApiAddress string) (kubeeyev1alpha1.ValidateResults, bool) 
 
 		for _, cert := range resp.TLS.PeerCertificates {
 			expDate := int(cert.NotAfter.Sub(time.Now()).Hours() / 24)
-			if expDate <= 90 {
+			if expDate <= 30 {
 				find = true
 				auditResult.ResourcesType = resourceType
 				resourceInfos.Name = "certificateExpire"
 				resultItems.Message = "CertificateExpiredPeriod"
-				resultItems.Reason = "Certificate expiration time <= 90 days"
+				resultItems.Level = ""
+				resultItems.Reason = "Certificate expiration time <= 30 days"
 			}
 		}
 	}

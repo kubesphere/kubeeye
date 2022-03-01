@@ -16,8 +16,8 @@ package ctl
 
 import (
 	"flag"
-	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/kubesphere/kubeeye/pkg/audit"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -33,7 +33,7 @@ var auditCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := audit.Cluster(cmd.Context(), KubeConfig, additionalregoruleputh, output)
 		if err != nil {
-			fmt.Println(err)
+			glog.Fatal("Kubeeye audit failed with error: %v", err)
 		}
 	},
 }

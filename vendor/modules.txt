@@ -57,8 +57,6 @@ github.com/go-logr/logr
 # github.com/go-logr/zapr v1.2.0
 ## explicit; go 1.16
 github.com/go-logr/zapr
-# github.com/go-openapi/spec v0.19.5
-## explicit; go 1.13
 # github.com/gobwas/glob v0.2.3
 ## explicit
 github.com/gobwas/glob
@@ -73,6 +71,9 @@ github.com/gobwas/glob/util/strings
 ## explicit; go 1.15
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
+# github.com/golang/glog v1.0.0
+## explicit; go 1.11
+github.com/golang/glog
 # github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 ## explicit
 github.com/golang/groupcache/lru
@@ -111,8 +112,6 @@ github.com/inconshreveable/mousetrap
 # github.com/json-iterator/go v1.1.12
 ## explicit; go 1.12
 github.com/json-iterator/go
-# github.com/kr/pty v1.1.5
-## explicit; go 1.12
 # github.com/lithammer/dedent v1.1.0
 ## explicit
 github.com/lithammer/dedent
@@ -266,8 +265,6 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/stretchr/objx v0.2.0
-## explicit; go 1.12
 # github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb
 ## explicit
 github.com/xeipuuv/gojsonpointer
@@ -277,8 +274,6 @@ github.com/xeipuuv/gojsonreference
 # github.com/yashtewari/glob-intersection v0.0.0-20180916065949-5c77d914dd0b
 ## explicit
 github.com/yashtewari/glob-intersection
-# go.etcd.io/etcd v0.5.0-alpha.5.0.20200910180754-dd1b699fc489
-## explicit; go 1.14
 # go.uber.org/atomic v1.7.0
 ## explicit; go 1.13
 go.uber.org/atomic
