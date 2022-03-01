@@ -161,7 +161,7 @@ func validateK8SResource(ctx context.Context, resource unstructured.Unstructured
 			os.Exit(1)
 		}
 		for _, regoResult := range regoResults {
-			for key, _ := range regoResult.Expressions {
+			for key := range regoResult.Expressions {
 				for _, validateResult := range regoResult.Expressions[key].Value.(map[string]interface{}) {
 					var results []kube.ValidateResult
 					jsonresult, err := json.Marshal(validateResult)
@@ -218,8 +218,9 @@ func validateCertExp(ApiAddress string) (kubeeyev1alpha1.ValidateResults, bool) 
 	var resultReceiver kubeeyev1alpha1.ResultInfos
 	var resourceInfos kubeeyev1alpha1.ResourceInfos
 	var resultItems kubeeyev1alpha1.ResultItems
+	var find bool
 	resourceType := "Cert"
-	find := false
+
 	if ApiAddress != "" {
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -227,21 +228,21 @@ func validateCertExp(ApiAddress string) (kubeeyev1alpha1.ValidateResults, bool) 
 		client := &http.Client{Transport: tr}
 		resp, err := client.Get(ApiAddress)
 		if err != nil {
+			find = false
 			fmt.Printf("\033[1;33;49mFailed to get Kubernetes kube-apiserver certificate expiration.\033[0m\n")
 			return auditResult, find
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
-		certInfo := resp.TLS.PeerCertificates[0]
-
-		tn := time.Now()
-		expDate := int(certInfo.NotAfter.Sub(tn).Hours() / 24)
-		if expDate <= 90 {
-			find = true
-			auditResult.ResourcesType = resourceType
-			resourceInfos.Name = "certificateExpire"
-			resultItems.Message = "CertificateWillExpire"
-			resultItems.Reason = "Certificate expiration time <= 90 days"
+		for _, cert := range resp.TLS.PeerCertificates {
+			expDate := int(cert.NotAfter.Sub(time.Now()).Hours() / 24)
+			if expDate <= 90 {
+				find = true
+				auditResult.ResourcesType = resourceType
+				resourceInfos.Name = "certificateExpire"
+				resultItems.Message = "CertificateExpiredPeriod"
+				resultItems.Reason = "Certificate expiration time <= 90 days"
+			}
 		}
 	}
 

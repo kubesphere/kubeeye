@@ -32,16 +32,14 @@ func GetAdditionalRegoRulesfiles(path string) []string {
 	}
 	pathabs, err := filepath.Abs(path)
 	if err != nil {
-		// TODO
-		panic(err)
+		fmt.Printf("\033[1;33;49mFailed to get the files of additional rego rule.\033[0m\n")
 	}
 	if strings.HasSuffix(pathabs, "/") == false {
 		pathabs += "/"
 	}
 	files, err := ioutil.ReadDir(pathabs)
 	if err != nil {
-		err := fmt.Errorf("failed to read the dir of rego rule files")
-		panic(err)
+		fmt.Printf("\033[1;33;49mFailed to get the dir of additional rego rule files.\033[0m\n")
 	}
 
 	for _, file := range files {
@@ -49,7 +47,10 @@ func GetAdditionalRegoRulesfiles(path string) []string {
 			continue
 		}
 
-		getregoRule, _ := ioutil.ReadFile(pathabs + file.Name())
+		getregoRule, err := ioutil.ReadFile(pathabs + file.Name())
+		if err != nil {
+			fmt.Printf("\033[1;33;49mFailed to read the files of additional rego rules.\033[0m\n")
+		}
 		regoRule := string(getregoRule)
 		regoRules = append(regoRules, regoRule)
 	}
@@ -60,7 +61,7 @@ func GetDefaultRegofile(path string) []string {
 	var regoRules []string
 	files, err := defaultRegoRules.ReadDir(path)
 	if err != nil {
-		panic(err)
+		fmt.Printf("\033[1;33;49mFailed to get Default Rego rule files.\033[0m\n")
 	}
 	for _, file := range files {
 		rule, _ := defaultRegoRules.ReadFile(path + "/" + file.Name())

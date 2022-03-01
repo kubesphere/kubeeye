@@ -59,13 +59,13 @@ type ClusterInsightReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
 func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
+	logs := log.FromContext(ctx)
 
 	clusterInsight := &kubeeyev1alpha1.ClusterInsight{}
 
 	if err := r.Get(ctx, req.NamespacedName, clusterInsight); err != nil {
 		if kubeErr.IsNotFound(err) {
-			log.Info("Cluster resource not found. Ignoring since object must be deleted")
+			logs.Info("Cluster resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
 		}
 	}
@@ -74,7 +74,7 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	kubeConfig, err := rest.InClusterConfig()
 	//kubeConfig, err := config.GetConfig()
 	if err != nil {
-		log.Error(err, "failed to get cluster config")
+		logs.Error(err, "failed to get cluster config")
 		return ctrl.Result{}, err
 	}
 
@@ -82,11 +82,11 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	var kc kube.KubernetesClient
 	clients, err := kc.K8SClients(kubeConfig)
 	if err != nil {
-		log.Error(err, "Failed to load cluster clients")
+		logs.Error(err, "Failed to load cluster clients")
 		return ctrl.Result{}, err
 	}
 
-	log.Info("Starting cluster audit")
+	logs.Info("Starting cluster audit")
 	K8SResources, validationResultsChan := audit.ValidationResults(ctx, clients, "")
 
 	// set cluster info
@@ -106,11 +106,11 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// update clusterInsight CR
 	if err := r.Status().Update(ctx, clusterInsight); err != nil {
-		log.Error(err, "Update CR Status failed")
+		logs.Error(err, "Update CR Status failed")
 		return ctrl.Result{}, err
 	}
 
-	log.Info("Cluster audit completed")
+	logs.Info("Cluster audit completed")
 
 	// If auditPeriod is not set, set the default value to 24h
 	if clusterInsight.Spec.AuditPeriod == "" {
@@ -119,7 +119,7 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	reconcilePeriod, err := time.ParseDuration(clusterInsight.Spec.AuditPeriod)
 	if err != nil {
-		log.Error(err, "AuditPeriod setting is invalid")
+		logs.Error(err, "AuditPeriod setting is invalid")
 		return ctrl.Result{}, err
 	}
 

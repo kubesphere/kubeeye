@@ -42,6 +42,7 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 	dynamicClient := kubernetesClient.DynamicClient
 	listOpts := metav1.ListOptions{}
 
+	var serverVersion string
 	var nodesCount int
 	var namespacesCount int
 	var namespacesList []string
@@ -68,15 +69,17 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes serverVersion.\033[0m\n")
 		//fmt.Errorf("failed to fetch serverVersion: %s", err.Error())
 	}
-	serverVersion := versionInfo.Major + "." + versionInfo.Minor
+	if versionInfo != nil {
+		serverVersion = versionInfo.Major + "." + versionInfo.Minor
+	}
 
 	nodesGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}
 	nodes, err := dynamicClient.Resource(nodesGVR).List(ctx, listOpts)
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes nodes.\033[0m\n")
 	}
-	for nodesItem := range nodes.Items {
-		nodesCount = nodesItem + 1
+	if nodes != nil {
+		nodesCount = len(nodes.Items)
 	}
 
 	namespacesGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
@@ -84,11 +87,11 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes namespaces.\033[0m\n")
 	}
-	for namespacesItem := range namespaces.Items {
-		namespacesCount = namespacesItem + 1
-	}
-	for _, namespacesItem := range namespaces.Items {
-		namespacesList = append(namespacesList, namespacesItem.GetName())
+	if namespaces != nil {
+		namespacesCount = len(namespaces.Items)
+		for _, namespacesItem := range namespaces.Items {
+			namespacesList = append(namespacesList, namespacesItem.GetName())
+		}
 	}
 
 	deploymentsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
@@ -96,8 +99,8 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes deployments.\033[0m\n")
 	}
-	for deploymentsItems := range deployments.Items {
-		deploymentsCount = deploymentsItems + 1
+	if deployments != nil {
+		deploymentsCount = len(deployments.Items)
 	}
 
 	daemonSetsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}
@@ -105,8 +108,8 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes daemonSets.\033[0m\n")
 	}
-	for daemonSetsItem := range daemonSets.Items {
-		daemonsetsCount = daemonSetsItem + 1
+	if daemonSets != nil {
+		daemonsetsCount = len(daemonSets.Items)
 	}
 
 	statefulSetsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}
@@ -114,9 +117,10 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes statefulSets.\033[0m\n")
 	}
-	for statefulSetsItem := range statefulSets.Items {
-		statefulsetsCount = statefulSetsItem + 1
+	if statefulSets != nil {
+		statefulsetsCount = len(statefulSets.Items)
 	}
+
 	workloadsCount = deploymentsCount + daemonsetsCount + statefulsetsCount
 
 	jobsGVR := schema.GroupVersionResource{Group: "batch", Version: "v1", Resource: "jobs"}

@@ -10,31 +10,32 @@ type Expends interface {
 }
 
 type Installer struct {
-	ctx        context.Context
-	kubeconfig string
+	CTX        context.Context
+	Kubeconfig string
 }
 
 type Resources []byte
 
-func (installer Installer) install(resource Resources) {
-	ctx := installer.ctx
-	kubeconfig := installer.kubeconfig
+func (installer Installer) install(resource Resources) error {
+	ctx := installer.CTX
+	kubeconfig := installer.Kubeconfig
 
 	// create npd resources
 	err := CreateResource(kubeconfig, ctx, resource)
 	if err != nil {
-		panic(err)
+		return err
 	}
-
+	return nil
 }
 
-func (installer Installer) uninstall(resource Resources) {
-	ctx := installer.ctx
-	kubeconfig := installer.kubeconfig
+func (installer Installer) uninstall(resource Resources) error {
+	ctx := installer.CTX
+	kubeconfig := installer.Kubeconfig
 
 	// delete npd resources
 	err := RemoveResource(kubeconfig, ctx, resource)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }

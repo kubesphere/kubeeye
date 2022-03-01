@@ -11,9 +11,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-func defaultOutput(receiver <-chan v1alpha1.AuditResult) {
+func defaultOutput(receiver <-chan v1alpha1.AuditResult) error {
 	w := tabwriter.NewWriter(os.Stdout, 10, 4, 3, ' ', 0)
-	fmt.Fprintln(w, "\nKIND\tNAMESPACE\tNAME\tMESSAGE\tLEVEL\tREASON")
+	_, err := fmt.Fprintln(w, "\nKIND\tNAMESPACE\tNAME\tREASON\tLEVEL\tMESSAGE")
+	if err != nil {
+		return err
+	}
 	for r := range receiver {
 		for _, results := range r.Results {
 			for _, resultInfos := range results.ResultInfos {
@@ -21,18 +24,24 @@ func defaultOutput(receiver <-chan v1alpha1.AuditResult) {
 					for _, items := range resourceInfos.ResultItems {
 						if len(items.Message) != 0 {
 							s := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%-8v", results.ResourcesType, resultInfos.Namespace,
-								resourceInfos.Name, items.Message, items.Level, items.Reason)
-							fmt.Fprintln(w, s)
+								resourceInfos.Name, items.Reason, items.Level, items.Message)
+							_, err := fmt.Fprintln(w, s)
+							if err != nil {
+								return err
+							}
 						}
 					}
 				}
 			}
 		}
 	}
-	w.Flush()
+	if err := w.Flush(); err != nil {
+		return err
+	}
+	return nil
 }
 
-func JSONOutput(receiver <-chan v1alpha1.AuditResult) {
+func JSONOutput(receiver <-chan v1alpha1.AuditResult) error {
 	var output v1alpha1.AuditResult
 	for r := range receiver {
 		for _, results := range r.Results {
@@ -41,23 +50,28 @@ func JSONOutput(receiver <-chan v1alpha1.AuditResult) {
 	}
 
 	// output json
-	jsonOutput, _ := json.MarshalIndent(output, "", "    ")
+	jsonOutput, err := json.MarshalIndent(output, "", "    ")
+	if err != nil {
+		return err
+	}
 	fmt.Println(string(jsonOutput))
+	return nil
 }
 
-func CSVOutput(receiver <-chan v1alpha1.AuditResult) {
+func CSVOutput(receiver <-chan v1alpha1.AuditResult) error {
 	filename := "kubeEyeAuditResult.csv"
 	// create csv file
 	newFile, err := os.Create(filename)
 	if err != nil {
-		createError := errors.Wrap(err, "create file kubeEyeAuditResult.csv failed.")
-		panic(createError)
+		return errors.Wrap(err, "create file kubeEyeAuditResult.csv failed.")
 	}
 
 	defer newFile.Close()
 
 	// write UTF-8 BOM to prevent print gibberish.
-	newFile.WriteString("\xEF\xBB\xBF")
+	if _, err = newFile.WriteString("\xEF\xBB\xBF"); err != nil {
+		return err
+	}
 
 	// NewWriter returns a new Writer that writes to w.
 	w := csv.NewWriter(newFile)
@@ -100,6 +114,8 @@ func CSVOutput(receiver <-chan v1alpha1.AuditResult) {
 	}
 	// WriteAll writes multiple CSV records to w using Write and then calls Flush,
 	if err := w.WriteAll(contents); err != nil {
-		fmt.Println("The result is exported to kubeEyeAuditResult.CSV, please check it for audit result.")
+		return err
 	}
+	fmt.Printf("\033[1;36;49mThe result is exported to kubeEyeAuditResult.CSV, please check it for audit result.\033[0m\n")
+	return nil
 }

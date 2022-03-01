@@ -20,8 +20,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var expandPackage string
-
 // installCmd represents the install command
 var installCmd = &cobra.Command{
 	Use:   "install",
@@ -39,7 +37,9 @@ var installNPD = &cobra.Command{
 	Short: "Install the NPD resources.",
 	Long:  `Automatic install the NPD resources, include a configmap and deploy in kube-system namespace `,
 	Run: func(cmd *cobra.Command, args []string) {
-		expend.InstallNPD(cmd.Context(), KubeConfig)
+		if err := expend.InstallNPD(cmd.Context(), KubeConfig); err != nil {
+			panic(err)
+		}
 	},
 }
 
@@ -48,6 +48,4 @@ func init() {
 	installCmd.AddCommand(installNPD)
 
 	// Here you will define your flags and configuration settings.
-	installCmd.PersistentFlags().StringVarP(&expandPackage, "expand", "e", "", "Install extension packages in the cluster.")
-
 }

@@ -34,7 +34,9 @@ var uninstallNPD = &cobra.Command{
 	Short: "",
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
-		expend.UninstallNPD(cmd.Context(), KubeConfig)
+		if err := expend.UninstallNPD(cmd.Context(), KubeConfig); err != nil {
+			panic(err)
+		}
 	},
 }
 

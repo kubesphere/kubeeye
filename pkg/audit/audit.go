@@ -50,33 +50,39 @@ func Cluster(ctx context.Context, kubeConfigPath string, additionalregoruleputh 
 	// Set the output mode, support default output JSON and CSV.
 	switch output {
 	case "JSON", "json", "Json":
-		JSONOutput(validationResultsChan)
+		if err := JSONOutput(validationResultsChan); err != nil {
+			return err
+		}
 	case "CSV", "csv", "Csv":
-		CSVOutput(validationResultsChan)
+		if err := CSVOutput(validationResultsChan); err != nil {
+			return err
+		}
 	default:
-		defaultOutput(validationResultsChan)
+		if err := defaultOutput(validationResultsChan); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, additionalregoruleputh string) (kube.K8SResource, <-chan v1alpha1.AuditResult) {
-	log := log.FromContext(ctx)
+	logs := log.FromContext(ctx)
 
 	// get kubernetes resources and put into the channel.
-	log.Info("starting get kubernetes resources")
+	logs.Info("starting get kubernetes resources")
 	go func(ctx context.Context, kubernetesClient *kube.KubernetesClient) {
 		err := kube.GetK8SResourcesProvider(ctx, kubernetesClient)
 		if err != nil {
-			log.Error(err, "failed to get kubernetes resources")
+			logs.Error(err, "failed to get kubernetes resources")
 		}
 	}(ctx, kubernetesClient)
 
 	k8sResources := <-kube.K8sResourcesChan
 
-	log.Info("getting and merging the Rego rules")
+	logs.Info("getting and merging the Rego rules")
 	regoRulesChan := regorules.MergeRegoRules(ctx, regorules.GetDefaultRegofile("rules"), regorules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
 
-	log.Info("starting audit kubernetes resources")
+	logs.Info("starting audit kubernetes resources")
 	RegoRulesValidateChan := MergeRegoRulesValidate(ctx, regoRulesChan,
 		RegoRulesValidate(workloads, k8sResources),
 		RegoRulesValidate(rbac, k8sResources),
@@ -86,7 +92,7 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 	)
 
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-	log.Info("return audit results")
+	logs.Info("return audit results")
 	return MergeValidationResults(ctx, k8sResources, RegoRulesValidateChan)
 }
 
