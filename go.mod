@@ -3,6 +3,7 @@ module github.com/kubesphere/kubeeye
 go 1.17
 
 require (
+	github.com/emicklei/go-restful v2.9.5+incompatible
 	github.com/go-logr/logr v1.2.2
 	github.com/golang/glog v1.0.0
 	github.com/lithammer/dedent v1.1.0
@@ -14,11 +15,10 @@ require (
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.23.4
 	k8s.io/apimachinery v0.23.4
+	k8s.io/apiserver v0.23.0
 	k8s.io/client-go v0.23.4
+	k8s.io/klog v1.0.0
 	sigs.k8s.io/controller-runtime v0.11.1
-)
-
-require (
 	cloud.google.com/go v0.99.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
@@ -28,6 +28,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
@@ -49,6 +50,8 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/prometheus/client_golang v1.12.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
