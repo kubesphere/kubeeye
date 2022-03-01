@@ -5,19 +5,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/emicklei/go-restful"
-	"github.com/kubesphere/kubeeye/pkg/apiserver/v1"
+	//"github.com/kubesphere/kubeeye/pkg/apiserver/v1"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	//"kubesphere.io/kubesphere/pkg/simple/client/k8s"
+	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
 
-	//"k8s.io/apimachinery/pkg/runtime/schema"
-	urlruntime "k8s.io/apimachinery/pkg/util/runtime"
+
 	"github.com/kubesphere/kubeeye/pkg/apiserver/request"
 	"github.com/kubesphere/kubeeye/pkg/apiserver/filters"
 	"k8s.io/apimachinery/pkg/util/sets"
-	//urlruntime "k8s.io/apimachinery/pkg/util/runtime"
-	//"kubesphere.io/kubesphere/pkg/utils/iputil"
-
-	//"kubesphere.io/kubesphere/pkg/utils/iputil"
+	"github.com/kubesphere/kubeeye/pkg/utils/iputil"
 	"k8s.io/klog"
 	"net/http"
 	rt "runtime"
@@ -27,7 +23,6 @@ import (
 type APIServer struct {
 	Server    *http.Server
 	container *restful.Container
-	//KubernetesClient k8s.Client
 }
 
 func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
@@ -38,21 +33,11 @@ func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
 		logStackOnRecover(panicReason, httpWriter)
 	})
 
-	s.installKubeSphereAPIs()
-
-	for _, ws := range s.container.RegisteredWebServices() {
-		klog.V(2).Infof("%s", ws.RootPath())
-	}
-
-	s.Server.Handler = s.container
 	s.buildHandlerChain(stopCh)
 	klog.Infof("PrepareRun success")
 	return nil
 }
 
-func (s *APIServer) installKubeSphereAPIs() {
-	urlruntime.Must(v1.AddToContainer(s.container))
-}
 
 func (s *APIServer) Run(ctx context.Context) (err error) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
@@ -84,7 +69,7 @@ func logRequestAndResponse(req *restful.Request, resp *restful.Response, chain *
 	}
 
 	logWithVerbose.Infof("%s - \"%s %s %s\" %d %d %dms",
-		//iputil.RemoteIp(req.Request),
+		iputil.RemoteIp(req.Request),
 		req.Request.Method,
 		req.Request.URL,
 		req.Request.Proto,
@@ -118,19 +103,27 @@ func logStackOnRecover(panicReason interface{}, w http.ResponseWriter) {
 func (s *APIServer) buildHandlerChain(stopCh <-chan struct{}) {
 	klog.Infof("!!!!!!!!!!!!!!!!! buildHandlerChain coming")
 	requestInfoResolver := &request.RequestInfoFactory{
-		APIPrefixes:          sets.NewString("api", "apis", "kapis", "kapi"),
-		GrouplessAPIPrefixes: sets.NewString("api", "kapi"),
+		APIPrefixes:          sets.NewString("api", "apis"),
+		GrouplessAPIPrefixes: sets.NewString("api"),
 	}
 
 	handler := s.Server.Handler
 	kubeConfig, err := kube.GetKubeConfig("")
 	klog.Infof("!!!!!!!!!!!!!!!!! kubeConfig :%v",kubeConfig)
 	if err != nil {
-		klog.Infof("!!!!!!!!!!!!!!!!! GetKubeConfig err:%+v",err)
+		klog.Errorf("!!!!!!!!!!!!!!!!! GetKubeConfig err:%+v",err)
 	}
 
-	handler = filters.WithKubeAPIServer(handler, kubeConfig, nil)
+	handler = filters.WithKubeAPIServer(handler, kubeConfig,  &errorResponder{})
 	klog.Infof("!!!!!!!!!!!!!!!!! filters.WithAuthentication.handler:%+v",handler)
 	handler = filters.WithRequestInfo(handler, requestInfoResolver)
 	s.Server.Handler = handler
+}
+
+
+type errorResponder struct{}
+
+func (e *errorResponder) Error(w http.ResponseWriter, req *http.Request, err error) {
+	klog.Error(err)
+	responsewriters.InternalError(w, req, err)
 }

@@ -17,11 +17,9 @@ limitations under the License.
 package ctl
 
 import (
-	"fmt"
 	"github.com/kubesphere/kubeeye/cmd/apiserver/app"
 )
 
-func Init() {
-	fmt.Println("init NewAPIServerCommand !!!!!!!!!!!")
+func InitApiServer() {
 	go app.NewAPIServerCommand()
 }

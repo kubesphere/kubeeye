@@ -41,7 +41,7 @@ var (
 )
 
 func init() {
-	ctl.Init()
+	ctl.InitApiServer()
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(kubeeyev1alpha1.AddToScheme(scheme))
