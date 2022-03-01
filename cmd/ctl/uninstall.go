@@ -16,6 +16,7 @@ limitations under the License.
 package ctl
 
 import (
+	"github.com/golang/glog"
 	"github.com/kubesphere/kubeeye/pkg/expend"
 	"github.com/spf13/cobra"
 )
@@ -35,7 +36,7 @@ var uninstallNPD = &cobra.Command{
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := expend.UninstallNPD(cmd.Context(), KubeConfig); err != nil {
-			panic(err)
+			glog.Fatal("Uninstall npd failed with error: %v", err)
 		}
 	},
 }

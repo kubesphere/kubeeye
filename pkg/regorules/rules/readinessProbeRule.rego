@@ -6,6 +6,7 @@ deny[msg] {
     resourcename := resource.Object.metadata.name
     resourcenamespace := resource.Object.metadata.namespace
     type == "Pod"
+    level := "warning"
 
     PodSetreadinessProbe(resource)
 
@@ -13,6 +14,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "NoReadinessProbe"
     }
 }
@@ -29,6 +31,7 @@ deny[msg] {
     resourcenamespace := resource.Object.metadata.namespace
     workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
     workloadsType[type]
+    level := "warning"
 
     workloadsSetreadinessProbe(resource)
 
@@ -36,6 +39,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "NoReadinessProbe"
     }
 }
@@ -51,6 +55,7 @@ deny[msg] {
     resourcename := resource.Object.metadata.name
     resourcenamespace := resource.Object.metadata.namespace
     type == "CronJob"
+    level := "warning"
 
     CronjobSetreadinessProbe(resource)
 
@@ -58,6 +63,7 @@ deny[msg] {
         "Name": sprintf("%v", [resourcename]),
         "Namespace": sprintf("%v", [resourcenamespace]),
         "Type": sprintf("%v", [type]),
+        "Level": sprintf("%v", [level]),
         "Message": "NoReadinessProbe"
     }
 }

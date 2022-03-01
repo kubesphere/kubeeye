@@ -17,11 +17,11 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: deleting go vendor
-        run: rm -rf vendor
-
       - name: Downloading go dependencies
         run: go mod tidy
+
+      - name: sync the vendor directory
+        run: go mod vendor
 
       - name: Build KubeEye operator manager
         run: GO111MODULE=on CGO_ENABLED=0 go build -v -o output/manager ./main.go
@@ -30,7 +30,7 @@ jobs:
         run: GO111MODULE=on CGO_ENABLED=0  go build -v -o output/kubeeye ./cmd/main.go
 
       - name: Creating kind cluster
-        uses: helm/kind-action@v1.1.0
+        uses: helm/kind-action@v1.2.0
 
       - name: Run KubeEye
         run: |

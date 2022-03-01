@@ -1,5 +1,4 @@
 # KubeEye
-
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 [![All Contributors](https://img.shields.io/badge/all_contributors-8-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
@@ -73,36 +72,36 @@ ClusterRole                    vpnkit-controller                                
 
 ## 检查项
 
-|是/否|检查项 |描述|
-|---|---|---|
-| :white_check_mark: | PrivilegeEscalationAllowed     | 允许特权升级 |
-| :white_check_mark: | CanImpersonateUser             | role/clusterrole 有伪装成其他用户权限 |
-| :white_check_mark: | CanDeleteResources             | role/clusterrole 有删除 kubernetes 资源权限 |
-| :white_check_mark: | CanModifyWorkloads             | role/clusterrole 有修改 kubernetes 资源权限 |
-| :white_check_mark: | NoCPULimits                    | 资源没有设置 CPU 使用限制 |
-| :white_check_mark: | NoCPURequests                  | 资源没有设置预留 CPU |
-| :white_check_mark: | HighRiskCapabilities           | 开启了高危功能，例如 ALL/SYS_ADMIN/NET_ADMIN |
-| :white_check_mark: | HostIPCAllowed                 | 开启了主机 IPC |
-| :white_check_mark: | HostNetworkAllowed             | 开启了主机网络 |
-| :white_check_mark: | HostPIDAllowed                 | 开启了主机PID |
-| :white_check_mark: | HostPortAllowed                | 开启了主机端口 |
-| :white_check_mark: | ImagePullPolicyNotAlways       | 镜像拉取策略不是 always |
-| :white_check_mark: | ImageTagIsLatest               | 镜像标签是 latest |
-| :white_check_mark: | ImageTagMiss                   | 镜像没有标签 |
-| :white_check_mark: | InsecureCapabilities           | 开启了不安全的功能，例如 KILL/SYS_CHROOT/CHOWN |
-| :white_check_mark: | NoLivenessProbe                | 没有设置存活状态检查 |
-| :white_check_mark: | NoMemoryLimits                 | 资源没有设置内存使用限制 |
-| :white_check_mark: | NoMemoryRequests               | 资源没有设置预留内存 |
-| :white_check_mark: | NoPriorityClassName            | 没有设置资源调度优先级 |
-| :white_check_mark: | PrivilegedAllowed              | 以特权模式运行资源 |
-| :white_check_mark: | NoReadinessProbe               | 没有设置就绪状态检查 |
-| :white_check_mark: | NotReadOnlyRootFilesystem      | 没有设置 root 文件系统为只读 |
-| :white_check_mark: | NotRunAsNonRoot                |  没有设置禁止以 root 用户启动进程 | 
-| :white_check_mark: | CertificateExpiredPeriod       | 将检查 ApiServer 证书的到期日期少于30天 |
-| :white_check_mark: | EventAudit                     | 事件检查 |
-| :white_check_mark: | NodeStatus                     | 节点状态检查 |
-| :white_check_mark: | DockerStatus                   | docker 状态检查 |             
-| :white_check_mark: | KubeletStatus                  | kubelet 状态检查 |
+|是/否|检查项 |描述|级别|
+|---|---|---|---|
+| :white_check_mark: | PrivilegeEscalationAllowed     | 允许特权升级 | 紧急 |
+| :white_check_mark: | CanImpersonateUser             | role/clusterrole 有伪装成其他用户权限 | 警告 |
+| :white_check_mark: | CanDeleteResources             | role/clusterrole 有删除 kubernetes 资源权限 | 警告 |
+| :white_check_mark: | CanModifyWorkloads             | role/clusterrole 有修改 kubernetes 资源权限 | 警告 |
+| :white_check_mark: | NoCPULimits                    | 资源没有设置 CPU 使用限制 | 紧急 |
+| :white_check_mark: | NoCPURequests                  | 资源没有设置预留 CPU | 紧急 |
+| :white_check_mark: | HighRiskCapabilities           | 开启了高危功能，例如 ALL/SYS_ADMIN/NET_ADMIN | 紧急 |
+| :white_check_mark: | HostIPCAllowed                 | 开启了主机 IPC | 紧急 |
+| :white_check_mark: | HostNetworkAllowed             | 开启了主机网络 | 紧急 |
+| :white_check_mark: | HostPIDAllowed                 | 开启了主机PID | 紧急 |
+| :white_check_mark: | HostPortAllowed                | 开启了主机端口 | 紧急 |
+| :white_check_mark: | ImagePullPolicyNotAlways       | 镜像拉取策略不是 always | 警告 |
+| :white_check_mark: | ImageTagIsLatest               | 镜像标签是 latest | 警告 |
+| :white_check_mark: | ImageTagMiss                   | 镜像没有标签 | 紧急 |
+| :white_check_mark: | InsecureCapabilities           | 开启了不安全的功能，例如 KILL/SYS_CHROOT/CHOWN | 警告 |
+| :white_check_mark: | NoLivenessProbe                | 没有设置存活状态检查 | 警告 |
+| :white_check_mark: | NoMemoryLimits                 | 资源没有设置内存使用限制 | 紧急 |
+| :white_check_mark: | NoMemoryRequests               | 资源没有设置预留内存 | 紧急 |
+| :white_check_mark: | NoPriorityClassName            | 没有设置资源调度优先级 | 通知 |
+| :white_check_mark: | PrivilegedAllowed              | 以特权模式运行资源 | 紧急 |
+| :white_check_mark: | NoReadinessProbe               | 没有设置就绪状态检查 | 警告 |
+| :white_check_mark: | NotReadOnlyRootFilesystem      | 没有设置根文件系统为只读 | 警告 |
+| :white_check_mark: | NotRunAsNonRoot                | 没有设置禁止以 root 用户启动进程 | 警告 |
+| :white_check_mark: | CertificateExpiredPeriod       | 将检查 ApiServer 证书的到期日期少于30天 | 紧急 |
+| :white_check_mark: | EventAudit                     | 事件检查 | 警告 |
+| :white_check_mark: | NodeStatus                     | 节点状态检查 | 警告 |
+| :white_check_mark: | DockerStatus                   | docker 状态检查 | 警告 |          
+| :white_check_mark: | KubeletStatus                  | kubelet 状态检查 | 警告 |
 
 ## 添加自定义检查规则
 
