@@ -5,15 +5,14 @@ import (
 	"context"
 	"fmt"
 	"github.com/emicklei/go-restful"
-	//"github.com/kubesphere/kubeeye/pkg/apiserver/v1"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
+	"k8s.io/client-go/rest"
 
-
-	"github.com/kubesphere/kubeeye/pkg/apiserver/request"
 	"github.com/kubesphere/kubeeye/pkg/apiserver/filters"
-	"k8s.io/apimachinery/pkg/util/sets"
+	"github.com/kubesphere/kubeeye/pkg/apiserver/request"
 	"github.com/kubesphere/kubeeye/pkg/utils/iputil"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog"
 	"net/http"
 	rt "runtime"
@@ -25,7 +24,7 @@ type APIServer struct {
 	container *restful.Container
 }
 
-func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
+func (s *APIServer) PrepareRun() error {
 	s.container = restful.NewContainer()
 	s.container.Filter(logRequestAndResponse)
 	s.container.Router(restful.CurlyRouter{})
@@ -33,11 +32,13 @@ func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
 		logStackOnRecover(panicReason, httpWriter)
 	})
 
-	s.buildHandlerChain(stopCh)
-	klog.Infof("PrepareRun success")
+	kubeConfig, err := kube.GetKubeConfig("")
+	if err != nil {
+		return err
+	}
+	s.buildHandlerChain(kubeConfig)
 	return nil
 }
-
 
 func (s *APIServer) Run(ctx context.Context) (err error) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
@@ -100,26 +101,17 @@ func logStackOnRecover(panicReason interface{}, w http.ResponseWriter) {
 	w.Write([]byte("Internal server error"))
 }
 
-func (s *APIServer) buildHandlerChain(stopCh <-chan struct{}) {
-	klog.Infof("!!!!!!!!!!!!!!!!! buildHandlerChain coming")
+func (s *APIServer) buildHandlerChain(conf *rest.Config) {
 	requestInfoResolver := &request.RequestInfoFactory{
 		APIPrefixes:          sets.NewString("api", "apis"),
 		GrouplessAPIPrefixes: sets.NewString("api"),
 	}
 
 	handler := s.Server.Handler
-	kubeConfig, err := kube.GetKubeConfig("")
-	klog.Infof("!!!!!!!!!!!!!!!!! kubeConfig :%v",kubeConfig)
-	if err != nil {
-		klog.Errorf("!!!!!!!!!!!!!!!!! GetKubeConfig err:%+v",err)
-	}
-
-	handler = filters.WithKubeAPIServer(handler, kubeConfig,  &errorResponder{})
-	klog.Infof("!!!!!!!!!!!!!!!!! filters.WithAuthentication.handler:%+v",handler)
+	handler = filters.WithKubeAPIServer(handler, conf, &errorResponder{})
 	handler = filters.WithRequestInfo(handler, requestInfoResolver)
 	s.Server.Handler = handler
 }
-
 
 type errorResponder struct{}
 

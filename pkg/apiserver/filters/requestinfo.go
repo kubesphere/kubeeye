@@ -17,14 +17,12 @@ limitations under the License.
 package filters
 
 import (
-	"fmt"
-	"net/http"
 	"github.com/kubesphere/kubeeye/pkg/apiserver/request"
+	"net/http"
 )
 
 func WithRequestInfo(handler http.Handler, resolver request.RequestInfoResolver) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		fmt.Printf("WithRequestInfo !!!!!!!!!!!!!!!!!!!! ,req:%v\n",req)
 		ctx := req.Context()
 		info, err := resolver.NewRequestInfo(req)
 		if err != nil {

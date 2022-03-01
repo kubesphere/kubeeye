@@ -74,9 +74,6 @@ type RequestInfo struct {
 	// Cluster of requested resource, this is empty in single-cluster environment
 	Cluster string
 
-	// DevOps project of requested resource
-	//DevOps string
-
 	// Scope of requested resource.
 	ResourceScope string
 
@@ -112,15 +109,7 @@ type RequestInfoFactory struct {
 // Special verbs with subresources:
 // /api/{version}/watch/{resource}
 // /api/{version}/watch/namespaces/{namespace}/{resource}
-//
-// /kapis/{api-group}/{version}/workspaces/{workspace}/{resource}/{resourceName}
-// /
-// /kapis/{api-group}/{version}/namespaces/{namespace}/{resource}
-// /kapis/{api-group}/{version}/namespaces/{namespace}/{resource}/{resourceName}
-// With workspaces:
-// /kapis/clusters/{cluster}/{api-group}/{version}/namespaces/{namespace}/{resource}
-// /kapis/clusters/{cluster}/{api-group}/{version}/namespaces/{namespace}/{resource}/{resourceName}
-//
+
 func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, error) {
 	requestInfo := RequestInfo{
 		IsKubernetesRequest: false,
@@ -209,16 +198,6 @@ func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, er
 		}
 	}
 
-	// URL forms: /workspaces/{workspace}/*
-	/*if currentParts[0] == "workspaces" {
-		if len(currentParts) > 1 {
-			requestInfo.Workspace = currentParts[1]
-		}
-		if len(currentParts) > 2 {
-			currentParts = currentParts[2:]
-		}
-	}*/
-
 	// URL forms: /namespaces/{namespace}/{kind}/*, where parts are adjusted to be relative to kind
 	if currentParts[0] == "namespaces" {
 		if len(currentParts) > 1 {
@@ -284,16 +263,6 @@ func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, er
 			}
 		}
 	}
-/*
-	// URL forms: /api/v1/watch/namespaces?labelSelector=kubesphere.io/workspace=system-workspace
-	if requestInfo.Verb == "watch" {
-		selector := req.URL.Query().Get("labelSelector")
-		if strings.HasPrefix(selector, workspaceSelectorPrefix) {
-			workspace := strings.TrimPrefix(selector, workspaceSelectorPrefix)
-			requestInfo.Workspace = workspace
-			requestInfo.ResourceScope = WorkspaceScope
-		}
-	}*/
 
 	// if there's no name on the request and we thought it was a delete before, then the actual verb is deletecollection
 	if len(requestInfo.Name) == 0 && requestInfo.Verb == "delete" {
@@ -332,14 +301,12 @@ const (
 	GlobalScope             = "Global"
 	ClusterScope            = "Cluster"
 	NamespaceScope          = "Namespace"
-	workspaceSelectorPrefix = "kubesphere.io/workspace" + "="
 )
 
 func (r *RequestInfoFactory) resolveResourceScope(request RequestInfo) string {
 	if r.isGlobalScopeResource(request.APIGroup, request.Resource) {
 		return GlobalScope
 	}
-
 	if request.Namespace != "" {
 		return NamespaceScope
 	}

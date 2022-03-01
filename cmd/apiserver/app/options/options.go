@@ -43,7 +43,7 @@ type ServerRunOptions struct {
 func NewServerRunOptions() *ServerRunOptions {
 	s := ServerRunOptions{
 		BindAddress:   "0.0.0.0",
-		InsecurePort:  9080,
+		InsecurePort:  9088,
 		SecurePort:    0,
 		TlsCertFile:   "",
 		TlsPrivateKey: "",
@@ -53,7 +53,7 @@ func NewServerRunOptions() *ServerRunOptions {
 }
 
 // NewAPIServer creates an APIServer instance using given options
-func (s *ServerRunOptions) NewAPIServer(stopCh <-chan struct{}) (*apiserver.APIServer, error) {
+func (s *ServerRunOptions) NewAPIServer() (*apiserver.APIServer, error) {
 	apiServer := &apiserver.APIServer{}
 
 	server := &http.Server{

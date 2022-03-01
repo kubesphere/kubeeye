@@ -45,7 +45,7 @@ func WithKubeAPIServer(handler http.Handler, config *rest.Config, failed proxy.E
 			klog.Error(err)
 			responsewriters.InternalError(w, req, err)
 		}
-		klog.Infof("!!!!!!!!!!!!!!!! info.IsKubernetesRequest:%v, kubernetes info %+v ", info.IsKubernetesRequest,kubernetes)
+
 		if info.IsKubernetesRequest {
 			s := *req.URL
 			s.Host = kubernetes.Host

@@ -19,27 +19,28 @@ package app
 import (
 	"context"
 	"github.com/kubesphere/kubeeye/cmd/apiserver/app/options"
+	"github.com/kubesphere/kubeeye/pkg/utils/signal"
 	"k8s.io/klog"
 )
 
 func NewAPIServerCommand(){
 	s := options.NewServerRunOptions()
-	Run(s, context.Background())
+	err := Run(s, signal.SetupSignalHandler())
+	if err != nil {
+		klog.Fatal("apiServer Run failed ", err)
+		return
+	}
 }
 
 func Run(s *options.ServerRunOptions, ctx context.Context) error {
-
-	apiserver, err := s.NewAPIServer(ctx.Done())
+	apiServer, err := s.NewAPIServer()
 	if err != nil {
-		klog.Error("Failed to NewAPIServer %v", err)
 		return err
 	}
 
-	err = apiserver.PrepareRun(ctx.Done())
+	err = apiServer.PrepareRun()
 	if err != nil {
-		klog.Error("PrepareRun err %v",err)
 		return err
 	}
-	klog.Infof("Run prep!!!!!!!!!!!!!")
-	return apiserver.Run(ctx)
+	return apiServer.Run(ctx)
 }
