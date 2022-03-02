@@ -17,12 +17,30 @@ limitations under the License.
 package options
 
 import (
-	"crypto/tls"
+	"embed"
 	"fmt"
-	"github.com/kubesphere/kubeeye/pkg/apiserver"
+	"io/fs"
+	"k8s.io/apimachinery/pkg/util/proxy"
+	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
 	"net/http"
+	"net/url"
+	"os"
 )
+////go:embed dist/*
+var assets embed.FS
 
+// errorResponse
+type errorResponder struct{}
+
+func (e *errorResponder) Error(w http.ResponseWriter, req *http.Request, err error) {
+	klog.Error(err)
+	responsewriters.InternalError(w, req, err)
+}
+
+// ServerRunOptions apiServer Options
 type ServerRunOptions struct {
 	// server bind address
 	BindAddress string
@@ -40,6 +58,7 @@ type ServerRunOptions struct {
 	TlsPrivateKey string
 }
 
+// NewServerRunOptions creates server option
 func NewServerRunOptions() *ServerRunOptions {
 	s := ServerRunOptions{
 		BindAddress:   "0.0.0.0",
@@ -48,31 +67,62 @@ func NewServerRunOptions() *ServerRunOptions {
 		TlsCertFile:   "",
 		TlsPrivateKey: "",
 	}
-
 	return &s
 }
 
+// loadConfig get cluster config
+func loadConfig() (*rest.Config, error) {
+	config, err := rest.InClusterConfig()
+	if err == nil {
+		return config, nil
+	}
+	return clientcmd.BuildConfigFromFlags("", os.Getenv("HOME")+"/.kube/config")
+}
+
 // NewAPIServer creates an APIServer instance using given options
-func (s *ServerRunOptions) NewAPIServer() (*apiserver.APIServer, error) {
-	apiServer := &apiserver.APIServer{}
+func NewAPIServer(s *ServerRunOptions) error {
 
-	server := &http.Server{
-		Addr: fmt.Sprintf(":%d", s.InsecurePort),
+	subFS, _ := fs.Sub(assets, "dist")
+	assetsFs := http.FileServer(http.FS(subFS))
+
+	config, err := loadConfig()
+	if err != nil {
+		return err
 	}
 
-	if s.SecurePort != 0 {
-		certificate, err := tls.LoadX509KeyPair(s.TlsCertFile, s.TlsPrivateKey)
-		if err != nil {
-			return nil, err
-		}
-
-		server.TLSConfig = &tls.Config{
-			Certificates: []tls.Certificate{certificate},
-		}
-		server.Addr = fmt.Sprintf(":%d", s.SecurePort)
+	kubernetes, _ := url.Parse(config.Host)
+	defaultTransport, err := rest.TransportFor(config)
+	if err != nil {
+		return err
 	}
 
-	apiServer.Server = server
+	var handleKubeAPIfunc = func(w http.ResponseWriter, req *http.Request) {
+		klog.Info(req.URL)
+		s := *req.URL
+		s.Host = kubernetes.Host
+		s.Scheme = kubernetes.Scheme
 
-	return apiServer, nil
+		// make sure we don't override kubernetes's authorization
+		req.Header.Del("Authorization")
+		httpProxy := proxy.NewUpgradeAwareHandler(&s, defaultTransport, true, false, &errorResponder{})
+		httpProxy.UpgradeTransport = proxy.NewUpgradeRequestRoundTripper(defaultTransport, defaultTransport)
+		httpProxy.ServeHTTP(w, req)
+		return
+	}
+
+	// create http server
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/", handleKubeAPIfunc)
+	mux.HandleFunc("/apis/", handleKubeAPIfunc)
+	mux.Handle("/", assetsFs)
+
+	if s.TlsCertFile != "" && s.TlsPrivateKey != "" {
+		klog.Infof("Start listening on %s", s.InsecurePort)
+		err = http.ListenAndServeTLS(fmt.Sprintf(":%d", s.InsecurePort+1), s.TlsCertFile, s.TlsPrivateKey, mux)
+	} else {
+		klog.Infof("Start listening on %s", s.InsecurePort)
+		err = http.ListenAndServe(fmt.Sprintf(":%d", s.InsecurePort), mux)
+
+	}
+	return err
 }

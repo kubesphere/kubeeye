@@ -3,7 +3,6 @@ module github.com/kubesphere/kubeeye
 go 1.17
 
 require (
-	github.com/emicklei/go-restful v2.9.5+incompatible
 	github.com/go-logr/logr v1.2.2
 	github.com/golang/glog v1.0.0
 	github.com/lithammer/dedent v1.1.0
@@ -19,6 +18,9 @@ require (
 	k8s.io/client-go v0.23.4
 	k8s.io/klog v1.0.0
 	sigs.k8s.io/controller-runtime v0.11.1
+)
+
+require (
 	cloud.google.com/go v0.99.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
@@ -31,6 +33,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect

@@ -17,30 +17,16 @@ limitations under the License.
 package app
 
 import (
-	"context"
 	"github.com/kubesphere/kubeeye/cmd/apiserver/app/options"
-	"github.com/kubesphere/kubeeye/pkg/utils/signal"
 	"k8s.io/klog"
 )
 
-func NewAPIServerCommand(){
+// NewAPIServerCommand  create a apiServer
+func NewAPIServerCommand() {
 	s := options.NewServerRunOptions()
-	err := Run(s, signal.SetupSignalHandler())
+	err := options.NewAPIServer(s)
 	if err != nil {
 		klog.Fatal("apiServer Run failed ", err)
 		return
 	}
-}
-
-func Run(s *options.ServerRunOptions, ctx context.Context) error {
-	apiServer, err := s.NewAPIServer()
-	if err != nil {
-		return err
-	}
-
-	err = apiServer.PrepareRun()
-	if err != nil {
-		return err
-	}
-	return apiServer.Run(ctx)
 }
