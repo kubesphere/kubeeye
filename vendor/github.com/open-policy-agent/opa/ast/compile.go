@@ -110,6 +110,7 @@ type Compiler struct {
 	debug                 debug.Debug                   // emits debug information produced during compilation
 	schemaSet             *SchemaSet                    // user-supplied schemas for input and data documents
 	inputType             types.Type                    // global input type retrieved from schema set
+	annotationSet         *AnnotationSet                // hierarchical set of annotations
 	strict                bool                          // enforce strict compilation checks
 }
 
@@ -284,7 +285,8 @@ func NewCompiler() *Compiler {
 		{"RewriteEquals", "compile_stage_rewrite_equals", c.rewriteEquals},
 		{"RewriteDynamicTerms", "compile_stage_rewrite_dynamic_terms", c.rewriteDynamicTerms},
 		{"CheckRecursion", "compile_stage_check_recursion", c.checkRecursion},
-		{"CheckTypes", "compile_stage_check_types", c.checkTypes},
+		{"SetAnnotationSet", "compile_stage_set_annotationset", c.setAnnotationSet},
+		{"CheckTypes", "compile_stage_check_types", c.checkTypes}, // must be run after CheckRecursion
 		{"CheckUnsafeBuiltins", "compile_state_check_unsafe_builtins", c.checkUnsafeBuiltins},
 		{"CheckDeprecatedBuiltins", "compile_state_check_deprecated_builtins", c.checkDeprecatedBuiltins},
 		{"BuildRuleIndices", "compile_stage_rebuild_indices", c.buildRuleIndices},
@@ -1151,6 +1153,20 @@ func parseSchema(schema interface{}) (types.Type, error) {
 	return types.A, nil
 }
 
+func (c *Compiler) setAnnotationSet() {
+	// Sorting modules by name for stable error reporting
+	sorted := make([]*Module, 0, len(c.Modules))
+	for _, mName := range c.sorted {
+		sorted = append(sorted, c.Modules[mName])
+	}
+
+	as, errs := BuildAnnotationSet(sorted)
+	for _, err := range errs {
+		c.err(err)
+	}
+	c.annotationSet = as
+}
+
 // checkTypes runs the type checker on all rules. The type checker builds a
 // TypeEnv that is stored on the compiler.
 func (c *Compiler) checkTypes() {
@@ -1160,7 +1176,7 @@ func (c *Compiler) checkTypes() {
 		WithSchemaSet(c.schemaSet).
 		WithInputType(c.inputType).
 		WithVarRewriter(rewriteVarsInRef(c.RewrittenVars))
-	env, errs := checker.CheckTypes(c.TypeEnv, sorted)
+	env, errs := checker.CheckTypes(c.TypeEnv, sorted, c.annotationSet)
 	for _, err := range errs {
 		c.err(err)
 	}
@@ -1299,6 +1315,10 @@ func (c *Compiler) getExports() *util.HashMap {
 	}
 
 	return rules
+}
+
+func (c *Compiler) GetAnnotationSet() *AnnotationSet {
+	return c.annotationSet
 }
 
 func (c *Compiler) checkDuplicateImports() {
@@ -3846,9 +3866,9 @@ func expandExpr(gen *localVarGenerator, expr *Expr) (result []*Expr) {
 			extras, terms.Domain = expandExprTerm(gen, terms.Domain)
 		} else {
 			term := NewTerm(gen.Generate()).SetLocation(terms.Domain.Location)
-			eq := Equality.Expr(term, terms.Domain)
+			eq := Equality.Expr(term, terms.Domain).SetLocation(terms.Domain.Location)
 			eq.Generated = true
-			eq.Location = terms.Domain.Location
+			eq.With = expr.With
 			extras = append(extras, eq)
 			terms.Domain = term
 		}
@@ -4219,7 +4239,7 @@ func rewriteEveryStatement(g *localVarGenerator, stack *localDeclaredVars, expr 
 	stack.Push()
 	defer stack.Pop()
 
-	// optionally rewrite the key
+	// if the key exists, rewrite
 	if every.Key != nil {
 		if v := every.Key.Value.(Var); !v.IsWildcard() {
 			gv, err := rewriteDeclaredVar(g, stack, v, declaredVar)
@@ -4228,6 +4248,8 @@ func rewriteEveryStatement(g *localVarGenerator, stack *localDeclaredVars, expr 
 			}
 			every.Key.Value = gv
 		}
+	} else { // if the key doesn't exist, add dummy local
+		every.Key = NewTerm(g.Generate())
 	}
 
 	// value is always present
@@ -4241,7 +4263,8 @@ func rewriteEveryStatement(g *localVarGenerator, stack *localDeclaredVars, expr 
 
 	used := NewVarSet()
 	every.Body, errs = rewriteDeclaredVarsInBody(g, stack, used, every.Body, errs, strict)
-	return e, errs
+
+	return rewriteDeclaredVarsInExpr(g, stack, e, errs, strict)
 }
 
 func rewriteSomeDeclStatement(g *localVarGenerator, stack *localDeclaredVars, expr *Expr, errs Errors, strict bool) (*Expr, Errors) {
