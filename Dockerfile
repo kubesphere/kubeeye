@@ -3,28 +3,28 @@ FROM golang:1.17 as builder
 
 WORKDIR /workspace
 
-# Copy the go source
-COPY main.go main.go
-
 COPY apis/ apis/
 COPY cmd/ cmd/
 COPY controllers/ controllers/
 COPY pkg/ pkg/
 COPY vendor/ vendor/
+COPY web/ web/
 
 # Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
 
+ENV CGO_ENABLED=0
+
 # Build
-RUN GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go
+RUN go install -v ./cmd/...
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM alpine:3.15
 WORKDIR /
-COPY --from=builder /workspace/manager .
-USER 65532:65532
+COPY --from=builder /go/bin/ke .
+COPY --from=builder /go/bin/ke-web .
+RUN addgroup -S kubeeye && adduser -S kubeeye -G kubeeye
+USER kubeeye
 
-ENTRYPOINT ["/manager"]
+ENTRYPOINT ["/ke-web"]
 

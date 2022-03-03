@@ -1,35 +1,34 @@
 /*
-Copyright 2020 KubeSphere Authors
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
+ Copyright 2022 The KubeSphere Authors.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
      http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
 */
 
-package options
+package web
 
 import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"net/http"
+	"net/url"
+	"os"
+
 	"k8s.io/apimachinery/pkg/util/proxy"
 	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
-	"net/http"
-	"net/url"
-	"os"
 )
-////go:embed dist/*
+
+//go:embed dist/*
 var assets embed.FS
 
 // errorResponse
@@ -79,8 +78,8 @@ func loadConfig() (*rest.Config, error) {
 	return clientcmd.BuildConfigFromFlags("", os.Getenv("HOME")+"/.kube/config")
 }
 
-// NewAPIServer creates an APIServer instance using given options
-func NewAPIServer(s *ServerRunOptions) error {
+// NewServer creates an WebServer instance using given options
+func NewServer(s *ServerRunOptions) error {
 
 	subFS, _ := fs.Sub(assets, "dist")
 	assetsFs := http.FileServer(http.FS(subFS))
@@ -117,10 +116,10 @@ func NewAPIServer(s *ServerRunOptions) error {
 	mux.Handle("/", assetsFs)
 
 	if s.TlsCertFile != "" && s.TlsPrivateKey != "" {
-		klog.Infof("Start listening on %s", s.InsecurePort)
+		klog.Infof("Start listening on %d", s.InsecurePort)
 		err = http.ListenAndServeTLS(fmt.Sprintf(":%d", s.InsecurePort+1), s.TlsCertFile, s.TlsPrivateKey, mux)
 	} else {
-		klog.Infof("Start listening on %s", s.InsecurePort)
+		klog.Infof("Start listening on %d", s.InsecurePort)
 		err = http.ListenAndServe(fmt.Sprintf(":%d", s.InsecurePort), mux)
 
 	}
