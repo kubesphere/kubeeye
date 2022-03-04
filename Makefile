@@ -225,7 +225,7 @@ catalog-push: ## Push a catalog image.
 BINARY=kubeeye
 .PHONY: ke
 buildke:
-	GO111MODULE=on CGO_ENABLED=0 go build -a -v -o ${BINARY} cmd/main.go
+	GO111MODULE=on CGO_ENABLED=0 go build -a -v -o ${BINARY} cmd/ke-web/main.go
 installke: buildke
 	mv ${BINARY} /usr/local/bin/
 uninstallke:
