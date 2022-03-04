@@ -24,10 +24,10 @@ jobs:
         run: go mod vendor
 
       - name: Build KubeEye operator manager
-        run: GO111MODULE=on CGO_ENABLED=0 go build -v -o output/manager ./main.go
+        run: GO111MODULE=on CGO_ENABLED=0 go build -v -o output/manager ./cmd/ke-web/main.go
 
       - name: Build command-line tool
-        run: GO111MODULE=on CGO_ENABLED=0  go build -v -o output/kubeeye ./cmd/main.go
+        run: GO111MODULE=on CGO_ENABLED=0  go build -v -o output/kubeeye ./cmd/ke/*.go
 
       - name: Creating kind cluster
         uses: helm/kind-action@v1.2.0
