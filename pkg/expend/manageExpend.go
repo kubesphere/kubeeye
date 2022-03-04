@@ -5,8 +5,8 @@ import (
 )
 
 type Expends interface {
-	install()
-	uninstall()
+	install(resource Resources) error
+	uninstall(resource Resources) error
 }
 
 type Installer struct {

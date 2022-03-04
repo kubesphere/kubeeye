@@ -16,7 +16,6 @@ package audit
 
 import (
 	"context"
-	"sync"
 
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
 	"github.com/kubesphere/kubeeye/pkg/kube"
@@ -65,7 +64,7 @@ func Cluster(ctx context.Context, kubeConfigPath string, additionalregoruleputh 
 	return nil
 }
 
-func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, additionalregoruleputh string) (kube.K8SResource, <-chan v1alpha1.AuditResult) {
+func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, additionalregoruleputh string) (kube.K8SResource, <-chan []v1alpha1.AuditResults) {
 	logs := log.FromContext(ctx)
 
 	// get kubernetes resources and put into the channel.
@@ -93,30 +92,6 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
 	logs.Info("return audit results")
-	return MergeValidationResults(ctx, k8sResources, RegoRulesValidateChan)
-}
 
-// MergeValidationResults merge all validate result from
-func MergeValidationResults(ctx context.Context, k8sResources kube.K8SResource, channels ...<-chan v1alpha1.AuditResult) (kube.K8SResource, <-chan v1alpha1.AuditResult) {
-	result := make(chan v1alpha1.AuditResult)
-	var wg sync.WaitGroup
-	wg.Add(len(channels))
-
-	mergeResult := func(ctx context.Context, ch <-chan v1alpha1.AuditResult) {
-		defer wg.Done()
-		for c := range ch {
-			result <- c
-		}
-	}
-
-	for _, c := range channels {
-		go mergeResult(ctx, c)
-	}
-
-	go func() {
-		defer close(result)
-		wg.Wait()
-	}()
-
-	return k8sResources, result
+	return k8sResources, RegoRulesValidateChan
 }

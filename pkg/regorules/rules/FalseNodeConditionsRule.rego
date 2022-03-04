@@ -5,7 +5,7 @@ deny[msg] {
     type := resource.Object.kind
     resourcename := resource.Object.metadata.name
     type == "Node"
-    Level := "waring"
+    level := "waring"
 
     resource.Object.status.conditions[i].status == "False"
 
@@ -19,7 +19,7 @@ deny[msg] {
     msg := {
         "Name": sprintf("%v", [resourcename]),
         "Type": sprintf("%v", [type]),
-        "Level": sprintf("%v", [Level]),
+        "Level": sprintf("%v", [level]),
         "Message": sprintf("%v", [Reason]),
         "Reason": sprintf("%v", [Message]),
     }
@@ -30,7 +30,7 @@ deny[msg] {
     type := resource.Object.kind
     resourcename := resource.Object.metadata.name
     type == "Node"
-    Level := "waring"
+    level := "waring"
 
     resource.Object.status.conditions[i].status == "False"
 
@@ -42,7 +42,7 @@ deny[msg] {
     msg := {
         "Name": sprintf("%v", [resourcename]),
         "Type": sprintf("%v", [type]),
-        "Level": sprintf("%v", [Level]),
+        "Level": sprintf("%v", [level]),
         "Message": sprintf("%v", [Reason]),
         "Reason": sprintf("%v", [Message]),
     }

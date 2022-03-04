@@ -30,80 +30,80 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-type validateFunc func(ctx context.Context, regoRulesList []string) kubeeyev1alpha1.AuditResult
+type validateFunc func(ctx context.Context, regoRulesList []string) []kubeeyev1alpha1.AuditResults
 
 func RegoRulesValidate(queryRule string, Resources kube.K8SResource) validateFunc {
 
-	return func(ctx context.Context, regoRulesList []string) kubeeyev1alpha1.AuditResult {
-		var auditResults kubeeyev1alpha1.AuditResult
+	return func(ctx context.Context, regoRulesList []string) []kubeeyev1alpha1.AuditResults {
+		var auditResults []kubeeyev1alpha1.AuditResults
 
 		if queryRule == workloads && Resources.Deployments != nil {
 			for _, resource := range Resources.Deployments.Items {
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
-					auditResults.Results = append(auditResults.Results, auditResult)
+					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == workloads && Resources.StatefulSets != nil {
 			for _, resource := range Resources.StatefulSets.Items {
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
-					auditResults.Results = append(auditResults.Results, auditResult)
+					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == workloads && Resources.DaemonSets != nil {
 			for _, resource := range Resources.DaemonSets.Items {
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
-					auditResults.Results = append(auditResults.Results, auditResult)
+					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == workloads && Resources.Jobs != nil {
 			for _, resource := range Resources.Jobs.Items {
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
-					auditResults.Results = append(auditResults.Results, auditResult)
+					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == workloads && Resources.CronJobs != nil {
 			for _, resource := range Resources.CronJobs.Items {
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
-					auditResults.Results = append(auditResults.Results, auditResult)
+					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == rbac && Resources.Roles != nil {
 			for _, resource := range Resources.Roles.Items {
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
-					auditResults.Results = append(auditResults.Results, auditResult)
+					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == rbac && Resources.ClusterRoles != nil {
 			for _, resource := range Resources.ClusterRoles.Items {
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
-					auditResults.Results = append(auditResults.Results, auditResult)
+					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == nodes && Resources.Nodes != nil {
 			for _, resource := range Resources.Nodes.Items {
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
-					auditResults.Results = append(auditResults.Results, auditResult)
+					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == events && Resources.Events != nil {
 			for _, resource := range Resources.Events.Items {
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
-					auditResults.Results = append(auditResults.Results, auditResult)
+					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == certexp && Resources.APIServerAddress != "" {
 			resource := Resources.APIServerAddress
 			if auditResult, found := validateCertExp(resource); found {
-				auditResults.Results = append(auditResults.Results, auditResult)
+				auditResults = append(auditResults, auditResult)
 
 			}
 		}
@@ -113,9 +113,9 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource) validateFun
 }
 
 // MergeRegoRulesValidate Validate kubernetes cluster Resources, put the results into channels.
-func MergeRegoRulesValidate(ctx context.Context, regoRulesChan <-chan string, vfuncs ...validateFunc) <-chan kubeeyev1alpha1.AuditResult {
+func MergeRegoRulesValidate(ctx context.Context, regoRulesChan <-chan string, vfuncs ...validateFunc) <-chan []kubeeyev1alpha1.AuditResults {
 
-	resultChan := make(chan kubeeyev1alpha1.AuditResult)
+	resultChan := make(chan []kubeeyev1alpha1.AuditResults)
 	var wg sync.WaitGroup
 	wg.Add(len(vfuncs))
 
@@ -141,8 +141,8 @@ func MergeRegoRulesValidate(ctx context.Context, regoRulesChan <-chan string, vf
 }
 
 // ValidateK8SResource validate kubernetes resource by rego, return the validate results.
-func validateK8SResource(ctx context.Context, resource unstructured.Unstructured, regoRulesList []string, queryRule string) (kubeeyev1alpha1.ValidateResults, bool) {
-	var auditResult kubeeyev1alpha1.ValidateResults
+func validateK8SResource(ctx context.Context, resource unstructured.Unstructured, regoRulesList []string, queryRule string) (kubeeyev1alpha1.AuditResults, bool) {
+	var auditResult kubeeyev1alpha1.AuditResults
 	var resultReceiver kubeeyev1alpha1.ResultInfos
 	var resourceInfos kubeeyev1alpha1.ResourceInfos
 	var resultItems kubeeyev1alpha1.ResultItems
@@ -177,7 +177,7 @@ func validateK8SResource(ctx context.Context, resource unstructured.Unstructured
 						find = true
 						if result.Type == "ClusterRole" || result.Type == "Node" {
 							resourceInfos.Name = result.Name
-							auditResult.ResourcesType = result.Type
+							resultReceiver.ResourceType = result.Type
 							resultItems.Level = result.Level
 							resultItems.Message = result.Message
 							resultItems.Reason = result.Reason
@@ -185,8 +185,8 @@ func validateK8SResource(ctx context.Context, resource unstructured.Unstructured
 							resourceInfos.ResultItems = append(resourceInfos.ResultItems, resultItems)
 						} else if result.Type == "Event" {
 							resourceInfos.Name = result.Name
-							resultReceiver.Namespace = result.Namespace
-							auditResult.ResourcesType = result.Type
+							auditResult.NameSpace = result.Namespace
+							resultReceiver.ResourceType = result.Type
 							resultItems.Level = result.Level
 							resultItems.Message = result.Message
 							resultItems.Reason = result.Reason
@@ -194,8 +194,8 @@ func validateK8SResource(ctx context.Context, resource unstructured.Unstructured
 							resourceInfos.ResultItems = append(resourceInfos.ResultItems, resultItems)
 						} else {
 							resourceInfos.Name = result.Name
-							resultReceiver.Namespace = result.Namespace
-							auditResult.ResourcesType = result.Type
+							auditResult.NameSpace = result.Namespace
+							resultReceiver.ResourceType = result.Type
 							resultItems.Level = result.Level
 							resultItems.Message = result.Message
 							resultItems.Reason = result.Reason
@@ -207,14 +207,14 @@ func validateK8SResource(ctx context.Context, resource unstructured.Unstructured
 			}
 		}
 	}
-	resultReceiver.ResourceInfos = append(resultReceiver.ResourceInfos, resourceInfos)
+	resultReceiver.ResourceInfos = resourceInfos
 	auditResult.ResultInfos = append(auditResult.ResultInfos, resultReceiver)
 	return auditResult, find
 }
 
 // validateCertExp validate kube-apiserver certificate expiration
-func validateCertExp(ApiAddress string) (kubeeyev1alpha1.ValidateResults, bool) {
-	var auditResult kubeeyev1alpha1.ValidateResults
+func validateCertExp(ApiAddress string) (kubeeyev1alpha1.AuditResults, bool) {
+	var auditResult kubeeyev1alpha1.AuditResults
 	var resultReceiver kubeeyev1alpha1.ResultInfos
 	var resourceInfos kubeeyev1alpha1.ResourceInfos
 	var resultItems kubeeyev1alpha1.ResultItems
@@ -238,17 +238,17 @@ func validateCertExp(ApiAddress string) (kubeeyev1alpha1.ValidateResults, bool) 
 			expDate := int(cert.NotAfter.Sub(time.Now()).Hours() / 24)
 			if expDate <= 30 {
 				find = true
-				auditResult.ResourcesType = resourceType
+				resultReceiver.ResourceType = resourceType
 				resourceInfos.Name = "certificateExpire"
 				resultItems.Message = "CertificateExpiredPeriod"
-				resultItems.Level = ""
+				resultItems.Level = "dangerous"
 				resultItems.Reason = "Certificate expiration time <= 30 days"
 			}
 		}
 	}
 
 	resourceInfos.ResultItems = append(resourceInfos.ResultItems, resultItems)
-	resultReceiver.ResourceInfos = append(resultReceiver.ResourceInfos, resourceInfos)
+	resultReceiver.ResourceInfos = resourceInfos
 	auditResult.ResultInfos = append(auditResult.ResultInfos, resultReceiver)
 	return auditResult, find
 }

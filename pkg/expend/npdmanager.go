@@ -10,7 +10,8 @@ import (
 var npdResources []byte
 
 func InstallNPD(ctx context.Context, kubeconfig string) error {
-	installer := Installer{
+	var installer Expends
+	installer = Installer{
 		CTX:        ctx,
 		Kubeconfig: kubeconfig,
 	}
@@ -25,7 +26,8 @@ func InstallNPD(ctx context.Context, kubeconfig string) error {
 }
 
 func UninstallNPD(ctx context.Context, kubeconfig string) error {
-	installer := Installer{
+	var installer Expends
+	installer = Installer{
 		CTX:        ctx,
 		Kubeconfig: kubeconfig,
 	}
