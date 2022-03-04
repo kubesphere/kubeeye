@@ -50,68 +50,42 @@ spec:
                 format: date-time
                 type: string
               auditResults:
-                properties:
-                  auditResults:
-                    items:
-                      properties:
-                        resourcesType:
-                          type: string
-                        resultInfos:
-                          items:
+                items:
+                  properties:
+                    namespace:
+                      type: string
+                    resultInfos:
+                      items:
+                        properties:
+                          resourceInfos:
                             properties:
-                              namespace:
-                                type: string
-                              resourceInfos:
+                              items:
                                 items:
                                   properties:
-                                    items:
-                                      items:
-                                        properties:
-                                          level:
-                                            type: string
-                                          message:
-                                            type: string
-                                          reason:
-                                            type: string
-                                        type: object
-                                      type: array
-                                    name:
+                                    level:
                                       type: string
-                                  required:
-                                  - items
+                                    message:
+                                      type: string
+                                    reason:
+                                      type: string
                                   type: object
                                 type: array
+                              name:
+                                type: string
                             required:
-                            - namespace
-                            - resourceInfos
+                            - items
                             type: object
-                          type: array
-                      type: object
-                    type: array
-                  namespace:
-                    properties:
-                      dangerous:
-                        format: int32
-                        type: integer
-                      passing:
-                        format: int32
-                        type: integer
-                      score:
-                        format: int32
-                        type: integer
-                      total:
-                        format: int32
-                        type: integer
-                      warning:
-                        format: int32
-                        type: integer
-                    required:
-                    - dangerous
-                    - passing
-                    - total
-                    - warning
-                    type: object
-                type: object
+                          resourceType:
+                            type: string
+                        required:
+                        - resourceInfos
+                        - resourceType
+                        type: object
+                      type: array
+                  required:
+                  - namespace
+                  type: object
+                type: array
               clusterInfo:
                 properties:
                   namespacesCount:
@@ -126,6 +100,26 @@ spec:
                     type: string
                   workloadsCount:
                     type: integer
+                type: object
+              scoreInfo:
+                properties:
+                  dangerous:
+                    type: integer
+                  ignore:
+                    type: integer
+                  passing:
+                    type: integer
+                  score:
+                    type: integer
+                  total:
+                    type: integer
+                  warning:
+                    type: integer
+                required:
+                - dangerous
+                - ignore
+                - passing
+                - warning
                 type: object
             type: object
         type: object

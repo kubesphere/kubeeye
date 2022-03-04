@@ -25,9 +25,9 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
@@ -71,8 +71,8 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// get kubernetes cluster config
-	kubeConfig, err := rest.InClusterConfig()
-	//kubeConfig, err := config.GetConfig()
+	//kubeConfig, err := rest.InClusterConfig()
+	kubeConfig, err := config.GetConfig()
 	if err != nil {
 		logs.Error(err, "failed to get cluster config")
 		return ctrl.Result{}, err
@@ -93,16 +93,13 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	clusterInsight.Status.ClusterInfo = setClusterInfo(K8SResources)
 
 	// clear clusterInsight.Status.AuditResults
-	clusterInsight.Status.AuditResults = kubeeyev1alpha1.AuditResult{}
+	clusterInsight.Status.AuditResults = []kubeeyev1alpha1.AuditResults{}
 
-	// fill clear clusterInsight.Status.AuditResults
-	for receiver := range validationResultsChan {
-		for _, results := range receiver.Results {
-			if results.ResultInfos != nil {
-				clusterInsight.Status.AuditResults.Results = append(clusterInsight.Status.AuditResults.Results, results)
-			}
-		}
-	}
+	//format result
+	fmResult := formatResults(validationResultsChan)
+
+	// fill clusterInsight.Status.AuditResults
+	clusterInsight.Status.AuditResults = fmResult
 
 	// update clusterInsight CR
 	if err := r.Status().Update(ctx, clusterInsight); err != nil {
@@ -140,4 +137,26 @@ func setClusterInfo(k8SResource kube.K8SResource) (ClusterInfo kubeeyev1alpha1.C
 	ClusterInfo.NamespacesList = k8SResource.NameSpacesList
 	ClusterInfo.WorkloadsCount = k8SResource.WorkloadsCount
 	return ClusterInfo
+}
+
+func formatResults(receiver <-chan []kubeeyev1alpha1.AuditResults) []kubeeyev1alpha1.AuditResults {
+	var formattedResults []kubeeyev1alpha1.AuditResults
+	var formattedResult kubeeyev1alpha1.AuditResults
+	fmAuditResults :=  make(map[string][]kubeeyev1alpha1.ResultInfos)
+
+	for results := range receiver {
+		for _ , result := range results {
+			for _, resultInfo := range result.ResultInfos {
+				fmAuditResults[result.NameSpace] = append(fmAuditResults[result.NameSpace], resultInfo)
+			}
+		}
+	}
+
+	for nm, ar := range fmAuditResults {
+		formattedResult.ResultInfos = ar
+		formattedResult.NameSpace = nm
+		formattedResults = append(formattedResults, formattedResult)
+	}
+
+	return formattedResults
 }

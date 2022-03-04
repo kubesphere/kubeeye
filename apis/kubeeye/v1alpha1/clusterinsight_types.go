@@ -36,8 +36,18 @@ type ClusterInsightStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	AfterTime    metav1.Time `json:"afterTime,omitempty"`
-	ClusterInfo  ClusterInfo `json:"clusterInfo,omitempty"`
-	AuditResults AuditResult `json:"auditResults,omitempty"`
+	ClusterInfo `json:"clusterInfo,omitempty"`
+	ScoreInfo   `json:"scoreInfo,omitempty"`
+	AuditResults []AuditResults `json:"auditResults,omitempty"`
+}
+
+type ScoreInfo struct {
+	Score       int `json:"score,omitempty"`
+	Total       int `json:"total,omitempty"`
+	Dangerous   int `json:"dangerous"`
+	Warning     int `json:"warning"`
+	Ignore      int `json:"ignore"`
+	Passing     int `json:"passing"`
 }
 
 type ClusterInfo struct {
@@ -48,14 +58,14 @@ type ClusterInfo struct {
 	NamespacesList  []string `json:"namespacesList,omitempty"`
 }
 
-type AuditResult struct {
-	ClusterScore ScoreReceiver     `json:"namespace,omitempty"`
-	Results      []ValidateResults `json:"auditResults,omitempty"`
+type AuditResults struct {
+	NameSpace    string            `json:"namespace"`
+	ResultInfos []ResultInfos `json:"resultInfos,omitempty"`
 }
 
 type ResultInfos struct {
-	Namespace     string          `json:"namespace"`
-	ResourceInfos []ResourceInfos `json:"resourceInfos"`
+	ResourceType     string       `json:"resourceType"`
+	ResourceInfos `json:"resourceInfos"`
 }
 
 type ResourceInfos struct {
@@ -67,19 +77,6 @@ type ResultItems struct {
 	Level   string `json:"level,omitempty"`
 	Message string `json:"message,omitempty"`
 	Reason  string `json:"reason,omitempty"`
-}
-
-type ScoreReceiver struct {
-	Score     int32 `json:"score,omitempty"`
-	Passing   int32 `json:"passing"`
-	Warning   int32 `json:"warning"`
-	Dangerous int32 `json:"dangerous"`
-	Total     int32 `json:"total"`
-}
-
-type ValidateResults struct {
-	ResourcesType string        `json:"resourcesType,omitempty"`
-	ResultInfos   []ResultInfos `json:"resultInfos,omitempty"`
 }
 
 //+kubebuilder:object:root=true

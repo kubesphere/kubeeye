@@ -7,8 +7,8 @@ deny[msg] {
     resourcenamespace := resource.Object.metadata.namespace
     type == "Event"
     level := "warning"
-    Message := resource.Object.message
-    Reason := resource.Object.reason
+    Message := resource.Object.reason
+    Reason := resource.Object.message
 
     resource.Object.type != "Normal"
 
