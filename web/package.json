@@ -1,0 +1,28 @@
+{
+  "name": "kubeeye",
+  "version": "1.0.0",
+  "description": "",
+  "source": "src/index.html",
+  "scripts": {
+    "dev": "parcel",
+    "build": "parcel build"
+  },
+  "browserslist": "> 0.5%, last 2 versions, not dead",
+  "author": "KubeSphere",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@parcel/transformer-sass": "^2.3.2",
+    "parcel": "^2.3.2",
+    "process": "^0.11.10",
+    "querystring-es3": "^0.2.1"
+  },
+  "dependencies": {
+    "@kube-design/components": "^1.6.1",
+    "axios": "^0.26.0",
+    "classnames": "^2.3.1",
+    "lodash": "^4.17.21",
+    "prop-types": "^15.8.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  }
+}

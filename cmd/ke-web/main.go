@@ -1,17 +1,14 @@
 /*
-Copyright 2022.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+ Copyright 2022 The KubeSphere Authors.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+     http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
 */
 
 package main
@@ -23,15 +20,16 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
-	"github.com/kubesphere/kubeeye/cmd/ctl"
-	kubeeyecontrollers "github.com/kubesphere/kubeeye/controllers/kubeeye"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
+	"github.com/kubesphere/kubeeye/cmd/ke-web/app"
+	kubeeyecontrollers "github.com/kubesphere/kubeeye/controllers/kubeeye"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -41,7 +39,6 @@ var (
 )
 
 func init() {
-	ctl.InitApiServer()
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(kubeeyev1alpha1.AddToScheme(scheme))
@@ -49,6 +46,9 @@ func init() {
 }
 
 func main() {
+	// TODO: the exit signal needs to be handled correctly here
+	go app.NewAPIServerCommand()
+
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
