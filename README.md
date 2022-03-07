@@ -1,6 +1,6 @@
 # KubeEye
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-9-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-10-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 ![kubeeye-logo](./docs/images/kubeeye-logo.png?raw=true)
@@ -224,6 +224,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
   <tr>
     <td align="center"><a href="https://github.com/leonharetd"><img src="https://avatars.githubusercontent.com/u/10416045?v=4?s=100" width="100px;" alt=""/><br /><sub><b>leonharetd</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=leonharetd" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/panzhen6668"><img src="https://avatars.githubusercontent.com/u/55566964?v=4?s=100" width="100px;" alt=""/><br /><sub><b>panzhen6668</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=panzhen6668" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/zheng1"><img src="https://avatars.githubusercontent.com/u/4156721?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Zhengyi Lai</b></sub></a><br /><a href="https://github.com/kubesphere/kubeeye/commits?author=zheng1" title="Code">💻</a></td>
   </tr>
 </table>
 
