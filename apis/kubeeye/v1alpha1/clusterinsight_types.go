@@ -60,12 +60,12 @@ type ClusterInfo struct {
 
 type AuditResults struct {
 	NameSpace    string            `json:"namespace"`
-	ResultInfos []ResultInfos `json:"resultInfos,omitempty"`
+	ResultInfos  []ResultInfos 	   `json:"resultInfos,omitempty"`
 }
 
 type ResultInfos struct {
 	ResourceType     string       `json:"resourceType"`
-	ResourceInfos `json:"resourceInfos"`
+	ResourceInfos    `json:"resourceInfos"`
 }
 
 type ResourceInfos struct {
