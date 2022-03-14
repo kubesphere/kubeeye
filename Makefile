@@ -113,6 +113,9 @@ docker-build: ## Build docker image with the manager.
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
 
+container-cross-push: ; $(info $(M)...Begin to build and push.)  @ ## Build and Push.
+	hack/docker_build_multiarch.sh
+
 ##@ Deployment
 
 ifndef ignore-not-found

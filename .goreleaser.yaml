@@ -1,0 +1,47 @@
+# Official documentation at http://goreleaser.com
+project_name: kubeeye
+builds:
+  - env:
+      - CGO_ENABLED=0
+    main: ./cmd/ke/main.go
+    binary: ke
+    goarch:
+      - amd64
+      - arm64
+    goos:
+      - linux
+dist: bin
+archives:
+  - name_template: "kubeeye-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    replacements:
+      linux: linux
+      amd64: amd64
+      arm64: arm64
+    files:
+      - none*
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Version }}-next-{{.ShortCommit}}"
+changelog:
+  skip: true
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+nfpms:
+  - file_name_template: "kubeeye-v{{ .Version }}-{{.Os}}-{{.Arch}}"
+    homepage: https://github.com/kubesphere/kubeeye
+    description: "KubeEye aims to find various problems on Kubernetes, such as application misconfiguration, unhealthy cluster components and node problems."
+    maintainer: kubesphere authors
+    license: Apache-2.0
+    vendor: Kubesphere
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/bin
+    replacements:
+      amd64: 64bit
+      arm64: arm64
+      linux: linux
