@@ -1,0 +1,68 @@
+.container{
+    display: flex;
+    display: row;
+}
+
+.header{
+    position:fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 68px;
+    z-index: 200;
+    background-color: #fff;
+    box-shadow: 4px 0px 16px rgba(36, 46, 66, 0.88);
+
+    .logo{
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        height: 48px;
+        width: 156px;
+        img{
+            height: 48px;
+            width: 156px;
+        }
+    }
+
+    .lauguage {
+        position: absolute;
+        top: 20px;
+        right: 40px;
+        background-color: #324558;
+    }
+}
+
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 140px;
+    overflow-y: auto;
+    margin-top: 68px;
+    overflow-x: hidden;
+    height: 100vh;
+    background-color: #e5e5e5;
+    margin-top: 68px;
+
+   .clusterTop{
+       flex-direction: row;
+       display: flex;
+   }
+
+//    .check{
+//        margin-top: 20px;
+//        display: flex;
+//        align-items: center;
+//        height: 48px;
+//        padding: 0 14px;
+//        border-radius: 4px;
+//        background-color: #242e42;
+//        margin: 0 0 12px;
+//        width: 100%;
+//    }
+
+}
+
+
+
