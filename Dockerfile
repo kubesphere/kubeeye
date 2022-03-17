@@ -23,8 +23,7 @@ FROM alpine:3.15
 WORKDIR /
 COPY --from=builder /go/bin/ke .
 COPY --from=builder /go/bin/ke-web .
-RUN addgroup -S kubeeye && adduser -S kubeeye -G kubeeye
-USER kubeeye
+RUN addgroup -S kubeeye -g 1000 && adduser -S kubeeye -G kubeeye -u 1000
+USER 1000:1000
 
 ENTRYPOINT ["/ke-web"]
-

@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
@@ -70,12 +71,15 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 	}
 
+	var kubeConfig *rest.Config
 	// get kubernetes cluster config
 	kubeConfig, err := rest.InClusterConfig()
-	//kubeConfig, err := config.GetConfig()
 	if err != nil {
-		logs.Error(err, "failed to get cluster config")
-		return ctrl.Result{}, err
+		kubeConfig, err = config.GetConfig()
+		if err != nil {
+			logs.Error(err, "failed to get cluster config")
+			return ctrl.Result{}, err
+		}
 	}
 
 	// get kubernetes cluster clients
