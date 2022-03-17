@@ -39,12 +39,18 @@ func GetKubeConfig(kubeconfigPath string) (*rest.Config, error) {
 	if kubeconfigPath != "" {
 		kubeConfig, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to load kubeconfig file")
+			kubeConfig, err = config.GetConfig()
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to load kubeconfig file from %v", kubeconfigPath)
+			}
 		}
 	} else if kubeconfigPath == "" {
 		kubeConfig, err = config.GetConfig()
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to load kubeconfig file from $HOME/.kube/")
+			kubeConfig, err = rest.InClusterConfig()
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to load kubeconfig file from $HOME/.kube/")
+			}
 		}
 	}
 	return kubeConfig, err
