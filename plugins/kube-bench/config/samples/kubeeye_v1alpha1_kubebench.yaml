@@ -1,0 +1,6 @@
+apiVersion: kubeeye.kubesphere.io/v1alpha1
+kind: KubeBench
+metadata:
+  name: kubebench-sample
+spec:
+  auditPeriod: 24h

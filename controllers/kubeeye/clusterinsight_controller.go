@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/kubesphere/kubeeye/pkg/audit"
+	"github.com/kubesphere/kubeeye/pkg/expend"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -64,16 +65,44 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	clusterInsight := &kubeeyev1alpha1.ClusterInsight{}
 
-	if err := r.Get(ctx, req.NamespacedName, clusterInsight); err != nil {
+	err := r.Get(ctx, req.NamespacedName, clusterInsight)
+	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			logs.Info("Cluster resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
 		}
 	}
 
+	// manage plugins
+	// manage NPD plugins,if NPD enabled is set to true,NPD will be installed.
+	if clusterInsight.Spec.Plugins.NPDState.Enabled {
+		if err := expend.InstallNPD(ctx, ""); err != nil {
+			logs.Error(err, "Install npd failed with error: %v")
+			return ctrl.Result{}, err
+		}
+	} else {
+		if err := expend.UninstallNPD(ctx,""); err != nil {
+			logs.Error(err, "Uninstall npd failed with error: %v")
+			return ctrl.Result{}, err
+		}
+	}
+
+	// manage KubeBench plugins,if KubeBench enabled is set to true,KubeBench will be installed.
+	if clusterInsight.Spec.Plugins.KubeBenchState.Enabled {
+		if err := expend.InstallKubeBench(ctx, ""); err != nil {
+			logs.Error(err, "Install KubeBench failed with error: %v")
+			return ctrl.Result{}, err
+		}
+	} else {
+		if err := expend.UninstallKubeBench(ctx, ""); err != nil {
+			logs.Error(err, "Uninstall KubeBench failed with error: %v")
+			return ctrl.Result{}, err
+		}
+	}
+
 	var kubeConfig *rest.Config
 	// get kubernetes cluster config
-	kubeConfig, err := rest.InClusterConfig()
+	kubeConfig, err = rest.InClusterConfig()
 	if err != nil {
 		kubeConfig, err = config.GetConfig()
 		if err != nil {

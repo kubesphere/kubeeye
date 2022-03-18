@@ -13,7 +13,7 @@ spec:
     listKind: ClusterInsightList
     plural: clusterinsights
     singular: clusterinsight
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha1
     schema:
@@ -37,8 +37,29 @@ spec:
             properties:
               auditPeriod:
                 type: string
+              plugins:
+                properties:
+                  kubebench:
+                    properties:
+                      enabled:
+                        type: boolean
+                    required:
+                    - enabled
+                    type: object
+                  npd:
+                    properties:
+                      enabled:
+                        type: boolean
+                    required:
+                    - enabled
+                    type: object
+                required:
+                - kubebench
+                - npd
+                type: object
             required:
             - auditPeriod
+            - plugins
             type: object
           status:
             description: ClusterInsightStatus defines the observed state of ClusterInsight

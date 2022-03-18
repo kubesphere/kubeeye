@@ -1,0 +1,24 @@
+# permissions for end users to edit kubebenches.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubebench-editor-role
+rules:
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubebenches
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubebenches/status
+  verbs:
+  - get

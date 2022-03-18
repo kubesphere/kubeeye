@@ -6,7 +6,7 @@ import (
 	_ "embed"
 )
 
-//go:embed deploymentfiles/npd-resources.yaml
+//go:embed plugins/npd-resources.yaml
 var npdResources []byte
 
 func InstallNPD(ctx context.Context, kubeconfig string) error {

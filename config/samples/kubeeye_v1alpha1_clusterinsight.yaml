@@ -4,3 +4,8 @@ metadata:
   name: clusterinsight-sample
 spec:
   auditPeriod: 24h
+  plugins:
+    npd:
+      enabled: false
+    kubebench:
+      enabled: false

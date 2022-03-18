@@ -29,6 +29,20 @@ type ClusterInsightSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	AuditPeriod string `json:"auditPeriod"`
+	Plugins     Plugins `json:"plugins"`
+}
+
+type Plugins struct {
+	NPDState NPDState `json:"npd"`
+	KubeBenchState KubeBenchState `json:"kubebench"`
+}
+
+type NPDState struct {
+	Enabled  bool `json:"enabled"`
+}
+
+type KubeBenchState struct {
+	Enabled  bool `json:"enabled"`
 }
 
 // ClusterInsightStatus defines the observed state of ClusterInsight
@@ -81,6 +95,7 @@ type ResultItems struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:path=clusterinsights,scope=Cluster
 
 // ClusterInsight is the Schema for the clusterinsights API
 type ClusterInsight struct {
