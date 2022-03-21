@@ -1,0 +1,72 @@
+.clusterStatus {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 60%;
+    height: 332px;
+    background: #FFFFFF;
+    box-shadow: 0px 4px 8px rgba(36, 46, 66, 0.06);
+    border-radius: 4px;
+    margin: 0px 12px;
+
+    .title{
+        padding: 12px;
+        width: 120px;
+        height: 25px;
+        left: 5px;
+        top: 10px;
+    }
+    .info{
+        flex: 1;
+        height: 260px;
+        display: flex;
+        width: calc(100% - 40px);
+        margin: 20px;
+        background: #242E42;
+        border-radius: 4px;
+        .chart{
+            // margin-left: 40px;
+            // margin-top: 15px;
+            // height: 240px;
+            width: 400px;
+            height: 267px;
+            // background-color: red;
+        }
+        .list{
+             margin: 30px 20px;
+             width: calc(100% - 260px);
+             .tag {
+                 display: flex;
+                 flex-direction: row;
+                 justify-content: space-between;
+                 align-items: center;
+                 padding: 10px 16px;
+                 margin: 5px 0;
+
+                 position: static;
+                 width: 100%;
+                 height: 44px;
+                 left: 0px;
+                 top: 0px;
+                 color: #fff;
+                 background: #36435C;
+                 border-radius: 4px;
+
+                 .name {
+                     left: 20px;
+                 }
+
+                 .count {
+                     right: 20px;
+                 }
+             }
+        }
+    }
+}
+
+.indicator {
+    display: inline-block;
+    margin-right: 8px;
+    margin-top: 2px;
+    vertical-align: top !important;
+}

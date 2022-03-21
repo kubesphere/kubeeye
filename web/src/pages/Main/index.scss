@@ -1,0 +1,69 @@
+.main{
+    display: flex;
+    flex-wrap: wrap;
+
+    .selectCheck {
+     display: flex;
+     align-items: center;
+     height: 48px;
+     padding: 0 14px;
+     border-radius: 4px;
+     background-color: #242e42;
+     margin: 20px 0 12px;
+     width: 100%;
+     font-size: 12px;
+     font-weight: 600;
+     line-height: 20px;
+
+     .clusterName, .projectName{
+         text-align: center;
+         min-width: 96px;
+         height: 32px;
+         line-height: 32px;
+         padding: 0 14px;
+         color: #fff;
+         border: 1px solid transparent;
+     }
+
+     .active {
+         background-color: #55BC8A;
+         border: 1px solid #55BC8A;
+         border-radius: 4px;
+         box-shadow: 0 8px 16px 0 rgb(85 188 138/36%);
+     }
+    }
+
+
+    .programCheck{
+        display: flex;
+        flex-direction: column;
+        justify-content: space-start;
+
+        .allProject{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+
+            .project{
+                margin-right: 10px;
+            }
+        }
+
+        .projectContent{
+            display: flex;
+            flex-direction: column;
+            
+        }
+    }
+
+    .contentRender {
+        // display: flex;
+        padding: 10px 20px 10px 12px;
+        align-items: center;
+        margin-top: 10px;
+        background-color: #FFF;
+        border-radius: 4px 4px 0px 0px;
+        height: auto;
+        width: 100%;
+    }
+}

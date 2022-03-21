@@ -1,0 +1,94 @@
+// @import '~scss/variables';
+// @import '~scss/mixins';
+
+.card {
+    position: relative;
+    min-height: 150px;
+    margin-bottom: 12px;
+    padding: 20px;
+    border-radius: 4px;
+    background-color: #fff;
+    transition: all 0.3s;
+
+    &.default {
+        box-shadow: 0 4px 8px 0 rgba(36, 46, 66, 0.06);
+
+        &:hover {
+            box-shadow: 0 6px 16px 0 rgba(33, 43, 54, 0.2);
+            z-index: 103;
+        }
+    }
+
+    &.selector {
+        border-radius: 4px;
+        border: 1px solid #e3e9ef;
+
+        &:hover {
+            border-color: #ccd3db;
+            box-shadow: 0 8px 16px 0 rgba(36, 46, 66, 0.08);
+        }
+    }
+
+    :global {
+        .table {
+            &-footer {
+                padding: 0 20px 16px;
+                background-color: #fff;
+                box-shadow: none;
+                border-radius: 0 0 4px 4px;
+            }
+        }
+    }
+}
+
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    transform: translate(-50%, -50%);
+}
+
+.title {
+    position: relative;
+    height: 20px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.43;
+    zoom: 1;
+
+    &:after {
+        content: '.';
+        display: block;
+        clear: both;
+        overflow: hidden;
+        height: 0;
+        visibility: hidden;
+    }
+
+    .operations {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        right: 0;
+        z-index: 10;
+    }
+}
+
+.empty {
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    top: 60px;
+    bottom: 20px;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    color: #abb4be;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.5;
+    background-color: #f9fbfd;
+    border-radius: 4px;
+}
