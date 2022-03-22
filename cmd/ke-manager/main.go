@@ -28,7 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
-	"github.com/kubesphere/kubeeye/cmd/ke-web/app"
 	kubeeyecontrollers "github.com/kubesphere/kubeeye/controllers/kubeeye"
 	//+kubebuilder:scaffold:imports
 )
@@ -47,7 +46,6 @@ func init() {
 
 func main() {
 	// TODO: the exit signal needs to be handled correctly here
-	go app.NewAPIServerCommand()
 
 	var metricsAddr string
 	var enableLeaderElection bool

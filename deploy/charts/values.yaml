@@ -118,7 +118,7 @@ spec:
     - --metrics-bind-address=127.0.0.1:8080
     - --leader-elect
     command:
-      - /ke-web
+      - /ke-manager
     image: kubesphere/kubeeye:latest
     livenessProbe:
       httpGet:
@@ -139,6 +139,19 @@ spec:
         memory: 128Mi
       requests:
         cpu: 10m
+        memory: 64Mi
+  - name: kubeeye-console
+    image: kubesphere/kubeeye-console:latest
+    ports:
+      - containerPort: 9088
+        name: http
+        protocol: TCP
+    resources:
+      limits:
+        cpu: 500m
+        memory: 128Mi
+      requests:
+        cpu: 5m
         memory: 64Mi
   serviceAccountName: kubeeye-controller-manager
   terminationGracePeriodSeconds: 10
