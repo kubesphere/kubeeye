@@ -1,8 +1,0 @@
-{
-  "/api": {
-    "target": "http://localhost:9088/"
-  },
-  "/apis": {
-    "target": "http://localhost:9088/"
-  }
-}
