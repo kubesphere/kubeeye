@@ -1,0 +1,6 @@
+apiVersion: kubeeye.kubesphere.io/v1alpha1
+kind: Plugins
+metadata:
+  name: kubehunter
+spec:
+
