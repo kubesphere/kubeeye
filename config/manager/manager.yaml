@@ -28,9 +28,7 @@ spec:
         runAsNonRoot: true
       containers:
       - command:
-        - /ke-web
-        args:
-        - --leader-elect
+        - /ke-manager
         image: controller:latest
         name: manager
         securityContext:

@@ -101,6 +101,18 @@ spec:
                   workloadsCount:
                     type: integer
                 type: object
+              pluginsResults:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    results:
+                      type: string
+                  required:
+                  - name
+                  - results
+                  type: object
+                type: array
               scoreInfo:
                 properties:
                   dangerous:
@@ -121,6 +133,8 @@ spec:
                 - passing
                 - warning
                 type: object
+            required:
+            - pluginsResults
             type: object
         type: object
     served: true
@@ -399,8 +413,9 @@ spec:
         - --metrics-bind-address=127.0.0.1:8080
         - --leader-elect
         command:
-        - /ke-web
+        - /ke-manager
         image: kubesphere/kubeeye:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /healthz

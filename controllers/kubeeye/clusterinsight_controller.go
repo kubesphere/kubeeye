@@ -18,11 +18,13 @@ package kubeeye
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/kubesphere/kubeeye/pkg/audit"
 	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/plugins"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -113,6 +115,19 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// fill
 	clusterInsight.Status.ScoreInfo = scoreInfo
+
+	// get plugins audit result
+	pluginsList := clusterInsight.Spec.Plugins
+	for _, pluginName := range pluginsList {
+		logs.Info(fmt.Sprintf("Starting plugin %s audit", pluginName))
+		result, err := plugins.GetPluginsResult(pluginName)
+		if err != nil {
+			logs.Error(err, "get plugins result failed")
+		}
+		logs.Info(fmt.Sprintf("plugin %s audit success", pluginName))
+		clusterInsight.Status.PluginsResults = append(clusterInsight.Status.PluginsResults, result)
+	}
+
 
 	// update clusterInsight CR
 	if err := r.Status().Update(ctx, clusterInsight); err != nil {
