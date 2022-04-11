@@ -1,9 +1,11 @@
-# KubeEye
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-8-orange.svg?style=flat-square)](#contributors-)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
+<div align=center><img src="docs/images/KubeEye-O.svg?raw=true"></div>
 
-![kubeeye-logo](./docs/images/kubeeye-logo.png?raw=true)
+<p align=center>
+<a href="https://github.com/kubesphere/kubeeye/actions?query=event%3Apush+branch%3Amain+workflow%3ACI+"><img src="https://github.com/kubesphere/kubeeye/workflows/CI/badge.svg?branch=main&event=push"></a>
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+<a href="https://github.com/kubesphere/kubeeye#contributors-"><img src="https://img.shields.io/badge/all_contributors-10-orange.svg?style=flat-square"></a>
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
+</p>
 
 > English | [中文](README_zh.md)
 
