@@ -1,0 +1,20 @@
+# permissions for end users to view pluginsubscriptions.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pluginsubscription-viewer-role
+rules:
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - pluginsubscriptions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - pluginsubscriptions/status
+  verbs:
+  - get
