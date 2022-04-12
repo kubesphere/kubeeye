@@ -2,6 +2,8 @@ package expend
 
 import (
 	"context"
+	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/pkg/errors"
 )
 
 type Expends interface {
@@ -10,19 +12,19 @@ type Expends interface {
 }
 
 type Installer struct {
-	CTX        context.Context
+	CTX context.Context
+	// Kubeconfig can be deleted later
 	Kubeconfig string
+	Clients    *kube.KubernetesClient
 }
 
 type Resources []byte
 
 func (installer Installer) install(resource Resources) error {
 	ctx := installer.CTX
-	kubeconfig := installer.Kubeconfig
-
-	// create npd resources
-	err := CreateResource(kubeconfig, ctx, resource)
-	if err != nil {
+	// create  resources
+	err := ResourceCreater(installer.Clients, ctx, resource)
+	if err == nil {
 		return err
 	}
 	return nil
@@ -30,12 +32,24 @@ func (installer Installer) install(resource Resources) error {
 
 func (installer Installer) uninstall(resource Resources) error {
 	ctx := installer.CTX
-	kubeconfig := installer.Kubeconfig
-
-	// delete npd resources
-	err := RemoveResource(kubeconfig, ctx, resource)
+	// delete  resources
+	err := ResourceRemover(installer.Clients, ctx, resource)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func GetK8SClients(kubeconfig string) (*kube.KubernetesClient, error) {
+	kubeConfig, err := kube.GetKubeConfig(kubeconfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load config file")
+	}
+
+	var kc kube.KubernetesClient
+	clients, err := kc.K8SClients(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clients, nil
 }

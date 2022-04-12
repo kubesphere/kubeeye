@@ -1,10 +1,3 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    control-plane: controller-manager
-  name: kubeeye-system
----
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -21,132 +14,118 @@ spec:
     singular: clusterinsight
   scope: Namespaced
   versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: ClusterInsight is the Schema for the clusterinsights API
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: ClusterInsightSpec defines the desired state of ClusterInsight
-            properties:
-              auditPeriod:
-                type: string
-            required:
-            - auditPeriod
-            type: object
-          status:
-            description: ClusterInsightStatus defines the observed state of ClusterInsight
-            properties:
-              afterTime:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file'
-                format: date-time
-                type: string
-              auditResults:
-                items:
-                  properties:
-                    namespace:
-                      type: string
-                    resultInfos:
-                      items:
-                        properties:
-                          resourceInfos:
-                            properties:
-                              items:
+    - name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: ClusterInsight is the Schema for the clusterinsights API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: ClusterInsightSpec defines the desired state of ClusterInsight
+              properties:
+                auditPeriod:
+                  type: string
+              required:
+                - auditPeriod
+              type: object
+            status:
+              description: ClusterInsightStatus defines the observed state of ClusterInsight
+              properties:
+                afterTime:
+                  description: 'INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file'
+                  format: date-time
+                  type: string
+                auditResults:
+                  items:
+                    properties:
+                      namespace:
+                        type: string
+                      resultInfos:
+                        items:
+                          properties:
+                            resourceInfos:
+                              properties:
                                 items:
-                                  properties:
-                                    level:
-                                      type: string
-                                    message:
-                                      type: string
-                                    reason:
-                                      type: string
-                                  type: object
-                                type: array
-                              name:
-                                type: string
-                            required:
-                            - items
-                            type: object
-                          resourceType:
-                            type: string
-                        required:
-                        - resourceInfos
-                        - resourceType
-                        type: object
-                      type: array
-                  required:
-                  - namespace
-                  type: object
-                type: array
-              clusterInfo:
-                properties:
-                  namespacesCount:
-                    type: integer
-                  namespacesList:
-                    items:
-                      type: string
-                    type: array
-                  nodesCount:
-                    type: integer
-                  version:
-                    type: string
-                  workloadsCount:
-                    type: integer
-                type: object
-              pluginsResults:
-                items:
+                                  items:
+                                    properties:
+                                      level:
+                                        type: string
+                                      message:
+                                        type: string
+                                      reason:
+                                        type: string
+                                    type: object
+                                  type: array
+                                name:
+                                  type: string
+                              required:
+                                - items
+                              type: object
+                            resourceType:
+                              type: string
+                          required:
+                            - resourceInfos
+                            - resourceType
+                          type: object
+                        type: array
+                    required:
+                      - namespace
+                    type: object
+                  type: array
+                clusterInfo:
                   properties:
-                    name:
+                    namespacesCount:
+                      type: integer
+                    namespacesList:
+                      items:
+                        type: string
+                      type: array
+                    nodesCount:
+                      type: integer
+                    version:
                       type: string
-                    results:
-                      type: string
-                  required:
-                  - name
-                  - results
+                    workloadsCount:
+                      type: integer
                   type: object
-                type: array
-              scoreInfo:
-                properties:
-                  dangerous:
-                    type: integer
-                  ignore:
-                    type: integer
-                  passing:
-                    type: integer
-                  score:
-                    type: integer
-                  total:
-                    type: integer
-                  warning:
-                    type: integer
-                required:
-                - dangerous
-                - ignore
-                - passing
-                - warning
-                type: object
-            required:
-            - pluginsResults
-            type: object
-        type: object
-    served: true
-    storage: true
-    subresources:
-      status: {}
+                scoreInfo:
+                  properties:
+                    dangerous:
+                      type: integer
+                    ignore:
+                      type: integer
+                    passing:
+                      type: integer
+                    score:
+                      type: integer
+                    total:
+                      type: integer
+                    warning:
+                      type: integer
+                  required:
+                    - dangerous
+                    - ignore
+                    - passing
+                    - warning
+                  type: object
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: { }
 status:
   acceptedNames:
     kind: ""
     plural: ""
-  conditions: []
-  storedVersions: []
+  conditions: [ ]
+  storedVersions: [ ]
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -160,37 +139,37 @@ metadata:
   name: kubeeye-leader-election-role
   namespace: kubeeye-system
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - create
-  - patch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -198,102 +177,140 @@ metadata:
   creationTimestamp: null
   name: kubeeye-manager-role
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - apps
-  resources:
-  - '*'
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - batch
-  resources:
-  - '*'
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - kubeeye.kubesphere.io
-  resources:
-  - clusterinsights
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - kubeeye.kubesphere.io
-  resources:
-  - clusterinsights/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - kubeeye.kubesphere.io
-  resources:
-  - clusterinsights/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - '*'
-  verbs:
-  - get
-  - list
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - apps
+    resources:
+      - '*'
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+  - apiGroups:
+      - batch
+    resources:
+      - '*'
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - kubeeye.kubesphere.io
+      - plugin.kubesphere.io
+      - kubebenches.kubeeye.kubesphere.io
+      - apiextensions.k8s.io
+      - rbac.authorization.k8s.io
+      - ""
+    resources:
+      - '*'
+    #- clusterinsights
+    #- pluginmanages
+    #- kubebenches
+    #- customresourcedefinitions
+    #- serviceaccounts
+    #- roles
+    #- clusterroles
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - kubeeye.kubesphere.io
+      - plugin.kubesphere.io
+      - kubebenches.kubeeye.kubesphere.io
+      - apiextensions.k8s.io
+      - rbac.authorization.k8s.io
+      - ""
+    resources:
+      - '*'
+      - clusterinsights/finalizers
+      - pluginmanages/finalizers
+      - kubebenches/finalizers
+      - customresourcedefinitions/finalizers
+      - serviceaccounts/finalizers
+      - roles/finalizers
+      - clusterroles/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - kubeeye.kubesphere.io
+      - plugin.kubesphere.io
+      - kubebenches.kubeeye.kubesphere.io
+      - apiextensions.k8s.io
+      - rbac.authorization.k8s.io
+      - ""
+    resources:
+      - '*'
+      - clusterinsights/status
+      - pluginmanages/status
+      - kubebenches/status
+      - customresourcedefinitions/status
+      - serviceaccounts/status
+      - roles/status
+      - clusterroles/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - '*'
+    verbs:
+      - get
+      - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kubeeye-metrics-reader
 rules:
-- nonResourceURLs:
-  - /metrics
-  verbs:
-  - get
+  - nonResourceURLs:
+      - /metrics
+    verbs:
+      - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kubeeye-proxy-role
 rules:
-- apiGroups:
-  - authentication.k8s.io
-  resources:
-  - tokenreviews
-  verbs:
-  - create
-- apiGroups:
-  - authorization.k8s.io
-  resources:
-  - subjectaccessreviews
-  verbs:
-  - create
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -305,9 +322,9 @@ roleRef:
   kind: Role
   name: kubeeye-leader-election-role
 subjects:
-- kind: ServiceAccount
-  name: kubeeye-controller-manager
-  namespace: kubeeye-system
+  - kind: ServiceAccount
+    name: kubeeye-controller-manager
+    namespace: kubeeye-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -318,9 +335,9 @@ roleRef:
   kind: ClusterRole
   name: kubeeye-manager-role
 subjects:
-- kind: ServiceAccount
-  name: kubeeye-controller-manager
-  namespace: kubeeye-system
+  - kind: ServiceAccount
+    name: kubeeye-controller-manager
+    namespace: kubeeye-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -331,9 +348,9 @@ roleRef:
   kind: ClusterRole
   name: kubeeye-proxy-role
 subjects:
-- kind: ServiceAccount
-  name: kubeeye-controller-manager
-  namespace: kubeeye-system
+  - kind: ServiceAccount
+    name: kubeeye-controller-manager
+    namespace: kubeeye-system
 ---
 apiVersion: v1
 data:
@@ -349,6 +366,371 @@ data:
     leaderElection:
       leaderElect: true
       resourceName: fa68b2a3.kubesphere.io
+  pluginmanifest-kube-bench: |
+    apiVersion: apiextensions.k8s.io/v1
+    kind: CustomResourceDefinition
+    metadata:
+      annotations:
+        controller-gen.kubebuilder.io/version: v0.8.0
+      creationTimestamp: null
+      name: kubebenches.kubeeye.kubesphere.io
+    spec:
+      group: kubeeye.kubesphere.io
+      names:
+        kind: KubeBench
+        listKind: KubeBenchList
+        plural: kubebenches
+        singular: kubebench
+      scope: Cluster
+      versions:
+        - name: v1alpha1
+          schema:
+            openAPIV3Schema:
+              description: KubeBench is the Schema for the kubebenches API
+              properties:
+                apiVersion:
+                  description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                  type: string
+                kind:
+                  description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                  type: string
+                metadata:
+                  type: object
+                spec:
+                  description: KubeBenchSpec defines the desired state of KubeBench
+                  properties:
+                    auditPeriod:
+                      description: Foo is an example field of KubeBench. Edit kubebench_types.go to remove/update
+                      type: string
+                  required:
+                    - auditPeriod
+                  type: object
+                status:
+                  description: KubeBenchStatus defines the observed state of KubeBench
+                  properties:
+                    controls:
+                      description: 'INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file'
+                      items:
+                        properties:
+                          groups:
+                            items:
+                              properties:
+                                groupid:
+                                  type: string
+                                results:
+                                  items:
+                                    properties:
+                                      desc:
+                                        type: string
+                                      id:
+                                        type: string
+                                      remediation:
+                                        type: string
+                                      status:
+                                        description: State is the state of a control check.
+                                        type: string
+                                    required:
+                                      - desc
+                                      - id
+                                      - remediation
+                                      - status
+                                    type: object
+                                  type: array
+                                type:
+                                  type: string
+                              required:
+                                - groupid
+                                - results
+                                - type
+                              type: object
+                            type: array
+                          summary:
+                            description: Summary is a summary of the results of control checks run.
+                            properties:
+                              total_fail:
+                                type: integer
+                              total_info:
+                                type: integer
+                              total_pass:
+                                type: integer
+                              total_warn:
+                                type: integer
+                            required:
+                              - total_fail
+                              - total_info
+                              - total_pass
+                              - total_warn
+                            type: object
+                          text:
+                            type: string
+                          version:
+                            type: string
+                        required:
+                          - groups
+                          - summary
+                          - text
+                          - version
+                        type: object
+                      type: array
+                  type: object
+              type: object
+          served: true
+          storage: true
+          subresources:
+            status: {}
+    status:
+      acceptedNames:
+        kind: ""
+        plural: ""
+      conditions: []
+      storedVersions: []
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: kube-bench-controller-manager
+      namespace: kubeeye-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: kube-bench-leader-election-role
+      namespace: kubeeye-system
+    rules:
+      - apiGroups:
+          - ""
+        resources:
+          - configmaps
+        verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+      - apiGroups:
+          - coordination.k8s.io
+        resources:
+          - leases
+        verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+      - apiGroups:
+          - ""
+        resources:
+          - events
+        verbs:
+          - create
+          - patch
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      creationTimestamp: null
+      name: kube-bench-manager-role
+    rules:
+      - apiGroups:
+          - kubeeye.kubesphere.io
+        resources:
+          - kubebenches
+        verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+      - apiGroups:
+          - kubeeye.kubesphere.io
+        resources:
+          - kubebenches/finalizers
+        verbs:
+          - update
+      - apiGroups:
+          - kubeeye.kubesphere.io
+        resources:
+          - kubebenches/status
+        verbs:
+          - get
+          - patch
+          - update
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: kube-bench-metrics-reader
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: kube-bench-proxy-role
+    rules:
+      - apiGroups:
+          - authentication.k8s.io
+        resources:
+          - tokenreviews
+        verbs:
+          - create
+      - apiGroups:
+          - authorization.k8s.io
+        resources:
+          - subjectaccessreviews
+        verbs:
+          - create
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: kube-bench-leader-election-rolebinding
+      namespace: kubeeye-system
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: kube-bench-leader-election-role
+    subjects:
+      - kind: ServiceAccount
+        name: kube-bench-controller-manager
+        namespace: kubeeye-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: kube-bench-manager-rolebinding
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kube-bench-manager-role
+    subjects:
+      - kind: ServiceAccount
+        name: kube-bench-controller-manager
+        namespace: kubeeye-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: kube-bench-proxy-rolebinding
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kube-bench-proxy-role
+    subjects:
+      - kind: ServiceAccount
+        name: kube-bench-controller-manager
+        namespace: kubeeye-system
+    ---
+    apiVersion: v1
+    data:
+      controller_manager_config.yaml: |
+        apiVersion: controller-runtime.sigs.k8s.io/v1alpha1
+        kind: ControllerManagerConfig
+        health:
+          healthProbeBindAddress: :8081
+        metrics:
+          bindAddress: 127.0.0.1:8080
+        webhook:
+          port: 9443
+        leaderElection:
+          leaderElect: true
+          resourceName: 3f3b2d76.kubesphere.io
+    kind: ConfigMap
+    metadata:
+      name: kube-bench-manager-config
+      namespace: kubeeye-system
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        control-plane: controller-manager
+      name: kube-bench-controller-manager-metrics-service
+      namespace: kubeeye-system
+    spec:
+      ports:
+        - name: https
+          port: 8443
+          protocol: TCP
+          targetPort: https
+      selector:
+        control-plane: controller-manager
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        control-plane: controller-manager
+      name: kube-bench-controller-manager
+      namespace: kubeeye-system
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          control-plane: controller-manager
+      template:
+        metadata:
+          annotations:
+            kubectl.kubernetes.io/default-container: manager
+          labels:
+            control-plane: controller-manager
+        spec:
+          containers:
+            - args:
+                - --secure-listen-address=0.0.0.0:8443
+                - --upstream=http://127.0.0.1:8080/
+                - --logtostderr=true
+                - --v=0
+              image: kubesphere/kube-rbac-proxy:v0.8.0
+              imagePullPolicy: IfNotPresent
+              name: kube-rbac-proxy
+              ports:
+                - containerPort: 8443
+                  name: https
+                  protocol: TCP
+              resources:
+                limits:
+                  cpu: 200m
+                  memory: 128Mi
+                requests:
+                  cpu: 20m
+                  memory: 64Mi
+            - args:
+                - --health-probe-bind-address=:8081
+                - --metrics-bind-address=127.0.0.1:8080
+                - --leader-elect
+              image: panzhen666888/kube-bench:latest
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                httpGet:
+                  path: /healthz
+                  port: 8081
+                initialDelaySeconds: 15
+                periodSeconds: 20
+              name: manager
+              readinessProbe:
+                httpGet:
+                  path: /readyz
+                  port: 8081
+                initialDelaySeconds: 5
+                periodSeconds: 10
+              resources:
+                limits:
+                  cpu: 200m
+                  memory: 128Mi
+                requests:
+                  cpu: 20m
+                  memory: 64Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+          securityContext:
+            runAsNonRoot: true
+          serviceAccountName: kube-bench-controller-manager
+          terminationGracePeriodSeconds: 10
 kind: ConfigMap
 metadata:
   name: kubeeye-manager-config
@@ -362,11 +744,17 @@ metadata:
   name: kubeeye-controller-manager-metrics-service
   namespace: kubeeye-system
 spec:
+  type: NodePort
   ports:
-  - name: https
-    port: 8443
-    protocol: TCP
-    targetPort: https
+    - name: https
+      port: 8443
+      protocol: TCP
+      targetPort: https
+    - name: web
+      port: 9088
+      nodePort: 30008
+      protocol: TCP
+      targetPort: 9088
   selector:
     control-plane: controller-manager
 ---
@@ -390,54 +778,91 @@ spec:
         control-plane: controller-manager
     spec:
       containers:
-      - args:
-        - --secure-listen-address=0.0.0.0:8443
-        - --upstream=http://127.0.0.1:8080/
-        - --logtostderr=true
-        - --v=0
-        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
-        name: kube-rbac-proxy
-        ports:
-        - containerPort: 8443
-          name: https
-          protocol: TCP
-        resources:
-          limits:
-            cpu: 500m
-            memory: 128Mi
-          requests:
-            cpu: 5m
-            memory: 64Mi
-      - args:
-        - --health-probe-bind-address=:8081
-        - --metrics-bind-address=127.0.0.1:8080
-        - --leader-elect
-        command:
-        - /ke-manager
-        image: kubesphere/kubeeye:latest
-        imagePullPolicy: IfNotPresent
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 8081
-          initialDelaySeconds: 15
-          periodSeconds: 20
-        name: manager
-        readinessProbe:
-          httpGet:
-            path: /readyz
-            port: 8081
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        resources:
-          limits:
-            cpu: 500m
-            memory: 128Mi
-          requests:
-            cpu: 10m
-            memory: 64Mi
-        securityContext:
-          allowPrivilegeEscalation: false
+        - args:
+            - --secure-listen-address=0.0.0.0:8443
+            - --upstream=http://127.0.0.1:8080/
+            - --logtostderr=true
+            - --v=0
+          image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+          name: kube-rbac-proxy
+          ports:
+            - containerPort: 8443
+              name: https
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 10m
+              memory: 128Mi
+            requests:
+              cpu: 5m
+              memory: 64Mi
+        - args:
+            - --health-probe-bind-address=:8081
+            - --metrics-bind-address=127.0.0.1:8080
+            - --leader-elect
+          command:
+            - /ke-manager
+          image: panzhen666888/kubeeye-manager     #kubesphere/kubeeye:latest
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          name: manager
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 200m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+        - args:
+            - --health-probe-bind-address=:8083
+            - --metrics-bind-address=127.0.0.1:8082
+          name: plugin-manage
+          image: panzhen666888/pluginmanage:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SPECIAL_LEVEL_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: kubeeye-manager-config
+                  key: pluginmanifest-kube-bench
+          ports:
+            - containerPort: 9087
+              name: http
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 5m
+              memory: 64Mi
+        - name: kubeeye-console
+          image: panzhen666888/kubeeye-console:0.0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9088
+              name: http
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 5m
+              memory: 64Mi
       securityContext:
         runAsNonRoot: true
       serviceAccountName: kubeeye-controller-manager
