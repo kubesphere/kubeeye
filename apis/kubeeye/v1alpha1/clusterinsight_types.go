@@ -29,34 +29,34 @@ type ClusterInsightSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	AuditPeriod string `json:"auditPeriod"`
-	Plugins     []string `json:"plugins"`
+	//Plugins     []string `json:"plugins,omitempty"`
 }
 
 // ClusterInsightStatus defines the observed state of ClusterInsight
 type ClusterInsightStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	AfterTime    metav1.Time `json:"afterTime,omitempty"`
-	ClusterInfo `json:"clusterInfo,omitempty"`
-	ScoreInfo   `json:"scoreInfo,omitempty"`
-	AuditResults []AuditResults `json:"auditResults,omitempty"`
+	AfterTime      metav1.Time `json:"afterTime,omitempty"`
+	ClusterInfo    `json:"clusterInfo,omitempty"`
+	ScoreInfo      `json:"scoreInfo,omitempty"`
+	AuditResults   []AuditResults  `json:"auditResults,omitempty"`
 	PluginsResults []PluginsResult `json:"pluginsResults"`
+	IsAuditOver    bool            `json:"isAuditOver,omitempty"`
 }
 
 type PluginsResult struct {
 	// +kubebuilder:validation:one-of=[]reporthandling.FrameworkReport;kubehunterpkg.KubeHunterResults,kubebenchpkg.KubeBenchResults
 	Results string `json:"results"`
-	Name string `json:"name"`
-
+	Name    string `json:"name"`
 }
 
 type ScoreInfo struct {
-	Score       int `json:"score,omitempty"`
-	Total       int `json:"total,omitempty"`
-	Dangerous   int `json:"dangerous"`
-	Warning     int `json:"warning"`
-	Ignore      int `json:"ignore"`
-	Passing     int `json:"passing"`
+	Score     int `json:"score,omitempty"`
+	Total     int `json:"total,omitempty"`
+	Dangerous int `json:"dangerous"`
+	Warning   int `json:"warning"`
+	Ignore    int `json:"ignore"`
+	Passing   int `json:"passing"`
 }
 
 type ClusterInfo struct {
@@ -68,13 +68,13 @@ type ClusterInfo struct {
 }
 
 type AuditResults struct {
-	NameSpace    string            `json:"namespace"`
-	ResultInfos  []ResultInfos 	   `json:"resultInfos,omitempty"`
+	NameSpace   string        `json:"namespace"`
+	ResultInfos []ResultInfos `json:"resultInfos,omitempty"`
 }
 
 type ResultInfos struct {
-	ResourceType     string       `json:"resourceType"`
-	ResourceInfos    `json:"resourceInfos"`
+	ResourceType  string `json:"resourceType"`
+	ResourceInfos `json:"resourceInfos"`
 }
 
 type ResourceInfos struct {
@@ -90,7 +90,6 @@ type ResultItems struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-
 
 // ClusterInsight is the Schema for the clusterinsights API
 type ClusterInsight struct {

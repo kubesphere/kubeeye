@@ -37,13 +37,8 @@ spec:
             properties:
               auditPeriod:
                 type: string
-              plugins:
-                items:
-                  type: string
-                type: array
             required:
             - auditPeriod
-            - plugins
             type: object
           status:
             description: ClusterInsightStatus defines the observed state of ClusterInsight
@@ -106,6 +101,8 @@ spec:
                   workloadsCount:
                     type: integer
                 type: object
+              isAuditOver:
+                type: boolean
               pluginsResults:
                 items:
                   properties:

@@ -5,8 +5,14 @@ var (
 	PluginResource    = "plugins"
 	PluginConfig      = "kubeeye-manager-config"
 	PrefixManifestKey = "pluginmanifest-"
-	MaxCheckPodCount  = 15
-	IntervalsTime     = 20
+	// plugin gvr
+	Group    = "kubeeye.kubesphere.io"
+	Version  = "v1alpha1"
+	Resource = "pluginsubscriptions"
+	// plugin manager
+	MaxConcurrentReconciles = 3
+	MaxCheckPodCount        = 15
+	IntervalsTime           = 20
 )
 
 //plugin install status
