@@ -4,6 +4,127 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
+  name: plugins.kubeeye.kubesphere.io
+spec:
+  group: kubeeye.kubesphere.io
+  names:
+    kind: Plugin
+    listKind: PluginList
+    plural: plugins
+    singular: plugin
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: Plugin is the Schema for the plugins API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: PluginSpec defines the desired state of Plugin
+              properties:
+                manifest:
+                  description: Foo is an example field of Plugin. Edit plugin_types.go
+                    to remove/update
+                  type: string
+              type: object
+            status:
+              description: PluginStatus defines the observed state of Plugin
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: { }
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: [ ]
+  storedVersions: [ ]
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.8.0
+  creationTimestamp: null
+  name: pluginsubscriptions.kubeeye.kubesphere.io
+spec:
+  group: kubeeye.kubesphere.io
+  names:
+    kind: PluginSubscription
+    listKind: PluginSubscriptionList
+    plural: pluginsubscriptions
+    singular: pluginsubscription
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: PluginSubscription is the Schema for the pluginsubscriptions
+            API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: PluginSubscriptionSpec defines the desired state of PluginSubscription
+              properties:
+                enabled:
+                  description: Foo is an example field of PluginSubscription. Edit pluginsubscription_types.go
+                    to remove/update
+                  type: boolean
+              type: object
+            status:
+              description: PluginSubscriptionStatus defines the observed state of PluginSubscription
+              properties:
+                enabled:
+                  type: boolean
+                install:
+                  description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                  of cluster Important: Run "make" to regenerate code after modifying
+                  this file'
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: { }
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: [ ]
+  storedVersions: [ ]
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.8.0
+  creationTimestamp: null
   name: clusterinsights.kubeeye.kubesphere.io
 spec:
   group: kubeeye.kubesphere.io
@@ -20,10 +141,14 @@ spec:
           description: ClusterInsight is the Schema for the clusterinsights API
           properties:
             apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
               type: string
             kind:
-              description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
               type: string
             metadata:
               type: object
@@ -39,7 +164,9 @@ spec:
               description: ClusterInsightStatus defines the observed state of ClusterInsight
               properties:
                 afterTime:
-                  description: 'INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file'
+                  description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                  of cluster Important: Run "make" to regenerate code after modifying
+                  this file'
                   format: date-time
                   type: string
                 auditResults:
@@ -94,6 +221,20 @@ spec:
                     workloadsCount:
                       type: integer
                   type: object
+                isAuditOver:
+                  type: boolean
+                pluginsResults:
+                  items:
+                    properties:
+                      name:
+                        type: string
+                      results:
+                        type: string
+                    required:
+                      - name
+                      - results
+                    type: object
+                  type: array
                 scoreInfo:
                   properties:
                     dangerous:
@@ -114,6 +255,8 @@ spec:
                     - passing
                     - warning
                   type: object
+              required:
+                - pluginsResults
               type: object
           type: object
       served: true
@@ -366,135 +509,17 @@ data:
     leaderElection:
       leaderElect: true
       resourceName: fa68b2a3.kubesphere.io
-  pluginmanifest-kube-bench: |
-    apiVersion: apiextensions.k8s.io/v1
-    kind: CustomResourceDefinition
-    metadata:
-      annotations:
-        controller-gen.kubebuilder.io/version: v0.8.0
-      creationTimestamp: null
-      name: kubebenches.kubeeye.kubesphere.io
-    spec:
-      group: kubeeye.kubesphere.io
-      names:
-        kind: KubeBench
-        listKind: KubeBenchList
-        plural: kubebenches
-        singular: kubebench
-      scope: Cluster
-      versions:
-        - name: v1alpha1
-          schema:
-            openAPIV3Schema:
-              description: KubeBench is the Schema for the kubebenches API
-              properties:
-                apiVersion:
-                  description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-                  type: string
-                kind:
-                  description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-                  type: string
-                metadata:
-                  type: object
-                spec:
-                  description: KubeBenchSpec defines the desired state of KubeBench
-                  properties:
-                    auditPeriod:
-                      description: Foo is an example field of KubeBench. Edit kubebench_types.go to remove/update
-                      type: string
-                  required:
-                    - auditPeriod
-                  type: object
-                status:
-                  description: KubeBenchStatus defines the observed state of KubeBench
-                  properties:
-                    controls:
-                      description: 'INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file'
-                      items:
-                        properties:
-                          groups:
-                            items:
-                              properties:
-                                groupid:
-                                  type: string
-                                results:
-                                  items:
-                                    properties:
-                                      desc:
-                                        type: string
-                                      id:
-                                        type: string
-                                      remediation:
-                                        type: string
-                                      status:
-                                        description: State is the state of a control check.
-                                        type: string
-                                    required:
-                                      - desc
-                                      - id
-                                      - remediation
-                                      - status
-                                    type: object
-                                  type: array
-                                type:
-                                  type: string
-                              required:
-                                - groupid
-                                - results
-                                - type
-                              type: object
-                            type: array
-                          summary:
-                            description: Summary is a summary of the results of control checks run.
-                            properties:
-                              total_fail:
-                                type: integer
-                              total_info:
-                                type: integer
-                              total_pass:
-                                type: integer
-                              total_warn:
-                                type: integer
-                            required:
-                              - total_fail
-                              - total_info
-                              - total_pass
-                              - total_warn
-                            type: object
-                          text:
-                            type: string
-                          version:
-                            type: string
-                        required:
-                          - groups
-                          - summary
-                          - text
-                          - version
-                        type: object
-                      type: array
-                  type: object
-              type: object
-          served: true
-          storage: true
-          subresources:
-            status: {}
-    status:
-      acceptedNames:
-        kind: ""
-        plural: ""
-      conditions: []
-      storedVersions: []
-    ---
+  pluginmanifest-kubescape: |
     apiVersion: v1
     kind: ServiceAccount
     metadata:
-      name: kube-bench-controller-manager
+      name: kubescape
       namespace: kubeeye-system
     ---
     apiVersion: rbac.authorization.k8s.io/v1
     kind: Role
     metadata:
-      name: kube-bench-leader-election-role
+      name: kubescape-role
       namespace: kubeeye-system
     rules:
       - apiGroups:
@@ -533,12 +558,12 @@ data:
     kind: ClusterRole
     metadata:
       creationTimestamp: null
-      name: kube-bench-manager-role
+      name: kubescape-clusterrole
     rules:
       - apiGroups:
           - kubeeye.kubesphere.io
         resources:
-          - kubebenches
+          - plugins
         verbs:
           - create
           - delete
@@ -550,186 +575,440 @@ data:
       - apiGroups:
           - kubeeye.kubesphere.io
         resources:
-          - kubebenches/finalizers
+          - plugins/finalizers
         verbs:
           - update
       - apiGroups:
           - kubeeye.kubesphere.io
         resources:
-          - kubebenches/status
+          - plugins/status
         verbs:
           - get
           - patch
           - update
     ---
     apiVersion: rbac.authorization.k8s.io/v1
-    kind: ClusterRole
-    metadata:
-      name: kube-bench-metrics-reader
-    ---
-    apiVersion: rbac.authorization.k8s.io/v1
-    kind: ClusterRole
-    metadata:
-      name: kube-bench-proxy-role
-    rules:
-      - apiGroups:
-          - authentication.k8s.io
-        resources:
-          - tokenreviews
-        verbs:
-          - create
-      - apiGroups:
-          - authorization.k8s.io
-        resources:
-          - subjectaccessreviews
-        verbs:
-          - create
-    ---
-    apiVersion: rbac.authorization.k8s.io/v1
     kind: RoleBinding
     metadata:
-      name: kube-bench-leader-election-rolebinding
+      name: kubescape-rolebinding
       namespace: kubeeye-system
     roleRef:
       apiGroup: rbac.authorization.k8s.io
       kind: Role
-      name: kube-bench-leader-election-role
+      name: kubescape-role
     subjects:
       - kind: ServiceAccount
-        name: kube-bench-controller-manager
+        name: kubescape
         namespace: kubeeye-system
     ---
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding
     metadata:
-      name: kube-bench-manager-rolebinding
+      name: kubescape-rolebinding
     roleRef:
       apiGroup: rbac.authorization.k8s.io
       kind: ClusterRole
-      name: kube-bench-manager-role
+      name: kubescape-clusterrole
     subjects:
       - kind: ServiceAccount
-        name: kube-bench-controller-manager
+        name: kubescape
         namespace: kubeeye-system
-    ---
-    apiVersion: rbac.authorization.k8s.io/v1
-    kind: ClusterRoleBinding
-    metadata:
-      name: kube-bench-proxy-rolebinding
-    roleRef:
-      apiGroup: rbac.authorization.k8s.io
-      kind: ClusterRole
-      name: kube-bench-proxy-role
-    subjects:
-      - kind: ServiceAccount
-        name: kube-bench-controller-manager
-        namespace: kubeeye-system
-    ---
-    apiVersion: v1
-    data:
-      controller_manager_config.yaml: |
-        apiVersion: controller-runtime.sigs.k8s.io/v1alpha1
-        kind: ControllerManagerConfig
-        health:
-          healthProbeBindAddress: :8081
-        metrics:
-          bindAddress: 127.0.0.1:8080
-        webhook:
-          port: 9443
-        leaderElection:
-          leaderElect: true
-          resourceName: 3f3b2d76.kubesphere.io
-    kind: ConfigMap
-    metadata:
-      name: kube-bench-manager-config
-      namespace: kubeeye-system
     ---
     apiVersion: v1
     kind: Service
     metadata:
       labels:
-        control-plane: controller-manager
-      name: kube-bench-controller-manager-metrics-service
+        control-plane: kubescape
+      name: kubescape
       namespace: kubeeye-system
     spec:
       ports:
-        - name: https
-          port: 8443
+        - name: api
+          port: 80
           protocol: TCP
-          targetPort: https
+          targetPort: 80
       selector:
-        control-plane: controller-manager
+        control-plane: kubescape
     ---
     apiVersion: apps/v1
     kind: Deployment
     metadata:
       labels:
-        control-plane: controller-manager
-      name: kube-bench-controller-manager
+        control-plane: kubescape
+      name: kubescape
       namespace: kubeeye-system
     spec:
       replicas: 1
       selector:
         matchLabels:
-          control-plane: controller-manager
+          control-plane: kubescape
       template:
         metadata:
-          annotations:
-            kubectl.kubernetes.io/default-container: manager
           labels:
-            control-plane: controller-manager
+            control-plane: kubescape
         spec:
           containers:
-            - args:
-                - --secure-listen-address=0.0.0.0:8443
-                - --upstream=http://127.0.0.1:8080/
-                - --logtostderr=true
-                - --v=0
-              image: kubesphere/kube-rbac-proxy:v0.8.0
-              imagePullPolicy: IfNotPresent
-              name: kube-rbac-proxy
-              ports:
-                - containerPort: 8443
-                  name: https
-                  protocol: TCP
-              resources:
-                limits:
-                  cpu: 200m
-                  memory: 128Mi
-                requests:
-                  cpu: 20m
-                  memory: 64Mi
-            - args:
-                - --health-probe-bind-address=:8081
-                - --metrics-bind-address=127.0.0.1:8080
-                - --leader-elect
-              image: panzhen666888/kube-bench:latest
+            - image: panzhen666888/kubescape:latest
+              name: kubescape
               imagePullPolicy: IfNotPresent
               livenessProbe:
                 httpGet:
                   path: /healthz
-                  port: 8081
+                  port: 80
                 initialDelaySeconds: 15
                 periodSeconds: 20
-              name: manager
               readinessProbe:
                 httpGet:
-                  path: /readyz
-                  port: 8081
+                  path: /healthz
+                  port: 80
                 initialDelaySeconds: 5
                 periodSeconds: 10
               resources:
                 limits:
-                  cpu: 200m
-                  memory: 128Mi
+                  cpu: 100m
+                  memory: 512Mi
                 requests:
-                  cpu: 20m
+                  cpu: 10m
                   memory: 64Mi
               securityContext:
                 allowPrivilegeEscalation: false
           securityContext:
             runAsNonRoot: true
-          serviceAccountName: kube-bench-controller-manager
+          serviceAccountName: kubescape
+          terminationGracePeriodSeconds: 10
+  pluginmanifest-kubehunter: |
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: kubehunter
+      namespace: kubeeye-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: kubehunter-role
+      namespace: kubeeye-system
+    rules:
+      - apiGroups:
+          - ""
+        resources:
+          - configmaps
+        verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+      - apiGroups:
+          - coordination.k8s.io
+        resources:
+          - leases
+        verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+      - apiGroups:
+          - ""
+        resources:
+          - events
+        verbs:
+          - create
+          - patch
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      creationTimestamp: null
+      name: kubehunter-clusterrole
+    rules:
+      - apiGroups:
+          - kubeeye.kubesphere.io
+        resources:
+          - plugins
+        verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+      - apiGroups:
+          - kubeeye.kubesphere.io
+        resources:
+          - plugins/finalizers
+        verbs:
+          - update
+      - apiGroups:
+          - kubeeye.kubesphere.io
+        resources:
+          - plugins/status
+        verbs:
+          - get
+          - patch
+          - update
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: kubehunter-rolebinding
+      namespace: kubeeye-system
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: kubehunter-role
+    subjects:
+      - kind: ServiceAccount
+        name: kubehunter
+        namespace: kubeeye-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: kubehunter-rolebinding
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kubehunter-clusterrole
+    subjects:
+      - kind: ServiceAccount
+        name: kubehunter
+        namespace: kubeeye-system
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        control-plane: kubehunter
+      name: kubehunter
+      namespace: kubeeye-system
+    spec:
+      ports:
+        - name: api
+          port: 80
+          protocol: TCP
+          targetPort: 80
+      selector:
+        control-plane: kubehunter
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        control-plane: kubehunter
+      name: kubehunter
+      namespace: kubeeye-system
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          control-plane: kubehunter
+      template:
+        metadata:
+          labels:
+            control-plane: kubehunter
+        spec:
+          containers:
+            - image: panzhen666888/kubehunter:latest
+              name: kubehunter
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                httpGet:
+                  path: /healthz
+                  port: 80
+                initialDelaySeconds: 15
+                periodSeconds: 20
+              readinessProbe:
+                httpGet:
+                  path: /healthz
+                  port: 80
+                initialDelaySeconds: 5
+                periodSeconds: 10
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 512Mi
+                requests:
+                  cpu: 10m
+                  memory: 64Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+          securityContext:
+            runAsNonRoot: true
+          serviceAccountName: kubehunter
+          terminationGracePeriodSeconds: 10
+  pluginmanifest-kubebench: |
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: kubebench
+      namespace: kubeeye-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: kubebench-role
+      namespace: kubeeye-system
+    rules:
+      - apiGroups:
+          - ""
+        resources:
+          - configmaps
+        verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+      - apiGroups:
+          - coordination.k8s.io
+        resources:
+          - leases
+        verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+      - apiGroups:
+          - ""
+        resources:
+          - events
+        verbs:
+          - create
+          - patch
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      creationTimestamp: null
+      name: kubebench-clusterrole
+    rules:
+      - apiGroups:
+          - kubeeye.kubesphere.io
+        resources:
+          - plugins
+        verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+      - apiGroups:
+          - kubeeye.kubesphere.io
+        resources:
+          - plugins/finalizers
+        verbs:
+          - update
+      - apiGroups:
+          - kubeeye.kubesphere.io
+        resources:
+          - plugins/status
+        verbs:
+          - get
+          - patch
+          - update
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: kubebench-rolebinding
+      namespace: kubeeye-system
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: kubebench-role
+    subjects:
+      - kind: ServiceAccount
+        name: kubebench
+        namespace: kubeeye-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: kubebench-rolebinding
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kubebench-clusterrole
+    subjects:
+      - kind: ServiceAccount
+        name: kubebench
+        namespace: kubeeye-system
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        control-plane: kubebench
+      name: kubebench
+      namespace: kubeeye-system
+    spec:
+      ports:
+        - name: api
+          port: 80
+          protocol: TCP
+          targetPort: 80
+      selector:
+        control-plane: kubebench
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        control-plane: kubebench
+      name: kubebench
+      namespace: kubeeye-system
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          control-plane: kubebench
+      template:
+        metadata:
+          labels:
+            control-plane: kubebench
+        spec:
+          containers:
+            - image: panzhen666888/kube-bench:latest
+              name: kubebench
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                httpGet:
+                  path: /healthz
+                  port: 80
+                initialDelaySeconds: 15
+                periodSeconds: 20
+              readinessProbe:
+                httpGet:
+                  path: /healthz
+                  port: 80
+                initialDelaySeconds: 5
+                periodSeconds: 10
+              resources:
+                limits:
+                  cpu: 50m
+                  memory: 128Mi
+                requests:
+                  cpu: 10m
+                  memory: 64Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+          securityContext:
+            runAsNonRoot: true
+          serviceAccountName: kubebench
           terminationGracePeriodSeconds: 10
 kind: ConfigMap
 metadata:
@@ -833,11 +1112,21 @@ spec:
           image: panzhen666888/pluginmanage:latest
           imagePullPolicy: IfNotPresent
           env:
-            - name: SPECIAL_LEVEL_KEY
+            - name: Plugin_kubebench
               valueFrom:
                 configMapKeyRef:
                   name: kubeeye-manager-config
-                  key: pluginmanifest-kube-bench
+                  key: pluginmanifest-kubebench
+            - name: Plugin_kubehunter
+              valueFrom:
+                configMapKeyRef:
+                  name: kubeeye-manager-config
+                  key: pluginmanifest-kubehunter
+            - name: Plugin_kubescape
+              valueFrom:
+                configMapKeyRef:
+                  name: kubeeye-manager-config
+                  key: pluginmanifest-kubescape
           ports:
             - containerPort: 9087
               name: http

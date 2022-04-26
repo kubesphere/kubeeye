@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -67,7 +68,12 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 		// The object is being deleted, uninstall plugin
 		pluginSub.Status.Install = pkg.PluginUninstalling
 		if err := r.Status().Update(ctx, pluginSub); err != nil {
-			return ctrl.Result{}, err
+			if kubeErr.IsConflict(err) {
+				return ctrl.Result{Requeue: true}, nil
+			} else {
+				logs.Error(err, "unexpected error when update status")
+				return ctrl.Result{}, err
+			}
 		}
 
 		if err := expend.InstallOrUninstallPlugin(ctx, pluginSub.GetNamespace(), pluginSub.GetName(), false); err != nil {
@@ -75,9 +81,14 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 		}
 		pluginSub.Status.Install = pkg.PluginUninstalled
 		if err := r.Status().Update(ctx, pluginSub); err != nil {
-			return ctrl.Result{}, err
+			if kubeErr.IsConflict(err) {
+				return ctrl.Result{Requeue: true}, nil
+			} else {
+				logs.Error(err, "unexpected error when update status")
+				return ctrl.Result{}, err
+			}
 		}
-		logs.Info("plugin uninstalled complete")
+		logs.Info("plugin uninstalled successfully")
 		pluginSub.ObjectMeta.Finalizers = removeString(pluginSub.ObjectMeta.Finalizers, finalizer)
 		if err := r.Update(ctx, pluginSub); err != nil {
 			return ctrl.Result{}, err
@@ -98,7 +109,12 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 		// update status to installing
 		pluginSub.Status.Install = pkg.PluginInstalling
 		if err := r.Status().Update(ctx, pluginSub); err != nil {
-			return ctrl.Result{}, err
+			if kubeErr.IsConflict(err) {
+				return ctrl.Result{Requeue: true}, nil
+			} else {
+				logs.Error(err, "unexpected error when update status")
+				return ctrl.Result{}, err
+			}
 		}
 
 		if err := expend.InstallOrUninstallPlugin(ctx, pluginSub.GetNamespace(), pluginSub.GetName(), true); err != nil {
@@ -107,22 +123,44 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 		}
 
 		// update plugin installed status
-		if expend.IsPluginPodRunning(pluginSub.GetNamespace(), pluginSub.GetName()) {
-			pluginSub.Status.Install = pkg.PluginIntalled
-			pluginSub.Status.Enabled = pluginSub.Spec.Enabled
-			if err := r.Status().Update(ctx, pluginSub); err != nil {
-				return ctrl.Result{}, err
+		go func(pluginSub *kubeeyev1alpha1.PluginSubscription) {
+			if expend.IsPluginPodRunning(pluginSub.GetNamespace(), pluginSub.GetName()) {
+				pluginSub.Status.Install = pkg.PluginIntalled
+				pluginSub.Status.Enabled = pluginSub.Spec.Enabled
+				if err := r.Status().Update(ctx, pluginSub); err != nil {
+					if kubeErr.IsConflict(err) {
+						logs.Error(err, "IsConflict")
+						return
+					} else {
+						logs.Error(err, "unexpected error when update status")
+						return
+					}
+				}
+				logs.Info("plugin installed successfully.")
 			}
-			logs.Info("plugin installed successfully.")
-		}
+		}(pluginSub)
 	}
 
+	if pluginSub.Status.Enabled != pluginSub.Spec.Enabled {
+		pluginSub.Status.Enabled = pluginSub.Spec.Enabled
+		if err := r.Status().Update(ctx, pluginSub); err != nil {
+			if kubeErr.IsConflict(err) {
+				return ctrl.Result{Requeue: true}, nil
+			} else {
+				logs.Error(err, "unexpected error when update status")
+				return ctrl.Result{}, err
+			}
+		}
+	}
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *PluginSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: pkg.MaxConcurrentReconciles,
+		}).
 		For(&kubeeyev1alpha1.PluginSubscription{}).
 		Complete(r)
 }

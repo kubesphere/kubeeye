@@ -2,8 +2,11 @@ package expend
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/kubesphere/kubeeye/pkg/kube"
+	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/plugins/plugin-manage/api/v1alpha1"
+	pluginPkg "github.com/kubesphere/kubeeye/plugins/plugin-manage/pkg"
 	"github.com/lithammer/dedent"
 	"github.com/pkg/errors"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
@@ -11,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -118,4 +122,33 @@ func ParseResources(clientset kubernetes.Interface, resource []byte) (*meta.REST
 		return nil, &unstructuredResource, errors.Wrap(err, "failed to converts an object into unstructured representation")
 	}
 	return mapping, &unstructuredResource, nil
+}
+
+//ListCRDResources, get plugin list
+func ListCRDResources(ctx context.Context, client dynamic.Interface, namespace string) ([]string, error) {
+	var gvr = schema.GroupVersionResource{
+		Group:    pluginPkg.Group,
+		Version:  pluginPkg.Version,
+		Resource: pluginPkg.Resource,
+	}
+	list, err := client.Resource(gvr).Namespace(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	data, err := list.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	var pluginList kubeeyev1alpha1.PluginSubscriptionList
+	if err := json.Unmarshal(data, &pluginList); err != nil {
+		return nil, err
+	}
+	plugins := make([]string, 0)
+	for _, t := range pluginList.Items {
+		if t.Status.Enabled && t.Status.Install == pluginPkg.PluginIntalled {
+			plugins = append(plugins, t.Name)
+		}
+	}
+
+	return plugins, nil
 }

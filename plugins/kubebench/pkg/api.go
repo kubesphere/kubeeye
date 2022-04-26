@@ -10,6 +10,7 @@ import (
 func KubeBenchAPI() {
 	mux := http.NewServeMux()
 	mux.Handle("/plugins", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		log.Printf( "Starting KubeBench audit")
 		result, err := KubeBenchAudit()
 		if err != nil {
 			log.Printf( "KubeBench audit failed: %+v", err)
