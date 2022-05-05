@@ -4,5 +4,22 @@ metadata:
   namespace: kubeeye-system
   name: kubebench
 spec:
-  # TODO(user): Add fields here
+  enabled: true
+
+---
+apiVersion: kubeeye.kubesphere.io/v1alpha1
+kind: PluginSubscription
+metadata:
+  namespace: kubeeye-system
+  name: kubehunter
+spec:
+  enabled: true
+
+---
+apiVersion: kubeeye.kubesphere.io/v1alpha1
+kind: PluginSubscription
+metadata:
+  namespace: kubeeye-system
+  name: kubescape
+spec:
   enabled: true

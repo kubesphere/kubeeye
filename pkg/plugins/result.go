@@ -1,20 +1,59 @@
 package plugins
 
 import (
+    "context"
     "encoding/json"
     "fmt"
     "net/http"
+    "sync"
     "time"
 
-    "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
-    "github.com/pkg/errors"
+    kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
+    "github.com/kubesphere/kubeeye/pkg/kube"
 )
 
-func GetPluginsResult(pluginName string) (result v1alpha1.PluginsResult,err error) {
+func PluginsResults(pluginsList []string)  {
+
+    pluginsResults := []kubeeyev1alpha1.PluginsResult{}
+    pluginsResult := PluginsResult(context.TODO(), pluginsList)
+    for Result := range pluginsResult {
+        pluginsResults = append(pluginsResults, Result)
+    }
+    kube.PluginsResultsChan <- pluginsResults
+}
+
+
+func PluginsResult(ctx context.Context, pluginsList []string) <- chan kubeeyev1alpha1.PluginsResult {
+    pluginsResultChan := make(chan kubeeyev1alpha1.PluginsResult)
+
+    if len(pluginsList) != 0 {
+
+        var wg sync.WaitGroup
+        wg.Add(len(pluginsList))
+
+        for _, pluginName := range pluginsList {
+            go func(pluginName string) {
+                defer wg.Done()
+
+                pluginsResultChan <- GetPluginsResult(pluginName)
+            }(pluginName)
+        }
+
+        go func() {
+            defer close(pluginsResultChan)
+            wg.Wait()
+        }()
+    }
+    return pluginsResultChan
+}
+
+func GetPluginsResult(pluginName string) kubeeyev1alpha1.PluginsResult {
+    result := kubeeyev1alpha1.PluginsResult{}
+    result.Name = pluginName
     // Check if hunter service is ready
-    _, err = http.Get(fmt.Sprintf("http://%s.kubeeye-system.svc/healthz",pluginName))
+    _, err := http.Get(fmt.Sprintf("http://%s.kubeeye-system.svc/healthz",pluginName))
     if err != nil {
-        return result, errors.Wrap(err, fmt.Sprintf("Unable to access %s service", pluginName))
+        return result
     }
 
     tr := &http.Transport{
@@ -25,36 +64,14 @@ func GetPluginsResult(pluginName string) (result v1alpha1.PluginsResult,err erro
     client := &http.Client{Transport: tr}
     resp, err := client.Get(fmt.Sprintf("http://%s.kubeeye-system.svc/plugins",pluginName))
     if err != nil {
-        return result, errors.Wrap(err, fmt.Sprintf("Unable to get result of %s service", pluginName))
+        return result
     }
-
-    result.Name = pluginName
-    //switch {
-    //case pluginName == "kubebench":
-    //    var pluginResult KubeBenchResults
-    //    result.Results ,err =DecodePluginResult(pluginResult, resp)
-    //    if err != nil {
-    //        return result, errors.Wrap(err, fmt.Sprintf("Unable to decode result of %s service", pluginName))
-    //    }
-    //case pluginName == "kubehunter":
-    //    var pluginResult *KubeHunterResults
-    //    result.Results ,err =DecodePluginResult(pluginResult, resp)
-    //    if err != nil {
-    //        return result, errors.Wrap(err, fmt.Sprintf("Unable to decode result of %s service", pluginName))
-    //    }
-    //case pluginName == "kubescape":
-    //    var pluginResult []reporthandling.FrameworkReport
-    //    result.Results ,err =DecodePluginResult(pluginResult, resp)
-    //    if err != nil {
-    //        return result, errors.Wrap(err, fmt.Sprintf("Unable to decode result of %s service", pluginName))
-    //    }
-    //}
 
    result.Results ,err =DecodePluginResult(resp)
    if err != nil {
-       return result, errors.Wrap(err, fmt.Sprintf("Unable to decode result of %s service", pluginName))
+       return result
    }
-    return result, nil
+    return result
 }
 
 func DecodePluginResult( resp *http.Response ) (result string, err error) {

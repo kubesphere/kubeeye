@@ -101,8 +101,6 @@ spec:
                   workloadsCount:
                     type: integer
                 type: object
-              isAuditOver:
-                type: boolean
               pluginsResults:
                 items:
                   properties:

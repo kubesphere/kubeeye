@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/plugins/plugin-manage/api/v1alpha1"
+	pluginsv1alpha1 "github.com/kubesphere/kubeeye/plugins/plugin-manage/api/v1alpha1"
 	pluginPkg "github.com/kubesphere/kubeeye/plugins/plugin-manage/pkg"
 	"github.com/lithammer/dedent"
 	"github.com/pkg/errors"
@@ -19,7 +21,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/restmapper"
-	"strings"
 )
 
 func ResourceCreater(clients *kube.KubernetesClient, ctx context.Context, resource []byte) (err error) {
@@ -139,13 +140,13 @@ func ListCRDResources(ctx context.Context, client dynamic.Interface, namespace s
 	if err != nil {
 		return nil, err
 	}
-	var pluginList kubeeyev1alpha1.PluginSubscriptionList
+	var pluginList pluginsv1alpha1.PluginSubscriptionList
 	if err := json.Unmarshal(data, &pluginList); err != nil {
 		return nil, err
 	}
 	plugins := make([]string, 0)
 	for _, t := range pluginList.Items {
-		if t.Status.Enabled && t.Status.Install == pluginPkg.PluginIntalled {
+		if t.Spec.Enabled {
 			plugins = append(plugins, t.Name)
 		}
 	}

@@ -17,12 +17,14 @@ package kube
 import (
 	"time"
 
+	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var K8sResourcesChan = make(chan K8SResource)
+var PluginsResultsChan = make(chan []kubeeyev1alpha1.PluginsResult)
 var RegoRulesListChan = make(chan RegoRulesList)
 var ResultChan = make(chan ValidateResult)
 

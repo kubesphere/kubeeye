@@ -56,6 +56,17 @@ func GetKubeConfig(kubeconfigPath string) (*rest.Config, error) {
 	return kubeConfig, err
 }
 
+func GetKubeConfigInCluster() (*rest.Config, error) {
+	kubeConfig, err := rest.InClusterConfig()
+	if err != nil {
+		kubeConfig, err = config.GetConfig()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return kubeConfig, nil
+}
+
 // K8SClients return kubeconfig clientset and dynamicClient.
 func (k *KubernetesClient) K8SClients(kubeConfig *rest.Config) (*KubernetesClient, error) {
 	clientSet, err := kubernetes.NewForConfig(kubeConfig)
