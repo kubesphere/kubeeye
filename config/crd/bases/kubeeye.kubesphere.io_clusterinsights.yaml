@@ -72,18 +72,11 @@ spec:
                                 type: array
                               name:
                                 type: string
-                            required:
-                            - items
                             type: object
                           resourceType:
                             type: string
-                        required:
-                        - resourceInfos
-                        - resourceType
                         type: object
                       type: array
-                  required:
-                  - namespace
                   type: object
                 type: array
               clusterInfo:
@@ -101,18 +94,15 @@ spec:
                   workloadsCount:
                     type: integer
                 type: object
-              isAuditOver:
-                type: boolean
               pluginsResults:
                 items:
                   properties:
-                    name:
+                    pluginName:
                       type: string
+                    ready:
+                      type: boolean
                     results:
                       type: string
-                  required:
-                  - name
-                  - results
                   type: object
                 type: array
               scoreInfo:
@@ -129,14 +119,7 @@ spec:
                     type: integer
                   warning:
                     type: integer
-                required:
-                - dangerous
-                - ignore
-                - passing
-                - warning
                 type: object
-            required:
-            - pluginsResults
             type: object
         type: object
     served: true

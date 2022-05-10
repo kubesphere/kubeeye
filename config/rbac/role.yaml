@@ -67,6 +67,58 @@ rules:
   - patch
   - update
 - apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - plugins
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - plugins/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - plugins/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - pluginsubscriptions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - pluginsubscriptions/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - pluginsubscriptions/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - '*'

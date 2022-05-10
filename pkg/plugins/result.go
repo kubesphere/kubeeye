@@ -6,15 +6,27 @@ import (
     "net/http"
     "time"
 
-    "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
-    "github.com/pkg/errors"
+    "github.com/go-logr/logr"
+    kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
+    "github.com/kubesphere/kubeeye/pkg/kube"
 )
 
-func GetPluginsResult(pluginName string) (result v1alpha1.PluginsResult,err error) {
-    // Check if hunter service is ready
-    _, err = http.Get(fmt.Sprintf("http://%s.kubeeye-system.svc/healthz",pluginName))
+func PluginsAudit(logs logr.Logger, pluginName string)  {
+    pluginsResult, err := GetPluginsResult(logs, pluginName)
     if err != nil {
-        return result, errors.Wrap(err, fmt.Sprintf("Unable to access %s service", pluginName))
+        logs.Error(err, fmt.Sprintf("failed to get the result of the plugin %s", pluginName))
+    }
+    kube.PluginResultChan <- pluginsResult
+}
+
+func GetPluginsResult(logs logr.Logger,pluginName string) (kubeeyev1alpha1.PluginsResult, error) {
+    result := kubeeyev1alpha1.PluginsResult{}
+    result.Name = pluginName
+    // Check if service is ready
+    logs.Info(fmt.Sprintf("check the health of the plugin %s", pluginName))
+    _, err := http.Get(fmt.Sprintf("http://%s.kubeeye-system.svc/healthz",pluginName))
+    if err != nil {
+        return result, err
     }
 
     tr := &http.Transport{
@@ -23,37 +35,20 @@ func GetPluginsResult(pluginName string) (result v1alpha1.PluginsResult,err erro
         WriteBufferSize: 10 << 10 ,     //specifies the size of the write buffer to 10KB used when writing to the transport.
     }
     client := &http.Client{Transport: tr}
+    // get the result by plugin service
+    logs.Info(fmt.Sprintf("get the result of the plugin %s", pluginName))
     resp, err := client.Get(fmt.Sprintf("http://%s.kubeeye-system.svc/plugins",pluginName))
     if err != nil {
-        return result, errors.Wrap(err, fmt.Sprintf("Unable to get result of %s service", pluginName))
+        return result, err
     }
 
-    result.Name = pluginName
-    //switch {
-    //case pluginName == "kubebench":
-    //    var pluginResult KubeBenchResults
-    //    result.Results ,err =DecodePluginResult(pluginResult, resp)
-    //    if err != nil {
-    //        return result, errors.Wrap(err, fmt.Sprintf("Unable to decode result of %s service", pluginName))
-    //    }
-    //case pluginName == "kubehunter":
-    //    var pluginResult *KubeHunterResults
-    //    result.Results ,err =DecodePluginResult(pluginResult, resp)
-    //    if err != nil {
-    //        return result, errors.Wrap(err, fmt.Sprintf("Unable to decode result of %s service", pluginName))
-    //    }
-    //case pluginName == "kubescape":
-    //    var pluginResult []reporthandling.FrameworkReport
-    //    result.Results ,err =DecodePluginResult(pluginResult, resp)
-    //    if err != nil {
-    //        return result, errors.Wrap(err, fmt.Sprintf("Unable to decode result of %s service", pluginName))
-    //    }
-    //}
-
-   result.Results ,err =DecodePluginResult(resp)
-   if err != nil {
-       return result, errors.Wrap(err, fmt.Sprintf("Unable to decode result of %s service", pluginName))
-   }
+    // todo We need to save the result as the result's own structure instead of the string
+    logs.Info(fmt.Sprintf("decode the result of the plugin %s", pluginName))
+    result.Results ,err =DecodePluginResult(resp)
+    if err != nil {
+        return result, err
+    }
+    result.Ready = true
     return result, nil
 }
 
@@ -68,4 +63,25 @@ func DecodePluginResult( resp *http.Response ) (result string, err error) {
     }
     result = string(r)
     return result, nil
+}
+
+func MergePluginsResults(pluginsResults []kubeeyev1alpha1.PluginsResult, newResult kubeeyev1alpha1.PluginsResult) []kubeeyev1alpha1.PluginsResult  {
+    var tmpResults []kubeeyev1alpha1.PluginsResult
+    existPluginsMap := make(map[string]bool)
+    for _, result := range pluginsResults {
+        existPluginsMap[result.Name] = true
+    }
+
+    if existPluginsMap[newResult.Name] {
+        for _, result := range pluginsResults {
+            if result.Name == newResult.Name {
+                result = newResult
+            }
+            tmpResults = append(tmpResults, result)
+        }
+    } else {
+        tmpResults = append(pluginsResults, newResult)
+    }
+
+    return tmpResults
 }

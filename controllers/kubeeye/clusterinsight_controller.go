@@ -18,7 +18,8 @@ package kubeeye
 
 import (
 	"context"
-	"fmt"
+	"time"
+
 	"github.com/go-logr/logr"
 	"github.com/kubesphere/kubeeye/pkg/audit"
 	"github.com/kubesphere/kubeeye/pkg/expend"
@@ -30,10 +31,9 @@ import (
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"time"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
 )
@@ -45,15 +45,15 @@ type ClusterInsightReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list
-//+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list
-//+kubebuilder:rbac:groups="",resources=events,verbs=get;list
-//+kubebuilder:rbac:groups=batch,resources=*,verbs=get;list
-//+kubebuilder:rbac:groups=apps,resources=*,verbs=get;list
-//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=*,verbs=get;list
+// +kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list
+// +kubebuilder:rbac:groups="",resources=events,verbs=get;list
+// +kubebuilder:rbac:groups=batch,resources=*,verbs=get;list
+// +kubebuilder:rbac:groups=apps,resources=*,verbs=get;list
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=*,verbs=get;list
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -65,9 +65,9 @@ type ClusterInsightReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
 func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logs := log.FromContext(ctx)
-
 	clusterInsight := &kubeeyev1alpha1.ClusterInsight{}
 
+	// get the clusterInsight to determine whether the CRD is created.
 	if err := r.Get(ctx, req.NamespacedName, clusterInsight); err != nil {
 		if kubeErr.IsNotFound(err) {
 			logs.Info("Cluster resource not found. Ignoring since object must be deleted")
@@ -75,15 +75,15 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 	}
 
+	pluginsResults  := clusterInsight.Status.PluginsResults
+	var pluginsList []string
+	var notreadyplugins []string
+
 	var kubeConfig *rest.Config
 	// get kubernetes cluster config
-	kubeConfig, err := rest.InClusterConfig()
+	kubeConfig, err := kube.GetKubeConfigInCluster()
 	if err != nil {
-		kubeConfig, err = config.GetConfig()
-		if err != nil {
-			logs.Error(err, "failed to get cluster config")
-			return ctrl.Result{}, err
-		}
+		return ctrl.Result{}, err
 	}
 
 	// get kubernetes cluster clients
@@ -94,39 +94,29 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	logs.Info(fmt.Sprintf("clusterInsight status IsAuditOver[%v]", clusterInsight.Status.IsAuditOver))
-	if !clusterInsight.Status.IsAuditOver {
-		logs.Info("Starting cluster audit")
-		pluginsList, err := expend.ListCRDResources(ctx, clients.DynamicClient, clusterInsight.GetNamespace())
-		if err != nil {
-			logs.Error(err, "ListCRDResources failed")
-		}
-		clusterInsight.Status.PluginsResults = []kubeeyev1alpha1.PluginsResult{}
-		if len(pluginsList) != 0 {
-			logs.Info("Starting plugin audit...")
-			go func(clusterInsight *kubeeyev1alpha1.ClusterInsight) {
-				for _, pluginName := range pluginsList {
-					logs.Info(fmt.Sprintf("Starting plugin %s audit", pluginName))
-					result, err := plugins.GetPluginsResult(pluginName)
-					if err != nil {
-						logs.Error(err, "get plugins result failed")
-						return
-					}
-					logs.Info(fmt.Sprintf("plugin %s audit success", pluginName))
-					clusterInsight.Status.PluginsResults = append(clusterInsight.Status.PluginsResults, result)
-				}
+	logs.Info("Starting cluster audit")
 
-				if err := r.Status().Update(ctx, clusterInsight); err != nil {
-					if kubeErr.IsConflict(err) {
-						return
-					} else {
-						logs.Error(err, "update CR failed")
-						return
-					}
-				}
-			}(clusterInsight)
-		}
+	// get plugins list
+	pluginsList, err = expend.ListCRDResources(ctx, clients.DynamicClient, clusterInsight.GetNamespace())
+	if err != nil {
+		logs.Info( "Plugins not found")
+	}
 
+	// get not-ready plugins list
+	notreadyplugins = plugins.NotReadyPluginsList(pluginsResults, pluginsList)
+	// exec plugins by goroutine
+	var pluginName string
+	if len(notreadyplugins) != 0 {
+		logs.Info( "Starting plugin audit")
+
+		pluginName = plugins.RandomPluginName(notreadyplugins)
+		// Get a plugin name for plugin audit
+		go plugins.PluginsAudit(logs, pluginName)
+	}
+
+	{
+		logs.Info("Starting kubeeye audit")
+		// exec cluster audit
 		K8SResources, validationResultsChan := audit.ValidationResults(ctx, clients, "")
 
 		// get cluster info
@@ -135,10 +125,7 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		// fill clusterInsight.Status.ClusterInfo
 		clusterInsight.Status.ClusterInfo = clusterInfo
 
-		// clear clusterInsight.Status.AuditResults
-		clusterInsight.Status.AuditResults = []kubeeyev1alpha1.AuditResults{}
-
-		//format result
+		// format result
 		fmResults := formatResults(validationResultsChan)
 
 		// fill clusterInsight.Status.AuditResults
@@ -149,22 +136,41 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 		// fill
 		clusterInsight.Status.ScoreInfo = scoreInfo
-
-		//set Audit task status
-		clusterInsight.Status.IsAuditOver = true
-		// update clusterInsight CR
-
-		if err := r.Status().Update(ctx, clusterInsight); err != nil {
-			if kubeErr.IsConflict(err) {
-				return ctrl.Result{Requeue: true}, nil
-			} else {
-				logs.Error(err, "unexpected error when update status")
-				return ctrl.Result{}, err
-			}
-		}
-
-		logs.Info("Cluster audit completed")
 	}
+
+	// get plugins results
+	if len(notreadyplugins) != 0 {
+		logs.Info( "get plugins result")
+		select {
+		case res := <-kube.PluginResultChan:
+			pluginsResults = plugins.MergePluginsResults(pluginsResults, res)
+		case <- time.After(30 * time.Second):
+			logs.Info("plugins results not found")
+			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		}
+	}
+
+	// set PluginsResults in clusterInsight
+	if len(pluginsResults) != 0 {
+		clusterInsight.Status.PluginsResults = pluginsResults
+	}
+
+	// update clusterInsight CR
+	if err := r.Status().Update(ctx, clusterInsight); err != nil {
+		if kubeErr.IsConflict(err) {
+			return ctrl.Result{}, err
+		} else {
+			logs.Error(err, "unexpected error when update status")
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+		}
+	}
+
+	if len(notreadyplugins) !=0 {
+		logs.Info("plugins with unready state， retry plugins audit")
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	logs.Info("Cluster audit completed")
 
 	// If auditPeriod is not set, set the default value to 24h
 	if clusterInsight.Spec.AuditPeriod == "" {
