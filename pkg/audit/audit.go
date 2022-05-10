@@ -91,7 +91,7 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 	)
 
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-	logs.Info("return audit results")
+	logs.Info("get audit results")
 
 	return k8sResources, RegoRulesValidateChan
 }

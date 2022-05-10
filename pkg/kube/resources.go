@@ -24,9 +24,7 @@ import (
 )
 
 var K8sResourcesChan = make(chan K8SResource)
-var PluginsResultsChan = make(chan []kubeeyev1alpha1.PluginsResult)
-var RegoRulesListChan = make(chan RegoRulesList)
-var ResultChan = make(chan ValidateResult)
+var PluginResultChan = make(chan kubeeyev1alpha1.PluginsResult)
 
 type K8SResource struct {
 	ServerVersion    string

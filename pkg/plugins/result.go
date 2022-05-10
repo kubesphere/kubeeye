@@ -1,59 +1,32 @@
 package plugins
 
 import (
-    "context"
     "encoding/json"
     "fmt"
     "net/http"
-    "sync"
     "time"
 
+    "github.com/go-logr/logr"
     kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
     "github.com/kubesphere/kubeeye/pkg/kube"
 )
 
-func PluginsResults(pluginsList []string)  {
-
-    pluginsResults := []kubeeyev1alpha1.PluginsResult{}
-    pluginsResult := PluginsResult(context.TODO(), pluginsList)
-    for Result := range pluginsResult {
-        pluginsResults = append(pluginsResults, Result)
+func PluginsAudit(logs logr.Logger, pluginName string)  {
+    pluginsResult, err := GetPluginsResult(logs, pluginName)
+    if err != nil {
+        logs.Error(err, fmt.Sprintf("failed to get the result of the plugin %s", pluginName))
     }
-    kube.PluginsResultsChan <- pluginsResults
+    kube.PluginResultChan <- pluginsResult
 }
 
-
-func PluginsResult(ctx context.Context, pluginsList []string) <- chan kubeeyev1alpha1.PluginsResult {
-    pluginsResultChan := make(chan kubeeyev1alpha1.PluginsResult)
-
-    if len(pluginsList) != 0 {
-
-        var wg sync.WaitGroup
-        wg.Add(len(pluginsList))
-
-        for _, pluginName := range pluginsList {
-            go func(pluginName string) {
-                defer wg.Done()
-
-                pluginsResultChan <- GetPluginsResult(pluginName)
-            }(pluginName)
-        }
-
-        go func() {
-            defer close(pluginsResultChan)
-            wg.Wait()
-        }()
-    }
-    return pluginsResultChan
-}
-
-func GetPluginsResult(pluginName string) kubeeyev1alpha1.PluginsResult {
+func GetPluginsResult(logs logr.Logger,pluginName string) (kubeeyev1alpha1.PluginsResult, error) {
     result := kubeeyev1alpha1.PluginsResult{}
     result.Name = pluginName
-    // Check if hunter service is ready
+    // Check if service is ready
+    logs.Info(fmt.Sprintf("check the health of the plugin %s", pluginName))
     _, err := http.Get(fmt.Sprintf("http://%s.kubeeye-system.svc/healthz",pluginName))
     if err != nil {
-        return result
+        return result, err
     }
 
     tr := &http.Transport{
@@ -62,16 +35,21 @@ func GetPluginsResult(pluginName string) kubeeyev1alpha1.PluginsResult {
         WriteBufferSize: 10 << 10 ,     //specifies the size of the write buffer to 10KB used when writing to the transport.
     }
     client := &http.Client{Transport: tr}
+    // get the result by plugin service
+    logs.Info(fmt.Sprintf("get the result of the plugin %s", pluginName))
     resp, err := client.Get(fmt.Sprintf("http://%s.kubeeye-system.svc/plugins",pluginName))
     if err != nil {
-        return result
+        return result, err
     }
 
-   result.Results ,err =DecodePluginResult(resp)
-   if err != nil {
-       return result
-   }
-    return result
+    // todo We need to save the result as the result's own structure instead of the string
+    logs.Info(fmt.Sprintf("decode the result of the plugin %s", pluginName))
+    result.Results ,err =DecodePluginResult(resp)
+    if err != nil {
+        return result, err
+    }
+    result.Ready = true
+    return result, nil
 }
 
 func DecodePluginResult( resp *http.Response ) (result string, err error) {
@@ -85,4 +63,25 @@ func DecodePluginResult( resp *http.Response ) (result string, err error) {
     }
     result = string(r)
     return result, nil
+}
+
+func MergePluginsResults(pluginsResults []kubeeyev1alpha1.PluginsResult, newResult kubeeyev1alpha1.PluginsResult) []kubeeyev1alpha1.PluginsResult  {
+    var tmpResults []kubeeyev1alpha1.PluginsResult
+    existPluginsMap := make(map[string]bool)
+    for _, result := range pluginsResults {
+        existPluginsMap[result.Name] = true
+    }
+
+    if existPluginsMap[newResult.Name] {
+        for _, result := range pluginsResults {
+            if result.Name == newResult.Name {
+                result = newResult
+            }
+            tmpResults = append(tmpResults, result)
+        }
+    } else {
+        tmpResults = append(pluginsResults, newResult)
+    }
+
+    return tmpResults
 }
