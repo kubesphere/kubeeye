@@ -399,7 +399,7 @@ spec:
         - --metrics-bind-address=127.0.0.1:8080
         - --leader-elect
         command:
-        - /ke-web
+        - /ke-manager
         image: kubesphere/kubeeye:latest
         livenessProbe:
           httpGet:
