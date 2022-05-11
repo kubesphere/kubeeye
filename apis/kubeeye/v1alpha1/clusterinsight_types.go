@@ -43,9 +43,45 @@ type ClusterInsightStatus struct {
 }
 
 type PluginsResult struct {
-	Results string `json:"results,omitempty"`
+	Results Results `json:"results,omitempty"`
 	Name    string `json:"pluginName,omitempty"`
 	Ready   bool    `json:"ready,omitempty"`
+}
+
+// Results one of result
+type Results struct {
+	KubeBenchResults []AuditResults `json:"kubebenchResults,omitempty"`
+	KubeHunterResults []KubeHunterResults `json:"kubehunterResults,omitempty"`
+	KubescapeResults []AuditResults `json:"kubescapeResults,omitempty"`
+	StringResults string `json:"stringResults,omitempty"`
+}
+
+type KubeHunterResults struct {
+	Nodes           []Node           `json:"nodes,omitempty"`
+	Services        []Service        `json:"service,omitempty"`
+	Vulnerabilities []Vulnerabilitie `json:"vulnerabilities,omitempty"`
+}
+
+type Node struct {
+	Type     string `json:"type,omitempty"`
+	Location string `json:"location,omitempty"`
+}
+
+type Service struct {
+	Service  string `json:"service,omitempty"`
+	Location string `json:"location,omitempty"`
+}
+
+type Vulnerabilitie struct {
+	Location      string `json:"location,omitempty"`
+	Vid           string `json:"vid,omitempty"`
+	Category      string `json:"category,omitempty"`
+	Severity      string `json:"severity,omitempty"`
+	Vulnerability string `json:"vulnerability,omitempty"`
+	Description   string `json:"description,omitempty"`
+	Evidence      string `json:"evidence,omitempty"`
+	Avd_reference string `json:"avd_reference,omitempty"`
+	Hunter        string `json:"hunter,omitempty"`
 }
 
 type ScoreInfo struct {
