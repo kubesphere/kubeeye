@@ -6,9 +6,6 @@ import (
 	_ "embed"
 )
 
-//go:embed deploymentfiles/npd-resources.yaml
-var npdResources []byte
-
 func InstallNPD(ctx context.Context, kubeconfig string) error {
 	var installer Expends
 	installer = Installer{
@@ -18,7 +15,7 @@ func InstallNPD(ctx context.Context, kubeconfig string) error {
 	NPDResource := bytes.Split(npdResources, []byte("---"))
 
 	for _, resource := range NPDResource {
-		if err := installer.install(resource); err != nil {
+		if err := installer.Install(resource); err != nil {
 			return err
 		}
 	}
@@ -34,7 +31,7 @@ func UninstallNPD(ctx context.Context, kubeconfig string) error {
 	NPDResource := bytes.Split(npdResources, []byte("---"))
 
 	for _, resource := range NPDResource {
-		if err := installer.uninstall(resource); err != nil {
+		if err := installer.Uninstall(resource); err != nil {
 			return err
 		}
 	}

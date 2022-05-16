@@ -1,14 +1,17 @@
 package plugins
 
 import (
+    "bytes"
     "encoding/json"
     "fmt"
     "net/http"
     "time"
-
+    
     "github.com/go-logr/logr"
     kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
     "github.com/kubesphere/kubeeye/pkg/kube"
+    "k8s.io/apimachinery/pkg/runtime"
+    "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 func PluginsAudit(logs logr.Logger, pluginName string)  {
@@ -30,9 +33,9 @@ func GetPluginsResult(logs logr.Logger,pluginName string) (kubeeyev1alpha1.Plugi
     }
 
     tr := &http.Transport{
-        IdleConnTimeout: 30 * time.Second,  //the maximum amount of time an idle connection will remain idle before closing itself.
-        DisableCompression: true,       //prevents the Transport from requesting compression with an "Accept-Encoding: gzip" request header when the Request contains no existing Accept-Encoding value.
-        WriteBufferSize: 10 << 10 ,     //specifies the size of the write buffer to 10KB used when writing to the transport.
+        IdleConnTimeout: 30 * time.Second,  // the maximum amount of time an idle connection will remain idle before closing itself.
+        DisableCompression: true,       // prevents the Transport from requesting compression with an "Accept-Encoding: gzip" request header when the Request contains no existing Accept-Encoding value.
+        WriteBufferSize: 10 << 10 ,     // specifies the size of the write buffer to 10KB used when writing to the transport.
     }
     client := &http.Client{Transport: tr}
     // get the result by plugin service
@@ -44,7 +47,7 @@ func GetPluginsResult(logs logr.Logger,pluginName string) (kubeeyev1alpha1.Plugi
 
     // todo We need to save the result as the result's own structure instead of the string
     logs.Info(fmt.Sprintf("decode the result of the plugin %s", pluginName))
-    result.Results ,err =DecodePluginResult(resp)
+    result.Result ,err = DecodeResult(resp)
     if err != nil {
         return result, err
     }
@@ -52,17 +55,22 @@ func GetPluginsResult(logs logr.Logger,pluginName string) (kubeeyev1alpha1.Plugi
     return result, nil
 }
 
-func DecodePluginResult( resp *http.Response ) (result string, err error) {
+func DecodeResult(resp *http.Response) (runtime.RawExtension, error) {
+    ext := runtime.RawExtension{}
     var pluginResult interface{}
     if err := json.NewDecoder(resp.Body).Decode(&pluginResult); err != nil {
-        return "", err
+        return ext, err
     }
     r, err := json.Marshal(&pluginResult)
     if err != nil {
-        return "",err
+        return ext, err
     }
-    result = string(r)
-    return result, nil
+
+    d := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(r), 4096)
+    if err := d.Decode(&ext); err != nil {
+        return ext, err
+    }
+    return ext, nil
 }
 
 func MergePluginsResults(pluginsResults []kubeeyev1alpha1.PluginsResult, newResult kubeeyev1alpha1.PluginsResult) []kubeeyev1alpha1.PluginsResult  {

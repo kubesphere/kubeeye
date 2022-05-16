@@ -1,13 +1,14 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: kubescape
+  name: kubehunter
   namespace: kubeeye-system
 ---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: kubescape-role
+  name: kubehunter-role
   namespace: kubeeye-system
 rules:
   - apiGroups:
@@ -42,75 +43,13 @@ rules:
       - create
       - patch
 ---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: kubescape-clusterrole
+  name: kubehunter-clusterrole
 rules:
-  - apiGroups:
-      - ""
-    resources:
-      - configmaps
-    verbs:
-      - get
-      - list
-  - apiGroups:
-      - ""
-    resources:
-      - namespaces
-    verbs:
-      - get
-      - list
-  - apiGroups:
-      - ""
-    resources:
-      - nodes
-    verbs:
-      - get
-      - list
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-    verbs:
-      - get
-      - list
-  - apiGroups:
-      - ""
-    resources:
-      - serviceaccounts
-    verbs:
-      - get
-      - list
-  - apiGroups:
-      - ""
-    resources:
-      - services
-    verbs:
-      - get
-      - list
-  - apiGroups:
-      - admissionregistration.k8s.io
-    resources:
-      - '*'
-    verbs:
-      - get
-      - list
-  - apiGroups:
-      - apps
-    resources:
-      - '*'
-    verbs:
-      - get
-      - list
-  - apiGroups:
-      - batch
-    resources:
-      - '*'
-    verbs:
-      - get
-      - list
   - apiGroups:
       - kubeeye.kubesphere.io
     resources:
@@ -137,61 +76,43 @@ rules:
       - get
       - patch
       - update
-  - apiGroups:
-      - networking.k8s.io
-    resources:
-      - '*'
-    verbs:
-      - get
-      - list
-  - apiGroups:
-      - policy
-    resources:
-      - '*'
-    verbs:
-      - get
-      - list
-  - apiGroups:
-      - rbac.authorization.k8s.io
-    resources:
-      - '*'
-    verbs:
-      - get
-      - list
 ---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: kubescape-rolebinding
+  name: kubehunter-rolebinding
   namespace: kubeeye-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: kubescape-role
+  name: kubehunter-role
 subjects:
   - kind: ServiceAccount
-    name: kubescape
+    name: kubehunter
     namespace: kubeeye-system
 ---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: kubescape-rolebinding
+  name: kubehunter-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: kubescape-clusterrole
+  name: kubehunter-clusterrole
 subjects:
   - kind: ServiceAccount
-    name: kubescape
+    name: kubehunter
     namespace: kubeeye-system
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
   labels:
-    control-plane: kubescape
-  name: kubescape
+    control-plane: kubehunter
+  name: kubehunter
   namespace: kubeeye-system
 spec:
   ports:
@@ -200,28 +121,29 @@ spec:
       protocol: TCP
       targetPort: 80
   selector:
-    control-plane: kubescape
+    control-plane: kubehunter
 ---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    control-plane: kubescape
-  name: kubescape
+    control-plane: kubehunter
+  name: kubehunter
   namespace: kubeeye-system
 spec:
   replicas: 1
   selector:
     matchLabels:
-      control-plane: kubescape
+      control-plane: kubehunter
   template:
     metadata:
       labels:
-        control-plane: kubescape
+        control-plane: kubehunter
     spec:
       containers:
-        - image: kubesphere.io/kubescape:latest
-          name: kubescape
+        - image: kubesphere.io/kubehunter:latest
+          name: kubehunter
           imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:
@@ -246,5 +168,5 @@ spec:
             allowPrivilegeEscalation: false
       securityContext:
         runAsNonRoot: true
-      serviceAccountName: kubescape
+      serviceAccountName: kubehunter
       terminationGracePeriodSeconds: 10

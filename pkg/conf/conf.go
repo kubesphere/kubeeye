@@ -16,4 +16,11 @@ const (
 	Events = "events"
 	Roles = "roles"
 	Clusterroles = "clusterroles"
+	Group    = "kubeeyeplugins.kubesphere.io"
+	Version  = "v1alpha1"
+	Resource = "pluginsubscriptions"
+	KubeeyeNameSpace = "kubeeye-system"
+	PluginIntalled     string = "installed"
+	PluginInstalling   string = "installing"
+	PluginUninstalled  string = "uninstalled"
 )

@@ -13,7 +13,7 @@ spec:
     listKind: ClusterInsightList
     plural: clusterinsights
     singular: clusterinsight
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha1
     schema:
@@ -101,8 +101,9 @@ spec:
                       type: string
                     ready:
                       type: boolean
-                    results:
-                      type: string
+                    result:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
                   type: object
                 type: array
               scoreInfo:

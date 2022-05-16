@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -43,7 +44,8 @@ type ClusterInsightStatus struct {
 }
 
 type PluginsResult struct {
-	Results string `json:"results,omitempty"`
+	// +kubebuilder:pruning:PreserveUnknownFields
+	Result  runtime.RawExtension `json:"result,omitempty"`
 	Name    string `json:"pluginName,omitempty"`
 	Ready   bool    `json:"ready,omitempty"`
 }
@@ -88,6 +90,7 @@ type ResultItems struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:scope=Cluster
 
 // ClusterInsight is the Schema for the clusterinsights API
 type ClusterInsight struct {

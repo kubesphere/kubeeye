@@ -1,0 +1,1 @@
+module "github.com/kubesphere/kubeeye/plugins/kubescape"

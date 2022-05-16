@@ -1,5 +1,0 @@
-## Append samples you want in your CSV to this file as resources ##
-resources:
-- kubeeye_v1alpha1_plugin.yaml
-- kubeeye_v1alpha1_pluginsubscription.yaml
-#+kubebuilder:scaffold:manifestskustomizesamples

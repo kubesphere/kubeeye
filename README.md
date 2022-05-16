@@ -1,17 +1,20 @@
-# KubeEye
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-10-orange.svg?style=flat-square)](#contributors-)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
+<div align=center><img src="docs/images/KubeEye-O.svg?raw=true"></div>
 
-![kubeeye-logo](./docs/images/kubeeye-logo.png?raw=true)
+<p align=center>
+<a href="https://github.com/kubesphere/kubeeye/actions?query=event%3Apush+branch%3Amain+workflow%3ACI+"><img src="https://github.com/kubesphere/kubeeye/workflows/CI/badge.svg?branch=main&event=push"></a>
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+<a href="https://github.com/kubesphere/kubeeye#contributors-"><img src="https://img.shields.io/badge/all_contributors-10-orange.svg?style=flat-square"></a>
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
+</p>
 
 > English | [中文](README_zh.md)
 
-KubeEye aims to find various problems on Kubernetes, such as application misconfiguration(using [OPA](https://github.com/open-policy-agent/opa)), cluster components unhealthy and node problems(using [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)). Besides predefined rules, it also supports custom defined rules.
+KubeEye is an audit tool for Kubernetes to discover Kubernetes resources (by [OPA](https://github.com/open-policy-agent/opa) ), cluster components, cluster nodes (by [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)) and other configurations are meeting with best practices, and giving suggestions for modification.
+
+KubeEye supports custom audit rules and plugins installation. Through [KubeEye Operator](#kubeeye-operator), you can view audit results and modify suggestions by the website.
 
 ## Architecture
-KubeEye gets cluster diagnostic data by calling the Kubernetes API, by regular matching of key error messages in resources and by rule matching of container syntax. See Architecture for details.
-
+KubeEye get cluster resource details by the Kubernetes API, audit the resource configurations by audit rules and plugins, and generate audit results. See Architecture for details.
 ![kubeeye-architecture](./docs/images/kubeeye-architecture.svg?raw=true)
 
 ## How to use
@@ -67,7 +70,7 @@ ClusterRole                    vpnkit-controller                                
 
 ## What KubeEye can do
 
-- KubeEye validates your workloads yaml specs against industry best practice, helps you make your cluster stable.
+- KubeEye audits cluster resources with Kubernetes best practices, to make cluster stable.
 - KubeEye can find problems of your cluster control plane, including kube-apiserver/kube-controller-manager/etcd, etc.
 - KubeEye helps you detect all kinds of node problems, including memory/cpu/disk pressure, unexpected kernel error logs, etc.
 
@@ -163,7 +166,16 @@ kubectl edit ConfigMap node-problem-detector-config -n kube-system
 kubectl rollout restart DaemonSet node-problem-detector -n kube-system
 ```
 
-## deploy in Kubernetes
+## KubeEye Operator
+### What is KubeEye Operator
+KubeEye Operator is an audit platform for Kubernetes, manage KubeEye by operator and generate audit result, provide website.
+
+### What KubeEye Operator can do
+- KubeEye Operator provides manage website.
+- KubeEye Operator recode audit results by CR, can view and compare cluster audit results by website.
+- KubeEye Operator provides more plugins.
+- KubeEye Operator provides modify suggestions by the website.
+
 ### deploy Kubeeye
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye.yaml
@@ -203,6 +215,37 @@ items:
               reason: kubelet has disk pressure
             name: kubeeyeNode
 ```
+
+### install plugins
+- install kubebench
+```shell
+https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubebench.yaml
+```
+- install kubehunter
+```shell
+https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubehunter.yaml
+```
+- install kubescape
+```shell
+https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubescape.yaml
+```
+
+### uninstall plugins
+- uninstall kubebench
+```shell
+https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubebench.yaml
+```
+- uninstall kubehunter
+```shell
+https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubehunter.yaml
+```
+- uninstall kubescape
+```shell
+https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubescape.yaml
+```
+
+After plugin installation complete, KubeEye will automatically collect the results of plugins audit and store them in clusterinsights.
+
 
 ## Contributors ✨
 
