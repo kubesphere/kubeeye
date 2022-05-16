@@ -1,0 +1,6 @@
+apiVersion: kubeeyeplugins.kubesphere.io/v1alpha1
+kind: PluginSubscription
+metadata:
+  name: pluginsubscription-sample
+spec:
+  # TODO(user): Add fields here

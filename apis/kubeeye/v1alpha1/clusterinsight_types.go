@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -43,45 +44,10 @@ type ClusterInsightStatus struct {
 }
 
 type PluginsResult struct {
-	Results Results `json:"results,omitempty"`
+	// +kubebuilder:pruning:PreserveUnknownFields
+	Result  runtime.RawExtension `json:"result,omitempty"`
 	Name    string `json:"pluginName,omitempty"`
 	Ready   bool    `json:"ready,omitempty"`
-}
-
-// Results one of result
-type Results struct {
-	KubeBenchResults []AuditResults `json:"kubebenchResults,omitempty"`
-	KubeHunterResults []KubeHunterResults `json:"kubehunterResults,omitempty"`
-	KubescapeResults []AuditResults `json:"kubescapeResults,omitempty"`
-	StringResults string `json:"stringResults,omitempty"`
-}
-
-type KubeHunterResults struct {
-	Nodes           []Node           `json:"nodes,omitempty"`
-	Services        []Service        `json:"service,omitempty"`
-	Vulnerabilities []Vulnerabilitie `json:"vulnerabilities,omitempty"`
-}
-
-type Node struct {
-	Type     string `json:"type,omitempty"`
-	Location string `json:"location,omitempty"`
-}
-
-type Service struct {
-	Service  string `json:"service,omitempty"`
-	Location string `json:"location,omitempty"`
-}
-
-type Vulnerabilitie struct {
-	Location      string `json:"location,omitempty"`
-	Vid           string `json:"vid,omitempty"`
-	Category      string `json:"category,omitempty"`
-	Severity      string `json:"severity,omitempty"`
-	Vulnerability string `json:"vulnerability,omitempty"`
-	Description   string `json:"description,omitempty"`
-	Evidence      string `json:"evidence,omitempty"`
-	Avd_reference string `json:"avd_reference,omitempty"`
-	Hunter        string `json:"hunter,omitempty"`
 }
 
 type ScoreInfo struct {
@@ -124,6 +90,7 @@ type ResultItems struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:scope=Cluster
 
 // ClusterInsight is the Schema for the clusterinsights API
 type ClusterInsight struct {

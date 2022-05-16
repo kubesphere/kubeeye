@@ -1,0 +1,24 @@
+# permissions for end users to edit pluginsubscriptions.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pluginsubscription-editor-role
+rules:
+- apiGroups:
+  - kubeeyeplugins.kubesphere.io
+  resources:
+  - pluginsubscriptions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeyeplugins.kubesphere.io
+  resources:
+  - pluginsubscriptions/status
+  verbs:
+  - get

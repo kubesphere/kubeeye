@@ -17,8 +17,13 @@ rules:
   resources:
   - namespaces
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -27,12 +32,41 @@ rules:
   - get
   - list
 - apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - apps
   resources:
   - '*'
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - batch
   resources:
@@ -67,33 +101,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - kubeeye.kubesphere.io
-  resources:
-  - plugins
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - kubeeye.kubesphere.io
-  resources:
-  - plugins/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - kubeeye.kubesphere.io
-  resources:
-  - plugins/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - kubeeye.kubesphere.io
+  - kubeeyeplugins.kubesphere.io
   resources:
   - pluginsubscriptions
   verbs:
@@ -105,13 +113,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - kubeeye.kubesphere.io
+  - kubeeyeplugins.kubesphere.io
   resources:
   - pluginsubscriptions/finalizers
   verbs:
   - update
 - apiGroups:
-  - kubeeye.kubesphere.io
+  - kubeeyeplugins.kubesphere.io
   resources:
   - pluginsubscriptions/status
   verbs:
@@ -123,5 +131,10 @@ rules:
   resources:
   - '*'
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
+  - watch

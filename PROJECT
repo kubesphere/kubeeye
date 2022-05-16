@@ -17,4 +17,13 @@ resources:
   kind: ClusterInsight
   path: github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kubesphere.io
+  group: kubeeyeplugins
+  kind: PluginSubscription
+  path: github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1
+  version: v1alpha1
 version: "3"

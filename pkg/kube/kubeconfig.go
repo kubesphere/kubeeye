@@ -85,3 +85,18 @@ func (k *KubernetesClient) K8SClients(kubeConfig *rest.Config) (*KubernetesClien
 
 	return k, nil
 }
+
+
+func GetK8SClients(kubeconfig string) (*KubernetesClient, error) {
+	kubeConfig, err := GetKubeConfig(kubeconfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load config file")
+	}
+	
+	var kc KubernetesClient
+	clients, err := kc.K8SClients(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clients, nil
+}

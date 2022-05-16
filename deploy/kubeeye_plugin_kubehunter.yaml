@@ -1,0 +1,7 @@
+apiVersion: kubeeyeplugins.kubesphere.io/v1alpha1
+kind: PluginSubscription
+metadata:
+  namespace: kubeeye-system
+  name: kubehunter
+spec:
+  enable: true

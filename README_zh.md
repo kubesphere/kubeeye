@@ -1,17 +1,21 @@
-# KubeEye
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-8-orange.svg?style=flat-square)](#contributors-)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
+<div align=center><img src="docs/images/KubeEye-O.svg?raw=true"></div>
 
-![kubeeye-logo](./docs/images/kubeeye-logo.png?raw=true)
+<p align=center>
+<a href="https://github.com/kubesphere/kubeeye/actions?query=event%3Apush+branch%3Amain+workflow%3ACI+"><img src="https://github.com/kubesphere/kubeeye/workflows/CI/badge.svg?branch=main&event=push"></a>
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+<a href="https://github.com/kubesphere/kubeeye#contributors-"><img src="https://img.shields.io/badge/all_contributors-10-orange.svg?style=flat-square"></a>
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
+</p>
 
 > English | [中文](README_zh.md)
 
-KubeEye 旨在发现 Kubernetes 上的各种问题，比如应用配置错误（使用 [OPA](https://github.com/open-policy-agent/opa) ）、集群组件不健康和节点问题（使用[Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)）。除了预定义的规则，它还支持自定义规则。
+KubeEye 是为 Kubernetes 设计的巡检工具，用于发现 Kubernetes 资源（使用 [OPA](https://github.com/open-policy-agent/opa) ）、集群组件、集群节点（使用[Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)）等配置是否符合最佳实践，对于不符合最佳实践的，将给出修改建议。
+
+KubeEye 支持自定义巡检规则、插件安装，通过 [KubeEye Operator](#kubeeye-operator) 能够使用 web 页面查看巡检结果和修改建议。
 
 ## 架构图
 
-KubeEye 通过调用Kubernetes API，通过匹配资源中的关键字和容器语法的规则匹配来获取集群诊断数据，详见架构图。
+KubeEye 通过 Kubernetes API 获取资源详情，通过巡检规则和插件检查获取到的资源配置，并生成诊断结果，详见架构图。
 
 ![kubeeye-architecture](./docs/images/kubeeye-architecture.svg?raw=true)
 
@@ -50,7 +54,7 @@ Deployment    kube-system      coredns                                          
 Deployment    kubeeye-system   kubeeye-controller-manager                                                                                            ImagePullPolicyNotAlways
 Deployment    kubeeye-system   kubeeye-controller-manager                                                                                            NotRunAsNonRoot
 DaemonSet     kube-system      kube-proxy                                                                                                            NoCPULimits
-DaemonSet     k          ube-system      kube-proxy                                                                                                            NotRunAsNonRoot
+DaemonSet     kube-system      kube-proxy                                                                                                            NotRunAsNonRoot
 Event         kube-system      coredns-558bd4d5db-c26j8.16d5fa3ddf56675f                      Unhealthy                                    warning   Readiness probe failed: Get "http://10.1.0.87:8181/ready": dial tcp 10.1.0.87:8181: connect: connection refused
 Event         kube-system      coredns-558bd4d5db-c26j8.16d5fa3fbdc834c9                      Unhealthy                                    warning   Readiness probe failed: HTTP probe failed with statuscode: 503
 Event         kube-system      vpnkit-controller.16d5ac2b2b4fa1eb                             BackOff                                      warning   Back-off restarting failed container
@@ -66,7 +70,7 @@ ClusterRole                    vpnkit-controller                                
 
 ## KubeEye 能做什么
 
-- KubeEye 根据行业最佳实践审查你的工作负载 yaml 规范，帮助你使你的集群稳定。
+- KubeEye 根据 Kubernetes 最佳实践检查集群资源，从而提升集群稳定。
 - KubeEye 可以发现你的集群控制平面的问题，包括 kube-apiserver/kube-controller-manager/etcd 等。
 - KubeEye 可以帮助你检测各种节点问题，包括内存/CPU/磁盘压力，意外的内核错误日志等。
 
@@ -162,13 +166,24 @@ kubectl edit ConfigMap node-problem-detector-config -n kube-system
 kubectl rollout restart DaemonSet node-problem-detector -n kube-system
 ```
 
-## 在 Kubernetes 中部署 Kubeeye
-### 部署 Kubeeye
+## KubeEye Operator
+
+### 什么是 KubeEye Operator
+KubeEye Operator 是为 Kubernetes 设计的巡检平台。通过 Operator 管理 KubeEye，能够在 Kubernetes 集群中定期执行 KubeEye 巡检，并生成巡检报告。
+
+## KubeEye Operator 能做什么
+- KubeEye Operator 提供 web 管理页面
+- KubeEye Operator 通过 CR 记录 KubeEye 巡检结果，能够通过 web 管理页面查看、对比集群巡检变化
+- KubeEye Operator 支持安装更多插件
+- KubeEye Operator 通过 web 管理页面提供更加详细的修改建议
+
+### 部署 KubeEye Operator
+
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye.yaml
 kubectl apply -f https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_insights.yaml
 ```
-### 查看 Kubeeye 巡检结果
+### 查看 KubeEye Operator 巡检结果
 ```shell
 kubectl get clusterinsight -o yaml
 ```
@@ -201,6 +216,36 @@ items:
               message: KubeletHasDiskPressure
               reason: kubelet has disk pressure
             name: kubeeyeNode
+```
+
+### 安装插件
+- 安装 kubebench
+```shell
+https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubebench.yaml
+```
+- 安装 kubehunter
+```shell
+https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubehunter.yaml
+```
+- 安装 kubescape
+```shell
+https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubescape.yaml
+```
+
+安装完成后 kubeeye 将自动收集插件巡检结果并存储在 clusterinsight 中
+
+### 删除插件
+- 删除 kubebench
+```shell
+https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubebench.yaml
+```
+- 删除 kubehunter
+```shell
+https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubehunter.yaml
+```
+- 删除 kubescape
+```shell
+https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubescape.yaml
 ```
 
 ## 文档

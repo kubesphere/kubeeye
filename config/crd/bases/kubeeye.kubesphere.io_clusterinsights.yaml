@@ -13,7 +13,7 @@ spec:
     listKind: ClusterInsightList
     plural: clusterinsights
     singular: clusterinsight
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha1
     schema:
@@ -101,118 +101,9 @@ spec:
                       type: string
                     ready:
                       type: boolean
-                    results:
-                      description: Results one of result
-                      properties:
-                        kubebenchResults:
-                          items:
-                            properties:
-                              namespace:
-                                type: string
-                              resultInfos:
-                                items:
-                                  properties:
-                                    resourceInfos:
-                                      properties:
-                                        items:
-                                          items:
-                                            properties:
-                                              level:
-                                                type: string
-                                              message:
-                                                type: string
-                                              reason:
-                                                type: string
-                                            type: object
-                                          type: array
-                                        name:
-                                          type: string
-                                      type: object
-                                    resourceType:
-                                      type: string
-                                  type: object
-                                type: array
-                            type: object
-                          type: array
-                        kubehunterResults:
-                          items:
-                            properties:
-                              nodes:
-                                items:
-                                  properties:
-                                    location:
-                                      type: string
-                                    type:
-                                      type: string
-                                  type: object
-                                type: array
-                              service:
-                                items:
-                                  properties:
-                                    location:
-                                      type: string
-                                    service:
-                                      type: string
-                                  type: object
-                                type: array
-                              vulnerabilities:
-                                items:
-                                  properties:
-                                    avd_reference:
-                                      type: string
-                                    category:
-                                      type: string
-                                    description:
-                                      type: string
-                                    evidence:
-                                      type: string
-                                    hunter:
-                                      type: string
-                                    location:
-                                      type: string
-                                    severity:
-                                      type: string
-                                    vid:
-                                      type: string
-                                    vulnerability:
-                                      type: string
-                                  type: object
-                                type: array
-                            type: object
-                          type: array
-                        kubescapeResults:
-                          items:
-                            properties:
-                              namespace:
-                                type: string
-                              resultInfos:
-                                items:
-                                  properties:
-                                    resourceInfos:
-                                      properties:
-                                        items:
-                                          items:
-                                            properties:
-                                              level:
-                                                type: string
-                                              message:
-                                                type: string
-                                              reason:
-                                                type: string
-                                            type: object
-                                          type: array
-                                        name:
-                                          type: string
-                                      type: object
-                                    resourceType:
-                                      type: string
-                                  type: object
-                                type: array
-                            type: object
-                          type: array
-                        stringResults:
-                          type: string
+                    result:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                   type: object
                 type: array
               scoreInfo:

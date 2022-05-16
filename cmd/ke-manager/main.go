@@ -16,6 +16,7 @@ package main
 import (
 	"flag"
 	"os"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -28,7 +29,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
+	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
 	kubeeyecontrollers "github.com/kubesphere/kubeeye/controllers/kubeeye"
+	kubeeyepluginscontrollers "github.com/kubesphere/kubeeye/controllers/kubeeyeplugins"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -41,6 +44,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(kubeeyev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(kubeeyepluginsv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -81,6 +85,13 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterInsight")
+		os.Exit(1)
+	}
+	if err = (&kubeeyepluginscontrollers.PluginSubscriptionReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PluginSubscription")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
