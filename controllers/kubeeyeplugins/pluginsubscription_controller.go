@@ -45,11 +45,11 @@ type PluginSubscriptionReconciler struct {
 // +kubebuilder:rbac:groups=kubeeyeplugins.kubesphere.io,resources=pluginsubscriptions/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kubeeyeplugins.kubesphere.io,resources=pluginsubscriptions/finalizers,verbs=update
 // +kubebuilder:rbac:groups=apps,resources=*,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=*,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=*,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=*,verbs=*
+// +kubebuilder:rbac:groups="",resources=namespaces;services;deployments;configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
+
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -97,9 +97,6 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 		}
 		logs.Info(fmt.Sprintf("installing plugin %s", plugin.Name))
 		plugin.Status.State = conf.PluginInstalling
-		if plugin.Name == "npd" || plugin.Name == "NPD" {
-			plugin.Status.State = conf.PluginInstalled
-		}
 	}
 
 	if !plugin.Spec.Enabled && plugin.Status.State == conf.PluginInstalled {

@@ -43,14 +43,14 @@ func pluginAudit() {
 	go func() {
 		result, err := KubeBenchAudit()
 		if err != nil {
-			log.Printf("KubeScape audit failed: %+v", err)
+			log.Printf("KubeBench audit failed: %+v", err)
 		}
 		jsonResults, err := json.Marshal(&result)
 		if err != nil {
-			log.Printf("Marshal KubeScape result failed: %+v", err)
+			log.Printf("Marshal KubeBench result failed: %+v", err)
 		}
 
-		req, err := http.NewRequest("POST", "http://kubeeye-controller-manager-service.kubeeye-system.svc/plugins?name=kubesacpe", bytes.NewReader(jsonResults))
+		req, err := http.NewRequest("POST", "http://kubeeye-controller-manager-service.kubeeye-system.svc/plugins?name=kubebench", bytes.NewReader(jsonResults))
 		if err != nil {
 			log.Printf("Create request failed: %+v", err)
 		}
@@ -66,5 +66,6 @@ func pluginAudit() {
 		if err != nil {
 			log.Printf("Push plugin result to kubeeye failed: %+v", err)
 		}
+		log.Printf("Push plugin result to kubeeye successful")
 	}()
 }

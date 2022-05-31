@@ -65,5 +65,6 @@ func pluginAudit() {
 		if err != nil {
 			log.Printf("Push plugin result to kubeeye failed: %+v", err)
 		}
+		log.Printf("Push plugin result to kubeeye successful")
 	}()
 }

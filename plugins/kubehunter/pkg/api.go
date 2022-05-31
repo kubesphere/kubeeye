@@ -34,22 +34,23 @@ func KubeHunterAPI() {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	log.Println("KubeBench audit API ready")
+	log.Println("KubeHunter audit API ready")
 	log.Fatal(http.ListenAndServe(":80", mux))
 }
 
 func pluginAudit() {
 	go func() {
+
 		result, err := KubeHunterAudit()
 		if err != nil {
-			log.Printf("KubeScape audit failed: %+v", err)
+			log.Printf("KubeHunter audit failed: %+v", err)
 		}
 		jsonResults, err := json.Marshal(&result)
 		if err != nil {
-			log.Printf("Marshal KubeScape result failed: %+v", err)
+			log.Printf("Marshal KubeHunter result failed: %+v", err)
 		}
 
-		req, err := http.NewRequest("POST", "http://kubeeye-controller-manager-service.kubeeye-system.svc/plugins?name=kubesacpe", bytes.NewReader(jsonResults))
+		req, err := http.NewRequest("POST", "http://kubeeye-controller-manager-service.kubeeye-system.svc/plugins?name=kubehunter", bytes.NewReader(jsonResults))
 		if err != nil {
 			log.Printf("Create request failed: %+v", err)
 		}
@@ -65,5 +66,6 @@ func pluginAudit() {
 		if err != nil {
 			log.Printf("Push plugin result to kubeeye failed: %+v", err)
 		}
+		log.Printf("Push plugin result to kubeeye successful")
 	}()
 }

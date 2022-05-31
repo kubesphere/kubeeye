@@ -17,11 +17,14 @@ import (
 func TriggerPluginsAudit(logs logr.Logger, pluginList []string) {
 	for _, pluginName := range pluginList {
 		if CheckPluginsHealth(pluginName) {
+			logs.Info(fmt.Sprintf("trigger plugin %s audit", pluginName))
 			err, resp := TriggerAudit(pluginName)
 			if err != nil {
-				logs.Error(err, "trigger plugin audit failed ")
+				logs.Error(err, fmt.Sprintf("trigger plugin %s audit failed", pluginName))
 			}
 			logs.Info(string(resp))
+		} else {
+			logs.Error(nil, fmt.Sprintf("plugin %s not ready", pluginName))
 		}
 	}
 }

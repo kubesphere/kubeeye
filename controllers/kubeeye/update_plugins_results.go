@@ -45,6 +45,7 @@ func health(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "Method Not Allowed")
+		log.Println("Method Not Allowed")
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -54,12 +55,14 @@ func PluginsResult(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "Method Not Allowed")
+		log.Println("Method Not Allowed")
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Parse form failed : %s \n", err)
+		log.Println("Parse form failed")
 		return
 	}
 
@@ -67,6 +70,7 @@ func PluginsResult(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "get plugin result failed : %s \n", err)
+		log.Println("get plugin result failed")
 		return
 	}
 
@@ -82,6 +86,7 @@ func PluginsResult(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "start update %s result to clusterInsight \n", result.Name)
+	log.Println(fmt.Sprintf("start update %s result to clusterInsight \n", result.Name))
 
 	go UpdatePluginsResults(resp, result)
 }
@@ -91,16 +96,19 @@ func UpdatePluginsResults(resp []byte, result kubeeyev1alpha1.PluginsResult) {
 
 	clientSet, err := kube.GetClientSetInCluster()
 	if err != nil {
-
+		log.Println("update plugins results failed: get client set failed")
+		return
 	}
 
 	clusterInsight, err := GetClusterInsights(ctx, clientSet)
 	if err != nil {
-
+		log.Println(fmt.Sprintf("update plugins results failed: get clusterInsight failed \n %s", err))
+		return
 	}
 
 	if err := UpdateClusterInsights(ctx, clientSet, clusterInsight, resp, result); err != nil {
-
+		log.Println(fmt.Sprintf("update plugins results failed: update clusterInsight failed \n %s", err))
+		return
 	}
 }
 

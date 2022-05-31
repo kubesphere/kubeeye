@@ -42,27 +42,29 @@ func ResourceCreater(installer Installer, resource string) (err error) {
 
 	// create resource
 	if err := CreateResource(ctx, dynamicClient, mapping, unstructuredResource); err != nil {
-		return err
+		if kubeErr.IsAlreadyExists(err) {
+			return nil
+		} else if kubeErr.IsInvalid(err) {
+			return errors.Wrap(err, "Create resource failed, resource is invalid")
+		} else {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func CreateResource(ctx context.Context, dynamicClient dynamic.Interface, mapping *meta.RESTMapping, unstructuredResource *unstructured.Unstructured) error {
-	// get namespace from resource.Object
 	namespace := unstructuredResource.GetNamespace()
-	name := unstructuredResource.GetName()
-	kind := unstructuredResource.GetKind()
-	_, err := dynamicClient.Resource(mapping.Resource).Namespace(namespace).Create(ctx, unstructuredResource, metav1.CreateOptions{})
+	resp, err := dynamicClient.Resource(mapping.Resource).Namespace(namespace).Create(ctx, unstructuredResource, metav1.CreateOptions{})
 	if err != nil {
-		if kubeErr.IsAlreadyExists(err) {
-			return nil
-		} else if kubeErr.IsInvalid(err) {
-			return errors.Wrap(err, "Create resource failed, resource is invalid")
-		}
+		return err
 	}
-
-	fmt.Printf("%s\t%s\t%s\t created\n", kind, namespace, name)
+	if resp == nil {
+		return errors.Wrap(err, fmt.Sprintf("create resource %s %s failed", unstructuredResource.GetKind(), unstructuredResource.GetName()))
+	}
+	fmt.Printf("%s\t%s\t created\n", resp.GetKind(), resp.GetName())
+	
 	return nil
 }
 

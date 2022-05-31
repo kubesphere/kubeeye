@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-
+	
 	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
 	"github.com/kubesphere/kubeeye/pkg/conf"
 )
@@ -37,12 +37,13 @@ func PluginsInstaller(ctx context.Context, pluginName string, pluginResources st
 		CTX: ctx,
 	}
 	pluginsResource := strings.Split(pluginResources, "---")
-
+	
 	for _, resource := range pluginsResource {
 		if err := installer.Install(resource); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 

@@ -18,13 +18,11 @@ package kubeeye
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
 	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
 	"github.com/kubesphere/kubeeye/pkg/audit"
-	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/plugins"
 	"github.com/pkg/errors"
@@ -51,12 +49,11 @@ type ClusterInsightReconciler struct {
 // +kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights/finalizers,verbs=update
-// +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list
-// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list
-// +kubebuilder:rbac:groups="",resources=events,verbs=get;list
+// +kubebuilder:rbac:groups="",resources=nodes;namespaces;events,verbs=get;list
 // +kubebuilder:rbac:groups=batch,resources=*,verbs=get;list
-// +kubebuilder:rbac:groups=apps,resources=*,verbs=get;list
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=*,verbs=get;list
+// +kubebuilder:rbac:groups=apps,resources=*,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=*,verbs=*
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -98,14 +95,13 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	{
 		kubeeyePlugins := &kubeeyepluginsv1alpha1.PluginSubscriptionList{}
-		if err := r.List(ctx, kubeeyePlugins, client.InNamespace(conf.KubeeyeNameSpace)); err != nil {
+		if err := r.List(ctx, kubeeyePlugins); err != nil {
 			logs.Info("Plugins not found")
 		}
 
 		// get the list of plugins with result not-ready
 		resultNotReadyPlugins := plugins.NotReadyPluginsList(clusterInsight.Status.PluginsResults, kubeeyePlugins)
 
-		fmt.Printf("resultNotReadyPlugins is %s", resultNotReadyPlugins)
 		// trigger plugins audit tasks
 		if len(resultNotReadyPlugins) != 0 {
 			plugins.TriggerPluginsAudit(logs, resultNotReadyPlugins)

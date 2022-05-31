@@ -61,7 +61,7 @@ kind: Service
 metadata:
   labels:
     control-plane: controller-manager
-  name: kubeeye-controller-manager-service
+  name: controller-manager-service
   namespace: kubeeye-system
 spec:
   ports:
