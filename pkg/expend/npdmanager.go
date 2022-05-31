@@ -15,7 +15,7 @@ func InstallNPD(ctx context.Context, kubeconfig string) error {
 	NPDResource := bytes.Split(npdResources, []byte("---"))
 
 	for _, resource := range NPDResource {
-		if err := installer.Install(resource); err != nil {
+		if err := installer.Install(string(resource)); err != nil {
 			return err
 		}
 	}
@@ -31,7 +31,7 @@ func UninstallNPD(ctx context.Context, kubeconfig string) error {
 	NPDResource := bytes.Split(npdResources, []byte("---"))
 
 	for _, resource := range NPDResource {
-		if err := installer.Uninstall(resource); err != nil {
+		if err := installer.Uninstall(string(resource)); err != nil {
 			return err
 		}
 	}

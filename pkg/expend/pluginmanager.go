@@ -1,15 +1,14 @@
 package expend
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	"fmt"
 	"net/http"
-	
+	"strings"
+
 	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
 	"github.com/kubesphere/kubeeye/pkg/conf"
-	"github.com/pkg/errors"
 )
 
 //go:embed deploymentfiles/npd-resources.yaml
@@ -25,33 +24,20 @@ var kubehunterResources []byte
 var kubescapeResources []byte
 
 func PluginHealth(plugin *kubeeyepluginsv1alpha1.PluginSubscription) (string, error) {
-	_, err := http.Get(fmt.Sprintf("http://%s.%s.svc/healthz",plugin.Name, conf.KubeeyeNameSpace))
+	_, err := http.Get(fmt.Sprintf("http://%s.%s.svc/healthz", plugin.Name, conf.KubeeyeNameSpace))
 	if err != nil {
 		return "", err
 	}
-	return conf.PluginIntalled, nil
+	return conf.PluginInstalled, nil
 }
 
-func PluginsInstaller(ctx context.Context, pluginName string) (err error) {
+func PluginsInstaller(ctx context.Context, pluginName string, pluginResources string) (err error) {
 	var installer Expends
 	installer = Installer{
-		CTX:        ctx,
+		CTX: ctx,
 	}
-	var pluginsResources []byte
+	pluginsResource := strings.Split(pluginResources, "---")
 
-	if pluginName == "npd" || pluginName == "NPD"{
-		pluginsResources = npdResources
-	} else if pluginName == "kubebench" {
-		pluginsResources = kubebenchResources
-	} else if pluginName == "kubehunter" {
-		pluginsResources = kubehunterResources
-	} else if pluginName == "kubescape" {
-		pluginsResources = kubescapeResources
-	} else {
-		return errors.Wrap(err, "Unknown plugin name")
-	}
-	pluginsResource := bytes.Split(pluginsResources, []byte("---"))
-	
 	for _, resource := range pluginsResource {
 		if err := installer.Install(resource); err != nil {
 			return err
@@ -60,25 +46,13 @@ func PluginsInstaller(ctx context.Context, pluginName string) (err error) {
 	return nil
 }
 
-func PluginsUninstaller(ctx context.Context, pluginName string) (err error) {
+func PluginsUninstaller(ctx context.Context, pluginName string, pluginResources string) (err error) {
 	var installer Expends
-	var pluginsResources []byte
 	installer = Installer{
-		CTX:        ctx,
+		CTX: ctx,
 	}
-	if pluginName == "npd" || pluginName == "NPD"{
-		pluginsResources = npdResources
-	} else if pluginName == "kubebench" {
-		pluginsResources = kubebenchResources
-	} else if pluginName == "kubehunter" {
-		pluginsResources = kubehunterResources
-	} else if pluginName == "kubescape" {
-		pluginsResources = kubescapeResources
-	} else {
-		return errors.Wrap(err, "Unknown plugin name")
-	}
-	pluginsResource := bytes.Split(pluginsResources, []byte("---"))
-	
+	pluginsResource := strings.Split(pluginResources, "---")
+
 	for _, resource := range pluginsResource {
 		if err := installer.Uninstall(resource); err != nil {
 			return err

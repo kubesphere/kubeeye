@@ -166,7 +166,7 @@ spec:
           spec:
             description: PluginSubscriptionSpec defines the desired state of PluginSubscription
             properties:
-              enable:
+              enabled:
                 description: Foo is an example field of PluginSubscription. Edit pluginsubscription_types.go to remove/update
                 type: boolean
             type: object
@@ -239,6 +239,18 @@ metadata:
   creationTimestamp: null
   name: kubeeye-manager-role
 rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -476,6 +488,22 @@ spec:
   selector:
     control-plane: controller-manager
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: controller-manager
+  name: kubeeye-kubeeye-controller-manager-service
+  namespace: kubeeye-system
+spec:
+  ports:
+  - name: plugins
+    port: 80
+    protocol: TCP
+    targetPort: 8888
+  selector:
+    control-plane: controller-manager
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -517,6 +545,7 @@ spec:
       - args:
         - --health-probe-bind-address=:8081
         - --metrics-bind-address=127.0.0.1:8080
+        - --zap-encoder=console
         - --leader-elect
         command:
         - /ke-manager

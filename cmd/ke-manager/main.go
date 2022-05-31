@@ -16,23 +16,26 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
+	zaplogfmt "github.com/sykesm/zap-logfmt"
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
+	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
+	kubeeyecontrollers "github.com/kubesphere/kubeeye/controllers/kubeeye"
+	kubeeyepluginscontrollers "github.com/kubesphere/kubeeye/controllers/kubeeyeplugins"
+	uzap "go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
-	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
-	kubeeyecontrollers "github.com/kubesphere/kubeeye/controllers/kubeeye"
-	kubeeyepluginscontrollers "github.com/kubesphere/kubeeye/controllers/kubeeyeplugins"
-	//+kubebuilder:scaffold:imports
+	// +kubebuilder:scaffold:imports
 )
 
 var (
@@ -45,7 +48,7 @@ func init() {
 
 	utilruntime.Must(kubeeyev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(kubeeyepluginsv1alpha1.AddToScheme(scheme))
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 }
 
 func main() {
@@ -59,13 +62,14 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	opts := zap.Options{
-		Development: true,
-	}
-	opts.BindFlags(flag.CommandLine)
-	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	configLog := uzap.NewProductionEncoderConfig()
+	configLog.EncodeTime = func(ts time.Time, encoder zapcore.PrimitiveArrayEncoder) {
+		encoder.AppendString(ts.UTC().Format(time.RFC3339Nano))
+	}
+	logfmtEncoder := zaplogfmt.NewEncoder(configLog)
+
+	ctrl.SetLogger(zap.New(zap.UseDevMode(true), zap.WriteTo(os.Stdout), zap.Encoder(logfmtEncoder)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -94,7 +98,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "PluginSubscription")
 		os.Exit(1)
 	}
-	//+kubebuilder:scaffold:builder
+	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -104,6 +108,8 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
+
+	go kubeeyecontrollers.PluginsResultsReceiver()
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
