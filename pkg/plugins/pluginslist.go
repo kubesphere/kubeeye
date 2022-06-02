@@ -1,9 +1,6 @@
 package plugins
 
 import (
-	"math/rand"
-	"time"
-
 	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
 	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
 	"github.com/kubesphere/kubeeye/pkg/conf"
@@ -24,12 +21,4 @@ func NotReadyPluginsList(pluginsResults []kubeeyev1alpha1.PluginsResult, plugins
 		}
 	}
 	return notReadyPluginsList
-}
-
-func RandomPluginName(pluginsList []string) (randomPluginName string) {
-	rand.Seed(time.Now().Unix())
-	l := len(pluginsList)
-	randomIndex := rand.Intn(l)
-	randomPluginName = pluginsList[randomIndex]
-	return randomPluginName
 }

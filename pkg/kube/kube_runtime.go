@@ -1,5 +1,0 @@
-package kube
-
-func NewKubeRuntime() {
-
-}

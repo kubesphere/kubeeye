@@ -175,15 +175,6 @@ func (r *ClusterInsightReconciler) PluginSubscriptionToClusterInsight(ctx contex
 			logs.Error(errors.Errorf("expected a PluginSubscription but got a %T", o), "failed to get ClusterInsight for PluginSubscription")
 		}
 
-		// cluster, err := util.GetOwnerCluster(ctx, r.Client, c.ObjectMeta)
-		// switch {
-		// case kubeErr.IsNotFound(err) || cluster == nil:
-		//     return nil
-		// case err != nil:
-		//     logs.Error(err, "failed to get owning cluster")
-		//     return nil
-		// }
-
 		clusterInsight := &kubeeyev1alpha1.ClusterInsightList{}
 		if err := r.List(ctx, clusterInsight, client.InNamespace(c.Namespace)); err != nil {
 			logs.Error(err, "failed to list ClusterInsight")
