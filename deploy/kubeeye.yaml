@@ -166,7 +166,7 @@ spec:
           spec:
             description: PluginSubscriptionSpec defines the desired state of PluginSubscription
             properties:
-              enable:
+              enabled:
                 description: Foo is an example field of PluginSubscription. Edit pluginsubscription_types.go to remove/update
                 type: boolean
             type: object
@@ -242,14 +242,10 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - events
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ""
-  resources:
+  - configmaps
+  - deployments
   - namespaces
+  - services
   verbs:
   - create
   - delete
@@ -261,6 +257,8 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - events
+  - namespaces
   - nodes
   verbs:
   - get
@@ -269,18 +267,6 @@ rules:
   - ""
   resources:
   - serviceaccounts
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - services
   verbs:
   - create
   - delete
@@ -308,6 +294,18 @@ rules:
   verbs:
   - get
   - list
+- apiGroups:
+  - ""
+  resources:
+  - '*'
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
@@ -365,13 +363,7 @@ rules:
   resources:
   - '*'
   verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
+  - '*'
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -476,6 +468,22 @@ spec:
   selector:
     control-plane: controller-manager
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: controller-manager
+  name: kubeeye-controller-manager-service
+  namespace: kubeeye-system
+spec:
+  ports:
+  - name: plugins
+    port: 80
+    protocol: TCP
+    targetPort: 8888
+  selector:
+    control-plane: controller-manager
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -517,6 +525,7 @@ spec:
       - args:
         - --health-probe-bind-address=:8081
         - --metrics-bind-address=127.0.0.1:8080
+        - --zap-encoder=console
         - --leader-elect
         command:
         - /ke-manager

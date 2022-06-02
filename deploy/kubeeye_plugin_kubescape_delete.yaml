@@ -4,4 +4,4 @@ metadata:
   namespace: kubeeye-system
   name: kubescape
 spec:
-  enable: false
+  enabled: false

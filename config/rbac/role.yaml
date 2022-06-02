@@ -8,14 +8,10 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - events
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ""
-  resources:
+  - configmaps
+  - deployments
   - namespaces
+  - services
   verbs:
   - create
   - delete
@@ -27,6 +23,8 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - events
+  - namespaces
   - nodes
   verbs:
   - get
@@ -35,18 +33,6 @@ rules:
   - ""
   resources:
   - serviceaccounts
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - services
   verbs:
   - create
   - delete
@@ -74,6 +60,18 @@ rules:
   verbs:
   - get
   - list
+- apiGroups:
+  - ""
+  resources:
+  - '*'
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
@@ -131,10 +129,4 @@ rules:
   resources:
   - '*'
   verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
+  - '*'

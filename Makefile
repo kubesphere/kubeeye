@@ -103,7 +103,7 @@ build: generate fmt vet ## Build manager binary.
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./cmd/ke/main.go audit
+	go run ./cmd/ke-manager/main.go --zap-encoder=console
 
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
@@ -233,3 +233,5 @@ installke: buildke
 	mv ${BINARY} /usr/local/bin/
 uninstallke:
 	rm -f /usr/local/bin/${BINARY}
+runke:
+	go run cmd/ke/main.go audit

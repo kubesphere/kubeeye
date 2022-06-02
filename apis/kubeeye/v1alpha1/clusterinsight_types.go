@@ -45,9 +45,9 @@ type ClusterInsightStatus struct {
 
 type PluginsResult struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
-	Result  runtime.RawExtension `json:"result,omitempty"`
-	Name    string `json:"pluginName,omitempty"`
-	Ready   bool    `json:"ready,omitempty"`
+	Result runtime.RawExtension `json:"result,omitempty"`
+	Name   string               `json:"pluginName,omitempty"`
+	Ready  bool                 `json:"ready,omitempty"`
 }
 
 type ScoreInfo struct {
@@ -88,6 +88,9 @@ type ResultItems struct {
 	Reason  string `json:"reason,omitempty"`
 }
 
+// +genclient
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster
@@ -101,6 +104,7 @@ type ClusterInsight struct {
 	Status ClusterInsightStatus `json:"status,omitempty"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 
 // ClusterInsightList contains a list of ClusterInsight

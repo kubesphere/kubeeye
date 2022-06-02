@@ -13,17 +13,6 @@ import (
 //go:embed rules
 var defaultRegoRules embed.FS
 
-// GetRegoRules get rego rules , put it into the channel RegoRulesListChan.
-// func GetRegoRules(additionalRegoRulePath string) {
-// 	var regoRulesList kube.RegoRulesList
-// 	if additionalRegoRulePath != "" {
-// 		GetRegoRulesfiles(additionalRegoRulePath, &regoRulesList)
-// 	}
-// 	GetDefaultRegofile("rules", &regoRulesList)
-
-// 	kube.RegoRulesListChan <- regoRulesList
-// }
-
 // GetAdditionalRegoRulesfiles get Additional rego rules , put it into pointer of RegoRulesList
 func GetAdditionalRegoRulesfiles(path string) []string {
 	var regoRules []string
