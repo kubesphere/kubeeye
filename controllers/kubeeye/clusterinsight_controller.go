@@ -46,6 +46,8 @@ type ClusterInsightReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+var AuditComplete = 100
+
 // +kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights/finalizers,verbs=update
@@ -75,7 +77,7 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 	}
 	if !IsTime(clusterInsight.Spec.AuditPeriod) {
-		clusterInsight.Spec.AuditPeriod = "24h"
+		clusterInsight.Spec.AuditPeriod = "0h"
 	}
 
 	var kubeConfig *rest.Config
@@ -93,57 +95,104 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	{
-		kubeeyePlugins := &kubeeyepluginsv1alpha1.PluginSubscriptionList{}
-		if err := r.List(ctx, kubeeyePlugins); err != nil {
-			logs.Info("Plugins not found")
-		}
+	insightName := clusterInsight.ObjectMeta.Name
+	ch := make(chan bool)
+	if clusterInsight.Status.AuditPercent == 0 || clusterInsight.Status.AuditPercent == 100 {
+		{
+			kubeeyePlugins := &kubeeyepluginsv1alpha1.PluginSubscriptionList{}
+			if err := r.List(ctx, kubeeyePlugins); err != nil {
+				logs.Info("Plugins not found")
+			}
 
-		// get the list of plugins with result not-ready
-		resultNotReadyPlugins := plugins.NotReadyPluginsList(clusterInsight.Status.PluginsResults, kubeeyePlugins)
+			// get the list of plugins with result not-ready
+			resultNotReadyPlugins := plugins.NotReadyPluginsList(clusterInsight.Status.PluginsResults, kubeeyePlugins)
 
-		// trigger plugins audit tasks
-		if len(resultNotReadyPlugins) != 0 {
-			plugins.TriggerPluginsAudit(logs, resultNotReadyPlugins)
-		}
-	}
+			// trigger plugins audit tasks
+			if len(resultNotReadyPlugins) != 0 {
+				plugins.TriggerPluginsAudit(logs, resultNotReadyPlugins)
 
-	if clusterInsight.Status.AuditResults == nil {
-		logs.Info("Starting kubeeye audit")
-		// exec cluster audit
-		K8SResources, validationResultsChan := audit.ValidationResults(ctx, clients, "")
-
-		// get cluster info
-		clusterInfo := setClusterInfo(K8SResources)
-
-		// fill clusterInsight.Status.ClusterInfo
-		clusterInsight.Status.ClusterInfo = clusterInfo
-
-		// format result
-		fmResults := formatResults(validationResultsChan)
-
-		// fill clusterInsight.Status.AuditResults
-		clusterInsight.Status.AuditResults = fmResults
-
-		// get score
-		scoreInfo := CalculateScore(fmResults, K8SResources)
-
-		// fill
-		clusterInsight.Status.ScoreInfo = scoreInfo
-	}
-
-	// update clusterInsight CR
-	defer func() {
-		if err := r.Status().Update(ctx, clusterInsight); err != nil {
-			if kubeErr.IsConflict(err) {
-				reterr = err
-			} else {
-				reterr = errors.Wrap(err, "unexpected error when update status")
 			}
 		}
-	}()
 
-	logs.Info("Cluster audit completed")
+		t := time.NewTimer(time.Second * 5)
+
+		defer close(ch)
+
+		go func(t *time.Timer) {
+			defer t.Stop()
+			for {
+				select {
+				case <-t.C:
+					if clusterInsight.Status.AuditPercent == AuditComplete {
+						time.Sleep(500 * time.Millisecond)
+					}
+					percent, ok := audit.AuditPercent.Load(insightName)
+					var auditPercent *audit.PercentOutput
+					if !ok {
+						clusterInsight.Status.AuditPercent = 0
+					} else {
+						auditPercent = percent.(*audit.PercentOutput)
+						clusterInsight.Status.AuditPercent = auditPercent.AuditPercent
+					}
+
+					if err := r.Status().Update(ctx, clusterInsight); err != nil {
+						if kubeErr.IsConflict(err) {
+							return
+						} else {
+							logs.Error(err, "update CR failed")
+							return
+						}
+					}
+					t.Reset(time.Second * 5)
+				case <-ch:
+					return
+				}
+			}
+		}(t)
+
+		//if clusterInsight.Status.AuditResults == nil {
+		if clusterInsight.Status.AuditPercent == 0 {
+			logs.Info("Starting kubeeye audit")
+			// exec cluster audit
+			K8SResources, validationResultsChan := audit.ValidationResults(ctx, clients, "", insightName)
+
+			// get cluster info
+			clusterInfo := setClusterInfo(K8SResources)
+
+			// fill clusterInsight.Status.ClusterInfo
+			clusterInsight.Status.ClusterInfo = clusterInfo
+
+			// format result
+			fmResults := formatResults(validationResultsChan)
+
+			// fill clusterInsight.Status.AuditResults
+			clusterInsight.Status.AuditResults = fmResults
+
+			// get score
+			scoreInfo := CalculateScore(fmResults, K8SResources)
+
+			// fill
+			clusterInsight.Status.ScoreInfo = scoreInfo
+
+			clusterInsight.Status.AuditPercent = AuditComplete
+			ch <- true
+			audit.AuditPercent.Delete(insightName)
+
+			// update clusterInsight CR
+			defer func() {
+				if err := r.Status().Update(ctx, clusterInsight); err != nil {
+					if kubeErr.IsConflict(err) {
+						reterr = err
+					} else {
+						reterr = errors.Wrap(err, "unexpected error when update status")
+					}
+				}
+			}()
+
+			logs.Info("Cluster audit completed")
+
+		}
+	}
 
 	reconcilePeriod, err := time.ParseDuration(clusterInsight.Spec.AuditPeriod)
 	if err != nil {

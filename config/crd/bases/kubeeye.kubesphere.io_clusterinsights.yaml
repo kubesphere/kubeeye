@@ -49,6 +49,8 @@ spec:
                   this file'
                 format: date-time
                 type: string
+              auditPercent:
+                type: integer
               auditResults:
                 items:
                   properties:
