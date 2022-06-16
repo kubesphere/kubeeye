@@ -152,7 +152,7 @@ data:
             control-plane: kubehunter
         spec:
           containers:
-            - image: kubesphere.io/kubehunter:latest
+            - image: kubespheredev/kubehunter:latest
               name: kubehunter
               imagePullPolicy: IfNotPresent
               livenessProbe:

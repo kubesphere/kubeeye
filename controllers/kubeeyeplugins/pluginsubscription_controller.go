@@ -21,18 +21,18 @@ import (
 	"fmt"
 	"time"
 
+	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
 	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/expend"
+	"github.com/kubesphere/kubeeye/pkg/plugins"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
 )
 
 // PluginSubscriptionReconciler reconciles a PluginSubscription object
@@ -50,7 +50,6 @@ type PluginSubscriptionReconciler struct {
 // +kubebuilder:rbac:groups="",resources=namespaces;services;deployments;configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 
-
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
@@ -61,29 +60,28 @@ type PluginSubscriptionReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
 func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logs := log.FromContext(ctx).WithValues("pluginSubscription", req.NamespacedName)
 
 	plugin := &kubeeyepluginsv1alpha1.PluginSubscription{}
 	if err := r.Get(ctx, req.NamespacedName, plugin); err != nil {
 		if kubeErr.IsNotFound(err) {
-			logs.Info(fmt.Sprintf("plugin %s not found. Ignoring since object must be deleted", plugin.Name))
+			klog.Infof("plugin %s not found. Ignoring since object must be deleted", plugin.Name)
 			return ctrl.Result{}, nil
 		}
 	}
 
 	if plugin.Spec.Enabled && plugin.Status.State == conf.PluginInstalling {
-		logs.Info(fmt.Sprintf("check plugin %s health", plugin.Name))
+		klog.Infof("check plugin %s health", plugin.Name)
 		state, err := expend.PluginHealth(plugin)
 		if err != nil || state == "" {
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, errors.Wrap(nil, fmt.Sprintf("plugin %s not ready", plugin.Name))
 		}
-		logs.Info(fmt.Sprintf("plugin %s installation complete", plugin.Name))
+		klog.Infof("plugin %s installation complete", plugin.Name)
 		plugin.Status.State = conf.PluginInstalled
 
 	}
 
 	if plugin.Spec.Enabled && (plugin.Status.State == "" || plugin.Status.State == conf.PluginUninstalled) {
-		logs.Info(fmt.Sprintf("starting install plugin %s", plugin.Name))
+		klog.Infof("starting install plugin %s", plugin.Name)
 		// get plugin configmap
 		pluginConfigMap := &corev1.ConfigMap{}
 		pluginNamespacedName := types.NamespacedName{Namespace: conf.KubeeyeNameSpace, Name: plugin.Name}
@@ -95,12 +93,12 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 		if err := expend.PluginsInstaller(ctx, plugin.Name, pluginResources); err != nil {
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, errors.Wrap(err, fmt.Sprintf("failed to install plugin %s", plugin.Name))
 		}
-		logs.Info(fmt.Sprintf("installing plugin %s", plugin.Name))
+		klog.Infof("installing plugin %s", plugin.Name)
 		plugin.Status.State = conf.PluginInstalling
 	}
 
 	if !plugin.Spec.Enabled && plugin.Status.State == conf.PluginInstalled {
-		logs.Info(fmt.Sprintf("starting uninstall plugin %s", plugin.Name))
+		klog.Infof("starting uninstall plugin %s", plugin.Name)
 		pluginConfigMap := &corev1.ConfigMap{}
 		pluginNamespacedName := types.NamespacedName{Namespace: conf.KubeeyeNameSpace, Name: plugin.Name}
 		if err := r.Get(ctx, pluginNamespacedName, pluginConfigMap); err != nil {
@@ -110,15 +108,22 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 		if err := expend.PluginsUninstaller(ctx, plugin.Name, pluginResources); err != nil {
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, errors.Wrap(err, fmt.Sprintf("failed to uninstall plugin %s", plugin.Name))
 		}
-		logs.Info(fmt.Sprintf("plugin %s uninstall complete", plugin.Name))
+		klog.Infof("plugin %s uninstall complete", plugin.Name)
 		plugin.Status.State = conf.PluginUninstalled
+	}
+
+	// If the plugin is Enabled to be installed and the plugin is installed, trigger the plugin audit.
+	if plugin.Spec.Enabled && plugin.Status.State == conf.PluginInstalled {
+		var pluginlist []string
+		pluginlist = append(pluginlist, plugin.Name)
+		plugins.TriggerPluginsAudit(pluginlist)
 	}
 
 	if err := r.Status().Update(ctx, plugin); err != nil {
 		if kubeErr.IsConflict(err) {
 			return ctrl.Result{}, err
 		} else {
-			logs.Error(err, "unexpected error when update status")
+			klog.Error("unexpected error when update status", err)
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, err
 		}
 	}

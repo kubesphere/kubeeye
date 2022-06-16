@@ -4,4 +4,4 @@ metadata:
   namespace: kubeeye-system
   name: clusterinsight-sample
 spec:
-  auditPeriod: 24h
+  auditPeriod: "*/5 * * * *"

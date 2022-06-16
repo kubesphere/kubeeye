@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-var K8sResourcesChan = make(chan K8SResource)
+var K8sResourcesChan = make(chan K8SResource, 6)
 var PluginResultChan = make(chan kubeeyev1alpha1.PluginsResult)
 
 type K8SResource struct {

@@ -18,13 +18,18 @@ import (
 	"os"
 	"time"
 
+	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
+	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
+	kubeeyeclientset "github.com/kubesphere/kubeeye/client/clientset/versioned"
+	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/kubeeye"
 	zaplogfmt "github.com/sykesm/zap-logfmt"
+	"k8s.io/klog/v2"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
-	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
 	kubeeyecontrollers "github.com/kubesphere/kubeeye/controllers/kubeeye"
 	kubeeyepluginscontrollers "github.com/kubesphere/kubeeye/controllers/kubeeyeplugins"
 	uzap "go.uber.org/zap"
@@ -52,7 +57,7 @@ func init() {
 }
 
 func main() {
-	// TODO: the exit signal needs to be handled correctly here
+	ctx := ctrl.SetupSignalHandler()
 
 	var metricsAddr string
 	var enableLeaderElection bool
@@ -98,6 +103,28 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "PluginSubscription")
 		os.Exit(1)
 	}
+
+	// get kubeconfig
+	kubeConfig, err := kube.GetKubeConfigInCluster()
+	if err != nil {
+		klog.Fatalf("Get kubernetes client failed: %v", err)
+	}
+	// get kubernetes cluster clients
+	var kc kube.KubernetesClient
+	clients, err := kc.K8SClients(kubeConfig)
+	if err != nil {
+		klog.Fatalf("Get kubernetes clients failed: %v", err)
+	}
+	kubeeyeclient, err := kubeeyeclientset.NewForConfig(kubeConfig)
+	if err != nil {
+		klog.Fatalf("Get kubeeye client failed: %v", err)
+	}
+	informerFactory := kubeeye.NewInformerFactories(
+		clients.ClientSet,
+		kubeeyeclient,
+	)
+	kubeeyecontrollers.AddKubeeyeController(mgr, clients, kubeeyeclient, informerFactory)
+	informerFactory.Start(ctx.Done())
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -112,7 +139,7 @@ func main() {
 	go kubeeyecontrollers.PluginsResultsReceiver()
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}

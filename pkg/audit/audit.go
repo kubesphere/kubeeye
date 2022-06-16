@@ -22,7 +22,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/regorules"
 	"github.com/pkg/errors"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -73,16 +73,13 @@ func Cluster(ctx context.Context, kubeConfigPath string, additionalregoruleputh 
 	return nil
 }
 
-//将名字传进去
 func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, additionalregoruleputh string, clusterInsigntName string) (kube.K8SResource, <-chan []v1alpha1.AuditResults) {
-	logs := log.FromContext(ctx)
-
 	// get kubernetes resources and put into the channel.
-	logs.Info("starting get kubernetes resources")
+	klog.Info("starting get kubernetes resources")
 	go func(ctx context.Context, kubernetesClient *kube.KubernetesClient) {
 		err := kube.GetK8SResourcesProvider(ctx, kubernetesClient)
 		if err != nil {
-			logs.Error(err, "failed to get kubernetes resources")
+			klog.Error("failed to get kubernetes resources", err)
 		}
 	}(ctx, kubernetesClient)
 
@@ -127,10 +124,10 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 	auditPercent.TotalAuditCount++
 	auditPercent.CurrentAuditCount = auditPercent.TotalAuditCount
 
-	logs.Info("getting and merging the Rego rules")
+	klog.Info("getting and merging the Rego rules")
 	regoRulesChan := regorules.MergeRegoRules(ctx, regorules.GetDefaultRegofile("rules"), regorules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
 
-	logs.Info("starting audit kubernetes resources")
+	klog.Info("starting audit kubernetes resources")
 	RegoRulesValidateChan := MergeRegoRulesValidate(ctx, regoRulesChan,
 		RegoRulesValidate(workloads, k8sResources, auditPercent),
 		RegoRulesValidate(rbac, k8sResources, auditPercent),
@@ -140,7 +137,6 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 	)
 
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-	logs.Info("get audit results")
-
+	klog.Info("get audit results")
 	return k8sResources, RegoRulesValidateChan
 }

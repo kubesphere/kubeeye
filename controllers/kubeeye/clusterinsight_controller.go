@@ -21,22 +21,22 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
 	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
 	"github.com/kubesphere/kubeeye/pkg/audit"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/plugins"
 	"github.com/pkg/errors"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
 )
 
 // ClusterInsightReconciler reconciles a ClusterInsight object
@@ -56,6 +56,7 @@ var AuditComplete = 100
 // +kubebuilder:rbac:groups=apps,resources=*,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=*,verbs=*
+// +kubebuilder:rbac:groups=events.k8s.io,resources=events,verbs=*
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -66,18 +67,24 @@ var AuditComplete = 100
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
 func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	logs := log.FromContext(ctx).WithValues("clusterInsight", req.NamespacedName)
 	clusterInsight := &kubeeyev1alpha1.ClusterInsight{}
 
 	// get the clusterInsight to determine whether the CRD is created.
 	if err := r.Get(ctx, req.NamespacedName, clusterInsight); err != nil {
 		if kubeErr.IsNotFound(err) {
-			logs.Info("Cluster resource not found. Ignoring since object must be deleted")
+			klog.Info("Cluster resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
 		}
 	}
-	if !IsTime(clusterInsight.Spec.AuditPeriod) {
-		clusterInsight.Spec.AuditPeriod = "0h"
+	if clusterInsight.Spec.AuditPeriod == "" {
+		clusterInsight.Spec.AuditPeriod = "0 0 * * *"
+		klog.Info("Update AuditPeriod of clusterInsight")
+		if err := r.Update(ctx, clusterInsight); err != nil {
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+		} else {
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+		}
+
 	}
 
 	var kubeConfig *rest.Config
@@ -91,29 +98,13 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	var kc kube.KubernetesClient
 	clients, err := kc.K8SClients(kubeConfig)
 	if err != nil {
-		logs.Error(err, "Failed to load cluster clients")
+		klog.Error(err, "Failed to load cluster clients")
 		return ctrl.Result{}, err
 	}
 
 	insightName := clusterInsight.ObjectMeta.Name
 	ch := make(chan bool)
-	if clusterInsight.Status.AuditPercent == 0 || clusterInsight.Status.AuditPercent == 100 {
-		{
-			kubeeyePlugins := &kubeeyepluginsv1alpha1.PluginSubscriptionList{}
-			if err := r.List(ctx, kubeeyePlugins); err != nil {
-				logs.Info("Plugins not found")
-			}
-
-			// get the list of plugins with result not-ready
-			resultNotReadyPlugins := plugins.NotReadyPluginsList(clusterInsight.Status.PluginsResults, kubeeyePlugins)
-
-			// trigger plugins audit tasks
-			if len(resultNotReadyPlugins) != 0 {
-				plugins.TriggerPluginsAudit(logs, resultNotReadyPlugins)
-
-			}
-		}
-
+	if clusterInsight.Status.AuditPercent == 0 {
 		t := time.NewTimer(time.Second * 5)
 
 		defer close(ch)
@@ -134,12 +125,14 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 						auditPercent = percent.(*audit.PercentOutput)
 						clusterInsight.Status.AuditPercent = auditPercent.AuditPercent
 					}
-
+					tm := metav1.Time{}
+					tm.Time = time.Now()
+					clusterInsight.Status.LastScheduleTime = &tm
 					if err := r.Status().Update(ctx, clusterInsight); err != nil {
 						if kubeErr.IsConflict(err) {
 							return
 						} else {
-							logs.Error(err, "update CR failed")
+							klog.Error("update CR failed", err)
 							return
 						}
 					}
@@ -150,9 +143,8 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			}
 		}(t)
 
-		//if clusterInsight.Status.AuditResults == nil {
 		if clusterInsight.Status.AuditPercent == 0 {
-			logs.Info("Starting kubeeye audit")
+			klog.Info("Starting kubeeye audit")
 			// exec cluster audit
 			K8SResources, validationResultsChan := audit.ValidationResults(ctx, clients, "", insightName)
 
@@ -174,6 +166,10 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			// fill
 			clusterInsight.Status.ScoreInfo = scoreInfo
 
+			t := metav1.Time{}
+			t.Time = time.Now()
+			clusterInsight.Status.LastScheduleTime = &t
+
 			clusterInsight.Status.AuditPercent = AuditComplete
 			ch <- true
 			audit.AuditPercent.Delete(insightName)
@@ -189,18 +185,28 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				}
 			}()
 
-			logs.Info("Cluster audit completed")
+			klog.Info("Cluster audit completed")
 
 		}
 	}
 
-	reconcilePeriod, err := time.ParseDuration(clusterInsight.Spec.AuditPeriod)
-	if err != nil {
-		logs.Error(err, "AuditPeriod setting is invalid")
-		return ctrl.Result{}, err
+	if clusterInsight.Status.AuditPercent == 100 {
+		kubeeyePlugins := &kubeeyepluginsv1alpha1.PluginSubscriptionList{}
+		if err := r.List(ctx, kubeeyePlugins); err != nil {
+			klog.Info("Plugins not found")
+		}
+
+		// get the list of plugins with result not-ready
+		resultNotReadyPlugins := plugins.NotReadyPluginsList(clusterInsight.Status.PluginsResults, kubeeyePlugins)
+
+		// trigger plugins audit tasks
+		if len(resultNotReadyPlugins) != 0 {
+			plugins.TriggerPluginsAudit(resultNotReadyPlugins)
+
+		}
 	}
 
-	return ctrl.Result{RequeueAfter: reconcilePeriod}, nil
+	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -235,16 +241,4 @@ func (r *ClusterInsightReconciler) PluginSubscriptionToClusterInsight(ctx contex
 		}
 		return result
 	}
-}
-
-func IsTime(period string) bool {
-	if '0' <= period[0] && period[0] <= '9' {
-		switch string(period[len(period)-1]) {
-		case "ns", "us", "ms", "s", "m", "h":
-			return true
-		default:
-			return false
-		}
-	}
-	return false
 }
