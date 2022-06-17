@@ -5,35 +5,28 @@ import (
 )
 
 type Expends interface {
-	install(resource Resources) error
-	uninstall(resource Resources) error
+	Install(resource string) error
+	Uninstall(resource string) error
 }
 
 type Installer struct {
-	CTX        context.Context
+	CTX context.Context
+	// Kubeconfig can be deleted later
 	Kubeconfig string
 }
 
-type Resources []byte
-
-func (installer Installer) install(resource Resources) error {
-	ctx := installer.CTX
-	kubeconfig := installer.Kubeconfig
-
-	// create npd resources
-	err := CreateResource(kubeconfig, ctx, resource)
-	if err != nil {
+func (installer Installer) Install(resource string) error {
+	// create  resources
+	err := ResourceCreater(installer, resource)
+	if err == nil {
 		return err
 	}
 	return nil
 }
 
-func (installer Installer) uninstall(resource Resources) error {
-	ctx := installer.CTX
-	kubeconfig := installer.Kubeconfig
-
-	// delete npd resources
-	err := RemoveResource(kubeconfig, ctx, resource)
+func (installer Installer) Uninstall(resource string) error {
+	// delete  resources
+	err := ResourceRemover(installer, resource)
 	if err != nil {
 		return err
 	}

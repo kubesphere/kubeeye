@@ -35,5 +35,9 @@ Session.vim
 .netrwhist
 
 # Generate by makefile
-bin
+vendor
 kubeEyeAuditResult.csv
+!go.mod
+!.gitignore
+!cover.out
+!go.sum

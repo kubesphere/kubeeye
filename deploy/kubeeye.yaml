@@ -19,7 +19,7 @@ spec:
     listKind: ClusterInsightList
     plural: clusterinsights
     singular: clusterinsight
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha1
     schema:
@@ -45,10 +45,8 @@ spec:
           status:
             description: ClusterInsightStatus defines the observed state of ClusterInsight
             properties:
-              afterTime:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file'
-                format: date-time
-                type: string
+              auditPercent:
+                type: integer
               auditResults:
                 items:
                   properties:
@@ -72,18 +70,11 @@ spec:
                                 type: array
                               name:
                                 type: string
-                            required:
-                            - items
                             type: object
                           resourceType:
                             type: string
-                        required:
-                        - resourceInfos
-                        - resourceType
                         type: object
                       type: array
-                  required:
-                  - namespace
                   type: object
                 type: array
               clusterInfo:
@@ -101,6 +92,22 @@ spec:
                   workloadsCount:
                     type: integer
                 type: object
+              lastScheduleTime:
+                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file'
+                format: date-time
+                type: string
+              pluginsResults:
+                items:
+                  properties:
+                    pluginName:
+                      type: string
+                    ready:
+                      type: boolean
+                    result:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                  type: object
+                type: array
               scoreInfo:
                 properties:
                   dangerous:
@@ -115,12 +122,62 @@ spec:
                     type: integer
                   warning:
                     type: integer
-                required:
-                - dangerous
-                - ignore
-                - passing
-                - warning
                 type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.8.0
+  creationTimestamp: null
+  name: pluginsubscriptions.kubeeyeplugins.kubesphere.io
+spec:
+  group: kubeeyeplugins.kubesphere.io
+  names:
+    kind: PluginSubscription
+    listKind: PluginSubscriptionList
+    plural: pluginsubscriptions
+    singular: pluginsubscription
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: PluginSubscription is the Schema for the pluginsubscriptions API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: PluginSubscriptionSpec defines the desired state of PluginSubscription
+            properties:
+              enabled:
+                description: Foo is an example field of PluginSubscription. Edit pluginsubscription_types.go to remove/update
+                type: boolean
+            type: object
+          status:
+            description: PluginSubscriptionStatus defines the observed state of PluginSubscription
+            properties:
+              state:
+                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file'
+                type: string
             type: object
         type: object
     served: true
@@ -187,31 +244,51 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - events
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ""
-  resources:
+  - configmaps
+  - deployments
   - namespaces
+  - services
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - ""
   resources:
+  - events
+  - namespaces
   - nodes
   verbs:
   - get
   - list
 - apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - apps
   resources:
   - '*'
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - batch
   resources:
@@ -219,6 +296,24 @@ rules:
   verbs:
   - get
   - list
+- apiGroups:
+  - ""
+  resources:
+  - '*'
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - events.k8s.io
+  resources:
+  - events
+  verbs:
+  - '*'
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
@@ -246,12 +341,63 @@ rules:
   - patch
   - update
 - apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubeeyecronjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubeeyecronjobs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubeeyecronjobs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kubeeyeplugins.kubesphere.io
+  resources:
+  - pluginsubscriptions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeyeplugins.kubesphere.io
+  resources:
+  - pluginsubscriptions/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubeeyeplugins.kubesphere.io
+  resources:
+  - pluginsubscriptions/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - '*'
   verbs:
-  - get
-  - list
+  - '*'
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -356,6 +502,22 @@ spec:
   selector:
     control-plane: controller-manager
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: controller-manager
+  name: kubeeye-controller-manager-service
+  namespace: kubeeye-system
+spec:
+  ports:
+  - name: plugins
+    port: 80
+    protocol: TCP
+    targetPort: 8888
+  selector:
+    control-plane: controller-manager
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -397,6 +559,7 @@ spec:
       - args:
         - --health-probe-bind-address=:8081
         - --metrics-bind-address=127.0.0.1:8080
+        - --zap-encoder=console
         - --leader-elect
         command:
         - /ke-manager
@@ -416,11 +579,11 @@ spec:
           periodSeconds: 10
         resources:
           limits:
-            cpu: 500m
-            memory: 128Mi
+            cpu: 1500m
+            memory: 2048Mi
           requests:
-            cpu: 10m
-            memory: 64Mi
+            cpu: 200m
+            memory: 256Mi
         securityContext:
           allowPrivilegeEscalation: false
       securityContext:

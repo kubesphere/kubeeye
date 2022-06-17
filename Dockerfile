@@ -4,9 +4,11 @@ FROM golang:1.17 as builder
 WORKDIR /workspace
 
 COPY apis/ apis/
+COPY client/ client/
 COPY cmd/ cmd/
 COPY controllers/ controllers/
 COPY pkg/ pkg/
+COPY plugins/ plugins/
 COPY vendor/ vendor/
 
 # Copy the Go Modules manifests
@@ -18,7 +20,7 @@ ENV CGO_ENABLED=0
 # Build
 RUN go install -v ./cmd/...
 
-FROM alpine:3.15
+FROM alpine:3.15 as ke-manager
 WORKDIR /
 COPY --from=builder /go/bin/ke .
 COPY --from=builder /go/bin/ke-manager .

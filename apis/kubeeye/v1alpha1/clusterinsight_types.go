@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -35,19 +36,28 @@ type ClusterInsightSpec struct {
 type ClusterInsightStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	AfterTime    metav1.Time `json:"afterTime,omitempty"`
-	ClusterInfo `json:"clusterInfo,omitempty"`
-	ScoreInfo   `json:"scoreInfo,omitempty"`
-	AuditResults []AuditResults `json:"auditResults,omitempty"`
+	LastScheduleTime *metav1.Time `json:"lastScheduleTime,omitempty"`
+	ClusterInfo      `json:"clusterInfo,omitempty"`
+	ScoreInfo        `json:"scoreInfo,omitempty"`
+	AuditResults     []AuditResults  `json:"auditResults,omitempty"`
+	PluginsResults   []PluginsResult `json:"pluginsResults,omitempty"`
+	AuditPercent     int             `json:"auditPercent,omitempty"`
+}
+
+type PluginsResult struct {
+	// +kubebuilder:pruning:PreserveUnknownFields
+	Result runtime.RawExtension `json:"result,omitempty"`
+	Name   string               `json:"pluginName,omitempty"`
+	Ready  bool                 `json:"ready,omitempty"`
 }
 
 type ScoreInfo struct {
-	Score       int `json:"score,omitempty"`
-	Total       int `json:"total,omitempty"`
-	Dangerous   int `json:"dangerous"`
-	Warning     int `json:"warning"`
-	Ignore      int `json:"ignore"`
-	Passing     int `json:"passing"`
+	Score     int `json:"score,omitempty"`
+	Total     int `json:"total,omitempty"`
+	Dangerous int `json:"dangerous,omitempty"`
+	Warning   int `json:"warning,omitempty"`
+	Ignore    int `json:"ignore,omitempty"`
+	Passing   int `json:"passing,omitempty"`
 }
 
 type ClusterInfo struct {
@@ -59,18 +69,18 @@ type ClusterInfo struct {
 }
 
 type AuditResults struct {
-	NameSpace    string            `json:"namespace"`
-	ResultInfos  []ResultInfos 	   `json:"resultInfos,omitempty"`
+	NameSpace   string        `json:"namespace,omitempty"`
+	ResultInfos []ResultInfos `json:"resultInfos,omitempty"`
 }
 
 type ResultInfos struct {
-	ResourceType     string       `json:"resourceType"`
-	ResourceInfos    `json:"resourceInfos"`
+	ResourceType  string `json:"resourceType,omitempty"`
+	ResourceInfos `json:"resourceInfos,omitempty"`
 }
 
 type ResourceInfos struct {
 	Name        string        `json:"name,omitempty"`
-	ResultItems []ResultItems `json:"items"`
+	ResultItems []ResultItems `json:"items,omitempty"`
 }
 
 type ResultItems struct {
@@ -79,8 +89,12 @@ type ResultItems struct {
 	Reason  string `json:"reason,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+// +genclient
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:resource:scope=Cluster
 
 // ClusterInsight is the Schema for the clusterinsights API
 type ClusterInsight struct {
@@ -91,7 +105,8 @@ type ClusterInsight struct {
 	Status ClusterInsightStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
 
 // ClusterInsightList contains a list of ClusterInsight
 type ClusterInsightList struct {

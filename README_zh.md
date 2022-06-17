@@ -23,17 +23,17 @@ KubeEye 通过 Kubernetes API 获取资源详情，通过巡检规则和插件�
 
 - 机器上安装 KubeEye
   - 从 [Releases](https://github.com/kubesphere/kubeeye/releases) 中下载预构建的可执行文件。
-    
+
   - 或者你也可以从源代码构建
   > 提示：构建完成后将会在 /usr/local/bin/ 目录下生成 kubeeye 文件。
-  
+
   ```
   git clone https://github.com/kubesphere/kubeeye.git
   cd kubeeye 
   make installke
   ```
 - [可选] 安装 [Node-problem-Detector](https://github.com/kubernetes/node-problem-detector)
-注意：这将在你的集群上安装 npd，只有当你想要详细的节点报告时才需要。  
+  注意：这将在你的集群上安装 npd，只有当你想要详细的节点报告时才需要。
 ```shell
 kubeeye install npd
 ```

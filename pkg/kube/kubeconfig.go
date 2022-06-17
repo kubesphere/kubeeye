@@ -15,6 +15,7 @@
 package kube
 
 import (
+	kubeeyeclientset "github.com/kubesphere/kubeeye/client/clientset/versioned"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -56,6 +57,17 @@ func GetKubeConfig(kubeconfigPath string) (*rest.Config, error) {
 	return kubeConfig, err
 }
 
+func GetKubeConfigInCluster() (*rest.Config, error) {
+	kubeConfig, err := rest.InClusterConfig()
+	if err != nil {
+		kubeConfig, err = config.GetConfig()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return kubeConfig, nil
+}
+
 // K8SClients return kubeconfig clientset and dynamicClient.
 func (k *KubernetesClient) K8SClients(kubeConfig *rest.Config) (*KubernetesClient, error) {
 	clientSet, err := kubernetes.NewForConfig(kubeConfig)
@@ -73,4 +85,28 @@ func (k *KubernetesClient) K8SClients(kubeConfig *rest.Config) (*KubernetesClien
 	k.KubeConfig = kubeConfig
 
 	return k, nil
+}
+
+func GetK8SClients(kubeconfig string) (*KubernetesClient, error) {
+	kubeConfig, err := GetKubeConfig(kubeconfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load config file")
+	}
+
+	var kc KubernetesClient
+	clients, err := kc.K8SClients(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clients, nil
+}
+
+func GetClientSetInCluster() (*kubeeyeclientset.Clientset, error) {
+	kubeConfig, err := GetKubeConfigInCluster()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get kubeconfig")
+	}
+
+	clientset := kubeeyeclientset.NewForConfigOrDie(kubeConfig)
+	return clientset, nil
 }

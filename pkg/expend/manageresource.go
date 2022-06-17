@@ -2,9 +2,12 @@ package expend
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
+	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
+	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/lithammer/dedent"
 	"github.com/pkg/errors"
@@ -13,19 +16,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/restmapper"
 )
 
-func CreateResource(path string, ctx context.Context, resource []byte) (err error) {
-	kubeConfig, err := kube.GetKubeConfig(path)
-	if err != nil {
-		return errors.Wrap(err, "failed to load config file")
-	}
-
-	var kc kube.KubernetesClient
-	clients, err := kc.K8SClients(kubeConfig)
+func ResourceCreater(installer Installer, resource string) (err error) {
+	ctx := installer.CTX
+	kc := installer.Kubeconfig
+	clients, err := kube.GetK8SClients(kc)
 	if err != nil {
 		return err
 	}
@@ -39,34 +40,41 @@ func CreateResource(path string, ctx context.Context, resource []byte) (err erro
 		return err
 	}
 
-	// get namespace from resource.Object
-	namespace := unstructuredResource.GetNamespace()
-	// create unstructured resource by dynamic client
-	result, err := dynamicClient.Resource(mapping.Resource).Namespace(namespace).Create(ctx, &unstructuredResource, metav1.CreateOptions{})
-	if err != nil {
+	// create resource
+	if err := CreateResource(ctx, dynamicClient, mapping, unstructuredResource); err != nil {
 		if kubeErr.IsAlreadyExists(err) {
-			return errors.Wrap(err, "Create resource failed, resource is already exists")
+			return nil
+		} else if kubeErr.IsInvalid(err) {
+			return errors.Wrap(err, "Create resource failed, resource is invalid")
+		} else {
+			return err
 		}
-	} else if kubeErr.IsInvalid(err) {
-		return errors.Wrap(err, "Create resource failed, resource is invalid")
 	}
-	fmt.Printf("%s \t %s \t %s \t created\n", result.GetNamespace(), result.GetKind(), result.GetName())
 
 	return nil
 }
 
-func RemoveResource(path string, ctx context.Context, resource []byte) (err error) {
-	kubeConfig, err := kube.GetKubeConfig(path)
-	if err != nil {
-		return errors.Wrap(err, "failed to load config file")
-	}
-
-	var kc kube.KubernetesClient
-	clients, err := kc.K8SClients(kubeConfig)
+func CreateResource(ctx context.Context, dynamicClient dynamic.Interface, mapping *meta.RESTMapping, unstructuredResource *unstructured.Unstructured) error {
+	namespace := unstructuredResource.GetNamespace()
+	resp, err := dynamicClient.Resource(mapping.Resource).Namespace(namespace).Create(ctx, unstructuredResource, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
+	if resp == nil {
+		return errors.Wrap(err, fmt.Sprintf("create resource %s %s failed", unstructuredResource.GetKind(), unstructuredResource.GetName()))
+	}
+	fmt.Printf("%s\t%s\t created\n", resp.GetKind(), resp.GetName())
+	
+	return nil
+}
 
+func ResourceRemover(installer Installer, resource string) (err error) {
+	ctx := installer.CTX
+	kc := installer.Kubeconfig
+	clients, err := kube.GetK8SClients(kc)
+	if err != nil {
+		return err
+	}
 	clientset := clients.ClientSet
 	dynamicClient := clients.DynamicClient
 
@@ -75,22 +83,35 @@ func RemoveResource(path string, ctx context.Context, resource []byte) (err erro
 		return err
 	}
 
+	if err := RemoveResource(ctx, dynamicClient, mapping, unstructuredResource); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func RemoveResource(ctx context.Context, dynamicClient dynamic.Interface, mapping *meta.RESTMapping, unstructuredResource *unstructured.Unstructured) error {
 	name := unstructuredResource.GetName()
 	namespace := unstructuredResource.GetNamespace()
+	kind := unstructuredResource.GetKind()
 
 	// delete resource by dynamic client
-	err = dynamicClient.Resource(mapping.Resource).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
-	if err != nil {
-		return errors.Wrap(err, "failed to remove resource")
+	if err := dynamicClient.Resource(mapping.Resource).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
+		if kubeErr.IsNotFound(err) {
+			return nil
+		} else {
+			return errors.Wrap(err, "failed to remove resource")
+		}
 	}
-	fmt.Printf("%s \t %s \t %s \t deleted\n", namespace, unstructuredResource.GetKind(), name)
+
+	fmt.Printf("%s\t%s\t%s\t deleted\n", kind, namespace, name)
 	return nil
 }
 
 // ParseResources by parsing the resource, put the result into unstructuredResource and return it.
-func ParseResources(clientset kubernetes.Interface, resource []byte) (mapping *meta.RESTMapping, unstructuredResource unstructured.Unstructured, err error) {
-
-	r := dedent.Dedent(string(resource))
+func ParseResources(clientset kubernetes.Interface, resource string) (*meta.RESTMapping, *unstructured.Unstructured, error) {
+	var unstructuredResource unstructured.Unstructured
+	r := dedent.Dedent(resource)
 	// decode resource for convert the resource to unstructur.
 	newreader := strings.NewReader(r)
 	decode := yaml.NewYAMLOrJSONDecoder(newreader, 4096)
@@ -100,24 +121,53 @@ func ParseResources(clientset kubernetes.Interface, resource []byte) (mapping *m
 	restMapper := restmapper.NewDiscoveryRESTMapper(restMapperRes)
 	ext := runtime.RawExtension{}
 	if err := decode.Decode(&ext); err != nil {
-		return nil, unstructuredResource, errors.Wrap(err, "decode error")
+		return nil, &unstructuredResource, errors.Wrap(err, "decode error")
 	}
 	// get resource.Object
 	obj, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, nil)
 	if err != nil {
-		return nil, unstructuredResource, errors.Wrap(err, "failed to get resource object")
+		return nil, &unstructuredResource, errors.Wrap(err, "failed to get resource object")
 	}
 	// identifies a preferred resource mapping
-	mapping, err = restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	mapping, err := restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 	if err != nil {
-		return nil, unstructuredResource, errors.Wrap(err, "failed to get resource mapping")
+		return nil, &unstructuredResource, errors.Wrap(err, "failed to get resource mapping")
 	}
 
 	// convert the resource.Object into unstructured
-
 	unstructuredResource.Object, err = runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
+
 	if err != nil {
-		return nil, unstructuredResource, errors.Wrap(err, "failed to converts an object into unstructured representation")
+		return nil, &unstructuredResource, errors.Wrap(err, "failed to converts an object into unstructured representation")
 	}
-	return mapping, unstructuredResource, nil
+	return mapping, &unstructuredResource, nil
+}
+
+// ListCRDResources, get plugin list
+func ListCRDResources(ctx context.Context, client dynamic.Interface, namespace string) ([]string, error) {
+	var gvr = schema.GroupVersionResource{
+		Group:    conf.Group,
+		Version:  conf.Version,
+		Resource: conf.Resource,
+	}
+	list, err := client.Resource(gvr).Namespace(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	data, err := list.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	var pluginList kubeeyepluginsv1alpha1.PluginSubscriptionList
+	if err := json.Unmarshal(data, &pluginList); err != nil {
+		return nil, err
+	}
+	plugins := make([]string, 0)
+	for _, t := range pluginList.Items {
+		if t.Spec.Enabled && t.Status.State == "installed" {
+			plugins = append(plugins, t.Name)
+		}
+	}
+
+	return plugins, nil
 }

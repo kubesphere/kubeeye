@@ -20,17 +20,17 @@ KubeEye get cluster resource details by the Kubernetes API, audit the resource c
 
 ## How to use
 -  Install KubeEye on your machine
-    - Download pre built executables from [Releases](https://github.com/kubesphere/kubeeye/releases).
-    
-    - Or you can build from source code
-    > Note: make install will create kubeeye in /usr/local/bin/ on your machine.
+   - Download pre built executables from [Releases](https://github.com/kubesphere/kubeeye/releases).
+
+   - Or you can build from source code
+   > Note: make install will create kubeeye in /usr/local/bin/ on your machine.
 
    ```shell
    git clone https://github.com/kubesphere/kubeeye.git
    cd kubeeye
    make installke
    ```
-   
+
 - [Optional] Install [Node-problem-Detector](https://github.com/kubernetes/node-problem-detector)
 > Note: This will install npd on your cluster, only required if you want detailed report.
 

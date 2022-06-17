@@ -30,7 +30,7 @@ spec:
       - command:
         - /ke-manager
         args:
-        - --leader-elect
+          - --leader-elect
         image: controller:latest
         name: manager
         securityContext:
@@ -50,10 +50,26 @@ spec:
         # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
         resources:
           limits:
-            cpu: 500m
-            memory: 128Mi
+            cpu: 1500m
+            memory: 2048Mi
           requests:
-            cpu: 10m
-            memory: 64Mi
+            cpu: 200m
+            memory: 256Mi
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: controller-manager
+  name: controller-manager-service
+  namespace: kubeeye-system
+spec:
+  ports:
+    - name: plugins
+      port: 80
+      protocol: TCP
+      targetPort: 8888
+  selector:
+    control-plane: controller-manager

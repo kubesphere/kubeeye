@@ -8,31 +8,51 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - events
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ""
-  resources:
+  - configmaps
+  - deployments
   - namespaces
+  - services
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - ""
   resources:
+  - events
+  - namespaces
   - nodes
   verbs:
   - get
   - list
 - apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - apps
   resources:
   - '*'
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - batch
   resources:
@@ -40,6 +60,24 @@ rules:
   verbs:
   - get
   - list
+- apiGroups:
+  - ""
+  resources:
+  - '*'
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - events.k8s.io
+  resources:
+  - events
+  verbs:
+  - '*'
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
@@ -67,9 +105,60 @@ rules:
   - patch
   - update
 - apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubeeyecronjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubeeyecronjobs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubeeyecronjobs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kubeeyeplugins.kubesphere.io
+  resources:
+  - pluginsubscriptions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeyeplugins.kubesphere.io
+  resources:
+  - pluginsubscriptions/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubeeyeplugins.kubesphere.io
+  resources:
+  - pluginsubscriptions/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - '*'
   verbs:
-  - get
-  - list
+  - '*'

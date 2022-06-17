@@ -13,7 +13,7 @@ spec:
     listKind: ClusterInsightList
     plural: clusterinsights
     singular: clusterinsight
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha1
     schema:
@@ -43,12 +43,8 @@ spec:
           status:
             description: ClusterInsightStatus defines the observed state of ClusterInsight
             properties:
-              afterTime:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
-                format: date-time
-                type: string
+              auditPercent:
+                type: integer
               auditResults:
                 items:
                   properties:
@@ -72,18 +68,11 @@ spec:
                                 type: array
                               name:
                                 type: string
-                            required:
-                            - items
                             type: object
                           resourceType:
                             type: string
-                        required:
-                        - resourceInfos
-                        - resourceType
                         type: object
                       type: array
-                  required:
-                  - namespace
                   type: object
                 type: array
               clusterInfo:
@@ -101,6 +90,24 @@ spec:
                   workloadsCount:
                     type: integer
                 type: object
+              lastScheduleTime:
+                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                  of cluster Important: Run "make" to regenerate code after modifying
+                  this file'
+                format: date-time
+                type: string
+              pluginsResults:
+                items:
+                  properties:
+                    pluginName:
+                      type: string
+                    ready:
+                      type: boolean
+                    result:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                  type: object
+                type: array
               scoreInfo:
                 properties:
                   dangerous:
@@ -115,11 +122,6 @@ spec:
                     type: integer
                   warning:
                     type: integer
-                required:
-                - dangerous
-                - ignore
-                - passing
-                - warning
                 type: object
             type: object
         type: object
