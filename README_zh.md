@@ -23,17 +23,17 @@ KubeEye 通过 Kubernetes API 获取资源详情，通过巡检规则和插件�
 
 - 机器上安装 KubeEye
   - 从 [Releases](https://github.com/kubesphere/kubeeye/releases) 中下载预构建的可执行文件。
-    
+
   - 或者你也可以从源代码构建
   > 提示：构建完成后将会在 /usr/local/bin/ 目录下生成 kubeeye 文件。
-  
+
   ```
   git clone https://github.com/kubesphere/kubeeye.git
   cd kubeeye 
   make installke
   ```
 - [可选] 安装 [Node-problem-Detector](https://github.com/kubernetes/node-problem-detector)
-注意：这将在你的集群上安装 npd，只有当你想要详细的节点报告时才需要。  
+  注意：这将在你的集群上安装 npd，只有当你想要详细的节点报告时才需要。
 ```shell
 kubeeye install npd
 ```
@@ -178,7 +178,6 @@ KubeEye Operator 是为 Kubernetes 设计的巡检平台。通过 Operator 管�
 - KubeEye Operator 通过 web 管理页面提供更加详细的修改建议
 
 ### 部署 KubeEye Operator
-
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye.yaml
 kubectl apply -f https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_insights.yaml
@@ -216,36 +215,6 @@ items:
               message: KubeletHasDiskPressure
               reason: kubelet has disk pressure
             name: kubeeyeNode
-```
-
-### 安装插件
-- 安装 kubebench
-```shell
-https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubebench.yaml
-```
-- 安装 kubehunter
-```shell
-https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubehunter.yaml
-```
-- 安装 kubescape
-```shell
-https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubescape.yaml
-```
-
-安装完成后 kubeeye 将自动收集插件巡检结果并存储在 clusterinsight 中
-
-### 删除插件
-- 删除 kubebench
-```shell
-https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubebench.yaml
-```
-- 删除 kubehunter
-```shell
-https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubehunter.yaml
-```
-- 删除 kubescape
-```shell
-https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubescape.yaml
 ```
 
 ## 文档
