@@ -74,6 +74,8 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		if kubeErr.IsNotFound(err) {
 			klog.Info("Cluster resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
+		} else {
+			return ctrl.Result{}, err
 		}
 	}
 	if clusterInsight.Spec.AuditPeriod == "" {
@@ -84,7 +86,6 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		} else {
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 		}
-
 	}
 
 	var kubeConfig *rest.Config
@@ -102,95 +103,7 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	insightName := clusterInsight.ObjectMeta.Name
-	ch := make(chan bool)
-	if clusterInsight.Status.AuditPercent == 0 {
-		t := time.NewTimer(time.Second * 5)
-
-		defer close(ch)
-
-		go func(t *time.Timer) {
-			defer t.Stop()
-			for {
-				select {
-				case <-t.C:
-					if clusterInsight.Status.AuditPercent == AuditComplete {
-						time.Sleep(500 * time.Millisecond)
-					}
-					percent, ok := audit.AuditPercent.Load(insightName)
-					var auditPercent *audit.PercentOutput
-					if !ok {
-						clusterInsight.Status.AuditPercent = 0
-					} else {
-						auditPercent = percent.(*audit.PercentOutput)
-						clusterInsight.Status.AuditPercent = auditPercent.AuditPercent
-					}
-					tm := metav1.Time{}
-					tm.Time = time.Now()
-					clusterInsight.Status.LastScheduleTime = &tm
-					if err := r.Status().Update(ctx, clusterInsight); err != nil {
-						if kubeErr.IsConflict(err) {
-							return
-						} else {
-							klog.Error("update CR failed", err)
-							return
-						}
-					}
-					t.Reset(time.Second * 5)
-				case <-ch:
-					return
-				}
-			}
-		}(t)
-
-		if clusterInsight.Status.AuditPercent == 0 {
-			klog.Info("Starting kubeeye audit")
-			// exec cluster audit
-			K8SResources, validationResultsChan := audit.ValidationResults(ctx, clients, "", insightName)
-
-			// get cluster info
-			clusterInfo := setClusterInfo(K8SResources)
-
-			// fill clusterInsight.Status.ClusterInfo
-			clusterInsight.Status.ClusterInfo = clusterInfo
-
-			// format result
-			fmResults := formatResults(validationResultsChan)
-
-			// fill clusterInsight.Status.AuditResults
-			clusterInsight.Status.AuditResults = fmResults
-
-			// get score
-			scoreInfo := CalculateScore(fmResults, K8SResources)
-
-			// fill
-			clusterInsight.Status.ScoreInfo = scoreInfo
-
-			t := metav1.Time{}
-			t.Time = time.Now()
-			clusterInsight.Status.LastScheduleTime = &t
-
-			clusterInsight.Status.AuditPercent = AuditComplete
-			ch <- true
-			audit.AuditPercent.Delete(insightName)
-
-			// update clusterInsight CR
-			defer func() {
-				if err := r.Status().Update(ctx, clusterInsight); err != nil {
-					if kubeErr.IsConflict(err) {
-						reterr = err
-					} else {
-						reterr = errors.Wrap(err, "unexpected error when update status")
-					}
-				}
-			}()
-
-			klog.Info("Cluster audit completed")
-
-		}
-	}
-
-	if clusterInsight.Status.AuditPercent == 100 {
+	if clusterInsight.Status.AuditResults != nil {
 		kubeeyePlugins := &kubeeyepluginsv1alpha1.PluginSubscriptionList{}
 		if err := r.List(ctx, kubeeyePlugins); err != nil {
 			klog.Info("Plugins not found")
@@ -201,12 +114,62 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 		// trigger plugins audit tasks
 		if len(resultNotReadyPlugins) != 0 {
+			klog.Infof("not ready plugins list : %s", resultNotReadyPlugins)
 			plugins.TriggerPluginsAudit(resultNotReadyPlugins)
 
 		}
 	}
 
-	return ctrl.Result{}, nil
+	insightName := clusterInsight.ObjectMeta.Name
+
+	if clusterInsight.Status.AuditPercent == 0 && clusterInsight.Status.AuditResults == nil {
+		klog.Info("Starting kubeeye audit")
+		// exec cluster audit
+		K8SResources, validationResultsChan := audit.ValidationResults(ctx, clients, "", insightName)
+
+		// get cluster info
+		clusterInfo := setClusterInfo(K8SResources)
+
+		// fill clusterInsight.Status.ClusterInfo
+		clusterInsight.Status.ClusterInfo = clusterInfo
+
+		// format result
+		fmResults := formatResults(validationResultsChan)
+
+		// fill clusterInsight.Status.AuditResults
+		clusterInsight.Status.AuditResults = fmResults
+
+		// get score
+		scoreInfo := CalculateScore(fmResults, K8SResources)
+
+		// fill
+		clusterInsight.Status.ScoreInfo = scoreInfo
+
+		t := metav1.Time{}
+		t.Time = time.Now()
+		clusterInsight.Status.LastScheduleTime = &t
+
+		clusterInsight.Status.AuditPercent = AuditComplete
+		audit.AuditPercent.Delete(insightName)
+
+		// update clusterInsight CR
+		defer func() {
+			if err := r.Status().Update(ctx, clusterInsight); err != nil {
+				if kubeErr.IsConflict(err) {
+					reterr = err
+				} else {
+					reterr = errors.Wrap(err, "unexpected error when update status")
+				}
+			}
+		}()
+
+		klog.Info("Cluster audit completed")
+
+	}
+
+	// Executed every 60 seconds to check whether the plugins result is successfully filled.
+	// If the plugins result is not filled, the plugins audit will be re-triggered
+	return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
