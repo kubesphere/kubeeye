@@ -152,7 +152,7 @@ data:
             control-plane: kubebench
         spec:
           containers:
-            - image: kubesphere.io/kubebench:latest
+            - image: kubespheredev/kubebench:latest
               name: kubebench
               imagePullPolicy: IfNotPresent
               livenessProbe:

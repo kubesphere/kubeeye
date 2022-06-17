@@ -36,12 +36,12 @@ type ClusterInsightSpec struct {
 type ClusterInsightStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	AfterTime      metav1.Time `json:"afterTime,omitempty"`
-	ClusterInfo    `json:"clusterInfo,omitempty"`
-	ScoreInfo      `json:"scoreInfo,omitempty"`
-	AuditResults   []AuditResults  `json:"auditResults,omitempty"`
-	PluginsResults []PluginsResult `json:"pluginsResults,omitempty"`
-	AuditPercent   int             `json:"auditPercent,omitempty"`
+	LastScheduleTime *metav1.Time `json:"lastScheduleTime,omitempty"`
+	ClusterInfo      `json:"clusterInfo,omitempty"`
+	ScoreInfo        `json:"scoreInfo,omitempty"`
+	AuditResults     []AuditResults  `json:"auditResults,omitempty"`
+	PluginsResults   []PluginsResult `json:"pluginsResults,omitempty"`
+	AuditPercent     int             `json:"auditPercent,omitempty"`
 }
 
 type PluginsResult struct {

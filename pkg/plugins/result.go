@@ -5,21 +5,21 @@ import (
 	"io"
 	"net/http"
 	"time"
-	
-	"github.com/go-logr/logr"
+
+	"k8s.io/klog/v2"
 )
 
-func TriggerPluginsAudit(logs logr.Logger, pluginList []string) {
+func TriggerPluginsAudit(pluginList []string) {
 	for _, pluginName := range pluginList {
 		if CheckPluginsHealth(pluginName) {
-			logs.Info(fmt.Sprintf("trigger plugin %s audit", pluginName))
-			err, resp := TriggerAudit(pluginName)
+			klog.Infof("trigger plugin %s audit", pluginName)
+			err, _ := TriggerAudit(pluginName)
 			if err != nil {
-				logs.Error(err, fmt.Sprintf("trigger plugin %s audit failed", pluginName))
+				klog.Errorf("trigger plugin %s audit failed", pluginName, err)
 			}
-			logs.Info(string(resp))
+			klog.Infof("trigger plugin %s audit successful", pluginName)
 		} else {
-			logs.Error(nil, fmt.Sprintf("plugin %s not ready", pluginName))
+			klog.Errorf("plugin %s not ready", pluginName)
 		}
 	}
 }

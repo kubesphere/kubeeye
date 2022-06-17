@@ -236,7 +236,7 @@ data:
             control-plane: kubescape
         spec:
           containers:
-            - image: kubesphere.io/kubescape:latest
+            - image: kubespheredev/kubescape:latest
               name: kubescape
               imagePullPolicy: IfNotPresent
               livenessProbe:

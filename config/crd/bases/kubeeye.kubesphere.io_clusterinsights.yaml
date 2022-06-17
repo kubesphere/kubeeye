@@ -43,12 +43,6 @@ spec:
           status:
             description: ClusterInsightStatus defines the observed state of ClusterInsight
             properties:
-              afterTime:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
-                format: date-time
-                type: string
               auditPercent:
                 type: integer
               auditResults:
@@ -96,6 +90,12 @@ spec:
                   workloadsCount:
                     type: integer
                 type: object
+              lastScheduleTime:
+                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                  of cluster Important: Run "make" to regenerate code after modifying
+                  this file'
+                format: date-time
+                type: string
               pluginsResults:
                 items:
                   properties:

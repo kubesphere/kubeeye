@@ -45,10 +45,6 @@ spec:
           status:
             description: ClusterInsightStatus defines the observed state of ClusterInsight
             properties:
-              afterTime:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file'
-                format: date-time
-                type: string
               auditPercent:
                 type: integer
               auditResults:
@@ -96,6 +92,10 @@ spec:
                   workloadsCount:
                     type: integer
                 type: object
+              lastScheduleTime:
+                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file'
+                format: date-time
+                type: string
               pluginsResults:
                 items:
                   properties:
@@ -309,6 +309,12 @@ rules:
   - update
   - watch
 - apiGroups:
+  - events.k8s.io
+  resources:
+  - events
+  verbs:
+  - '*'
+- apiGroups:
   - kubeeye.kubesphere.io
   resources:
   - clusterinsights
@@ -330,6 +336,32 @@ rules:
   - kubeeye.kubesphere.io
   resources:
   - clusterinsights/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubeeyecronjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubeeyecronjobs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubeeyecronjobs/status
   verbs:
   - get
   - patch
@@ -547,11 +579,11 @@ spec:
           periodSeconds: 10
         resources:
           limits:
-            cpu: 500m
-            memory: 512Mi
+            cpu: 1500m
+            memory: 2048Mi
           requests:
-            cpu: 10m
-            memory: 64Mi
+            cpu: 200m
+            memory: 256Mi
         securityContext:
           allowPrivilegeEscalation: false
       securityContext:

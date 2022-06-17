@@ -73,6 +73,12 @@ rules:
   - update
   - watch
 - apiGroups:
+  - events.k8s.io
+  resources:
+  - events
+  verbs:
+  - '*'
+- apiGroups:
   - kubeeye.kubesphere.io
   resources:
   - clusterinsights
@@ -94,6 +100,32 @@ rules:
   - kubeeye.kubesphere.io
   resources:
   - clusterinsights/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubeeyecronjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubeeyecronjobs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - kubeeyecronjobs/status
   verbs:
   - get
   - patch

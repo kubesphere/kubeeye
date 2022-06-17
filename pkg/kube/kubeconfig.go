@@ -15,6 +15,7 @@
 package kube
 
 import (
+	kubeeyeclientset "github.com/kubesphere/kubeeye/client/clientset/versioned"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -22,8 +23,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
-	kubeeyeclientset "github.com/kubesphere/kubeeye/pkg/clients/clientset/versioned"
 )
 
 //var KubeConfig *rest.Config
