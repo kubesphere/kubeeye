@@ -15,21 +15,22 @@ KubeEye supports custom audit rules and plugins installation. Through [KubeEye O
 
 ## Architecture
 KubeEye get cluster resource details by the Kubernetes API, audit the resource configurations by audit rules and plugins, and generate audit results. See Architecture for details.
+
 ![kubeeye-architecture](./docs/images/kubeeye-architecture.svg?raw=true)
 
 ## How to use
 -  Install KubeEye on your machine
-    - Download pre built executables from [Releases](https://github.com/kubesphere/kubeeye/releases).
-    
-    - Or you can build from source code
-    > Note: make install will create kubeeye in /usr/local/bin/ on your machine.
+   - Download pre built executables from [Releases](https://github.com/kubesphere/kubeeye/releases).
+
+   - Or you can build from source code
+   > Note: make install will create kubeeye in /usr/local/bin/ on your machine.
 
    ```shell
    git clone https://github.com/kubesphere/kubeeye.git
    cd kubeeye
    make installke
    ```
-   
+
 - [Optional] Install [Node-problem-Detector](https://github.com/kubernetes/node-problem-detector)
 > Note: This will install npd on your cluster, only required if you want detailed report.
 
@@ -166,6 +167,7 @@ kubectl edit ConfigMap node-problem-detector-config -n kube-system
 kubectl rollout restart DaemonSet node-problem-detector -n kube-system
 ```
 
+
 ## KubeEye Operator
 ### What is KubeEye Operator
 KubeEye Operator is an audit platform for Kubernetes, manage KubeEye by operator and generate audit result, provide website.
@@ -215,37 +217,6 @@ items:
               reason: kubelet has disk pressure
             name: kubeeyeNode
 ```
-
-### install plugins
-- install kubebench
-```shell
-https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubebench.yaml
-```
-- install kubehunter
-```shell
-https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubehunter.yaml
-```
-- install kubescape
-```shell
-https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubescape.yaml
-```
-
-### uninstall plugins
-- uninstall kubebench
-```shell
-https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubebench.yaml
-```
-- uninstall kubehunter
-```shell
-https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubehunter.yaml
-```
-- uninstall kubescape
-```shell
-https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_plugin_kubescape.yaml
-```
-
-After plugin installation complete, KubeEye will automatically collect the results of plugins audit and store them in clusterinsights.
-
 
 ## Contributors ✨
 

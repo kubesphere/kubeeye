@@ -29,6 +29,8 @@ spec:
       containers:
       - command:
         - /ke-manager
+        args:
+          - --leader-elect
         image: controller:latest
         name: manager
         securityContext:
