@@ -123,6 +123,42 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	insightName := clusterInsight.ObjectMeta.Name
 
 	if clusterInsight.Status.AuditPercent == 0 && clusterInsight.Status.AuditResults == nil {
+		clusterInsight.Status.Phase = "Running"
+		timer := time.NewTimer(time.Second * 5)
+		ch := make(chan bool)
+		defer close(ch)
+
+		go func(timer *time.Timer) {
+			defer timer.Stop()
+			for {
+				select {
+				case <-timer.C:
+					if clusterInsight.Status.AuditPercent == AuditComplete {
+						time.Sleep(500 * time.Millisecond)
+					}
+					percent, ok := audit.AuditPercent.Load(insightName)
+					var auditPercent *audit.PercentOutput
+					if !ok {
+						clusterInsight.Status.AuditPercent = 0
+					} else {
+						auditPercent = percent.(*audit.PercentOutput)
+						clusterInsight.Status.AuditPercent = auditPercent.AuditPercent
+					}
+
+					if err := r.Status().Update(ctx, clusterInsight); err != nil {
+						if kubeErr.IsConflict(err) {
+							return
+						} else {
+							klog.Error(err, "update CR failed")
+							return
+						}
+					}
+					timer.Reset(time.Second * 5)
+				case <-ch:
+					return
+				}
+			}
+		}(timer)
 		klog.Info("Starting kubeeye audit")
 		// exec cluster audit
 		K8SResources, validationResultsChan := audit.ValidationResults(ctx, clients, "", insightName)
@@ -145,10 +181,12 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		// fill
 		clusterInsight.Status.ScoreInfo = scoreInfo
 
+		ch <- true
 		t := metav1.Time{}
 		t.Time = time.Now()
 		clusterInsight.Status.LastScheduleTime = &t
 
+		clusterInsight.Status.Phase = "Succeeded"
 		clusterInsight.Status.AuditPercent = AuditComplete
 		audit.AuditPercent.Delete(insightName)
 

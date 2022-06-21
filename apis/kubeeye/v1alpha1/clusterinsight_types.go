@@ -42,6 +42,7 @@ type ClusterInsightStatus struct {
 	AuditResults     []AuditResults  `json:"auditResults,omitempty"`
 	PluginsResults   []PluginsResult `json:"pluginsResults,omitempty"`
 	AuditPercent     int             `json:"auditPercent,omitempty"`
+	Phase            string          `json:"phase,omitempty"`
 }
 
 type PluginsResult struct {
