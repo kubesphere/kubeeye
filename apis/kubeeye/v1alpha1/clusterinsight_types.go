@@ -42,8 +42,18 @@ type ClusterInsightStatus struct {
 	AuditResults     []AuditResults  `json:"auditResults,omitempty"`
 	PluginsResults   []PluginsResult `json:"pluginsResults,omitempty"`
 	AuditPercent     int             `json:"auditPercent,omitempty"`
-	Phase            string          `json:"phase,omitempty"`
+	Phase            Phase           `json:"phase,omitempty"`
 }
+
+type Phase string
+
+const (
+	Pending   Phase = "Pending"
+	Running   Phase = "Running"
+	Succeeded Phase = "Succeeded"
+	Failed    Phase = "Failed"
+	Unknown   Phase = "Unknown"
+)
 
 type PluginsResult struct {
 	// +kubebuilder:pruning:PreserveUnknownFields

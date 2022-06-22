@@ -105,6 +105,7 @@ func (k *KubeeyeCronjobController) reconcile(key string) error {
 			return err
 		}
 	} else {
+		scheduledTime = nextScheduledTimeDuration(sched, clusterInsight.Status.LastScheduleTime.Time)
 		if clusterInsight.Status.LastScheduleTime.Add(*scheduledTime).Before(now) {
 			clusterInsight = kubeeye.ClearClusterInsightStatus(clusterInsight)
 			if err := k.updateKubeeyeStatus(clusterInsight, now); err != nil {
