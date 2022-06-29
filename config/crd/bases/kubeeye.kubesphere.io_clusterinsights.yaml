@@ -45,6 +45,8 @@ spec:
             properties:
               auditPercent:
                 type: integer
+              phase:
+                type: string
               auditResults:
                 items:
                   properties:

@@ -48,11 +48,11 @@ type ClusterInsightStatus struct {
 type Phase string
 
 const (
-	Pending   Phase = "Pending"
-	Running   Phase = "Running"
-	Succeeded Phase = "Succeeded"
-	Failed    Phase = "Failed"
-	Unknown   Phase = "Unknown"
+	PhasePending   Phase = "Pending"
+	PhaseRunning   Phase = "Running"
+	PhaseSucceeded Phase = "Succeeded"
+	PhaseFailed    Phase = "Failed"
+	PhaseUnknown   Phase = "Unknown"
 )
 
 type PluginsResult struct {
