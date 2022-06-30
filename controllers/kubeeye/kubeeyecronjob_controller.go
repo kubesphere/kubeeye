@@ -24,6 +24,7 @@ import (
 	kubeeyeclientset "github.com/kubesphere/kubeeye/client/clientset/versioned"
 	kubeeyeinformer "github.com/kubesphere/kubeeye/client/informers/externalversions/kubeeye/v1alpha1"
 	kubeeyev1alpha1listers "github.com/kubesphere/kubeeye/client/listers/kubeeye/v1alpha1"
+	"github.com/kubesphere/kubeeye/pkg/audit"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/kubeeye"
 	"github.com/robfig/cron/v3"
@@ -89,22 +90,38 @@ func (k *KubeeyeCronjobController) reconcile(key string) error {
 
 	scheduledTime := nextScheduledTimeDuration(sched, now)
 	klog.Infof("Next audit time: %v", now.Add(*scheduledTime))
-
-	if clusterInsight.Status.LastScheduleTime.IsZero() && clusterInsight.Status.AuditPercent == 0 && clusterInsight.Status.PluginsResults == nil {
-		klog.Infof("no LastScheduleTime")
-		k.Workqueue.AddAfter(key, 10*time.Second)
-	} else if clusterInsight.Status.LastScheduleTime.IsZero() && (clusterInsight.Status.AuditPercent > 0 && clusterInsight.Status.AuditPercent < 100) {
-		klog.Infof("wait for KubeEye audit finish")
-		k.Workqueue.AddAfter(key, 10*time.Second)
-	} else if clusterInsight.Status.LastScheduleTime.IsZero() && clusterInsight.Status.AuditPercent == 0 && clusterInsight.Status.PluginsResults != nil {
-		klog.Infof("clear plugins results in clusterInsight, Don't worry, the plugins will be re-executed")
-		clusterInsight = kubeeye.ClearClusterInsightStatus(clusterInsight)
-		if err := k.updateKubeeyeStatus(clusterInsight, now); err != nil {
-			klog.V(2).InfoS("update clusterInsight failed", "kubeeyecronjob", klog.KRef(clusterInsight.GetNamespace(), clusterInsight.GetName()), "schedule", clusterInsight.Spec.AuditPeriod, "err", err)
-			k.recorder.Event(clusterInsight, corev1.EventTypeWarning, "KubeEyeCronjob failed", "KubeEyeCronjob failed to update clusterInsight")
-			return err
-		}
+	 if clusterInsight.Status.LastScheduleTime.IsZero() && clusterInsight.Status.Phase == "" && clusterInsight.Status.PluginsResults != nil  {
+		 klog.Infof("clear plugins results in clusterInsight, Don't worry, the plugins will be re-executed")
+		 clusterInsight = kubeeye.ClearClusterInsightStatus(clusterInsight)
+		 if err := k.updateKubeeyeStatus(clusterInsight, now); err != nil {
+			 klog.V(2).InfoS("update clusterInsight failed", "kubeeyecronjob", klog.KRef(clusterInsight.GetNamespace(), clusterInsight.GetName()), "schedule", clusterInsight.Spec.AuditPeriod, "err", err)
+			 k.recorder.Event(clusterInsight, corev1.EventTypeWarning, "KubeEyeCronjob failed", "KubeEyeCronjob failed to update clusterInsight")
+			 return err
+		 }
+	} else if clusterInsight.Status.LastScheduleTime.IsZero() && clusterInsight.Status.Phase != v1alpha1.PhaseSucceeded {
+		 percent, ok := audit.AuditPercent.Load(clusterInsight.Name)
+		 if !ok {
+			 klog.Infof("wait starting audit")
+			 k.Workqueue.AddAfter(key, 2*time.Second)
+			 return nil
+		 } else if percent == 100 {
+			 klog.Infof("wait update audit result")
+		 } else {
+			 clusterInsight.Status.Phase = v1alpha1.PhaseRunning
+			 auditPercent := percent.(*audit.PercentOutput)
+			 if auditPercent.AuditPercent != clusterInsight.Status.AuditPercent{
+				 clusterInsight.Status.AuditPercent = auditPercent.AuditPercent
+				 if err := k.updateKubeeyeStatus(clusterInsight,now); err != nil {
+					 klog.V(2).InfoS("update clusterInsight failed", "kubeeyecronjob", klog.KRef(clusterInsight.GetNamespace(), clusterInsight.GetName()), "schedule", clusterInsight.Spec.AuditPeriod, "err", err)
+					 k.recorder.Event(clusterInsight, corev1.EventTypeWarning, "KubeEyeCronjob failed", "KubeEyeCronjob failed to update clusterInsight")
+					 return err
+				 }
+			 } else {
+				 k.Workqueue.AddAfter(key, 3*time.Second)
+			 }
+		 }
 	} else {
+		scheduledTime = nextScheduledTimeDuration(sched, clusterInsight.Status.LastScheduleTime.Time)
 		if clusterInsight.Status.LastScheduleTime.Add(*scheduledTime).Before(now) {
 			clusterInsight = kubeeye.ClearClusterInsightStatus(clusterInsight)
 			if err := k.updateKubeeyeStatus(clusterInsight, now); err != nil {
@@ -112,6 +129,7 @@ func (k *KubeeyeCronjobController) reconcile(key string) error {
 				k.recorder.Event(clusterInsight, corev1.EventTypeWarning, "KubeEyeCronjob failed", "KubeEyeCronjob failed to update clusterInsight")
 				return err
 			}
+			klog.Infof("clear clusterInsight successful")
 		} else {
 			k.Workqueue.AddAfter(key, clusterInsight.Status.LastScheduleTime.Add(*scheduledTime).Sub(now))
 		}
@@ -125,10 +143,10 @@ func (k *KubeeyeCronjobController) updateKubeeyeStatus(clusterInsight *v1alpha1.
 	updateOptions := metav1.UpdateOptions{}
 	_, err := k.kubeeyeclient.KubeeyeV1alpha1().ClusterInsights().UpdateStatus(context.Background(), clusterInsight, updateOptions)
 	if err != nil {
-		klog.V(2).InfoS("clear clusterInsight failed", "kubeeyecronjob", klog.KRef(clusterInsight.GetNamespace(), clusterInsight.GetName()), "schedule", clusterInsight.Spec.AuditPeriod, "err", err)
+		klog.V(2).InfoS("update clusterInsight failed", "kubeeyecronjob", klog.KRef(clusterInsight.GetNamespace(), clusterInsight.GetName()), "schedule", clusterInsight.Spec.AuditPeriod, "err", err)
 		return err
 	}
-	klog.Infof("clear clusterInsight successful")
+	klog.Infof("update clusterInsight successful")
 	return nil
 }
 

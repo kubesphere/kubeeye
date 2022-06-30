@@ -18,6 +18,7 @@ package kubeeye
 
 import (
 	"context"
+	"k8s.io/client-go/util/retry"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -121,8 +122,8 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	insightName := clusterInsight.ObjectMeta.Name
+	if clusterInsight.Status.Phase == "" && clusterInsight.Status.AuditResults == nil {
 
-	if clusterInsight.Status.AuditPercent == 0 && clusterInsight.Status.AuditResults == nil {
 		klog.Info("Starting kubeeye audit")
 		// exec cluster audit
 		K8SResources, validationResultsChan := audit.ValidationResults(ctx, clients, "", insightName)
@@ -149,18 +150,28 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		t.Time = time.Now()
 		clusterInsight.Status.LastScheduleTime = &t
 
+		clusterInsight.Status.Phase = kubeeyev1alpha1.PhaseSucceeded
 		clusterInsight.Status.AuditPercent = AuditComplete
 		audit.AuditPercent.Delete(insightName)
 
 		// update clusterInsight CR
 		defer func() {
-			if err := r.Status().Update(ctx, clusterInsight); err != nil {
-				if kubeErr.IsConflict(err) {
-					reterr = err
-				} else {
-					reterr = errors.Wrap(err, "unexpected error when update status")
+			reterr = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				newClusterInsight := &kubeeyev1alpha1.ClusterInsight{}
+				err := r.Get(ctx, req.NamespacedName, newClusterInsight)
+				if err != nil {
+					klog.Info("Cluster resource not found. Ignoring since object must be deleted")
+					return err
 				}
-			}
+				newClusterInsight.Status = clusterInsight.Status
+				if err := r.Status().Update(ctx, newClusterInsight); err != nil {
+					if !kubeErr.IsConflict(err) {
+						err = errors.Wrap(err, "unexpected error when update status")
+						return err
+					}
+				}
+				return err
+			})
 		}()
 
 		klog.Info("Cluster audit completed")
