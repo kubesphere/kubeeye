@@ -81,7 +81,7 @@ ClusterRole                    vpnkit-controller                                
 |---|---|---|---|
 | :white_check_mark: | PrivilegeEscalationAllowed     | Privilege escalation is allowed | danger |
 | :white_check_mark: | CanImpersonateUser             | The role/clusterrole can impersonate other user | warning |
-| :white_check_mark: | CanDeleteResources             | The role/clusterrole can delete kubernetes resources | warning |
+| :white_check_mark: | CanModifyResources             | The role/clusterrole can delete kubernetes resources | warning |
 | :white_check_mark: | CanModifyWorkloads             | The role/clusterrole can modify kubernetes workloads | warning |
 | :white_check_mark: | NoCPULimits                    | The resource does not set limits of CPU in containers.resources | danger |
 | :white_check_mark: | NoCPURequests                  | The resource does not set requests of CPU in containers.resources | danger |
