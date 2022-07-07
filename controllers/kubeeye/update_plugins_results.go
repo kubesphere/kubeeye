@@ -18,6 +18,7 @@ package kubeeye
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -26,6 +27,7 @@ import (
 	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/kubeeye"
+	"github.com/kubesphere/kubeeye/pkg/suggests"
 	"k8s.io/klog/v2"
 )
 
@@ -33,6 +35,8 @@ func PluginsResultsReceiver() {
 	ServeMux := http.NewServeMux()
 	ServeMux.Handle("/healthz", http.HandlerFunc(health))
 	ServeMux.Handle("/plugins", http.HandlerFunc(PluginsResult))
+	ServeMux.Handle("/suggestlist", http.HandlerFunc(suggestList))
+	ServeMux.Handle("/suggest", http.HandlerFunc(suggest))
 	log.Fatalln(http.ListenAndServe(":8888", ServeMux))
 }
 
@@ -105,4 +109,39 @@ func UpdatePluginsResults(resp []byte, result kubeeyev1alpha1.PluginsResult) {
 		klog.Error("update plugins results failed: update clusterInsight failed", err)
 		return
 	}
+}
+
+func suggest(w http.ResponseWriter, r *http.Request)  {
+	if err := r.ParseForm(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "suggest parse form failed : %s \n", err)
+		return
+	}
+	name,ok  := r.Form["name"]
+	if !ok {
+		fmt.Fprintf(w, "without name \n")
+		return
+	}
+	modifySuggest := new(suggests.ModifySuggest)
+	modifySuggest.GetModifySuggests(name[0])
+	if modifySuggest.Name == ""{
+		fmt.Fprintf(w, "modifySuggest without name \n")
+		return
+	}
+	jsonResults, _ := json.Marshal(&modifySuggest)
+	w.Write(jsonResults)
+}
+
+func suggestList(w http.ResponseWriter, r *http.Request)  {
+	if r.Method != "GET" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprintf(w, "Get SuggestList Method Not Allowed")
+		klog.Info("Get SuggestList Method Not Allowed")
+		return
+	}
+	modifySuggest := new(suggests.ModifySuggest)
+	modifySuggestList := modifySuggest.GetAllModifySuggests()
+	jsonResults, _ := json.Marshal(&modifySuggestList)
+	w.Write(jsonResults)
+	
 }
