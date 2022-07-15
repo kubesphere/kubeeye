@@ -42,9 +42,9 @@ kubeeye install npd
 ```shell
 kubeeye audit
 KIND          NAMESPACE        NAME                                                           REASON                                        LEVEL    MESSAGE
-Node                           docker-desktop                                                 kubelet has no sufficient memory available   waring    KubeletHasNoSufficientMemory
-Node                           docker-desktop                                                 kubelet has no sufficient PID available      waring    KubeletHasNoSufficientPID
-Node                           docker-desktop                                                 kubelet has disk pressure                    waring    KubeletHasDiskPressure
+Node                           docker-desktop                                                 kubelet has no sufficient memory available   warning    KubeletHasNoSufficientMemory
+Node                           docker-desktop                                                 kubelet has no sufficient PID available      warning    KubeletHasNoSufficientPID
+Node                           docker-desktop                                                 kubelet has disk pressure                    warning    KubeletHasDiskPressure
 Deployment    default          testkubeeye                                                                                                                  NoCPULimits
 Deployment    default          testkubeeye                                                                                                                  NoReadinessProbe
 Deployment    default          testkubeeye                                                                                                                  NotRunAsNonRoot
@@ -205,13 +205,13 @@ items:
         - namespace: ""
           resourceInfos:
           - items:
-            - level: waring
+            - level: warning
               message: KubeletHasNoSufficientMemory
               reason: kubelet has no sufficient memory available
-            - level: waring
+            - level: warning
               message: KubeletHasNoSufficientPID
               reason: kubelet has no sufficient PID available
-            - level: waring
+            - level: warning
               message: KubeletHasDiskPressure
               reason: kubelet has disk pressure
             name: kubeeyeNode

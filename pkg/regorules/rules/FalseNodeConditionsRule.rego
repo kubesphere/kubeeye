@@ -5,7 +5,7 @@ deny[msg] {
     type := resource.Object.kind
     resourcename := resource.Object.metadata.name
     type == "Node"
-    level := "waring"
+    level := "warning"
 
     resource.Object.status.conditions[i].status == "False"
 
@@ -30,7 +30,7 @@ deny[msg] {
     type := resource.Object.kind
     resourcename := resource.Object.metadata.name
     type == "Node"
-    level := "waring"
+    level := "warning"
 
     resource.Object.status.conditions[i].status == "False"
 
