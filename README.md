@@ -9,12 +9,12 @@
 
 > English | [中文](README_zh.md)
 
-KubeEye is an audit tool for Kubernetes to discover Kubernetes resources (by [OPA](https://github.com/open-policy-agent/opa) ), cluster components, cluster nodes (by [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)) and other configurations are meeting with best practices, and giving suggestions for modification.
+KubeEye is an inspection tool for Kubernetes to discover Kubernetes resources (by [OPA](https://github.com/open-policy-agent/opa) ), cluster components, cluster nodes (by [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)) and other configurations are meeting with best practices, and giving suggestions for modification.
 
-KubeEye supports custom audit rules and plugins installation. Through [KubeEye Operator](#kubeeye-operator), you can view audit results and modify suggestions by the website.
+KubeEye supports custom inspection rules and plugins installation. Through [KubeEye Operator](#kubeeye-operator), you can view the inspection results and modification suggestions by the graphical display on the web page.
 
 ## Architecture
-KubeEye get cluster resource details by the Kubernetes API, audit the resource configurations by audit rules and plugins, and generate audit results. See Architecture for details.
+KubeEye get cluster resource details by the Kubernetes API, inspect the resource configurations by inspection rules and plugins, and generate inspection results. See Architecture for details.
 
 ![kubeeye-architecture](./docs/images/kubeeye-architecture.svg?raw=true)
 
@@ -71,9 +71,9 @@ ClusterRole                    vpnkit-controller                                
 
 ## What KubeEye can do
 
-- KubeEye audits cluster resources with Kubernetes best practices, to make cluster stable.
+- KubeEye inspects cluster resources according with Kubernetes best practices, to make cluster stable.
 - KubeEye can find problems of your cluster control plane, including kube-apiserver/kube-controller-manager/etcd, etc.
-- KubeEye helps you detect all kinds of node problems, including memory/cpu/disk pressure, unexpected kernel error logs, etc.
+- KubeEye helps you detect all kinds of cluster nodes problems, including memory/cpu/disk pressure, unexpected kernel error logs, etc.
 
 ## Checklist
 
@@ -108,7 +108,7 @@ ClusterRole                    vpnkit-controller                                
 | :white_check_mark: | DockerStatus                   | docker status audit | warning |         
 | :white_check_mark: | KubeletStatus                  | kubelet status audit | warning |
 
-## Add your own audit rules
+## Add your own inspection rules
 ### Add custom OPA rules
 - create a directory for OPA rules
 ```shell
@@ -119,7 +119,7 @@ mkdir opa
 > for RBAC, package name must be *kubeeye_RBAC_rego*
 > for nodes, package name must be *kubeeye_nodes_rego*
 
-- Save the following rule to rule file such as *imageRegistryRule.rego* for audit the image registry address complies with rules.
+- Save the following rules to rule file such as *imageRegistryRule.rego* to check the image registry address complies with rules.
 ```rego
 package kubeeye_workloads_rego
 
@@ -170,20 +170,20 @@ kubectl rollout restart DaemonSet node-problem-detector -n kube-system
 
 ## KubeEye Operator
 ### What is KubeEye Operator
-KubeEye Operator is an audit platform for Kubernetes, manage KubeEye by operator and generate audit result, provide website.
+KubeEye Operator is an inspection platform for Kubernetes, manage KubeEye by operator and generate inspection result.
 
 ### What KubeEye Operator can do
-- KubeEye Operator provides manage website.
-- KubeEye Operator recode audit results by CR, can view and compare cluster audit results by website.
+- KubeEye Operator provides management functions through web page.
+- KubeEye Operator recode inspection results by CR, can view and compare cluster inspection results by web page.
 - KubeEye Operator provides more plugins.
-- KubeEye Operator provides modify suggestions by the website.
+- KubeEye Operator provides more detailed modification suggestions.
 
 ### deploy Kubeeye
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye.yaml
 kubectl apply -f https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_insights.yaml
 ```
-### get the audit results
+### get the inspection results
 ```shell
 kubectl get clusterinsight -o yaml
 ```
