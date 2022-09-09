@@ -26,14 +26,14 @@ Functional Requirements:
 
 Functional Requirements:
 
-- [ ] Able to call Kubeeye command-line tool to get audit results.
+- [ ] Able to call Kubeeye command-line tool to get inspection results.
 
-- [ ] The web page displays the audit results.
+- [ ] The web page displays the inspection results.
 
-- [ ] Store audit results and view historical audit results on the web page.
+- [ ] Store inspection results and view historical inspection results on the web page.
 
-- [ ] The web page can reflect the changing trend of cluster audit.
+- [ ] The web page can reflect the changing trend of cluster inspection.
 
-- [ ] The audit results can be downloaded on the web page.
+- [ ] The inspection results can be downloaded on the web page.
 
-- [ ] Suggest amendments to each audit result.
+- [ ] Suggest amendments to each inspection result.
