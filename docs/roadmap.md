@@ -1,39 +1,39 @@
-# KubeEye's RoadMap
+# Roadmap of KubeEye
 
-KubeEye Roadmap demonstrates a list of open source product development plans, as well as KubeSphere community's anticipation. Obviously, it details the future's direction of KubeEye, but may change over time. We hope that can help you to get familiar with the project plans and vision through the Roadmap. Of course, if you have any better ideas, welcome to filing [Issues](https://github.com/kubesphere/kubeeye/issues).
+KubeEye Roadmap demonstrates a list of open-source product development plans, as well as KubeSphere community's anticipation. Obviously, it details the future's direction of KubeEye, but may change over time. We hope the Roadmap can help you get familiar with the project plans and vision. If you have any better ideas, welcome to filing [Issues](https://github.com/kubesphere/kubeeye/issues).
 
 ## v0.1.0
 
-### Feature:
+### Features:
 
-- kubeeye command-line tool:
+- KubeEye command-line tool:
 
-Functional Requirements:
+    Functional requirements:
 
-- [x] Standalone operation.
+    - [x] Standalone operation.
 
-- [x] Check k8s cluster resource configuration and events.
+    - [x] Check k8s cluster resource configuration and events.
 
-- [x] Provide API interface.
+    - [x] Provide API interface.
 
-- [ ] Install the console.
+    - [ ] Install the console.
 
-- [ ] Provide installation methods for installing more cluster review components, such as installing NPD, Kubebench, etc.
+    - [ ] Provide installation methods for installing more cluster review components, such as installing NPD and kube-bench.
 
-- [ ] Able to collect node information and review through Kubeeye Collector.
+    - [ ] Able to collect node information and review by using KubeEye Collector.
 
-- Kubeeye console:
+- KubeEye console:
 
-Functional Requirements:
+    Functional requirements:
 
-- [ ] Able to call Kubeeye command-line tool to get inspection results.
+    - [ ] Able to call KubeEye command-line tool to get inspection results.
 
-- [ ] The web page displays the inspection results.
+    - [ ] Display the inspection results on the web page.
 
-- [ ] Store inspection results and view historical inspection results on the web page.
+    - [ ] Store inspection results and view historical inspection results on the web page.
 
-- [ ] The web page can reflect the changing trend of cluster inspection.
+    - [ ] Reflect the changing trend of cluster inspection on the web page.
 
-- [ ] The inspection results can be downloaded on the web page.
+    - [ ] Download inspection results on the web page.
 
-- [ ] Suggest amendments to each inspection result.
+    - [ ] Make modification suggestions to each inspection result.
