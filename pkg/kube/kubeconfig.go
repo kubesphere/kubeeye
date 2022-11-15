@@ -15,7 +15,6 @@
 package kube
 
 import (
-	kubeeyeclientset "github.com/kubesphere/kubeeye/client/clientset/versioned"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -101,12 +100,12 @@ func GetK8SClients(kubeconfig string) (*KubernetesClient, error) {
 	return clients, nil
 }
 
-func GetClientSetInCluster() (*kubeeyeclientset.Clientset, error) {
-	kubeConfig, err := GetKubeConfigInCluster()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get kubeconfig")
-	}
-
-	clientset := kubeeyeclientset.NewForConfigOrDie(kubeConfig)
-	return clientset, nil
-}
+//func GetClientSetInCluster() (*kubeeyeclientset.Clientset, error) {
+//	kubeConfig, err := GetKubeConfigInCluster()
+//	if err != nil {
+//		return nil, errors.Wrap(err, "failed to get kubeconfig")
+//	}
+//
+//	clientset := kubeeyeclientset.NewForConfigOrDie(kubeConfig)
+//	return clientset, nil
+//}

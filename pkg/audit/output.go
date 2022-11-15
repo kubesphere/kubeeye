@@ -4,14 +4,14 @@ import (
     "encoding/csv"
     "encoding/json"
     "fmt"
+    "github.com/kubesphere/kubeeye/api/kubeeye/v1alpha1"
     "os"
     "text/tabwriter"
-    
-    "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
+
     "github.com/pkg/errors"
 )
 
-func defaultOutput(receiver <-chan []v1alpha1.AuditResults) error {
+func defaultOutput(receiver <-chan []v1alpha1.ResultItems) error {
     w := tabwriter.NewWriter(os.Stdout, 10, 4, 3, ' ', 0)
     _, err := fmt.Fprintln(w, "\nNAMESPACE\tKIND\tNAME\tLEVEL\tMESSAGE\tREASON")
     if err != nil {
@@ -37,8 +37,8 @@ func defaultOutput(receiver <-chan []v1alpha1.AuditResults) error {
     return nil
 }
 
-func JSONOutput(receiver <-chan []v1alpha1.AuditResults) error {
-    var output []v1alpha1.AuditResults
+func JSONOutput(receiver <-chan []v1alpha1.ResultItems) error {
+    var output []v1alpha1.ResultItems
     for r := range receiver {
         for _, results := range r {
             output = append(output, results)
@@ -54,7 +54,7 @@ func JSONOutput(receiver <-chan []v1alpha1.AuditResults) error {
     return nil
 }
 
-func CSVOutput(receiver <-chan []v1alpha1.AuditResults) error {
+func CSVOutput(receiver <-chan []v1alpha1.ResultItems) error {
     filename := "kubeEyeAuditResult.csv"
     // create csv file
     newFile, err := os.Create(filename)
