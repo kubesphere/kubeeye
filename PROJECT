@@ -1,7 +1,7 @@
 domain: kubesphere.io
 layout:
 - go.kubebuilder.io/v3
-projectName: eye2al
+projectName: kubeeye
 repo: github.com/kubesphere/kubeeye
 resources:
 - api:

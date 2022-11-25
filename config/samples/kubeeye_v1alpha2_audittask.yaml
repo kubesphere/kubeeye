@@ -4,6 +4,3 @@ metadata:
   name: audittask-sample
 spec:
   # TODO(user): Add fields here
-  timeout: "4m"
-  auditors:
-    - kubeeye

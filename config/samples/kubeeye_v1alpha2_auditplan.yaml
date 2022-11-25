@@ -4,8 +4,3 @@ metadata:
   name: auditplan-sample
 spec:
   # TODO(user): Add fields here
-  auditors:
-    - kubeeye
-  #    - kubebench
-  schedule: "@every 20m"
-  timeout: "4m"
