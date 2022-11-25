@@ -1,6 +1,9 @@
 package constant
 
+import "time"
 
-const AuditorServiceConfigMap = "auditorservice"
+const AuditorServiceAddrConfigMap = "auditor-service-addr"
 
-const KubeeyeService = ""
+const DefaultTimeout = 10 * time.Minute
+
+const DefaultNamespace = "kubeeye-system"

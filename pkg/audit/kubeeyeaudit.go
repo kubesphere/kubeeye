@@ -2,7 +2,8 @@ package audit
 
 import (
 	"context"
-	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/api/kubeeye/v1alpha1"
+
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/regorules"
 	"github.com/pkg/errors"
@@ -17,14 +18,14 @@ var (
 	certexp   = "data.kubeeye_certexpiration"
 )
 
-
 type PercentOutput struct {
 	TotalAuditCount   int
 	CurrentAuditCount int
 	AuditPercent      int
 }
+type OutputType string
 
-func Cluster(ctx context.Context, kubeConfigPath string, additionalregoruleputh string, output string) error {
+func AuditCluster(ctx context.Context, kubeConfigPath string, additionalregoruleputh string, output OutputType) error {
 	kubeConfig, err := kube.GetKubeConfig(kubeConfigPath)
 	if err != nil {
 		return errors.Wrap(err, "Failed to load config file")
@@ -36,7 +37,7 @@ func Cluster(ctx context.Context, kubeConfigPath string, additionalregoruleputh 
 		return err
 	}
 
-	_, validationResultsChan,_ := ValidationResults(ctx, clients, additionalregoruleputh)
+	_, validationResultsChan, _ := ValidationResults(ctx, clients, additionalregoruleputh)
 
 	// Set the output mode, support default output JSON and CSV.
 	switch output {
@@ -56,18 +57,12 @@ func Cluster(ctx context.Context, kubeConfigPath string, additionalregoruleputh 
 	return nil
 }
 
-
-func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, additionalregoruleputh string) (kube.K8SResource, <-chan []kubeeyev1alpha1.ResultItems,*PercentOutput) {
+func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, additionalregoruleputh string) (kube.K8SResource, <-chan []kubeeyev1alpha2.ResultItems, *PercentOutput) {
 	// get kubernetes resources and put into the channel.
 	klog.Info("starting get kubernetes resources")
-	go func(ctx context.Context, kubernetesClient *kube.KubernetesClient) {
-		err := kube.GetK8SResourcesProvider(ctx, kubernetesClient)
-		if err != nil {
-			klog.Error("failed to get kubernetes resources", err)
-		}
-	}(ctx, kubernetesClient)
 
-	k8sResources := <-kube.K8sResourcesChan
+	k8sResources := kube.GetK8SResources(ctx, kubernetesClient)
+
 	auditPercent := &PercentOutput{}
 
 	if k8sResources.Deployments != nil {
@@ -114,12 +109,10 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
 	klog.Info("get audit results")
-	return k8sResources, RegoRulesValidateChan,auditPercent
+	return k8sResources, RegoRulesValidateChan, auditPercent
 }
 
-
-
-func CalculateScore(fmResultss []kubeeyev1alpha1.ResultItems, k8sResources kube.K8SResource) (scoreInfo kubeeyev1alpha1.ScoreInfo) {
+func CalculateScore(fmResultss []kubeeyev1alpha2.ResultItems, k8sResources kube.K8SResource) (scoreInfo kubeeyev1alpha2.ScoreInfo) {
 	var countDanger int
 	var countWarning int
 	var countIgnore int

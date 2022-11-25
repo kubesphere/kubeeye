@@ -17,14 +17,14 @@ package kube
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/kubesphere/kubeeye/pkg/conf"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 )
 
 // GetK8SResourcesProvider get kubeconfig by KubernetesAPI, get kubernetes resources by GetK8SResources.
@@ -37,9 +37,8 @@ func GetK8SResourcesProvider(ctx context.Context, kubernetesClient *KubernetesCl
 // TODO
 //Add method to excluded namespaces in GetK8SResources.
 
-
 // GetObjectCounts get kubernetes resources by GroupVersion
-func GetObjectCounts(ctx context.Context, kubernetesClient *KubernetesClient,  resource string, group string) (*unstructured.UnstructuredList, int ,error) {
+func GetObjectCounts(ctx context.Context, kubernetesClient *KubernetesClient, resource string, group string) (*unstructured.UnstructuredList, int, error) {
 
 	var rsourceCount int
 
@@ -58,9 +57,8 @@ func GetObjectCounts(ctx context.Context, kubernetesClient *KubernetesClient,  r
 	return rsource, rsourceCount, err
 }
 
-
-// GetK8SResources get kubernetes resources by GroupVersionResource, put the resources into the channel K8sResourcesChan, return error.
-func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
+// GetK8SResources get kubernetes resources by GroupVersionResource, return K8SResource.
+func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) K8SResource {
 	kubeconfig := kubernetesClient.KubeConfig
 	clientSet := kubernetesClient.ClientSet
 
@@ -83,19 +81,17 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 	versionInfo, err := clientSet.Discovery().ServerVersion()
 	if err != nil {
 		fmt.Printf("\033[1;33;49mFailed to get Kubernetes serverVersion.\033[0m\n")
-		//fmt.Errorf("failed to fetch serverVersion: %s", err.Error())
 	}
 	if versionInfo != nil {
 		serverVersion = versionInfo.Major + "." + versionInfo.Minor
 	}
 
-	nodes, nodesCount , err := GetObjectCounts(ctx, kubernetesClient, conf.Nodes, conf.NoGroup)
+	nodes, nodesCount, err := GetObjectCounts(ctx, kubernetesClient, conf.Nodes, conf.NoGroup)
 
-	namespaces, namespacesCount , _ := GetObjectCounts(ctx, kubernetesClient, conf.Namespaces, conf.NoGroup)
+	namespaces, namespacesCount, _ := GetObjectCounts(ctx, kubernetesClient, conf.Namespaces, conf.NoGroup)
 	for _, namespacesItem := range namespaces.Items {
 		namespacesList = append(namespacesList, namespacesItem.GetName())
 	}
-
 
 	deployments, deploymentsCount, _ := GetObjectCounts(ctx, kubernetesClient, conf.Deployments, conf.AppsGroup)
 
@@ -105,17 +101,17 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) {
 
 	workloadsCount := deploymentsCount + daemonSetsCount + statefulSetsCount
 
-	jobs , _, _ := GetObjectCounts(ctx, kubernetesClient, conf.Jobs, conf.BatchGroup)
+	jobs, _, _ := GetObjectCounts(ctx, kubernetesClient, conf.Jobs, conf.BatchGroup)
 
-	cronjobs , _, _ := GetObjectCounts(ctx, kubernetesClient, conf.Cronjobs, conf.BatchGroup)
+	cronjobs, _, _ := GetObjectCounts(ctx, kubernetesClient, conf.Cronjobs, conf.BatchGroup)
 
 	events, _, _ := GetObjectCounts(ctx, kubernetesClient, conf.Events, conf.NoGroup)
 
 	roles, _, _ := GetObjectCounts(ctx, kubernetesClient, conf.Roles, conf.RoleGroup)
 
-	clusterRoles , _ , _ := GetObjectCounts(ctx, kubernetesClient, conf.Clusterroles, conf.RoleGroup)
+	clusterRoles, _, _ := GetObjectCounts(ctx, kubernetesClient, conf.Clusterroles, conf.RoleGroup)
 
-	K8sResourcesChan <- K8SResource{
+	return K8SResource{
 		ServerVersion:    serverVersion,
 		CreationTime:     time.Now(),
 		APIServerAddress: kubeconfig.Host,

@@ -1,8 +1,7 @@
 domain: kubesphere.io
 layout:
 - go.kubebuilder.io/v3
-multigroup: true
-projectName: kubeeye
+projectName: eye2al
 repo: github.com/kubesphere/kubeeye
 resources:
 - api:
@@ -12,8 +11,8 @@ resources:
   domain: kubesphere.io
   group: kubeeye
   kind: AuditPlan
-  path: github.com/kubesphere/kubeeye/api/v1alpha1
-  version: v1alpha1
+  path: github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2
+  version: v1alpha2
 - api:
     crdVersion: v1
     namespaced: true
@@ -21,6 +20,6 @@ resources:
   domain: kubesphere.io
   group: kubeeye
   kind: AuditTask
-  path: github.com/kubesphere/kubeeye/api/v1alpha1
-  version: v1alpha1
+  path: github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2
+  version: v1alpha2
 version: "3"

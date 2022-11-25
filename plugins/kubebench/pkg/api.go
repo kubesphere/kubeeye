@@ -55,10 +55,10 @@ func pluginAudit(request *http.Request) {
 		}
 
 		data := &url2.Values{}
-		data.Set("pluginname","kubebench")
-		data.Set("taskname",taskName)
+		data.Set("pluginname", "kubebench")
+		data.Set("taskname", taskName)
 		data.Set("pluginresult", string(jsonResults))
-		url := fmt.Sprintf("http://%s/plugins",kubeeyeSvc)
+		url := fmt.Sprintf("http://%s/plugins", kubeeyeSvc)
 
 		tr := &http.Transport{
 			IdleConnTimeout:    5 * time.Second, // the maximum amount of time an idle connection will remain idle before closing itself.
@@ -67,7 +67,7 @@ func pluginAudit(request *http.Request) {
 		}
 		client := &http.Client{Transport: tr}
 
-		_, err =client.PostForm(url,*data)
+		_, err = client.PostForm(url, *data)
 		if err != nil {
 			log.Printf("Push plugin result to kubeeye failed: %+v", err)
 		}

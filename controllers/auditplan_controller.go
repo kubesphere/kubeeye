@@ -19,17 +19,19 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/robfig/cron/v3"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
 	"time"
+
+	"github.com/robfig/cron/v3"
+	kubeErr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/api/kubeeye/v1alpha1"
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 )
 
 // AuditPlanReconciler reconciles a AuditPlan object
@@ -54,11 +56,15 @@ type AuditPlanReconciler struct {
 func (r *AuditPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
 
-	auditPlan := &kubeeyev1alpha1.AuditPlan{}
-	err := r.Get(ctx, req.NamespacedName,auditPlan)
-	if err != nil{
-		logger.Error(err,"failed to get Audit plan")
-		return ctrl.Result{}, nil
+	auditPlan := &kubeeyev1alpha2.AuditPlan{}
+	err := r.Get(ctx, req.NamespacedName, auditPlan)
+	if err != nil {
+		if kubeErr.IsNotFound(err) {
+			logger.Error(err, "audit plan is not found")
+			return ctrl.Result{}, nil
+		}
+		logger.Error(err, "failed to get Audit plan")
+		return ctrl.Result{}, err
 	}
 
 	if auditPlan.Spec.Suspend {
@@ -66,29 +72,26 @@ func (r *AuditPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	schedule, err := cron.ParseStandard(auditPlan.Spec.Schedule)
-	if err != nil{
-		logger.Error(err,"Unparseable schedule")
-		return ctrl.Result{}, err
+	if err != nil {
+		logger.Error(err, "Unparseable schedule")
+		return ctrl.Result{}, nil
 	}
 
 	now := time.Now()
 	scheduledTime := nextScheduledTimeDuration(schedule, auditPlan.Status.LastScheduleTime.Time)
 	if auditPlan.Status.LastScheduleTime.Add(*scheduledTime).Before(now) { // if the scheduled time has arrived, create Audit task
-		if auditPlan.Spec.Timeout == "" {
-			auditPlan.Spec.Timeout = "10m"
-		}
 
-		taskName, err := r.createAuditTask(auditPlan,ctx)
-		if err != nil{
-			logger.Error(err,"failed to create Audit task")
+		taskName, err := r.createAuditTask(auditPlan, ctx)
+		if err != nil {
+			logger.Error(err, "failed to create Audit task")
 			return ctrl.Result{}, err
 		}
-		logger.Info("create a new audit task " ,"task name", taskName)
-		auditPlan.Status.LastScheduleTime = metav1.Time{Time:now}
+		logger.Info("create a new audit task ", "task name", taskName)
+		auditPlan.Status.LastScheduleTime = metav1.Time{Time: now}
 		auditPlan.Status.LastTaskName = taskName
-		err = r.Status().Update(ctx,auditPlan)
+		err = r.Status().Update(ctx, auditPlan)
 		if err != nil {
-			logger.Error(err,"failed to update audit plan")
+			logger.Error(err, "failed to update audit plan")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil
@@ -101,10 +104,9 @@ func (r *AuditPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 // SetupWithManager sets up the controller with the Manager.
 func (r *AuditPlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&kubeeyev1alpha1.AuditPlan{}).
+		For(&kubeeyev1alpha2.AuditPlan{}).
 		Complete(r)
 }
-
 
 // nextScheduledTimeDuration returns the time duration to requeue based on
 // the schedule and given time. It adds a 100ms padding to the next requeue to account
@@ -114,15 +116,16 @@ func nextScheduledTimeDuration(sched cron.Schedule, now time.Time) *time.Duratio
 	return &nextTime
 }
 
-func(r *AuditPlanReconciler) createAuditTask(auditPlan *kubeeyev1alpha1.AuditPlan,ctx context.Context) (string, error)  {
-	var auditTask kubeeyev1alpha1.AuditTask
+func (r *AuditPlanReconciler) createAuditTask(auditPlan *kubeeyev1alpha2.AuditPlan, ctx context.Context) (string, error) {
+	var auditTask kubeeyev1alpha2.AuditTask
 	auditTask.Name = fmt.Sprintf("%s-%s", auditPlan.Name, strconv.Itoa(int(time.Now().Unix())))
 	auditTask.Namespace = auditPlan.Namespace
+	auditTask.Labels = auditPlan.Labels
 	auditTask.Spec.Auditors = auditPlan.Spec.Auditors
 	auditTask.Spec.Timeout = auditPlan.Spec.Timeout
 	err := r.Client.Create(ctx, &auditTask)
 	if err != nil {
 		return "", err
 	}
-	return auditTask.Name,nil
+	return auditTask.Name, nil
 }

@@ -3,7 +3,7 @@ FROM golang:1.17 as builder
 
 WORKDIR /workspace
 
-COPY api/ api/
+COPY apis/ apis/
 COPY clients/ clients/
 COPY cmd/ cmd/
 COPY controllers/ controllers/

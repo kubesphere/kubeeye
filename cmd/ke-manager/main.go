@@ -15,10 +15,11 @@ package main
 
 import (
 	"flag"
+	"os"
+
 	"github.com/kubesphere/kubeeye/pkg/audit"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"k8s.io/client-go/util/workqueue"
-	"os"
+	"go.uber.org/zap/zapcore"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -31,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/api/kubeeye/v1alpha1"
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/controllers"
 	//+kubebuilder:scaffold:imports
 )
@@ -44,21 +45,24 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(kubeeyev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(kubeeyev1alpha2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
+	var pluginsResultsReceiverAddr string
 	var probeAddr string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.StringVar(&pluginsResultsReceiverAddr, "plugins-results-receiver-address", ":8888", "The address the plugin result receiver binds to")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	opts := zap.Options{
 		Development: true,
+		TimeEncoder: zapcore.RFC3339TimeEncoder,
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
@@ -78,7 +82,6 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-	//var kubeConfig *rest.Config
 	// get kubernetes cluster config
 	kubeConfig, err := kube.GetKubeConfigInCluster()
 	if err != nil {
@@ -95,13 +98,15 @@ func main() {
 	}
 
 	au := &audit.Audit{
-		TaskQueue: workqueue.New(),
-		TaskResults: make(map[string]map[string]*kubeeyev1alpha1.AuditResult),
-		K8sClient: clients}
+		TaskQueue:   audit.NewTaskQueue(),
+		TaskResults: make(map[string]map[string]*kubeeyev1alpha2.AuditResult),
+		K8sClient:   clients,
+		Cli:         mgr.GetClient(),
+	}
 
 	setupLog.Info("starting audit")
-	go au.PluginsResultsReceiver()
-	go au.StartAudit(ctx,mgr.GetClient())
+	go au.PluginsResultsReceiver(pluginsResultsReceiverAddr)
+	go au.StartAudit(ctx)
 
 	if err = (&controllers.AuditPlanReconciler{
 		Client: mgr.GetClient(),
@@ -111,9 +116,10 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.AuditTaskReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-		Audit: au,
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Audit:      au,
+		K8sClients: clients,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AuditTask")
 		os.Exit(1)
@@ -128,7 +134,6 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
-
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctx); err != nil {

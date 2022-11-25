@@ -19,8 +19,8 @@ package fake
 
 import (
 	clientset "github.com/kubesphere/kubeeye/clients/clientset/versioned"
-	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/clients/clientset/versioned/typed/kubeeye/v1alpha1"
-	fakekubeeyev1alpha1 "github.com/kubesphere/kubeeye/clients/clientset/versioned/typed/kubeeye/v1alpha1/fake"
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/clients/clientset/versioned/typed/kubeeye/v1alpha2"
+	fakekubeeyev1alpha2 "github.com/kubesphere/kubeeye/clients/clientset/versioned/typed/kubeeye/v1alpha2/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -78,7 +78,7 @@ var (
 	_ testing.FakeClient  = &Clientset{}
 )
 
-// KubeeyeV1alpha1 retrieves the KubeeyeV1alpha1Client
-func (c *Clientset) KubeeyeV1alpha1() kubeeyev1alpha1.KubeeyeV1alpha1Interface {
-	return &fakekubeeyev1alpha1.FakeKubeeyeV1alpha1{Fake: &c.Fake}
+// KubeeyeV1alpha2 retrieves the KubeeyeV1alpha2Client
+func (c *Clientset) KubeeyeV1alpha2() kubeeyev1alpha2.KubeeyeV1alpha2Interface {
+	return &fakekubeeyev1alpha2.FakeKubeeyeV1alpha2{Fake: &c.Fake}
 }

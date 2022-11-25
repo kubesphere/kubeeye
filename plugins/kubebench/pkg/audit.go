@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func KubeBenchAudit() (result *KubeBenchResults,err error) {
+func KubeBenchAudit() (result *KubeBenchResults, err error) {
 	log.Println("start KubeBench audit")
 	// exec KubeBench audit, put the result into cmd
 	cmd := exec.Command("kube-bench", "--json")

@@ -19,11 +19,12 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/kubesphere/kubeeye/api/kubeeye/v1alpha1"
 	"net/http"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/open-policy-agent/opa/rego"
@@ -32,12 +33,12 @@ import (
 
 var lock sync.Mutex
 
-type validateFunc func(ctx context.Context, regoRulesList []string) []v1alpha1.ResultItems
+type validateFunc func(ctx context.Context, regoRulesList []string) []v1alpha2.ResultItems
 
 func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercent *PercentOutput) validateFunc {
 
-	return func(ctx context.Context, regoRulesList []string) []v1alpha1.ResultItems {
-		var auditResults []v1alpha1.ResultItems
+	return func(ctx context.Context, regoRulesList []string) []v1alpha2.ResultItems {
+		var auditResults []v1alpha2.ResultItems
 
 		if queryRule == workloads && Resources.Deployments != nil {
 			for _, resource := range Resources.Deployments.Items {
@@ -151,9 +152,9 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercen
 }
 
 // MergeRegoRulesValidate Validate kubernetes cluster Resources, put the results into channels.
-func MergeRegoRulesValidate(ctx context.Context, regoRulesChan <-chan string, vfuncs ...validateFunc) <-chan []v1alpha1.ResultItems {
+func MergeRegoRulesValidate(ctx context.Context, regoRulesChan <-chan string, vfuncs ...validateFunc) <-chan []v1alpha2.ResultItems {
 
-	resultChan := make(chan []v1alpha1.ResultItems)
+	resultChan := make(chan []v1alpha2.ResultItems)
 	var wg sync.WaitGroup
 	wg.Add(len(vfuncs))
 
@@ -179,11 +180,11 @@ func MergeRegoRulesValidate(ctx context.Context, regoRulesChan <-chan string, vf
 }
 
 // ValidateK8SResource validate kubernetes resource by rego, return the validate results.
-func validateK8SResource(ctx context.Context, resource unstructured.Unstructured, regoRulesList []string, queryRule string) (v1alpha1.ResultItems, bool) {
-	var auditResult v1alpha1.ResultItems
-	var resultReceiver v1alpha1.ResultInfos
-	var resourceInfos v1alpha1.ResourceInfos
-	var resultItems v1alpha1.ResultItem
+func validateK8SResource(ctx context.Context, resource unstructured.Unstructured, regoRulesList []string, queryRule string) (v1alpha2.ResultItems, bool) {
+	var auditResult v1alpha2.ResultItems
+	var resultReceiver v1alpha2.ResultInfos
+	var resourceInfos v1alpha2.ResourceInfos
+	var resultItems v1alpha2.ResultItem
 	find := false
 	for _, regoRule := range regoRulesList {
 		query, err := rego.New(rego.Query(queryRule), rego.Module("examples.rego", regoRule)).PrepareForEval(ctx)
@@ -251,11 +252,11 @@ func validateK8SResource(ctx context.Context, resource unstructured.Unstructured
 }
 
 // validateCertExp validate kube-apiserver certificate expiration
-func validateCertExp(ApiAddress string) (v1alpha1.ResultItems, bool) {
-	var auditResult v1alpha1.ResultItems
-	var resultReceiver v1alpha1.ResultInfos
-	var resourceInfos v1alpha1.ResourceInfos
-	var resultItems v1alpha1.ResultItem
+func validateCertExp(ApiAddress string) (v1alpha2.ResultItems, bool) {
+	var auditResult v1alpha2.ResultItems
+	var resultReceiver v1alpha2.ResultInfos
+	var resourceInfos v1alpha2.ResourceInfos
+	var resultItems v1alpha2.ResultItem
 	var find bool
 	resourceType := "Cert"
 

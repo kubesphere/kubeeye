@@ -4,6 +4,6 @@ import (
 	"github.com/kubesphere/kubeeye/plugins/kubebench/pkg"
 )
 
-func main()  {
+func main() {
 	pkg.KubeBenchAPI()
 }

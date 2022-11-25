@@ -1,0 +1,59 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - auditplans
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - auditplans/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - auditplans/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - audittasks
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - audittasks/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - audittasks/status
+  verbs:
+  - get
+  - patch
+  - update

@@ -99,13 +99,3 @@ func GetK8SClients(kubeconfig string) (*KubernetesClient, error) {
 	}
 	return clients, nil
 }
-
-//func GetClientSetInCluster() (*kubeeyeclientset.Clientset, error) {
-//	kubeConfig, err := GetKubeConfigInCluster()
-//	if err != nil {
-//		return nil, errors.Wrap(err, "failed to get kubeconfig")
-//	}
-//
-//	clientset := kubeeyeclientset.NewForConfigOrDie(kubeConfig)
-//	return clientset, nil
-//}

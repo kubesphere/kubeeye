@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net/http"
 
-	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/clients/clientset/versioned/typed/kubeeye/v1alpha1"
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/clients/clientset/versioned/typed/kubeeye/v1alpha2"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -29,19 +29,19 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	KubeeyeV1alpha1() kubeeyev1alpha1.KubeeyeV1alpha1Interface
+	KubeeyeV1alpha2() kubeeyev1alpha2.KubeeyeV1alpha2Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	kubeeyeV1alpha1 *kubeeyev1alpha1.KubeeyeV1alpha1Client
+	kubeeyeV1alpha2 *kubeeyev1alpha2.KubeeyeV1alpha2Client
 }
 
-// KubeeyeV1alpha1 retrieves the KubeeyeV1alpha1Client
-func (c *Clientset) KubeeyeV1alpha1() kubeeyev1alpha1.KubeeyeV1alpha1Interface {
-	return c.kubeeyeV1alpha1
+// KubeeyeV1alpha2 retrieves the KubeeyeV1alpha2Client
+func (c *Clientset) KubeeyeV1alpha2() kubeeyev1alpha2.KubeeyeV1alpha2Interface {
+	return c.kubeeyeV1alpha2
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -84,7 +84,7 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 
 	var cs Clientset
 	var err error
-	cs.kubeeyeV1alpha1, err = kubeeyev1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.kubeeyeV1alpha2, err = kubeeyev1alpha2.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.kubeeyeV1alpha1 = kubeeyev1alpha1.New(c)
+	cs.kubeeyeV1alpha2 = kubeeyev1alpha2.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs
