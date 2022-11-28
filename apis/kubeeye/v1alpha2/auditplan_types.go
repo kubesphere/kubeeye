@@ -48,8 +48,8 @@ type AuditPlanSpec struct {
 type AuditPlanStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	LastScheduleTime metav1.Time `json:"lastScheduleTime"`
-	LastTaskName     string      `json:"lastTaskName"`
+	LastScheduleTime metav1.Time `json:"lastScheduleTime,omitempty"`
+	LastTaskName     string      `json:"lastTaskName,omitempty"`
 }
 
 // +genclient

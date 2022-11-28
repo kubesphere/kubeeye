@@ -58,9 +58,6 @@ spec:
                 type: string
               lastTaskName:
                 type: string
-            required:
-            - lastScheduleTime
-            - lastTaskName
             type: object
         type: object
     served: true
