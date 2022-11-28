@@ -42,8 +42,6 @@ spec:
                 type: array
               timeout:
                 type: string
-            required:
-            - auditors
             type: object
           status:
             description: AuditTaskStatus defines the observed state of AuditTask

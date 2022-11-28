@@ -30,7 +30,7 @@ type AuditTaskSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// +kubebuilder:validation:MinItems=1
-	Auditors []Auditor `json:"auditors"` // like "kubeeye,kubebench"
+	Auditors []Auditor `json:"auditors,omitempty"` // like "kubeeye,kubebench"
 	Timeout  string    `json:"timeout,omitempty"`
 }
 

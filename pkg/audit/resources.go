@@ -268,7 +268,7 @@ func validateCertExp(ApiAddress string) (v1alpha2.ResultItems, bool) {
 		resp, err := client.Get(ApiAddress)
 		if err != nil {
 			find = false
-			fmt.Printf("\033[1;33;49mFailed to get Kubernetes kube-apiserver certificate expiration.\033[0m\n")
+			fmt.Printf("Failed to get Kubernetes kube-apiserver certificate expiration.\n")
 			return auditResult, find
 		}
 		defer func() { _ = resp.Body.Close() }()

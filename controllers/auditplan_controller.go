@@ -67,7 +67,13 @@ func (r *AuditPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
+	if !auditPlan.DeletionTimestamp.IsZero() {
+		logger.Info("audit plan is being deleted")
+		return ctrl.Result{}, nil
+	}
+
 	if auditPlan.Spec.Suspend {
+		logger.Info("audit plan suspend")
 		return ctrl.Result{}, nil
 	}
 

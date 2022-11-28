@@ -46,9 +46,6 @@ spec:
                 type: boolean
               timeout:
                 type: string
-            required:
-            - auditors
-            - schedule
             type: object
           status:
             description: AuditPlanStatus defines the observed state of AuditPlan

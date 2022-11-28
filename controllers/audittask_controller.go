@@ -71,6 +71,11 @@ func (r *AuditTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
+	if !auditTask.DeletionTimestamp.IsZero() {
+		logger.Info("audit task is being deleted")
+		return ctrl.Result{}, nil
+	}
+
 	if auditTask.Status.StartTimestamp.IsZero() { // if Audit task have not start, trigger kubeeye and plugin
 
 		// start Audit
@@ -130,7 +135,7 @@ func (r *AuditTaskReconciler) getClusterInfo(ctx context.Context) (kubeeyev1alph
 	var clusterInfo kubeeyev1alpha2.ClusterInfo
 	versionInfo, err := r.K8sClients.ClientSet.Discovery().ServerVersion()
 	if err != nil {
-		klog.Error(err, "\033[1;33;49mFailed to get Kubernetes serverVersion.\033[0m\n")
+		klog.Error(err, "Failed to get Kubernetes serverVersion.\n")
 	}
 	var serverVersion string
 	if versionInfo != nil {

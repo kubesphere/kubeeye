@@ -48,7 +48,7 @@ func GetObjectCounts(ctx context.Context, kubernetesClient *KubernetesClient, re
 	resourceGVR := schema.GroupVersionResource{Group: group, Resource: resource, Version: conf.APIVersionV1}
 	rsource, err := dynamicClient.Resource(resourceGVR).List(ctx, listOpts)
 	if err != nil {
-		fmt.Printf("\033[1;33;49mFailed to get Kubernetes %v.\033[0m\n", resource)
+		fmt.Printf("Failed to get Kubernetes %v.\n", resource)
 	}
 	if rsource != nil {
 		rsourceCount = len(rsource.Items)
@@ -80,7 +80,7 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) K8
 
 	versionInfo, err := clientSet.Discovery().ServerVersion()
 	if err != nil {
-		fmt.Printf("\033[1;33;49mFailed to get Kubernetes serverVersion.\033[0m\n")
+		fmt.Printf("Failed to get Kubernetes serverVersion.\n")
 	}
 	if versionInfo != nil {
 		serverVersion = versionInfo.Major + "." + versionInfo.Minor
