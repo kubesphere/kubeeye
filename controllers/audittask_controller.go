@@ -64,6 +64,8 @@ func (r *AuditTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	err := r.Get(ctx, req.NamespacedName, auditTask)
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
+			delete(r.Audit.TaskOnceMap, req.NamespacedName)
+			delete(r.Audit.TaskResults, auditTask.Name)
 			logger.Error(err, "audit task is not found")
 			return ctrl.Result{}, nil
 		}
@@ -72,6 +74,8 @@ func (r *AuditTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	if !auditTask.DeletionTimestamp.IsZero() {
+		delete(r.Audit.TaskOnceMap, req.NamespacedName)
+		delete(r.Audit.TaskResults, auditTask.Name)
 		logger.Info("audit task is being deleted")
 		return ctrl.Result{}, nil
 	}
@@ -79,7 +83,7 @@ func (r *AuditTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if auditTask.Status.StartTimestamp.IsZero() { // if Audit task have not start, trigger kubeeye and plugin
 
 		// start Audit
-		r.Audit.TaskQueue.Add(req.NamespacedName)
+		r.Audit.AddTaskToQueue(req.NamespacedName)
 
 		auditTask.Status.StartTimestamp = &metav1.Time{Time: time.Now()}
 		auditTask.Status.Phase = kubeeyev1alpha2.PhaseRunning

@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/workqueue"
 
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
@@ -36,11 +36,24 @@ import (
 )
 
 type Audit struct {
-	sync.Mutex
-	TaskQueue   *TaskQueue
+	TaskQueue   workqueue.RateLimitingInterface
 	TaskResults map[string]map[string]*kubeeyev1alpha2.AuditResult
 	K8sClient   *kube.KubernetesClient
 	Cli         client.Client
+	TaskOnceMap map[types.NamespacedName]*sync.Once
+}
+
+func (k *Audit) AddTaskToQueue(task types.NamespacedName) {
+	once, ok := k.TaskOnceMap[task]
+	if !ok {
+		once = &sync.Once{}
+		k.TaskOnceMap[task] = once
+	}
+	once.Do(
+		func() {
+			k.TaskQueue.Add(task)
+		},
+	)
 }
 
 func (k *Audit) StartAudit(ctx context.Context) {
@@ -61,6 +74,9 @@ func (k *Audit) StartAudit(ctx context.Context) {
 }
 
 func (k *Audit) TriggerAudit(ctx context.Context, taskName types.NamespacedName) {
+
+	defer k.TaskQueue.Done(taskName)
+
 	auditTask := &kubeeyev1alpha2.AuditTask{
 		ObjectMeta: metav1.ObjectMeta{Name: taskName.Name, Namespace: taskName.Namespace},
 	}
@@ -74,9 +90,8 @@ func (k *Audit) TriggerAudit(ctx context.Context, taskName types.NamespacedName)
 		klog.Error(err, "failed to parse timeout")
 		timeout = constant.DefaultTimeout
 	}
-	k.Mutex.Lock()
+
 	k.TaskResults[taskName.Name] = make(map[string]*kubeeyev1alpha2.AuditResult, len(auditTask.Spec.Auditors))
-	k.Mutex.Unlock()
 
 	auditorSvcMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{Name: constant.AuditorServiceAddrConfigMap, Namespace: taskName.Namespace},
@@ -96,22 +111,23 @@ func (k *Audit) TriggerAudit(ctx context.Context, taskName types.NamespacedName)
 		}
 	}
 
-	done := func() (bool, error) {
-		err := k.Cli.Get(ctx, client.ObjectKeyFromObject(auditTask), auditTask)
-		if err != nil {
-			klog.Error(err, "failed to get audit task")
-			return false, nil
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	ticker := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-timeoutCtx.Done():
+			return
+		case <-ticker.C:
+			err := k.Cli.Get(ctx, client.ObjectKeyFromObject(auditTask), auditTask)
+			if err != nil {
+				klog.Error(err, "failed to get audit task")
+				return
+			}
+			if auditTask.Status.Phase == kubeeyev1alpha2.PhaseSucceeded {
+				return
+			}
 		}
-		if auditTask.Status.Phase == kubeeyev1alpha2.PhaseSucceeded {
-			k.TaskQueue.Done(taskName)
-			return true, nil
-		}
-		return false, nil
-	}
-	err = wait.PollImmediate(3*time.Second, timeout, done)
-	if err != nil {
-		k.TaskQueue.Done(taskName)
-		return
 	}
 }
 
@@ -119,9 +135,7 @@ func (k *Audit) KubeeyeAudit(taskName string, ctx context.Context) {
 	klog.Infof("%s : start kubeeye audit", taskName)
 	auditResult := &kubeeyev1alpha2.AuditResult{Name: "kubeeye", Phase: kubeeyev1alpha2.PhaseRunning}
 
-	k.Mutex.Lock()
 	k.TaskResults[taskName]["kubeeye"] = auditResult
-	k.Mutex.Unlock()
 	// start kubeeye audit
 	K8SResources, validationResultsChan, Percent := ValidationResults(ctx, k.K8sClient, "")
 
@@ -207,9 +221,7 @@ func (k *Audit) PluginsResult(w http.ResponseWriter, r *http.Request) {
 		Name:   pluginName,
 		Phase:  kubeeyev1alpha2.PhaseSucceeded,
 	}
-	k.Mutex.Lock()
 	k.TaskResults[taskName][pluginName] = result
-	k.Mutex.Unlock()
 	klog.Infof(" task %s receive %s plugin result", taskName, pluginName)
 	w.WriteHeader(http.StatusOK)
 }

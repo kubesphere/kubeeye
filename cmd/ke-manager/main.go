@@ -16,6 +16,11 @@ package main
 import (
 	"flag"
 	"os"
+	"sync"
+
+	"k8s.io/apimachinery/pkg/types"
+
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/kubesphere/kubeeye/pkg/audit"
 	"github.com/kubesphere/kubeeye/pkg/kube"
@@ -98,10 +103,11 @@ func main() {
 	}
 
 	au := &audit.Audit{
-		TaskQueue:   audit.NewTaskQueue(),
+		TaskQueue:   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		TaskResults: make(map[string]map[string]*kubeeyev1alpha2.AuditResult),
 		K8sClient:   clients,
 		Cli:         mgr.GetClient(),
+		TaskOnceMap: make(map[types.NamespacedName]*sync.Once),
 	}
 
 	setupLog.Info("starting audit")
