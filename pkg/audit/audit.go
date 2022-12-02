@@ -21,6 +21,8 @@ import (
 	"sync"
 	"time"
 
+	kubeErr "k8s.io/apimachinery/pkg/api/errors"
+
 	"k8s.io/client-go/util/workqueue"
 
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
@@ -51,7 +53,7 @@ func (k *Audit) AddTaskToQueue(task types.NamespacedName) {
 	}
 	once.Do(
 		func() {
-			k.TaskQueue.Add(task)
+			k.TaskQueue.AddRateLimited(task)
 		},
 	)
 }
@@ -82,7 +84,18 @@ func (k *Audit) TriggerAudit(ctx context.Context, taskName types.NamespacedName)
 	}
 	err := k.Cli.Get(ctx, client.ObjectKeyFromObject(auditTask), auditTask)
 	if err != nil {
+		if kubeErr.IsNotFound(err) {
+			klog.Error(err, "audit task is not found")
+			k.TaskQueue.Forget(taskName)
+			return
+		}
+		k.TaskQueue.AddRateLimited(taskName)
 		klog.Error(err, "failed to get audit task")
+		return
+	}
+	if !auditTask.DeletionTimestamp.IsZero() {
+		klog.Error(err, "audit task is deleted")
+		k.TaskQueue.Forget(taskName)
 		return
 	}
 	timeout, err := time.ParseDuration(auditTask.Spec.Timeout)
@@ -98,6 +111,7 @@ func (k *Audit) TriggerAudit(ctx context.Context, taskName types.NamespacedName)
 	}
 	err = k.Cli.Get(ctx, client.ObjectKeyFromObject(auditorSvcMap), auditorSvcMap)
 	if err != nil {
+		k.TaskQueue.Forget(taskName)
 		klog.Error(err, " failed to get audit service configmap")
 		return
 	}
@@ -121,7 +135,17 @@ func (k *Audit) TriggerAudit(ctx context.Context, taskName types.NamespacedName)
 		case <-ticker.C:
 			err := k.Cli.Get(ctx, client.ObjectKeyFromObject(auditTask), auditTask)
 			if err != nil {
+				if kubeErr.IsNotFound(err) {
+					klog.Error(err, "audit task is not found")
+					k.TaskQueue.Forget(taskName)
+					return
+				}
 				klog.Error(err, "failed to get audit task")
+				continue
+			}
+			if !auditTask.DeletionTimestamp.IsZero() {
+				klog.Error(err, "audit task is deleted")
+				k.TaskQueue.Forget(taskName)
 				return
 			}
 			if auditTask.Status.Phase == kubeeyev1alpha2.PhaseSucceeded {
