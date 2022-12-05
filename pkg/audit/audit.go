@@ -53,7 +53,7 @@ func (k *Audit) AddTaskToQueue(task types.NamespacedName) {
 	}
 	once.Do(
 		func() {
-			k.TaskQueue.AddRateLimited(task)
+			k.TaskQueue.Add(task)
 		},
 	)
 }
@@ -79,6 +79,16 @@ func (k *Audit) TriggerAudit(ctx context.Context, taskName types.NamespacedName)
 
 	defer k.TaskQueue.Done(taskName)
 
+	err := k.processAudit(ctx, taskName)
+	if err != nil {
+		k.TaskQueue.AddRateLimited(taskName)
+	} else {
+		k.TaskQueue.Forget(taskName)
+	}
+
+}
+
+func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName) error {
 	auditTask := &kubeeyev1alpha2.AuditTask{
 		ObjectMeta: metav1.ObjectMeta{Name: taskName.Name, Namespace: taskName.Namespace},
 	}
@@ -86,17 +96,14 @@ func (k *Audit) TriggerAudit(ctx context.Context, taskName types.NamespacedName)
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			klog.Error(err, "audit task is not found")
-			k.TaskQueue.Forget(taskName)
-			return
+			return nil
 		}
-		k.TaskQueue.AddRateLimited(taskName)
 		klog.Error(err, "failed to get audit task")
-		return
+		return err
 	}
 	if !auditTask.DeletionTimestamp.IsZero() {
 		klog.Error(err, "audit task is deleted")
-		k.TaskQueue.Forget(taskName)
-		return
+		return nil
 	}
 	timeout, err := time.ParseDuration(auditTask.Spec.Timeout)
 	if err != nil {
@@ -111,9 +118,8 @@ func (k *Audit) TriggerAudit(ctx context.Context, taskName types.NamespacedName)
 	}
 	err = k.Cli.Get(ctx, client.ObjectKeyFromObject(auditorSvcMap), auditorSvcMap)
 	if err != nil {
-		k.TaskQueue.Forget(taskName)
 		klog.Error(err, " failed to get audit service configmap")
-		return
+		return err
 	}
 
 	auditorMap := auditorSvcMap.Data
@@ -124,32 +130,29 @@ func (k *Audit) TriggerAudit(ctx context.Context, taskName types.NamespacedName)
 			go k.PluginAudit(ctx, taskName.Name, string(auditor), auditorMap)
 		}
 	}
-
 	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case <-timeoutCtx.Done():
-			return
+			return nil
 		case <-ticker.C:
 			err := k.Cli.Get(ctx, client.ObjectKeyFromObject(auditTask), auditTask)
 			if err != nil {
 				if kubeErr.IsNotFound(err) {
 					klog.Error(err, "audit task is not found")
-					k.TaskQueue.Forget(taskName)
-					return
+					return nil
 				}
 				klog.Error(err, "failed to get audit task")
 				continue
 			}
 			if !auditTask.DeletionTimestamp.IsZero() {
 				klog.Error(err, "audit task is deleted")
-				k.TaskQueue.Forget(taskName)
-				return
+				return nil
 			}
 			if auditTask.Status.Phase == kubeeyev1alpha2.PhaseSucceeded {
-				return
+				return nil
 			}
 		}
 	}
