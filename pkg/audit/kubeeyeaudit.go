@@ -57,7 +57,7 @@ func AuditCluster(ctx context.Context, kubeConfigPath string, additionalregorule
 	return nil
 }
 
-func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, additionalregoruleputh string) (kube.K8SResource, <-chan []kubeeyev1alpha2.ResultItems, *PercentOutput) {
+func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, additionalregoruleputh string) (kube.K8SResource, <-chan []kubeeyev1alpha2.ResourceResult, *PercentOutput) {
 	// get kubernetes resources and put into the channel.
 	klog.Info("starting get kubernetes resources")
 
@@ -112,21 +112,19 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 	return k8sResources, RegoRulesValidateChan, auditPercent
 }
 
-func CalculateScore(fmResultss []kubeeyev1alpha2.ResultItems, k8sResources kube.K8SResource) (scoreInfo kubeeyev1alpha2.ScoreInfo) {
+func CalculateScore(fmResultss []kubeeyev1alpha2.ResourceResult, k8sResources kube.K8SResource) (scoreInfo kubeeyev1alpha2.ScoreInfo) {
 	var countDanger int
 	var countWarning int
 	var countIgnore int
 
 	for _, fmResult := range fmResultss {
-		for _, resultInfo := range fmResult.ResultInfos {
-			for _, item := range resultInfo.ResultItems {
-				if item.Level == "warning" {
-					countWarning++
-				} else if item.Level == "danger" {
-					countDanger++
-				} else if item.Level == "ignore" {
-					countIgnore++
-				}
+		for _, item := range fmResult.ResultItems {
+			if item.Level == "warning" {
+				countWarning++
+			} else if item.Level == "danger" {
+				countDanger++
+			} else if item.Level == "ignore" {
+				countIgnore++
 			}
 		}
 	}

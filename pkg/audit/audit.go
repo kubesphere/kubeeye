@@ -21,6 +21,8 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 
 	"k8s.io/client-go/util/workqueue"
@@ -30,7 +32,6 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/klog/v2"
@@ -167,7 +168,7 @@ func (k *Audit) KubeeyeAudit(taskName string, ctx context.Context) {
 	K8SResources, validationResultsChan, Percent := ValidationResults(ctx, k.K8sClient, "")
 
 	kubeeyeResult := kubeeyev1alpha2.KubeeyeAuditResult{}
-	var results []kubeeyev1alpha2.ResultItems
+	var results []kubeeyev1alpha2.ResourceResult
 	ctxCancel, cancel := context.WithCancel(ctx)
 
 	go func(ctx context.Context) {
@@ -204,7 +205,7 @@ func (k *Audit) KubeeyeAudit(taskName string, ctx context.Context) {
 		WorkloadsCount: K8SResources.WorkloadsCount,
 		NamespacesList: K8SResources.NameSpacesList,
 	}
-	kubeeyeResult.ResultItem = results
+	kubeeyeResult.ResourceResults = results
 
 	ext := runtime.RawExtension{}
 	marshal, err := json.Marshal(kubeeyeResult)

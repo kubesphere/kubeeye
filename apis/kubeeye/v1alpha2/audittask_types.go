@@ -98,25 +98,19 @@ func init() {
 
 // kubeeye audit result
 type KubeeyeAuditResult struct {
-	ScoreInfo  `json:"scoreInfo,omitempty"`
-	ResultItem []ResultItems `json:"resultItem,omitempty"`
-	Percent    int           `json:"percent,omitempty"`
-	ExtraInfo  `json:"extra_info,omitempty"`
-}
-type ResultItems struct {
-	NameSpace   string        `json:"namespace,omitempty"`
-	ResultInfos []ResultInfos `json:"resultInfos,omitempty"`
+	ScoreInfo       `json:"scoreInfo,omitempty"`
+	ResourceResults []ResourceResult `json:"resourceResults,omitempty"`
+	Percent         int              `json:"percent,omitempty"`
+	ExtraInfo       `json:"extraInfo,omitempty"`
 }
 
-type ResultInfos struct {
-	ResourceType  string `json:"resourceType,omitempty"`
-	ResourceInfos `json:"resourceInfos,omitempty"`
+type ResourceResult struct {
+	NameSpace    string       `json:"namespace,omitempty"`
+	ResourceType string       `json:"resourceType,omitempty"`
+	Name         string       `json:"name,omitempty"`
+	ResultItems  []ResultItem `json:"resultItems,omitempty"`
 }
 
-type ResourceInfos struct {
-	Name        string       `json:"name,omitempty"`
-	ResultItems []ResultItem `json:"items,omitempty"`
-}
 type ResultItem struct {
 	Level   string `json:"level,omitempty"`
 	Message string `json:"message,omitempty"`

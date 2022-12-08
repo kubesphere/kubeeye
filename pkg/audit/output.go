@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func defaultOutput(receiver <-chan []v1alpha2.ResultItems) error {
+func defaultOutput(receiver <-chan []v1alpha2.ResourceResult) error {
 	w := tabwriter.NewWriter(os.Stdout, 10, 4, 3, ' ', 0)
 	_, err := fmt.Fprintln(w, "\nNAMESPACE\tKIND\tNAME\tLEVEL\tMESSAGE\tREASON")
 	if err != nil {
@@ -20,14 +20,12 @@ func defaultOutput(receiver <-chan []v1alpha2.ResultItems) error {
 	}
 	for r := range receiver {
 		for _, results := range r {
-			for _, resultInfo := range results.ResultInfos {
-				for _, items := range resultInfo.ResultItems {
-					s := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%-8v", results.NameSpace, resultInfo.ResourceType,
-						resultInfo.Name, items.Level, items.Message, items.Reason)
-					_, err := fmt.Fprintln(w, s)
-					if err != nil {
-						return err
-					}
+			for _, items := range results.ResultItems {
+				s := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%-8v", results.NameSpace, results.ResourceType,
+					results.Name, items.Level, items.Message, items.Reason)
+				_, err := fmt.Fprintln(w, s)
+				if err != nil {
+					return err
 				}
 			}
 		}
@@ -38,8 +36,8 @@ func defaultOutput(receiver <-chan []v1alpha2.ResultItems) error {
 	return nil
 }
 
-func JSONOutput(receiver <-chan []v1alpha2.ResultItems) error {
-	var output []v1alpha2.ResultItems
+func JSONOutput(receiver <-chan []v1alpha2.ResourceResult) error {
+	var output []v1alpha2.ResourceResult
 	for r := range receiver {
 		for _, results := range r {
 			output = append(output, results)
@@ -55,7 +53,7 @@ func JSONOutput(receiver <-chan []v1alpha2.ResultItems) error {
 	return nil
 }
 
-func CSVOutput(receiver <-chan []v1alpha2.ResultItems) error {
+func CSVOutput(receiver <-chan []v1alpha2.ResourceResult) error {
 	filename := "kubeEyeAuditResult.csv"
 	// create csv file
 	newFile, err := os.Create(filename)
@@ -79,31 +77,30 @@ func CSVOutput(receiver <-chan []v1alpha2.ResultItems) error {
 	for r := range receiver {
 		for _, results := range r {
 			var resourceName string
-			for _, resultInfo := range results.ResultInfos {
-				for _, items := range resultInfo.ResultItems {
-					if resourceName == "" {
-						content := []string{
-							results.NameSpace,
-							resultInfo.ResourceType,
-							resultInfo.Name,
-							items.Level,
-							items.Message,
-							items.Reason,
-						}
-						contents = append(contents, content)
-						resourceName = resultInfo.Name
-					} else {
-						content := []string{
-							"",
-							"",
-							"",
-							items.Level,
-							items.Message,
-							items.Reason,
-						}
-						contents = append(contents, content)
+			for _, items := range results.ResultItems {
+				if resourceName == "" {
+					content := []string{
+						results.NameSpace,
+						results.ResourceType,
+						results.Name,
+						items.Level,
+						items.Message,
+						items.Reason,
 					}
+					contents = append(contents, content)
+					resourceName = results.Name
+				} else {
+					content := []string{
+						"",
+						"",
+						"",
+						items.Level,
+						items.Message,
+						items.Reason,
+					}
+					contents = append(contents, content)
 				}
+
 			}
 		}
 	}
@@ -111,6 +108,6 @@ func CSVOutput(receiver <-chan []v1alpha2.ResultItems) error {
 	if err := w.WriteAll(contents); err != nil {
 		return err
 	}
-	fmt.Printf("\033[1;36;49mThe result is exported to kubeEyeAuditResult.CSV, please check it for audit result.\033[0m\n")
+	fmt.Printf("The result is exported to kubeEyeAuditResult.CSV, please check it for audit result.\n")
 	return nil
 }
