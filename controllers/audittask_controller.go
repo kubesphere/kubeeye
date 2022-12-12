@@ -100,7 +100,11 @@ func (r *AuditTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			delete(r.Audit.TaskResults, auditTask.Name)
 			return ctrl.Result{}, nil
 		} else {
-			resultMap, _ := r.Audit.TaskResults[auditTask.Name]
+			resultMap, ok := r.Audit.TaskResults[auditTask.Name]
+			if !ok {
+				r.Audit.AddTaskToQueue(req.NamespacedName)
+				return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+			}
 			var results []kubeeyev1alpha2.AuditResult
 			completed := 0
 			for _, auditor := range auditTask.Spec.Auditors {
