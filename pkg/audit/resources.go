@@ -24,7 +24,8 @@ import (
 	"sync"
 	"time"
 
-	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
+	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/open-policy-agent/opa/rego"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -32,12 +33,12 @@ import (
 
 var lock sync.Mutex
 
-type validateFunc func(ctx context.Context, regoRulesList []string) []kubeeyev1alpha1.AuditResults
+type validateFunc func(ctx context.Context, regoRulesList []string) []v1alpha2.ResourceResult
 
 func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercent *PercentOutput) validateFunc {
 
-	return func(ctx context.Context, regoRulesList []string) []kubeeyev1alpha1.AuditResults {
-		var auditResults []kubeeyev1alpha1.AuditResults
+	return func(ctx context.Context, regoRulesList []string) []v1alpha2.ResourceResult {
+		var auditResults []v1alpha2.ResourceResult
 
 		if queryRule == workloads && Resources.Deployments != nil {
 			for _, resource := range Resources.Deployments.Items {
@@ -151,9 +152,9 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercen
 }
 
 // MergeRegoRulesValidate Validate kubernetes cluster Resources, put the results into channels.
-func MergeRegoRulesValidate(ctx context.Context, regoRulesChan <-chan string, vfuncs ...validateFunc) <-chan []kubeeyev1alpha1.AuditResults {
+func MergeRegoRulesValidate(ctx context.Context, regoRulesChan <-chan string, vfuncs ...validateFunc) <-chan []v1alpha2.ResourceResult {
 
-	resultChan := make(chan []kubeeyev1alpha1.AuditResults)
+	resultChan := make(chan []v1alpha2.ResourceResult)
 	var wg sync.WaitGroup
 	wg.Add(len(vfuncs))
 
@@ -179,11 +180,9 @@ func MergeRegoRulesValidate(ctx context.Context, regoRulesChan <-chan string, vf
 }
 
 // ValidateK8SResource validate kubernetes resource by rego, return the validate results.
-func validateK8SResource(ctx context.Context, resource unstructured.Unstructured, regoRulesList []string, queryRule string) (kubeeyev1alpha1.AuditResults, bool) {
-	var auditResult kubeeyev1alpha1.AuditResults
-	var resultReceiver kubeeyev1alpha1.ResultInfos
-	var resourceInfos kubeeyev1alpha1.ResourceInfos
-	var resultItems kubeeyev1alpha1.ResultItems
+func validateK8SResource(ctx context.Context, resource unstructured.Unstructured, regoRulesList []string, queryRule string) (v1alpha2.ResourceResult, bool) {
+	var auditResult v1alpha2.ResourceResult
+	var resultItems v1alpha2.ResultItem
 	find := false
 	for _, regoRule := range regoRulesList {
 		query, err := rego.New(rego.Query(queryRule), rego.Module("examples.rego", regoRule)).PrepareForEval(ctx)
@@ -214,48 +213,44 @@ func validateK8SResource(ctx context.Context, resource unstructured.Unstructured
 					for _, result := range results {
 						find = true
 						if result.Type == "ClusterRole" || result.Type == "Node" {
-							resourceInfos.Name = result.Name
-							resultReceiver.ResourceType = result.Type
+							auditResult.Name = result.Name
+							auditResult.ResourceType = result.Type
 							resultItems.Level = result.Level
 							resultItems.Message = result.Message
 							resultItems.Reason = result.Reason
 
-							resourceInfos.ResultItems = append(resourceInfos.ResultItems, resultItems)
+							auditResult.ResultItems = append(auditResult.ResultItems, resultItems)
 						} else if result.Type == "Event" {
-							resourceInfos.Name = result.Name
+							auditResult.Name = result.Name
 							auditResult.NameSpace = result.Namespace
-							resultReceiver.ResourceType = result.Type
+							auditResult.ResourceType = result.Type
 							resultItems.Level = result.Level
 							resultItems.Message = result.Message
 							resultItems.Reason = result.Reason
 
-							resourceInfos.ResultItems = append(resourceInfos.ResultItems, resultItems)
+							auditResult.ResultItems = append(auditResult.ResultItems, resultItems)
 						} else {
-							resourceInfos.Name = result.Name
+							auditResult.Name = result.Name
 							auditResult.NameSpace = result.Namespace
-							resultReceiver.ResourceType = result.Type
+							auditResult.ResourceType = result.Type
 							resultItems.Level = result.Level
 							resultItems.Message = result.Message
 							resultItems.Reason = result.Reason
 
-							resourceInfos.ResultItems = append(resourceInfos.ResultItems, resultItems)
+							auditResult.ResultItems = append(auditResult.ResultItems, resultItems)
 						}
 					}
 				}
 			}
 		}
 	}
-	resultReceiver.ResourceInfos = resourceInfos
-	auditResult.ResultInfos = append(auditResult.ResultInfos, resultReceiver)
 	return auditResult, find
 }
 
 // validateCertExp validate kube-apiserver certificate expiration
-func validateCertExp(ApiAddress string) (kubeeyev1alpha1.AuditResults, bool) {
-	var auditResult kubeeyev1alpha1.AuditResults
-	var resultReceiver kubeeyev1alpha1.ResultInfos
-	var resourceInfos kubeeyev1alpha1.ResourceInfos
-	var resultItems kubeeyev1alpha1.ResultItems
+func validateCertExp(ApiAddress string) (v1alpha2.ResourceResult, bool) {
+	var auditResult v1alpha2.ResourceResult
+	var resultItems v1alpha2.ResultItem
 	var find bool
 	resourceType := "Cert"
 
@@ -267,7 +262,7 @@ func validateCertExp(ApiAddress string) (kubeeyev1alpha1.AuditResults, bool) {
 		resp, err := client.Get(ApiAddress)
 		if err != nil {
 			find = false
-			fmt.Printf("\033[1;33;49mFailed to get Kubernetes kube-apiserver certificate expiration.\033[0m\n")
+			fmt.Printf("Failed to get Kubernetes kube-apiserver certificate expiration.\n")
 			return auditResult, find
 		}
 		defer func() { _ = resp.Body.Close() }()
@@ -276,17 +271,14 @@ func validateCertExp(ApiAddress string) (kubeeyev1alpha1.AuditResults, bool) {
 			expDate := int(cert.NotAfter.Sub(time.Now()).Hours() / 24)
 			if expDate <= 30 {
 				find = true
-				resultReceiver.ResourceType = resourceType
-				resourceInfos.Name = "certificateExpire"
+				auditResult.ResourceType = resourceType
+				auditResult.Name = "certificateExpire"
 				resultItems.Message = "CertificateExpiredPeriod"
 				resultItems.Level = "dangerous"
 				resultItems.Reason = "Certificate expiration time <= 30 days"
 			}
 		}
 	}
-
-	resourceInfos.ResultItems = append(resourceInfos.ResultItems, resultItems)
-	resultReceiver.ResourceInfos = resourceInfos
-	auditResult.ResultInfos = append(auditResult.ResultInfos, resultReceiver)
+	auditResult.ResultItems = append(auditResult.ResultItems, resultItems)
 	return auditResult, find
 }

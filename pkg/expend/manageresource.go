@@ -2,12 +2,9 @@ package expend
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
-	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
-	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/lithammer/dedent"
 	"github.com/pkg/errors"
@@ -16,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -64,7 +60,7 @@ func CreateResource(ctx context.Context, dynamicClient dynamic.Interface, mappin
 		return errors.Wrap(err, fmt.Sprintf("create resource %s %s failed", unstructuredResource.GetKind(), unstructuredResource.GetName()))
 	}
 	fmt.Printf("%s\t%s\t created\n", resp.GetKind(), resp.GetName())
-	
+
 	return nil
 }
 
@@ -141,33 +137,4 @@ func ParseResources(clientset kubernetes.Interface, resource string) (*meta.REST
 		return nil, &unstructuredResource, errors.Wrap(err, "failed to converts an object into unstructured representation")
 	}
 	return mapping, &unstructuredResource, nil
-}
-
-// ListCRDResources, get plugin list
-func ListCRDResources(ctx context.Context, client dynamic.Interface, namespace string) ([]string, error) {
-	var gvr = schema.GroupVersionResource{
-		Group:    conf.Group,
-		Version:  conf.Version,
-		Resource: conf.Resource,
-	}
-	list, err := client.Resource(gvr).Namespace(namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-	data, err := list.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	var pluginList kubeeyepluginsv1alpha1.PluginSubscriptionList
-	if err := json.Unmarshal(data, &pluginList); err != nil {
-		return nil, err
-	}
-	plugins := make([]string, 0)
-	for _, t := range pluginList.Items {
-		if t.Spec.Enabled && t.Status.State == "installed" {
-			plugins = append(plugins, t.Name)
-		}
-	}
-
-	return plugins, nil
 }

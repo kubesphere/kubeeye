@@ -16,31 +16,30 @@ package main
 import (
 	"flag"
 	"os"
-	"time"
+	"sync"
 
-	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
-	kubeeyepluginsv1alpha1 "github.com/kubesphere/kubeeye/apis/kubeeyeplugins/v1alpha1"
-	kubeeyeclientset "github.com/kubesphere/kubeeye/client/clientset/versioned"
+	"k8s.io/apimachinery/pkg/types"
+
+	"k8s.io/client-go/util/workqueue"
+
+	"github.com/kubesphere/kubeeye/pkg/audit"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/kubeeye"
-	zaplogfmt "github.com/sykesm/zap-logfmt"
-	"k8s.io/klog/v2"
+	"go.uber.org/zap/zapcore"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	kubeeyecontrollers "github.com/kubesphere/kubeeye/controllers/kubeeye"
-	kubeeyepluginscontrollers "github.com/kubesphere/kubeeye/controllers/kubeeyeplugins"
-	uzap "go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	// +kubebuilder:scaffold:imports
+
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/controllers"
+	//+kubebuilder:scaffold:imports
 )
 
 var (
@@ -51,30 +50,30 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(kubeeyev1alpha1.AddToScheme(scheme))
-	utilruntime.Must(kubeeyepluginsv1alpha1.AddToScheme(scheme))
-	// +kubebuilder:scaffold:scheme
+	utilruntime.Must(kubeeyev1alpha2.AddToScheme(scheme))
+	//+kubebuilder:scaffold:scheme
 }
 
 func main() {
-	ctx := ctrl.SetupSignalHandler()
-
 	var metricsAddr string
 	var enableLeaderElection bool
+	var pluginsResultsReceiverAddr string
 	var probeAddr string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.StringVar(&pluginsResultsReceiverAddr, "plugins-results-receiver-address", ":8888", "The address the plugin result receiver binds to")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-
-	configLog := uzap.NewProductionEncoderConfig()
-	configLog.EncodeTime = func(ts time.Time, encoder zapcore.PrimitiveArrayEncoder) {
-		encoder.AppendString(ts.UTC().Format(time.RFC3339Nano))
+	opts := zap.Options{
+		Development: true,
+		TimeEncoder: zapcore.RFC3339TimeEncoder,
 	}
-	logfmtEncoder := zaplogfmt.NewEncoder(configLog)
+	opts.BindFlags(flag.CommandLine)
+	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseDevMode(true), zap.WriteTo(os.Stdout), zap.Encoder(logfmtEncoder)))
+	ctx := ctrl.SetupSignalHandler()
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -88,44 +87,50 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
-	if err = (&kubeeyecontrollers.ClusterInsightReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ClusterInsight")
-		os.Exit(1)
-	}
-	if err = (&kubeeyepluginscontrollers.PluginSubscriptionReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "PluginSubscription")
-		os.Exit(1)
-	}
-
-	// get kubeconfig
+	// get kubernetes cluster config
 	kubeConfig, err := kube.GetKubeConfigInCluster()
 	if err != nil {
-		klog.Fatalf("Get kubernetes client failed: %v", err)
+		setupLog.Error(err, "Failed to load cluster clients")
+		os.Exit(1)
 	}
+
 	// get kubernetes cluster clients
 	var kc kube.KubernetesClient
 	clients, err := kc.K8SClients(kubeConfig)
 	if err != nil {
-		klog.Fatalf("Get kubernetes clients failed: %v", err)
+		setupLog.Error(err, "Failed to load cluster clients")
+		os.Exit(1)
 	}
-	kubeeyeclient, err := kubeeyeclientset.NewForConfig(kubeConfig)
-	if err != nil {
-		klog.Fatalf("Get kubeeye client failed: %v", err)
+
+	au := &audit.Audit{
+		TaskQueue:   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		TaskResults: make(map[string]map[string]*kubeeyev1alpha2.AuditResult),
+		K8sClient:   clients,
+		Cli:         mgr.GetClient(),
+		TaskOnceMap: make(map[types.NamespacedName]*sync.Once),
 	}
-	informerFactory := kubeeye.NewInformerFactories(
-		clients.ClientSet,
-		kubeeyeclient,
-	)
-	kubeeyecontrollers.AddKubeeyeController(mgr, clients, kubeeyeclient, informerFactory)
-	informerFactory.Start(ctx.Done())
-	// +kubebuilder:scaffold:builder
+
+	setupLog.Info("starting audit")
+	go au.PluginsResultsReceiver(pluginsResultsReceiverAddr)
+	go au.StartAudit(ctx)
+
+	if err = (&controllers.AuditPlanReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AuditPlan")
+		os.Exit(1)
+	}
+	if err = (&controllers.AuditTaskReconciler{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Audit:      au,
+		K8sClients: clients,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AuditTask")
+		os.Exit(1)
+	}
+	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -135,8 +140,6 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
-
-	go kubeeyecontrollers.PluginsResultsReceiver()
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctx); err != nil {

@@ -16,127 +16,253 @@ package audit
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"sync"
+	"time"
 
-	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
+
+	kubeErr "k8s.io/apimachinery/pkg/api/errors"
+
+	"k8s.io/client-go/util/workqueue"
+
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/regorules"
-	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	workloads = "data.kubeeye_workloads_rego"
-	rbac      = "data.kubeeye_RBAC_rego"
-	nodes     = "data.kubeeye_nodes_rego"
-	events    = "data.kubeeye_events_rego"
-	certexp   = "data.kubeeye_certexpiration"
-)
-
-var AuditPercent = sync.Map{}
-
-type PercentOutput struct {
-	TotalAuditCount   int
-	CurrentAuditCount int
-	AuditPercent      int
+type Audit struct {
+	TaskQueue   workqueue.RateLimitingInterface
+	TaskResults map[string]map[string]*kubeeyev1alpha2.AuditResult
+	K8sClient   *kube.KubernetesClient
+	Cli         client.Client
+	TaskOnceMap map[types.NamespacedName]*sync.Once
 }
 
-func Cluster(ctx context.Context, kubeConfigPath string, additionalregoruleputh string, output string) error {
-	kubeConfig, err := kube.GetKubeConfig(kubeConfigPath)
+func (k *Audit) AddTaskToQueue(task types.NamespacedName) {
+	once, ok := k.TaskOnceMap[task]
+	if !ok {
+		once = &sync.Once{}
+		k.TaskOnceMap[task] = once
+	}
+	once.Do(
+		func() {
+			k.TaskQueue.Add(task)
+		},
+	)
+}
+
+func (k *Audit) StartAudit(ctx context.Context) {
+	for {
+		obj, shutdown := k.TaskQueue.Get()
+		if shutdown {
+			return
+		}
+		taskName, ok := obj.(types.NamespacedName)
+		if !ok {
+			k.TaskQueue.Done(obj)
+			continue
+		}
+
+		go k.TriggerAudit(ctx, taskName)
+
+	}
+}
+
+func (k *Audit) TriggerAudit(ctx context.Context, taskName types.NamespacedName) {
+
+	defer k.TaskQueue.Done(taskName)
+
+	err := k.processAudit(ctx, taskName)
 	if err != nil {
-		return errors.Wrap(err, "Failed to load config file")
+		k.TaskQueue.AddRateLimited(taskName)
+	} else {
+		k.TaskQueue.Forget(taskName)
 	}
 
-	var kc kube.KubernetesClient
-	clients, err := kc.K8SClients(kubeConfig)
+}
+
+func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName) error {
+	auditTask := &kubeeyev1alpha2.AuditTask{
+		ObjectMeta: metav1.ObjectMeta{Name: taskName.Name, Namespace: taskName.Namespace},
+	}
+	err := k.Cli.Get(ctx, client.ObjectKeyFromObject(auditTask), auditTask)
 	if err != nil {
+		if kubeErr.IsNotFound(err) {
+			klog.Error(err, "audit task is not found")
+			return nil
+		}
+		klog.Error(err, "failed to get audit task")
+		return err
+	}
+	if !auditTask.DeletionTimestamp.IsZero() {
+		klog.Error(err, "audit task is deleted")
+		return nil
+	}
+	timeout, err := time.ParseDuration(auditTask.Spec.Timeout)
+	if err != nil {
+		klog.Error(err, "failed to parse timeout")
+		timeout = constant.DefaultTimeout
+	}
+
+	k.TaskResults[taskName.Name] = make(map[string]*kubeeyev1alpha2.AuditResult, len(auditTask.Spec.Auditors))
+
+	auditorSvcMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: constant.AuditorServiceAddrConfigMap, Namespace: taskName.Namespace},
+	}
+	err = k.Cli.Get(ctx, client.ObjectKeyFromObject(auditorSvcMap), auditorSvcMap)
+	if err != nil {
+		klog.Error(err, " failed to get audit service configmap")
 		return err
 	}
 
-	_, validationResultsChan := ValidationResults(ctx, clients, additionalregoruleputh, "")
-
-	// Set the output mode, support default output JSON and CSV.
-	switch output {
-	case "JSON", "json", "Json":
-		if err := JSONOutput(validationResultsChan); err != nil {
-			return err
-		}
-	case "CSV", "csv", "Csv":
-		if err := CSVOutput(validationResultsChan); err != nil {
-			return err
-		}
-	default:
-		if err := defaultOutput(validationResultsChan); err != nil {
-			return err
+	auditorMap := auditorSvcMap.Data
+	for _, auditor := range auditTask.Spec.Auditors {
+		if auditor == "kubeeye" {
+			go k.KubeeyeAudit(taskName.Name, ctx)
+		} else {
+			go k.PluginAudit(ctx, taskName.Name, string(auditor), auditorMap)
 		}
 	}
-	return nil
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	ticker := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-timeoutCtx.Done():
+			return nil
+		case <-ticker.C:
+			err := k.Cli.Get(ctx, client.ObjectKeyFromObject(auditTask), auditTask)
+			if err != nil {
+				if kubeErr.IsNotFound(err) {
+					klog.Error(err, "audit task is not found")
+					return nil
+				}
+				klog.Error(err, "failed to get audit task")
+				continue
+			}
+			if !auditTask.DeletionTimestamp.IsZero() {
+				klog.Error(err, "audit task is deleted")
+				return nil
+			}
+			if auditTask.Status.Phase == kubeeyev1alpha2.PhaseSucceeded {
+				return nil
+			}
+		}
+	}
 }
 
-func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, additionalregoruleputh string, clusterInsigntName string) (kube.K8SResource, <-chan []v1alpha1.AuditResults) {
-	// get kubernetes resources and put into the channel.
-	klog.Info("starting get kubernetes resources")
-	go func(ctx context.Context, kubernetesClient *kube.KubernetesClient) {
-		err := kube.GetK8SResourcesProvider(ctx, kubernetesClient)
-		if err != nil {
-			klog.Error("failed to get kubernetes resources", err)
+func (k *Audit) KubeeyeAudit(taskName string, ctx context.Context) {
+	klog.Infof("%s : start kubeeye audit", taskName)
+	auditResult := &kubeeyev1alpha2.AuditResult{Name: "kubeeye", Phase: kubeeyev1alpha2.PhaseRunning}
+
+	k.TaskResults[taskName]["kubeeye"] = auditResult
+	// start kubeeye audit
+	K8SResources, validationResultsChan, Percent := ValidationResults(ctx, k.K8sClient, "")
+
+	kubeeyeResult := kubeeyev1alpha2.KubeeyeAuditResult{}
+	var results []kubeeyev1alpha2.ResourceResult
+	ctxCancel, cancel := context.WithCancel(ctx)
+
+	go func(ctx context.Context) {
+		ticker := time.NewTicker(1 * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				kubeeyeResult.Percent = Percent.AuditPercent // update kubeeye audit percent
+				ext := runtime.RawExtension{}
+				marshal, err := json.Marshal(kubeeyeResult)
+				if err != nil {
+					klog.Error(err, " failed marshal kubeeye result")
+					return
+				}
+				ext.Raw = marshal
+				auditResult.Result = ext
+			case <-ctx.Done():
+				return
+			}
 		}
-	}(ctx, kubernetesClient)
+	}(ctxCancel)
 
-	k8sResources := <-kube.K8sResourcesChan
+	for r := range validationResultsChan {
+		for _, result := range r {
+			results = append(results, result)
+		}
+	}
 
-	percent, ok := AuditPercent.Load(clusterInsigntName)
-	var auditPercent *PercentOutput
+	cancel()
+	scoreInfo := CalculateScore(results, K8SResources)
+	kubeeyeResult.Percent = 100
+	kubeeyeResult.ScoreInfo = scoreInfo
+	kubeeyeResult.ExtraInfo = kubeeyev1alpha2.ExtraInfo{
+		WorkloadsCount: K8SResources.WorkloadsCount,
+		NamespacesList: K8SResources.NameSpacesList,
+	}
+	kubeeyeResult.ResourceResults = results
+
+	ext := runtime.RawExtension{}
+	marshal, err := json.Marshal(kubeeyeResult)
+	if err != nil {
+		klog.Error(err, " failed marshal kubeeye result")
+		return
+	}
+	ext.Raw = marshal
+	auditResult.Result = ext
+
+	auditResult.Phase = kubeeyev1alpha2.PhaseSucceeded
+	klog.Infof("%s : finish kubeeye audit", taskName)
+}
+
+func (k *Audit) PluginsResultsReceiver(pluginsResultsReceiverAddr string) {
+
+	ServeMux := http.NewServeMux()
+	ServeMux.Handle("/plugins", http.HandlerFunc(k.PluginsResult))
+	err := http.ListenAndServe(pluginsResultsReceiverAddr, ServeMux)
+	if err != nil {
+		klog.Error("failed to listen plugin audit result")
+		return
+	}
+}
+
+// receive extra plugin result
+func (k *Audit) PluginsResult(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	taskName := r.PostFormValue("taskname")
+	pluginName := r.PostFormValue("pluginname")
+	pluginResult := r.PostFormValue("pluginresult")
+	ext := runtime.RawExtension{}
+
+	ext.Raw = []byte(pluginResult)
+	result := &kubeeyev1alpha2.AuditResult{
+		Result: ext,
+		Name:   pluginName,
+		Phase:  kubeeyev1alpha2.PhaseSucceeded,
+	}
+	k.TaskResults[taskName][pluginName] = result
+	klog.Infof(" task %s receive %s plugin result", taskName, pluginName)
+	w.WriteHeader(http.StatusOK)
+}
+
+func (k *Audit) PluginAudit(ctx context.Context, taskName string, pluginName string, auditorMap map[string]string) {
+	service, ok := auditorMap[pluginName]
 	if !ok {
-		auditPercent = &PercentOutput{}
-		AuditPercent.Store(clusterInsigntName, auditPercent)
-	} else {
-		auditPercent = percent.(*PercentOutput)
+		service = fmt.Sprintf("%s.%s.svc", pluginName, constant.DefaultNamespace)
 	}
 
-	if k8sResources.Deployments != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.Deployments.Items)
+	url := fmt.Sprintf("http://%s/start?taskname=%s&kubeeyesvc=%s", service, taskName, auditorMap["kubeeye"])
+	_, err := http.Get(url)
+	if err != nil {
+		klog.Error(err, "%s : failed to request %s audit", taskName, pluginName)
 	}
-	if k8sResources.StatefulSets != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.StatefulSets.Items)
-	}
-	if k8sResources.DaemonSets != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.DaemonSets.Items)
-	}
-	if k8sResources.Jobs != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.Jobs.Items)
-	}
-	if k8sResources.CronJobs != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.CronJobs.Items)
-	}
-	if k8sResources.Roles != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.Roles.Items)
-	}
-	if k8sResources.ClusterRoles != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.ClusterRoles.Items)
-	}
-	if k8sResources.Nodes != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.Nodes.Items)
-	}
-	if k8sResources.Events != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.Events.Items)
-	}
-	auditPercent.TotalAuditCount++
-	auditPercent.CurrentAuditCount = auditPercent.TotalAuditCount
-
-	klog.Info("getting and merging the Rego rules")
-	regoRulesChan := regorules.MergeRegoRules(ctx, regorules.GetDefaultRegofile("rules"), regorules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
-
-	klog.Info("starting audit kubernetes resources")
-	RegoRulesValidateChan := MergeRegoRulesValidate(ctx, regoRulesChan,
-		RegoRulesValidate(workloads, k8sResources, auditPercent),
-		RegoRulesValidate(rbac, k8sResources, auditPercent),
-		RegoRulesValidate(events, k8sResources, auditPercent),
-		RegoRulesValidate(nodes, k8sResources, auditPercent),
-		RegoRulesValidate(certexp, k8sResources, auditPercent),
-	)
-
-	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-	klog.Info("get audit results")
-	return k8sResources, RegoRulesValidateChan
 }

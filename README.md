@@ -9,21 +9,23 @@
 
 > English | [中文](README_zh.md)
 
-KubeEye is an audit tool for Kubernetes to discover Kubernetes resources (by [OPA](https://github.com/open-policy-agent/opa) ), cluster components, cluster nodes (by [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)) and other configurations are meeting with best practices, and giving suggestions for modification.
+KubeEye is an inspection tool for Kubernetes. It discovers whether Kubernetes resources (by using [OPA](https://github.com/open-policy-agent/opa) ), cluster components, cluster nodes (by using [Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)), and other configurations comply with best practices and makes modification suggestions accordingly.
 
-KubeEye supports custom audit rules and plugins installation. Through [KubeEye Operator](#kubeeye-operator), you can view audit results and modify suggestions by the website.
+KubeEye supports custom inspection rules and plugin installation. With [KubeEye Operator](#kubeeye-operator), you can intuitively view the inspection results and modification suggestions on the web console.
 
 ## Architecture
-KubeEye get cluster resource details by the Kubernetes API, audit the resource configurations by audit rules and plugins, and generate audit results. See Architecture for details.
+KubeEye obtains cluster resource details by using Kubernetes APIs, inspects resource configurations by using inspection rules and plugins, and generates inspection results. The architecture of KubeEye is as follows:
 
 ![kubeeye-architecture](./docs/images/kubeeye-architecture.svg?raw=true)
 
-## How to use
--  Install KubeEye on your machine
-   - Download pre built executables from [Releases](https://github.com/kubesphere/kubeeye/releases).
+## Install and use KubeEye
 
-   - Or you can build from source code
-   > Note: make install will create kubeeye in /usr/local/bin/ on your machine.
+1. Install KubeEye on your machine.
+
+   - Method 1: Download the pre-built executable file from [Releases](https://github.com/kubesphere/kubeeye/releases).
+
+   - Method 2: Build from the source code.
+   > Note: KubeEye files will be generated in `/usr/local/bin/` on your machine.
 
    ```shell
    git clone https://github.com/kubesphere/kubeeye.git
@@ -31,21 +33,23 @@ KubeEye get cluster resource details by the Kubernetes API, audit the resource c
    make installke
    ```
 
-- [Optional] Install [Node-problem-Detector](https://github.com/kubernetes/node-problem-detector)
-> Note: This will install npd on your cluster, only required if you want detailed report.
+2. (Optional) Install [Node-problem-Detector](https://github.com/kubernetes/node-problem-detector).
 
-```shell
-kubeeye install npd
-```
-- Run KubeEye
-> Note: The results of kubeeye sort by resource kind.
+   > Note: If you need detailed reports, run the following command, and then NPD will be installed on your cluster.
+
+   ```shell
+   kubeeye install npd
+   ```
+3. Run KubeEye to inspect clusters.
+
+> Note: The results of KubeEye are sorted by resource kind.
 
 ```shell
 kubeeye audit
 KIND          NAMESPACE        NAME                                                           REASON                                        LEVEL    MESSAGE
-Node                           docker-desktop                                                 kubelet has no sufficient memory available   waring    KubeletHasNoSufficientMemory
-Node                           docker-desktop                                                 kubelet has no sufficient PID available      waring    KubeletHasNoSufficientPID
-Node                           docker-desktop                                                 kubelet has disk pressure                    waring    KubeletHasDiskPressure
+Node                           docker-desktop                                                 kubelet has no sufficient memory available   warning    KubeletHasNoSufficientMemory
+Node                           docker-desktop                                                 kubelet has no sufficient PID available      warning    KubeletHasNoSufficientPID
+Node                           docker-desktop                                                 kubelet has disk pressure                    warning    KubeletHasDiskPressure
 Deployment    default          testkubeeye                                                                                                                  NoCPULimits
 Deployment    default          testkubeeye                                                                                                                  NoReadinessProbe
 Deployment    default          testkubeeye                                                                                                                  NotRunAsNonRoot
@@ -69,121 +73,132 @@ ClusterRole                    vpnkit-controller                                
 ClusterRole                    vpnkit-controller                                                                                           CanDeleteResources
 ```
 
-## What KubeEye can do
+## How KubeEye can help you
 
-- KubeEye audits cluster resources with Kubernetes best practices, to make cluster stable.
-- KubeEye can find problems of your cluster control plane, including kube-apiserver/kube-controller-manager/etcd, etc.
-- KubeEye helps you detect all kinds of node problems, including memory/cpu/disk pressure, unexpected kernel error logs, etc.
+- It inspects cluster resources according to Kubernetes best practices to ensure that clusters run stably.
+- It detects the control plane problems of the cluster, including kube-apiserver, kube-controller-manager, and etcd.
+- It detects node problems, including memory, CPU, disk pressure, and unexpected kernel error logs.
 
 ## Checklist
 
-|YES/NO|CHECK ITEM |Description|Level|
+|Yes/No |Check Item |Description |Severity |
 |---|---|---|---|
-| :white_check_mark: | PrivilegeEscalationAllowed     | Privilege escalation is allowed | danger |
-| :white_check_mark: | CanImpersonateUser             | The role/clusterrole can impersonate other user | warning |
-| :white_check_mark: | CanDeleteResources             | The role/clusterrole can delete kubernetes resources | warning |
-| :white_check_mark: | CanModifyWorkloads             | The role/clusterrole can modify kubernetes workloads | warning |
-| :white_check_mark: | NoCPULimits                    | The resource does not set limits of CPU in containers.resources | danger |
-| :white_check_mark: | NoCPURequests                  | The resource does not set requests of CPU in containers.resources | danger |
-| :white_check_mark: | HighRiskCapabilities           | Have high-Risk options in capabilities such as ALL/SYS_ADMIN/NET_ADMIN | danger |
-| :white_check_mark: | HostIPCAllowed                 | HostIPC Set to true | danger |
-| :white_check_mark: | HostNetworkAllowed             | HostNetwork Set to true | danger |
-| :white_check_mark: | HostPIDAllowed                 | HostPID Set to true | danger |
-| :white_check_mark: | HostPortAllowed                | HostPort Set to true | danger |
-| :white_check_mark: | ImagePullPolicyNotAlways       | Image pull policy not always | warning |
-| :white_check_mark: | ImageTagIsLatest               | The image tag is latest | warning |
-| :white_check_mark: | ImageTagMiss                   | The image tag do not declare | danger |
-| :white_check_mark: | InsecureCapabilities           | Have insecure options in capabilities such as KILL/SYS_CHROOT/CHOWN | danger |
-| :white_check_mark: | NoLivenessProbe                | The resource does not set livenessProbe | warning |
-| :white_check_mark: | NoMemoryLimits                 | The resource does not set limits of memory in containers.resources | danger |
-| :white_check_mark: | NoMemoryRequests               | The resource does not set requests of memory in containers.resources | danger |
-| :white_check_mark: | NoPriorityClassName            | The resource does not set priorityClassName | ignore |
-| :white_check_mark: | PrivilegedAllowed              | Running a pod in a privileged mode means that the pod can access the host’s resources and kernel capabilities | danger |
-| :white_check_mark: | NoReadinessProbe               | The resource does not set readinessProbe | warning |
-| :white_check_mark: | NotReadOnlyRootFilesystem      | The resource does not set readOnlyRootFilesystem to true | warning |
-| :white_check_mark: | NotRunAsNonRoot                | The resource does not set runAsNonRoot to true, maybe executed run as a root account | warning |
-| :white_check_mark: | CertificateExpiredPeriod       | Certificate expiration date less than 30 days | danger |
-| :white_check_mark: | EventAudit                     | Event audit  | warning |
-| :white_check_mark: | NodeStatus                     | node status audit | warning |
-| :white_check_mark: | DockerStatus                   | docker status audit | warning |         
-| :white_check_mark: | KubeletStatus                  | kubelet status audit | warning |
+| :white_check_mark: | PrivilegeEscalationAllowed     | Privilege escalation is allowed. | danger |
+| :white_check_mark: | CanImpersonateUser             | The Role/ClusterRole can impersonate users. | warning |
+| :white_check_mark: | CanModifyResources             | The Role/ClusterRole can delete Kubernetes resources. | warning |
+| :white_check_mark: | CanModifyWorkloads             | The Role/ClusterRole can modify Kubernetes resources. | warning |
+| :white_check_mark: | NoCPULimits                    | No CPU limits are set. | danger |
+| :white_check_mark: | NoCPURequests                  | No CPU resources are reserved. | danger |
+| :white_check_mark: | HighRiskCapabilities           | High-risk features, such as ALL, SYS_ADMIN, and NET_ADMIN, are enabled. | danger |
+| :white_check_mark: | HostIPCAllowed                 | HostIPC is set to `true`. | danger |
+| :white_check_mark: | HostNetworkAllowed             | HostNetwork is set to `true`. | danger |
+| :white_check_mark: | HostPIDAllowed                 | HostPID is set to `true`. | danger |
+| :white_check_mark: | HostPortAllowed                | HostPort is set to `true`. | danger |
+| :white_check_mark: | ImagePullPolicyNotAlways       | The image pull policy is not set to `always`. | warning |
+| :white_check_mark: | ImageTagIsLatest               | The image tag is `latest`. | warning |
+| :white_check_mark: | ImageTagMiss                   | The image tag is missing. | danger |
+| :white_check_mark: | InsecureCapabilities           | Insecure options are missing, such as KILL, SYS_CHROOT, and CHOWN. | danger |
+| :white_check_mark: | NoLivenessProbe                | Liveless probe is not set. | warning |
+| :white_check_mark: | NoMemoryLimits                 | No memory limits are set. | danger |
+| :white_check_mark: | NoMemoryRequests               | No memory resources are reserved. | danger |
+| :white_check_mark: | NoPriorityClassName            | Resource scheduling priority is not set. | ignore |
+| :white_check_mark: | PrivilegedAllowed              | Pods are running in the privileged mode. | danger |
+| :white_check_mark: | NoReadinessProbe               | Readiness probe is not set. | warning |
+| :white_check_mark: | NotReadOnlyRootFilesystem      | readOnlyRootFilesystem is not set to `true`. | warning |
+| :white_check_mark: | NotRunAsNonRoot                | runAsNonRoot is not set to `true`. | warning |
+| :white_check_mark: | CertificateExpiredPeriod       | The certificate expiry date of the API Server is less than 30 days. | danger |
+| :white_check_mark: | EventAudit                     | Events need to be audited. | warning |
+| :white_check_mark: | NodeStatus                     | Node status needs to be checked. | warning |
+| :white_check_mark: | DockerStatus                   | Docker status needs to be checked. | warning |         
+| :white_check_mark: | KubeletStatus                  | kubelet status needs to be checked. | warning |
 
-## Add your own audit rules
+## Add your own inspection rules
 ### Add custom OPA rules
-- create a directory for OPA rules
-```shell
-mkdir opa
-```
-- Add custom OPA rules files
-> Note: the OPA rule for workloads, package name must be *kubeeye_workloads_rego*
-> for RBAC, package name must be *kubeeye_RBAC_rego*
-> for nodes, package name must be *kubeeye_nodes_rego*
 
-- Save the following rule to rule file such as *imageRegistryRule.rego* for audit the image registry address complies with rules.
-```rego
-package kubeeye_workloads_rego
+1. Create a directory for storing OPA rules.
 
-deny[msg] {
-    resource := input
-    type := resource.Object.kind
-    resourcename := resource.Object.metadata.name
-    resourcenamespace := resource.Object.metadata.namespace
-    workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
-    workloadsType[type]
+   ```shell
+   mkdir opa
+   ```
+2. Add custom OPA rule files.
 
-    not workloadsImageRegistryRule(resource)
+   > Note:
+   - OPA rule for checking workloads: The package name must be *kubeeye_workloads_rego*.
+   - OPA rule for checking RBAC settings: The package name must be *kubeeye_RBAC_rego*.
+   - OPA rule for checking node settings: The package name must be *kubeeye_nodes_rego*.
 
-    msg := {
-        "Name": sprintf("%v", [resourcename]),
-        "Namespace": sprintf("%v", [resourcenamespace]),
-        "Type": sprintf("%v", [type]),
-        "Message": "ImageRegistryNotmyregistry"
-    }
-}
+3. To check whether the image registry address complies with rules, save the following rules to *imageRegistryRule.rego* 
 
-workloadsImageRegistryRule(resource) {
-    regex.match("^myregistry.public.kubesphere/basic/.+", resource.Object.spec.template.spec.containers[_].image)
-}
-```
+  ```rego
+  package kubeeye_workloads_rego
 
-- Run KubeEye with custom rules
-> Note: Specify the path then Kubeeye will read all files in the directory that end with *.rego*.
+  deny[msg] {
+      resource := input
+      type := resource.Object.kind
+      resourcename := resource.Object.metadata.name
+      resourcenamespace := resource.Object.metadata.namespace
+      workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
+      workloadsType[type]
 
-```shell
-root:# kubeeye audit -p ./opa
-NAMESPACE     NAME              KIND          MESSAGE
-default       nginx1            Deployment    [ImageRegistryNotmyregistry NotReadOnlyRootFilesystem NotRunAsNonRoot]
-default       nginx11           Deployment    [ImageRegistryNotmyregistry PrivilegeEscalationAllowed HighRiskCapabilities HostIPCAllowed HostPortAllowed ImagePullPolicyNotAlways ImageTagIsLatest InsecureCapabilities NoPriorityClassName PrivilegedAllowed NotReadOnlyRootFilesystem NotRunAsNonRoot]
-default       nginx111          Deployment    [ImageRegistryNotmyregistry NoCPULimits NoCPURequests ImageTagMiss NoLivenessProbe NoMemoryLimits NoMemoryRequests NoPriorityClassName NotReadOnlyRootFilesystem NoReadinessProbe NotRunAsNonRoot]
-```
+      not workloadsImageRegistryRule(resource)
+
+      msg := {
+          "Name": sprintf("%v", [resourcename]),
+          "Namespace": sprintf("%v", [resourcenamespace]),
+          "Type": sprintf("%v", [type]),
+          "Message": "ImageRegistryNotmyregistry"
+      }
+  }
+
+  workloadsImageRegistryRule(resource) {
+      regex.match("^myregistry.public.kubesphere/basic/.+", resource.Object.spec.template.spec.containers[_].image)
+  }
+  ```
+
+4. Run KubeEye with custom rules.
+
+  > Note: Kubeeye will read all files ending with *.rego* in the directory.
+
+  ```shell
+  root:# kubeeye audit -p ./opa
+  NAMESPACE     NAME              KIND          MESSAGE
+  default       nginx1            Deployment    [ImageRegistryNotmyregistry NotReadOnlyRootFilesystem NotRunAsNonRoot]
+  default       nginx11           Deployment    [ImageRegistryNotmyregistry PrivilegeEscalationAllowed HighRiskCapabilities HostIPCAllowed HostPortAllowed ImagePullPolicyNotAlways ImageTagIsLatest InsecureCapabilities NoPriorityClassName PrivilegedAllowed NotReadOnlyRootFilesystem NotRunAsNonRoot]
+  default       nginx111          Deployment    [ImageRegistryNotmyregistry NoCPULimits NoCPURequests ImageTagMiss NoLivenessProbe NoMemoryLimits NoMemoryRequests NoPriorityClassName NotReadOnlyRootFilesystem NoReadinessProbe NotRunAsNonRoot]
+  ```
 
 ### Add custom NPD rules
-- edit configmap
-```shell
-kubectl edit ConfigMap node-problem-detector-config -n kube-system 
-```
-- restart NPD deployment
-```shell
-kubectl rollout restart DaemonSet node-problem-detector -n kube-system
-```
 
+1. Run the following command to change the ConfigMap:
+
+   ```shell
+   kubectl edit ConfigMap node-problem-detector-config -n kube-system 
+   ```
+2. Run the following command to restart NPD:
+
+   ```shell
+   kubectl rollout restart DaemonSet node-problem-detector -n kube-system
+   ```
 
 ## KubeEye Operator
 ### What is KubeEye Operator
-KubeEye Operator is an audit platform for Kubernetes, manage KubeEye by operator and generate audit result, provide website.
 
-### What KubeEye Operator can do
-- KubeEye Operator provides manage website.
-- KubeEye Operator recode audit results by CR, can view and compare cluster audit results by website.
-- KubeEye Operator provides more plugins.
-- KubeEye Operator provides modify suggestions by the website.
+KubeEye Operator is an inspection platform for Kubernetes. It manages KubeEye to regularly inspect clusters and generate inspection results.
 
-### deploy Kubeeye
+### How KubeEye Operator can help you
+
+- It records inspection results by using CR and provide a web page for you to intuitively view and compare cluster inspection results.
+- It provides more plugins.
+- It provides more detailed modification suggestions.
+
+### Deploy KubeEye Operator
+
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye.yaml
 kubectl apply -f https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_insights.yaml
 ```
-### get the audit results
+### Obtain the inspection results
+
 ```shell
 kubectl get clusterinsight -o yaml
 ```
@@ -206,13 +221,13 @@ items:
         - namespace: ""
           resourceInfos:
           - items:
-            - level: waring
+            - level: warning
               message: KubeletHasNoSufficientMemory
               reason: kubelet has no sufficient memory available
-            - level: waring
+            - level: warning
               message: KubeletHasNoSufficientPID
               reason: kubelet has no sufficient PID available
-            - level: waring
+            - level: warning
               message: KubeletHasDiskPressure
               reason: kubelet has disk pressure
             name: kubeeyeNode
@@ -247,9 +262,9 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specifications. Contributions of any kind are welcome!
 
-## Documents
+## Related Documents
 
 * [RoadMap](docs/roadmap.md)
 * [FAQ](docs/FAQ.md)

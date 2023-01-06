@@ -31,7 +31,7 @@ var auditCmd = &cobra.Command{
 	Use:   "audit",
 	Short: "audit resources from the cluster",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := audit.Cluster(cmd.Context(), KubeConfig, additionalregoruleputh, output)
+		err := audit.AuditCluster(cmd.Context(), KubeConfig, additionalregoruleputh, audit.OutputType(output))
 		if err != nil {
 			glog.Fatalf("kubeeye audit failed with error: %v", err)
 		}

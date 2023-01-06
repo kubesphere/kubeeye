@@ -6,82 +6,9 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - ""
-  resources:
-  - configmaps
-  - deployments
-  - namespaces
-  - services
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - events
-  - namespaces
-  - nodes
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - '*'
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - batch
-  resources:
-  - '*'
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - '*'
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - events.k8s.io
-  resources:
-  - events
-  verbs:
-  - '*'
-- apiGroups:
   - kubeeye.kubesphere.io
   resources:
-  - clusterinsights
+  - auditplans
   verbs:
   - create
   - delete
@@ -93,13 +20,13 @@ rules:
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
-  - clusterinsights/finalizers
+  - auditplans/finalizers
   verbs:
   - update
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
-  - clusterinsights/status
+  - auditplans/status
   verbs:
   - get
   - patch
@@ -107,7 +34,7 @@ rules:
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
-  - kubeeyecronjobs
+  - audittasks
   verbs:
   - create
   - delete
@@ -119,46 +46,14 @@ rules:
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
-  - kubeeyecronjobs/finalizers
+  - audittasks/finalizers
   verbs:
   - update
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
-  - kubeeyecronjobs/status
+  - audittasks/status
   verbs:
   - get
   - patch
   - update
-- apiGroups:
-  - kubeeyeplugins.kubesphere.io
-  resources:
-  - pluginsubscriptions
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - kubeeyeplugins.kubesphere.io
-  resources:
-  - pluginsubscriptions/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - kubeeyeplugins.kubesphere.io
-  resources:
-  - pluginsubscriptions/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - '*'
-  verbs:
-  - '*'
