@@ -34,20 +34,20 @@ var lock sync.Mutex
 
 type validateFunc func(ctx context.Context, regoRulesList []string) []kubeeyev1alpha1.AuditResults
 
-func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercent *PercentOutput) validateFunc {
+func RegoRulesValidate(queryRule string, resources kube.K8SResource, auditPercent *PercentOutput) validateFunc {
 
 	return func(ctx context.Context, regoRulesList []string) []kubeeyev1alpha1.AuditResults {
 		var auditResults []kubeeyev1alpha1.AuditResults
 
-		if queryRule == workloads && Resources.Deployments != nil {
-			for _, resource := range Resources.Deployments.Items {
+		if queryRule == workloads && resources.Deployments != nil {
+			for _, resource := range resources.Deployments.Items {
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
-		if queryRule == workloads && Resources.StatefulSets != nil {
-			for _, resource := range Resources.StatefulSets.Items {
+		if queryRule == workloads && resources.StatefulSets != nil {
+			for _, resource := range resources.StatefulSets.Items {
 				lock.Lock()
 				auditPercent.CurrentAuditCount--
 				auditPercent.AuditPercent = (auditPercent.TotalAuditCount - auditPercent.CurrentAuditCount) * 100 / auditPercent.TotalAuditCount
@@ -57,8 +57,8 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercen
 				}
 			}
 		}
-		if queryRule == workloads && Resources.DaemonSets != nil {
-			for _, resource := range Resources.DaemonSets.Items {
+		if queryRule == workloads && resources.DaemonSets != nil {
+			for _, resource := range resources.DaemonSets.Items {
 				lock.Lock()
 				auditPercent.CurrentAuditCount--
 				auditPercent.AuditPercent = (auditPercent.TotalAuditCount - auditPercent.CurrentAuditCount) * 100 / auditPercent.TotalAuditCount
@@ -68,8 +68,8 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercen
 				}
 			}
 		}
-		if queryRule == workloads && Resources.Jobs != nil {
-			for _, resource := range Resources.Jobs.Items {
+		if queryRule == workloads && resources.Jobs != nil {
+			for _, resource := range resources.Jobs.Items {
 				lock.Lock()
 				auditPercent.CurrentAuditCount--
 				auditPercent.AuditPercent = (auditPercent.TotalAuditCount - auditPercent.CurrentAuditCount) * 100 / auditPercent.TotalAuditCount
@@ -79,8 +79,8 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercen
 				}
 			}
 		}
-		if queryRule == workloads && Resources.CronJobs != nil {
-			for _, resource := range Resources.CronJobs.Items {
+		if queryRule == workloads && resources.CronJobs != nil {
+			for _, resource := range resources.CronJobs.Items {
 				lock.Lock()
 				auditPercent.CurrentAuditCount--
 				auditPercent.AuditPercent = (auditPercent.TotalAuditCount - auditPercent.CurrentAuditCount) * 100 / auditPercent.TotalAuditCount
@@ -90,8 +90,8 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercen
 				}
 			}
 		}
-		if queryRule == rbac && Resources.Roles != nil {
-			for _, resource := range Resources.Roles.Items {
+		if queryRule == rbac && resources.Roles != nil {
+			for _, resource := range resources.Roles.Items {
 				lock.Lock()
 				auditPercent.CurrentAuditCount--
 				auditPercent.AuditPercent = (auditPercent.TotalAuditCount - auditPercent.CurrentAuditCount) * 100 / auditPercent.TotalAuditCount
@@ -101,8 +101,8 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercen
 				}
 			}
 		}
-		if queryRule == rbac && Resources.ClusterRoles != nil {
-			for _, resource := range Resources.ClusterRoles.Items {
+		if queryRule == rbac && resources.ClusterRoles != nil {
+			for _, resource := range resources.ClusterRoles.Items {
 				lock.Lock()
 				auditPercent.CurrentAuditCount--
 				auditPercent.AuditPercent = (auditPercent.TotalAuditCount - auditPercent.CurrentAuditCount) * 100 / auditPercent.TotalAuditCount
@@ -112,8 +112,8 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercen
 				}
 			}
 		}
-		if queryRule == nodes && Resources.Nodes != nil {
-			for _, resource := range Resources.Nodes.Items {
+		if queryRule == nodes && resources.Nodes != nil {
+			for _, resource := range resources.Nodes.Items {
 				lock.Lock()
 				auditPercent.CurrentAuditCount--
 				auditPercent.AuditPercent = (auditPercent.TotalAuditCount - auditPercent.CurrentAuditCount) * 100 / auditPercent.TotalAuditCount
@@ -123,8 +123,8 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercen
 				}
 			}
 		}
-		if queryRule == events && Resources.Events != nil {
-			for _, resource := range Resources.Events.Items {
+		if queryRule == events && resources.Events != nil {
+			for _, resource := range resources.Events.Items {
 				lock.Lock()
 				auditPercent.CurrentAuditCount--
 				auditPercent.AuditPercent = (auditPercent.TotalAuditCount - auditPercent.CurrentAuditCount) * 100 / auditPercent.TotalAuditCount
@@ -134,12 +134,12 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercen
 				}
 			}
 		}
-		if queryRule == certexp && Resources.APIServerAddress != "" {
+		if queryRule == certexp && resources.APIServerAddress != "" {
 			lock.Lock()
 			auditPercent.CurrentAuditCount--
 			auditPercent.AuditPercent = (auditPercent.TotalAuditCount - auditPercent.CurrentAuditCount) * 100 / auditPercent.TotalAuditCount
 			lock.Unlock()
-			resource := Resources.APIServerAddress
+			resource := resources.APIServerAddress
 			if auditResult, found := validateCertExp(resource); found {
 				auditResults = append(auditResults, auditResult)
 

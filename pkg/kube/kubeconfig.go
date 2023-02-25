@@ -45,7 +45,7 @@ func GetKubeConfig(kubeconfigPath string) (*rest.Config, error) {
 				return nil, errors.Wrapf(err, "failed to load kubeconfig file from %v", kubeconfigPath)
 			}
 		}
-	} else if kubeconfigPath == "" {
+	} else {
 		kubeConfig, err = config.GetConfig()
 		if err != nil {
 			kubeConfig, err = rest.InClusterConfig()
