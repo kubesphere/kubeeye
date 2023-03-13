@@ -110,24 +110,32 @@ func main() {
 		TaskOnceMap: make(map[types.NamespacedName]*sync.Once),
 	}
 
-	setupLog.Info("starting audit")
+	setupLog.Info("starting inspect")
 	go au.PluginsResultsReceiver(pluginsResultsReceiverAddr)
 	go au.StartAudit(ctx)
 
-	if err = (&controllers.AuditPlanReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+	if err = (&controllers.InspectPlanReconciler{
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		K8sClient: clients,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AuditPlan")
 		os.Exit(1)
 	}
-	if err = (&controllers.AuditTaskReconciler{
+	if err = (&controllers.InspectTaskReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		Audit:      au,
 		K8sClients: clients,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AuditTask")
+		os.Exit(1)
+	}
+	if err = (&controllers.InspectRulesReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Insights")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

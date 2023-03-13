@@ -1,0 +1,9 @@
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectPlan
+metadata:
+  name: inspectplan-sample
+  namespace: kubeeye-system
+spec:
+  schedule: "*/3 * * *  ?"
+  tags:
+    - test

@@ -1,0 +1,41 @@
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRules
+metadata:
+  labels:
+    app.kubernetes.io/name: inspectrules
+    app.kubernetes.io/instance: inspectrules-sample
+    app.kubernetes.io/part-of: kubeeye
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kubeeye
+  name: inspectrules-sample
+  namespace: kubeeye-system
+spec:
+  prometheusEndpoint: http://10.0.0.1:8888
+  rules:
+    - ruleName: kubeeye_workloads_rego
+      desc: kubeeye_workloads_rego
+      opa: |
+        package kubeeye_workloads_rego
+        deny[msg] {
+          resource := input
+          type := resource.Object.kind
+          resourcename := resource.Object.metadata.name
+          resourcenamespace := resource.Object.metadata.namespace
+          type == "Pod"
+          level := "warning"
+          PodimagePullPolicyRule(resource)
+          msg := {
+            "Name": sprintf("%v", [resourcename]),
+            "Namespace": sprintf("%v", [resourcenamespace]),
+            "Type": sprintf("%v", [type]),
+            "Level": sprintf("%v", [level]),
+            "Message": "ImagePullPolicyNotAlways"
+          }
+        }
+        PodimagePullPolicyRule(resource) {
+          imagePullPolicy := resource.Object.spec.containers[_].imagePullPolicy
+          imagePullPolicy != "Always"
+        }
+      prometheus:
+      tags:
+        - test

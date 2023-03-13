@@ -10,7 +10,7 @@ resources:
   controller: true
   domain: kubesphere.io
   group: kubeeye
-  kind: AuditPlan
+  kind: InspectPlan
   path: github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2
   version: v1alpha2
 - api:
@@ -19,7 +19,16 @@ resources:
   controller: true
   domain: kubesphere.io
   group: kubeeye
-  kind: AuditTask
+  kind: InspectTask
+  path: github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2
+  version: v1alpha2
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kubesphere.io
+  group: kubeeye
+  kind: Insights
   path: github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2
   version: v1alpha2
 version: "3"

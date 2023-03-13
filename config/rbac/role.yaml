@@ -8,7 +8,7 @@ rules:
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
-  - auditplans
+  - inspectplans
   verbs:
   - create
   - delete
@@ -20,13 +20,13 @@ rules:
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
-  - auditplans/finalizers
+  - inspectplans/finalizers
   verbs:
   - update
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
-  - auditplans/status
+  - inspectplans/status
   verbs:
   - get
   - patch
@@ -34,7 +34,7 @@ rules:
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
-  - audittasks
+  - inspectrules
   verbs:
   - create
   - delete
@@ -46,13 +46,39 @@ rules:
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
-  - audittasks/finalizers
+  - inspectrules/finalizers
   verbs:
   - update
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
-  - audittasks/status
+  - inspectrules/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - inspecttasks
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - inspecttasks/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - inspecttasks/status
   verbs:
   - get
   - patch

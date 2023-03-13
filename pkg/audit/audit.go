@@ -90,7 +90,7 @@ func (k *Audit) TriggerAudit(ctx context.Context, taskName types.NamespacedName)
 }
 
 func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName) error {
-	auditTask := &kubeeyev1alpha2.AuditTask{
+	auditTask := &kubeeyev1alpha2.InspectTask{
 		ObjectMeta: metav1.ObjectMeta{Name: taskName.Name, Namespace: taskName.Namespace},
 	}
 	err := k.Cli.Get(ctx, client.ObjectKeyFromObject(auditTask), auditTask)

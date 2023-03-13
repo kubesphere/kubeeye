@@ -1,0 +1,20 @@
+# permissions for end users to view audittasks.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: inspecttask-viewer-role
+rules:
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - inspecttasks
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - inspecttasks/status
+  verbs:
+  - get

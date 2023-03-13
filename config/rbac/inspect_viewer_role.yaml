@@ -1,0 +1,27 @@
+# permissions for end users to view insights.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: inspectrules-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: kubeeye
+    app.kubernetes.io/part-of: kubeeye
+    app.kubernetes.io/managed-by: kustomize
+  name: inspectrules-viewer-role
+rules:
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - inspectrules
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - inspectrules/status
+  verbs:
+  - get
