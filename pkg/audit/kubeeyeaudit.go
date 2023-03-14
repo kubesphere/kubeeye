@@ -2,11 +2,11 @@ package audit
 
 import (
 	"context"
-
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/regorules"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 )
 
@@ -37,7 +37,7 @@ func AuditCluster(ctx context.Context, kubeConfigPath string, additionalregorule
 		return err
 	}
 
-	_, validationResultsChan, _ := ValidationResults(ctx, clients, additionalregoruleputh)
+	_, validationResultsChan, _ := ValidationResults(ctx, clients, types.NamespacedName{}, additionalregoruleputh)
 
 	// Set the output mode, support default output JSON and CSV.
 	switch output {
@@ -57,7 +57,7 @@ func AuditCluster(ctx context.Context, kubeConfigPath string, additionalregorule
 	return nil
 }
 
-func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, additionalregoruleputh string) (kube.K8SResource, <-chan []kubeeyev1alpha2.ResourceResult, *PercentOutput) {
+func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, taskName types.NamespacedName, additionalregoruleputh string) (kube.K8SResource, <-chan []kubeeyev1alpha2.ResourceResult, *PercentOutput) {
 	// get kubernetes resources and put into the channel.
 	klog.Info("starting get kubernetes resources")
 
@@ -96,7 +96,7 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 	auditPercent.CurrentAuditCount = auditPercent.TotalAuditCount
 
 	klog.Info("getting and merging the Rego rules")
-	regoRulesChan := regorules.MergeRegoRules(ctx, regorules.GetDefaultRegofile("rules"), regorules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
+	regoRulesChan := regorules.MergeRegoRules(ctx, regorules.GetRegoRules(ctx, taskName, kubernetesClient.VersionClientSet), regorules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
 
 	klog.Info("starting audit kubernetes resources")
 	RegoRulesValidateChan := MergeRegoRulesValidate(ctx, regoRulesChan,

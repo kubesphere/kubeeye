@@ -23,10 +23,12 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// AuditPlans returns a AuditPlanInformer.
-	AuditPlans() AuditPlanInformer
-	// AuditTasks returns a AuditTaskInformer.
-	AuditTasks() AuditTaskInformer
+	// InspectPlans returns a InspectPlanInformer.
+	InspectPlans() InspectPlanInformer
+	// InspectRules returns a InspectRulesInformer.
+	InspectRules() InspectRulesInformer
+	// InspectTasks returns a InspectTaskInformer.
+	InspectTasks() InspectTaskInformer
 }
 
 type version struct {
@@ -40,12 +42,17 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// AuditPlans returns a AuditPlanInformer.
-func (v *version) AuditPlans() AuditPlanInformer {
-	return &auditPlanInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// InspectPlans returns a InspectPlanInformer.
+func (v *version) InspectPlans() InspectPlanInformer {
+	return &inspectPlanInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// AuditTasks returns a AuditTaskInformer.
-func (v *version) AuditTasks() AuditTaskInformer {
-	return &auditTaskInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// InspectRules returns a InspectRulesInformer.
+func (v *version) InspectRules() InspectRulesInformer {
+	return &inspectRulesInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// InspectTasks returns a InspectTaskInformer.
+func (v *version) InspectTasks() InspectTaskInformer {
+	return &inspectTaskInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

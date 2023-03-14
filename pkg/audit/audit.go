@@ -114,22 +114,26 @@ func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName)
 
 	k.TaskResults[taskName.Name] = make(map[string]*kubeeyev1alpha2.AuditResult, len(auditTask.Spec.Auditors))
 
-	auditorSvcMap := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: constant.AuditorServiceAddrConfigMap, Namespace: taskName.Namespace},
-	}
-	err = k.Cli.Get(ctx, client.ObjectKeyFromObject(auditorSvcMap), auditorSvcMap)
-	if err != nil {
-		klog.Error(err, " failed to get audit service configmap")
-		return err
-	}
+	if len(auditTask.Spec.Auditors) > 0 {
+		for _, auditor := range auditTask.Spec.Auditors {
+			if auditor == "kubeeye" {
+				go k.KubeeyeAudit(taskName, ctx)
+			} else {
+				auditorSvcMap := &corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{Name: constant.AuditorServiceAddrConfigMap, Namespace: taskName.Namespace},
+				}
+				err = k.Cli.Get(ctx, client.ObjectKeyFromObject(auditorSvcMap), auditorSvcMap)
+				if err != nil {
+					klog.Error(err, " failed to get audit service configmap")
+					return err
+				}
 
-	auditorMap := auditorSvcMap.Data
-	for _, auditor := range auditTask.Spec.Auditors {
-		if auditor == "kubeeye" {
-			go k.KubeeyeAudit(taskName.Name, ctx)
-		} else {
-			go k.PluginAudit(ctx, taskName.Name, string(auditor), auditorMap)
+				auditorMap := auditorSvcMap.Data
+				go k.PluginAudit(ctx, taskName.Name, string(auditor), auditorMap)
+			}
 		}
+	} else {
+		go k.KubeeyeAudit(taskName, ctx)
 	}
 	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -159,13 +163,14 @@ func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName)
 	}
 }
 
-func (k *Audit) KubeeyeAudit(taskName string, ctx context.Context) {
+func (k *Audit) KubeeyeAudit(taskName types.NamespacedName, ctx context.Context) {
 	klog.Infof("%s : start kubeeye audit", taskName)
 	auditResult := &kubeeyev1alpha2.AuditResult{Name: "kubeeye", Phase: kubeeyev1alpha2.PhaseRunning}
 
-	k.TaskResults[taskName]["kubeeye"] = auditResult
+	k.TaskResults[taskName.Name]["kubeeye"] = auditResult
+
 	// start kubeeye audit
-	K8SResources, validationResultsChan, Percent := ValidationResults(ctx, k.K8sClient, "")
+	K8SResources, validationResultsChan, Percent := ValidationResults(ctx, k.K8sClient, taskName, "")
 
 	kubeeyeResult := kubeeyev1alpha2.KubeeyeAuditResult{}
 	var results []kubeeyev1alpha2.ResourceResult
@@ -217,6 +222,7 @@ func (k *Audit) KubeeyeAudit(taskName string, ctx context.Context) {
 	auditResult.Result = ext
 
 	auditResult.Phase = kubeeyev1alpha2.PhaseSucceeded
+
 	klog.Infof("%s : finish kubeeye audit", taskName)
 }
 

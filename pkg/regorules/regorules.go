@@ -4,7 +4,12 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"github.com/kubesphere/kubeeye/clients/clientset/versioned"
+	"github.com/kubesphere/kubeeye/constant"
 	"io/ioutil"
+	kubeErr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -58,6 +63,26 @@ func GetDefaultRegofile(path string) []string {
 		regoRules = append(regoRules, regoRule)
 	}
 	return regoRules
+}
+
+func GetRegoRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) []string {
+	var rules []string
+
+	inspectTask, err := client.KubeeyeV1alpha2().InspectTasks(task.Namespace).Get(ctx, task.Name, metav1.GetOptions{})
+	if err != nil {
+		if kubeErr.IsNotFound(err) {
+			fmt.Printf("rego rules not found .\n")
+			return nil
+		}
+		fmt.Printf("Failed to Get rego rules.\n")
+		return nil
+	}
+	for _, rule := range inspectTask.Spec.Rules {
+		if rule[constant.RuleType] == constant.Opa {
+			rules = append(rules, rule[constant.Rules])
+		}
+	}
+	return rules
 }
 
 // MergeRegoRules fun-out merge rego rules

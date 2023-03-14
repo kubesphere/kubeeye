@@ -17,18 +17,26 @@ limitations under the License.
 
 package v1alpha2
 
-// AuditPlanListerExpansion allows custom methods to be added to
-// AuditPlanLister.
-type AuditPlanListerExpansion interface{}
+// InspectPlanListerExpansion allows custom methods to be added to
+// InspectPlanLister.
+type InspectPlanListerExpansion interface{}
 
-// AuditPlanNamespaceListerExpansion allows custom methods to be added to
-// AuditPlanNamespaceLister.
-type AuditPlanNamespaceListerExpansion interface{}
+// InspectPlanNamespaceListerExpansion allows custom methods to be added to
+// InspectPlanNamespaceLister.
+type InspectPlanNamespaceListerExpansion interface{}
 
-// AuditTaskListerExpansion allows custom methods to be added to
-// AuditTaskLister.
-type AuditTaskListerExpansion interface{}
+// InspectRulesListerExpansion allows custom methods to be added to
+// InspectRulesLister.
+type InspectRulesListerExpansion interface{}
 
-// AuditTaskNamespaceListerExpansion allows custom methods to be added to
-// AuditTaskNamespaceLister.
-type AuditTaskNamespaceListerExpansion interface{}
+// InspectRulesNamespaceListerExpansion allows custom methods to be added to
+// InspectRulesNamespaceLister.
+type InspectRulesNamespaceListerExpansion interface{}
+
+// InspectTaskListerExpansion allows custom methods to be added to
+// InspectTaskLister.
+type InspectTaskListerExpansion interface{}
+
+// InspectTaskNamespaceListerExpansion allows custom methods to be added to
+// InspectTaskNamespaceLister.
+type InspectTaskNamespaceListerExpansion interface{}

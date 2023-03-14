@@ -101,7 +101,6 @@ func main() {
 		setupLog.Error(err, "Failed to load cluster clients")
 		os.Exit(1)
 	}
-
 	au := &audit.Audit{
 		TaskQueue:   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		TaskResults: make(map[string]map[string]*kubeeyev1alpha2.AuditResult),

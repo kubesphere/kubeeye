@@ -17,6 +17,8 @@ limitations under the License.
 
 package v1alpha2
 
-type AuditPlanExpansion interface{}
+type InspectPlanExpansion interface{}
 
-type AuditTaskExpansion interface{}
+type InspectRulesExpansion interface{}
+
+type InspectTaskExpansion interface{}

@@ -31,59 +31,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// AuditTaskInformer provides access to a shared informer and lister for
-// AuditTasks.
-type AuditTaskInformer interface {
+// InspectTaskInformer provides access to a shared informer and lister for
+// InspectTasks.
+type InspectTaskInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha2.AuditTaskLister
+	Lister() v1alpha2.InspectTaskLister
 }
 
-type auditTaskInformer struct {
+type inspectTaskInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewAuditTaskInformer constructs a new informer for AuditTask type.
+// NewInspectTaskInformer constructs a new informer for InspectTask type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewAuditTaskInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredAuditTaskInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewInspectTaskInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredInspectTaskInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredAuditTaskInformer constructs a new informer for AuditTask type.
+// NewFilteredInspectTaskInformer constructs a new informer for InspectTask type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredAuditTaskInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredInspectTaskInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeeyeV1alpha2().AuditTasks(namespace).List(context.TODO(), options)
+				return client.KubeeyeV1alpha2().InspectTasks(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeeyeV1alpha2().AuditTasks(namespace).Watch(context.TODO(), options)
+				return client.KubeeyeV1alpha2().InspectTasks(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&kubeeyev1alpha2.AuditTask{},
+		&kubeeyev1alpha2.InspectTask{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *auditTaskInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredAuditTaskInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *inspectTaskInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredInspectTaskInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *auditTaskInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&kubeeyev1alpha2.AuditTask{}, f.defaultInformer)
+func (f *inspectTaskInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&kubeeyev1alpha2.InspectTask{}, f.defaultInformer)
 }
 
-func (f *auditTaskInformer) Lister() v1alpha2.AuditTaskLister {
-	return v1alpha2.NewAuditTaskLister(f.Informer().GetIndexer())
+func (f *inspectTaskInformer) Lister() v1alpha2.InspectTaskLister {
+	return v1alpha2.NewInspectTaskLister(f.Informer().GetIndexer())
 }

@@ -4,6 +4,6 @@ metadata:
   name: inspectplan-sample
   namespace: kubeeye-system
 spec:
-  schedule: "*/3 * * *  ?"
+  schedule: "*/59 * * *  ?"
   tags:
     - test

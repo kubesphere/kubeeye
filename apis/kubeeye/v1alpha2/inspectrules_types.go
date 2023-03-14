@@ -42,12 +42,13 @@ const (
 )
 
 type RuleItems struct {
-	RuleName   string   `yaml:"ruleName,omitempty" json:"ruleName,omitempty" `
-	Desc       string   `yaml:"desc,omitempty" json:"desc,omitempty"`
-	Opa        string   `yaml:"opa,omitempty" json:"opa,omitempty"`
-	Prometheus string   `yaml:"prometheus,omitempty" json:"prometheus,omitempty"`
-	Priority   string   `yaml:"priority,omitempty" json:"priority,omitempty"`
-	Tags       []string `yaml:"tags,omitempty" json:"tags,omitempty"`
+	RuleName           string   `yaml:"ruleName,omitempty" json:"ruleName,omitempty" `
+	Desc               string   `yaml:"desc,omitempty" json:"desc,omitempty"`
+	Opa                string   `yaml:"opa,omitempty" json:"opa,omitempty"`
+	Prometheus         string   `yaml:"prometheus,omitempty" json:"prometheus,omitempty"`
+	PrometheusEndpoint string   `yaml:"prometheusEndpoint,omitempty" json:"prometheusEndpoint,omitempty"`
+	Priority           string   `yaml:"priority,omitempty" json:"priority,omitempty"`
+	Tags               []string `yaml:"tags,omitempty" json:"tags,omitempty"`
 }
 
 // InspectRulesStatus defines the observed state of InspectRules

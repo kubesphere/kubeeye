@@ -40,9 +40,11 @@ spec:
                   type: string
                 minItems: 1
                 type: array
-              ruleName:
+              rules:
                 items:
-                  type: string
+                  additionalProperties:
+                    type: string
+                  type: object
                 minItems: 1
                 type: array
               timeout:

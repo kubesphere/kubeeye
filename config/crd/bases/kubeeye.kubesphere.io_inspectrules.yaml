@@ -48,6 +48,8 @@ spec:
                       type: string
                     prometheus:
                       type: string
+                    prometheusEndpoint:
+                      type: string
                     ruleName:
                       type: string
                     tags:

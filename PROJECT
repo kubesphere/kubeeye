@@ -28,7 +28,7 @@ resources:
   controller: true
   domain: kubesphere.io
   group: kubeeye
-  kind: Insights
+  kind: InspectRules
   path: github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2
   version: v1alpha2
 version: "3"

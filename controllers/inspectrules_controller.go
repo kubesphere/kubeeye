@@ -21,13 +21,10 @@ import (
 	"fmt"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-	"time"
 )
 
 // InspectRulesReconciler reconciles a Insights object
@@ -50,46 +47,48 @@ type InspectRulesReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
 func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx).WithName("insights_log")
 
 	inspectRules := &kubeeyev1alpha2.InspectRules{}
 
 	err := r.Get(ctx, req.NamespacedName, inspectRules)
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
-			logger.Error(err, "inspect rules is not found")
+			controller_log.Error(err, "inspect rules is not found")
 			return ctrl.Result{}, nil
 		}
-		logger.Error(err, "failed to get inspect rules")
+		controller_log.Error(err, "failed to get inspect rules")
 		return ctrl.Result{}, err
 	}
 
 	if !inspectRules.DeletionTimestamp.IsZero() {
-		logger.Info("inspect rules is being deleted")
+		controller_log.Info("inspect rules is being deleted")
 		return ctrl.Result{}, nil
 	}
-	if inspectRules.Status.State == kubeeyev1alpha2.ImportSuccess {
-		logger.Info("import inspect rules success")
+	if inspectRules.Annotations["import-state"] == "importSuccess" {
+		controller_log.Info("import inspect rules success")
 		return ctrl.Result{}, nil
 	}
-	logger.Info("starting inspect rules")
-	for i, rule := range inspectRules.Spec.Rules {
-		inspectRules.Spec.Rules[i].RuleName = fmt.Sprintf("%s-%s", rule.RuleName, uuid.NewUUID())
-	}
+	controller_log.Info("starting inspect rules")
 	copyInspectRules := inspectRules.DeepCopy()
+	for i, rule := range copyInspectRules.Spec.Rules {
+		copyInspectRules.Spec.Rules[i].RuleName = fmt.Sprintf("%s-%s", rule.RuleName, uuid.NewUUID())
+	}
+	copyInspectRules.Annotations = map[string]string{
+		"import-state": "importSuccess",
+	}
 	err = r.Update(ctx, copyInspectRules)
 	if err != nil {
-		logger.Error(err, "failed to update inspect rules")
+		controller_log.Error(err, "failed to update inspect rules")
 		return ctrl.Result{}, err
 	}
 
-	copyInspectRules.Status.ImportTime = v1.Time{Time: time.Now()}
-	copyInspectRules.Status.State = kubeeyev1alpha2.ImportSuccess
-	err = r.Status().Update(context.TODO(), copyInspectRules)
-	if err != nil {
-		logger.Error(err, "failed to update inspect rules status")
-		return ctrl.Result{}, err
-	}
+	//copyInspectRules.Status.ImportTime = v1.Time{Time: time.Now()}
+	//copyInspectRules.Status.State = kubeeyev1alpha2.ImportSuccess
+	//err = r.Status().Update(context.TODO(), copyInspectRules)
+	//if err != nil {
+	//	logger.Error(err, "failed to update inspect rules status")
+	//	return ctrl.Result{}, err
+	//}
 	return ctrl.Result{}, nil
 }
 

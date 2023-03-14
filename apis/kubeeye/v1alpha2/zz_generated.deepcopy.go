@@ -346,9 +346,9 @@ func (in *InspectTaskSpec) DeepCopyInto(out *InspectTaskSpec) {
 		*out = make([]Auditor, len(*in))
 		copy(*out, *in)
 	}
-	if in.RuleName != nil {
-		in, out := &in.RuleName, &out.RuleName
-		*out = make([]string, len(*in))
+	if in.Rules != nil {
+		in, out := &in.Rules, &out.Rules
+		*out = make([]map[string]string, len(*in))
 		copy(*out, *in)
 	}
 }

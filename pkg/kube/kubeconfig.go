@@ -15,6 +15,7 @@
 package kube
 
 import (
+	"github.com/kubesphere/kubeeye/clients/clientset/versioned"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -27,9 +28,10 @@ import (
 //var KubeConfig *rest.Config
 
 type KubernetesClient struct {
-	KubeConfig    *rest.Config
-	ClientSet     kubernetes.Interface
-	DynamicClient dynamic.Interface
+	KubeConfig       *rest.Config
+	ClientSet        kubernetes.Interface
+	VersionClientSet versioned.Interface
+	DynamicClient    dynamic.Interface
 }
 
 // GetKubeConfig get the kubeconfig from path or by GetConfig
@@ -79,6 +81,12 @@ func (k *KubernetesClient) K8SClients(kubeConfig *rest.Config) (*KubernetesClien
 		return nil, errors.Wrap(err, "failed to load dynamicClient")
 	}
 
+	versionClientSet, err := versioned.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load informersClient")
+	}
+
+	k.VersionClientSet = versionClientSet
 	k.ClientSet = clientSet
 	k.DynamicClient = dynamicClient
 	k.KubeConfig = kubeConfig

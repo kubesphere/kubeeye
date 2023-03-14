@@ -27,8 +27,9 @@ import (
 
 type KubeeyeV1alpha2Interface interface {
 	RESTClient() rest.Interface
-	AuditPlansGetter
-	AuditTasksGetter
+	InspectPlansGetter
+	InspectRulesesGetter
+	InspectTasksGetter
 }
 
 // KubeeyeV1alpha2Client is used to interact with features provided by the kubeeye.kubesphere.io group.
@@ -36,12 +37,16 @@ type KubeeyeV1alpha2Client struct {
 	restClient rest.Interface
 }
 
-func (c *KubeeyeV1alpha2Client) AuditPlans(namespace string) AuditPlanInterface {
-	return newAuditPlans(c, namespace)
+func (c *KubeeyeV1alpha2Client) InspectPlans(namespace string) InspectPlanInterface {
+	return newInspectPlans(c, namespace)
 }
 
-func (c *KubeeyeV1alpha2Client) AuditTasks(namespace string) AuditTaskInterface {
-	return newAuditTasks(c, namespace)
+func (c *KubeeyeV1alpha2Client) InspectRules(namespace string) InspectRulesInterface {
+	return newInspectRuleses(c, namespace)
+}
+
+func (c *KubeeyeV1alpha2Client) InspectTasks(namespace string) InspectTaskInterface {
+	return newInspectTasks(c, namespace)
 }
 
 // NewForConfig creates a new KubeeyeV1alpha2Client for the given config.

@@ -52,10 +52,12 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=kubeeye.kubesphere.io, Version=v1alpha2
-	case v1alpha2.SchemeGroupVersion.WithResource("auditplans"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeeye().V1alpha2().AuditPlans().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("audittasks"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeeye().V1alpha2().AuditTasks().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("inspectplans"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeeye().V1alpha2().InspectPlans().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("inspectrules"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeeye().V1alpha2().InspectRules().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("inspecttasks"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeeye().V1alpha2().InspectTasks().Informer()}, nil
 
 	}
 
