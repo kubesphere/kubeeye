@@ -103,7 +103,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			resultMap, ok := r.Audit.TaskResults[auditTask.Name]
 			if !ok {
 				r.Audit.AddTaskToQueue(req.NamespacedName)
-				return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+				return ctrl.Result{}, nil
 			}
 			var results []kubeeyev1alpha2.AuditResult
 			completed := 0

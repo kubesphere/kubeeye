@@ -18,13 +18,13 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"time"
 )
 
 // InspectRulesReconciler reconciles a Insights object
@@ -64,19 +64,16 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		controller_log.Info("inspect rules is being deleted")
 		return ctrl.Result{}, nil
 	}
-	if inspectRules.Annotations["import-state"] == "importSuccess" {
+	if inspectRules.Status.State == kubeeyev1alpha2.ImportSuccess {
 		controller_log.Info("import inspect rules success")
 		return ctrl.Result{}, nil
 	}
 	controller_log.Info("starting inspect rules")
 	copyInspectRules := inspectRules.DeepCopy()
-	for i, rule := range copyInspectRules.Spec.Rules {
-		copyInspectRules.Spec.Rules[i].RuleName = fmt.Sprintf("%s-%s", rule.RuleName, uuid.NewUUID())
-	}
-	copyInspectRules.Annotations = map[string]string{
-		"import-state": "importSuccess",
-	}
-	err = r.Update(ctx, copyInspectRules)
+
+	copyInspectRules.Status.ImportTime = v1.Time{Time: time.Now()}
+	copyInspectRules.Status.State = kubeeyev1alpha2.ImportSuccess
+	err = r.Status().Update(ctx, copyInspectRules)
 	if err != nil {
 		controller_log.Error(err, "failed to update inspect rules")
 		return ctrl.Result{}, err

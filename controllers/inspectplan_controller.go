@@ -141,7 +141,11 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 	inspectTask.Name = fmt.Sprintf("%s-%s", inspectPlan.Name, strconv.Itoa(int(time.Now().Unix())))
 	inspectTask.Namespace = inspectPlan.Namespace
 	inspectTask.Labels = inspectPlan.Labels
-	inspectTask.Spec.Auditors = inspectPlan.Spec.Auditors
+	audits := inspectPlan.Spec.Auditors
+	if len(audits) == 0 {
+		audits = append(audits, kubeeyev1alpha2.AuditorKubeeye)
+	}
+	inspectTask.Spec.Auditors = audits
 	inspectTask.Spec.Timeout = inspectPlan.Spec.Timeout
 	inspectTask.Spec.Rules = rules
 	err = r.Client.Create(ctx, &inspectTask)

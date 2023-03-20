@@ -114,26 +114,22 @@ func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName)
 
 	k.TaskResults[taskName.Name] = make(map[string]*kubeeyev1alpha2.AuditResult, len(auditTask.Spec.Auditors))
 
-	if len(auditTask.Spec.Auditors) > 0 {
-		for _, auditor := range auditTask.Spec.Auditors {
-			if auditor == "kubeeye" {
-				go k.KubeeyeAudit(taskName, ctx)
-			} else {
-				auditorSvcMap := &corev1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{Name: constant.AuditorServiceAddrConfigMap, Namespace: taskName.Namespace},
-				}
-				err = k.Cli.Get(ctx, client.ObjectKeyFromObject(auditorSvcMap), auditorSvcMap)
-				if err != nil {
-					klog.Error(err, " failed to get audit service configmap")
-					return err
-				}
-
-				auditorMap := auditorSvcMap.Data
-				go k.PluginAudit(ctx, taskName.Name, string(auditor), auditorMap)
+	for _, auditor := range auditTask.Spec.Auditors {
+		if auditor == "kubeeye" {
+			go k.KubeeyeAudit(taskName, ctx)
+		} else {
+			auditorSvcMap := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: constant.AuditorServiceAddrConfigMap, Namespace: taskName.Namespace},
 			}
+			err = k.Cli.Get(ctx, client.ObjectKeyFromObject(auditorSvcMap), auditorSvcMap)
+			if err != nil {
+				klog.Error(err, " failed to get audit service configmap")
+				return err
+			}
+
+			auditorMap := auditorSvcMap.Data
+			go k.PluginAudit(ctx, taskName.Name, string(auditor), auditorMap)
 		}
-	} else {
-		go k.KubeeyeAudit(taskName, ctx)
 	}
 	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -222,7 +218,7 @@ func (k *Audit) KubeeyeAudit(taskName types.NamespacedName, ctx context.Context)
 	auditResult.Result = ext
 
 	auditResult.Phase = kubeeyev1alpha2.PhaseSucceeded
-
+	fmt.Println(k.TaskResults)
 	klog.Infof("%s : finish kubeeye audit", taskName)
 }
 

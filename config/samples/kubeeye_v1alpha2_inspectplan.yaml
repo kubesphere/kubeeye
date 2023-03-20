@@ -5,5 +5,7 @@ metadata:
   namespace: kubeeye-system
 spec:
   schedule: "*/59 * * *  ?"
+  auditors:
+    - kubeeye
   tags:
     - test
