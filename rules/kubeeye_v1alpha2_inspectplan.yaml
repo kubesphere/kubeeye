@@ -4,8 +4,8 @@ metadata:
   name: inspectplan-sample
   namespace: kubeeye-system
 spec:
-  schedule: "*/59 * * *  ?"
+  schedule: "*/5 * * *  ?"
   auditors:
     - kubeeye
   tags:
-    - test
+    - kubeeye_workloads_rego

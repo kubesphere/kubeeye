@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: kubesphere/kubeeye
-  newTag: latest
+  newTag: test

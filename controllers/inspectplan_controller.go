@@ -110,7 +110,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			controller_log.Error(err, "failed to update audit plan")
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
 	} else {
 		nextScheduledTime := nextScheduledTimeDuration(schedule, now)
 		return ctrl.Result{RequeueAfter: *nextScheduledTime}, nil

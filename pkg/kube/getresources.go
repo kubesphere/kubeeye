@@ -48,7 +48,7 @@ func GetObjectCounts(ctx context.Context, kubernetesClient *KubernetesClient, re
 	resourceGVR := schema.GroupVersionResource{Group: group, Resource: resource, Version: conf.APIVersionV1}
 	rsource, err := dynamicClient.Resource(resourceGVR).List(ctx, listOpts)
 	if err != nil {
-		fmt.Printf("Failed to get Kubernetes %v.\n", resource)
+		fmt.Printf("Failed to get Kubernetes %v.\n,error:%s", resource, err)
 	}
 	if rsource != nil {
 		rsourceCount = len(rsource.Items)

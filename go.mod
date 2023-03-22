@@ -1,9 +1,10 @@
 module github.com/kubesphere/kubeeye
 
-go 1.17
+go 1.18
 
 require (
 	github.com/aquasecurity/kube-bench v0.6.7
+	github.com/ghodss/yaml v1.0.0
 	github.com/golang/glog v1.0.0
 	github.com/lithammer/dedent v1.1.0
 	github.com/onsi/ginkgo v1.16.5
@@ -41,7 +42,6 @@ require (
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
-	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/zapr v1.2.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect

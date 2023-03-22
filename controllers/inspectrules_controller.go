@@ -19,6 +19,8 @@ package controllers
 import (
 	"context"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/utils"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -30,7 +32,8 @@ import (
 // InspectRulesReconciler reconciles a Insights object
 type InspectRulesReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	k8sClient kube.KubernetesClient
+	Scheme    *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspectrules,verbs=get;list;watch;create;update;patch;delete
@@ -64,28 +67,40 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		controller_log.Info("inspect rules is being deleted")
 		return ctrl.Result{}, nil
 	}
+	if inspectRules.Status.State == "" {
+		inspectRules.Status.State = kubeeyev1alpha2.StartImport
+		err = r.Status().Update(ctx, inspectRules)
+		if err != nil {
+			controller_log.Error(err, "failed to update inspect rules")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
 	if inspectRules.Status.State == kubeeyev1alpha2.ImportSuccess {
 		controller_log.Info("import inspect rules success")
 		return ctrl.Result{}, nil
 	}
 	controller_log.Info("starting inspect rules")
 	copyInspectRules := inspectRules.DeepCopy()
-
+	ruleCount := map[string]int{}
+	total := 0
+	for _, rule := range inspectRules.Spec.Rules {
+		newTags := utils.ArrayDeduplication(rule.Tags)
+		for _, tag := range newTags {
+			ruleCount[tag]++
+			total++
+		}
+	}
+	ruleCount["total"] = total
 	copyInspectRules.Status.ImportTime = v1.Time{Time: time.Now()}
 	copyInspectRules.Status.State = kubeeyev1alpha2.ImportSuccess
+	copyInspectRules.Status.RuleCount = ruleCount
 	err = r.Status().Update(ctx, copyInspectRules)
 	if err != nil {
 		controller_log.Error(err, "failed to update inspect rules")
 		return ctrl.Result{}, err
 	}
 
-	//copyInspectRules.Status.ImportTime = v1.Time{Time: time.Now()}
-	//copyInspectRules.Status.State = kubeeyev1alpha2.ImportSuccess
-	//err = r.Status().Update(context.TODO(), copyInspectRules)
-	//if err != nil {
-	//	logger.Error(err, "failed to update inspect rules status")
-	//	return ctrl.Result{}, err
-	//}
 	return ctrl.Result{}, nil
 }
 

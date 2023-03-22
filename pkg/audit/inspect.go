@@ -218,7 +218,7 @@ func (k *Audit) KubeeyeAudit(taskName types.NamespacedName, ctx context.Context)
 	auditResult.Result = ext
 
 	auditResult.Phase = kubeeyev1alpha2.PhaseSucceeded
-	fmt.Println(k.TaskResults)
+
 	klog.Infof("%s : finish kubeeye audit", taskName)
 }
 

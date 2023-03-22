@@ -8,6 +8,7 @@ COPY clients/ clients/
 COPY cmd/ cmd/
 COPY controllers/ controllers/
 COPY pkg/ pkg/
+COPY constant/ constant/
 COPY plugins/ plugins/
 
 # Copy the Go Modules manifests

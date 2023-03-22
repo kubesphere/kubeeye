@@ -89,6 +89,5 @@ spec:
             imagePullPolicy := resource.Object.spec.jobTemplate.spec.template.spec.containers[_].imagePullPolicy
             imagePullPolicy != "Always"
         }
-      prometheus:
       tags:
         - test

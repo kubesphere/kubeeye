@@ -66,6 +66,10 @@ spec:
               importTime:
                 format: date-time
                 type: string
+              ruleCount:
+                additionalProperties:
+                  type: integer
+                type: object
               state:
                 type: string
             type: object

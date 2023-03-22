@@ -118,7 +118,7 @@ func main() {
 		Scheme:    mgr.GetScheme(),
 		K8sClient: clients,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AuditPlan")
+		setupLog.Error(err, "unable to create controller", "controller", "InspectPlan")
 		os.Exit(1)
 	}
 	if err = (&controllers.InspectTaskReconciler{
@@ -127,14 +127,14 @@ func main() {
 		Audit:      au,
 		K8sClients: clients,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AuditTask")
+		setupLog.Error(err, "unable to create controller", "controller", "InspectTask")
 		os.Exit(1)
 	}
 	if err = (&controllers.InspectRulesReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Insights")
+		setupLog.Error(err, "unable to create controller", "controller", "InspectRules")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

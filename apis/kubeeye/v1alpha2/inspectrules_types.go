@@ -59,6 +59,8 @@ type InspectRulesStatus struct {
 	ImportTime metav1.Time `yaml:"importTime,omitempty" json:"importTime,omitempty"`
 
 	State State `yaml:"state,omitempty" json:"state,omitempty"`
+
+	RuleCount map[string]int `yaml:"ruleCount,omitempty" json:"ruleCount,omitempty"`
 }
 
 // +genclient

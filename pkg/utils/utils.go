@@ -8,3 +8,13 @@ func ArrayFind(s string, sub []string) bool {
 	}
 	return false
 }
+
+func ArrayDeduplication(sub []string) []string {
+	var newSub []string
+	for _, s := range sub {
+		if !ArrayFind(s, newSub) {
+			newSub = append(newSub, s)
+		}
+	}
+	return newSub
+}

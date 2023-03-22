@@ -6,6 +6,27 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - apps
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - batch
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+- apiGroups:
   - kubeeye.kubesphere.io
   resources:
   - inspectplans
@@ -83,3 +104,10 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list

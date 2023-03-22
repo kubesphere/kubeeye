@@ -1,9 +1,13 @@
 package regorules
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"embed"
 	"fmt"
+	"github.com/ghodss/yaml"
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/clients/clientset/versioned"
 	"github.com/kubesphere/kubeeye/constant"
 	"io/ioutil"
@@ -11,8 +15,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 //go:embed rules
@@ -51,18 +57,59 @@ func GetAdditionalRegoRulesfiles(path string) []string {
 	return regoRules
 }
 
-func GetDefaultRegofile(path string) []string {
-	var regoRules []string
+func GetDefaultRegofile(path string) []map[string][]byte {
+	var regoRules []map[string][]byte
 	files, err := defaultRegoRules.ReadDir(path)
 	if err != nil {
 		fmt.Printf("Failed to get Default Rego rule files.\n")
 	}
 	for _, file := range files {
 		rule, _ := defaultRegoRules.ReadFile(path + "/" + file.Name())
-		regoRule := string(rule)
+		regoRule := map[string][]byte{"name": []byte(file.Name()), "rule": rule}
 		regoRules = append(regoRules, regoRule)
 	}
 	return regoRules
+}
+
+func RegoToRuleYaml(path string) {
+	regofile := GetDefaultRegofile(path)
+	var rules kubeeyev1alpha2.InspectRules
+	var ruleItems []kubeeyev1alpha2.RuleItems
+	for _, m := range regofile {
+		ruleType := kubeeyev1alpha2.RuleItems{}
+		ruleType.RuleName = strings.Replace(string(m["name"]), ".rego", "", -1)
+		ruleType.Opa = string(m["rule"])
+		scanner := bufio.NewScanner(bytes.NewReader(m["rule"]))
+		if scanner.Scan() {
+			space := strings.TrimSpace(strings.Replace(scanner.Text(), "package", "", -1))
+			ruleType.Desc = space
+			ruleType.Tags = []string{space}
+		}
+		ruleItems = append(ruleItems, ruleType)
+	}
+	rules.Spec.Rules = ruleItems
+	rules.Name = fmt.Sprintf("%s-%s", "kubeeye-inspectrules", strconv.Itoa(int(time.Now().Unix())))
+	rules.Namespace = "kubeeye-system"
+	rules.APIVersion = "kubeeye.kubesphere.io/v1alpha2"
+	rules.Kind = "InspectRules"
+	rules.Labels = map[string]string{
+		"app.kubernetes.io/name":       "inspectrules",
+		"app.kubernetes.io/instance":   "inspectrules-sample",
+		"app.kubernetes.io/part-of":    "kubeeye",
+		"app.kubernetes.io/managed-by": "kustomize",
+		"app.kubernetes.io/created-by": "kubeeye",
+	}
+	data, err := yaml.Marshal(&rules)
+	if err != nil {
+		panic(err)
+	}
+	filename := fmt.Sprintf("./%s-%s.yaml", "kubeeye-inspectrules", strconv.Itoa(int(time.Now().Unix())))
+	err = ioutil.WriteFile(filename, data, 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("YAML file written successfully")
 }
 
 func GetRegoRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) []string {
