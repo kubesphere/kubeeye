@@ -14,3 +14,4 @@ const (
 	Opa        = "opa"
 	Prometheus = "prometheus"
 )
+const LabelName = "kubeeye.kubesphere.io/name"

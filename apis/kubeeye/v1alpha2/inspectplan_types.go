@@ -42,6 +42,7 @@ type InspectPlanSpec struct {
 	Timeout   string    `json:"timeout,omitempty"`
 	Tags      []string  `json:"tags,omitempty"`
 	RuleNames []string  `json:"ruleNames,omitempty"`
+	MaxTasks  int       `json:"maxTasks,omitempty"`
 }
 
 // InspectPlanStatus defines the observed state of InspectPlan
@@ -50,8 +51,9 @@ type InspectPlanStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 	LastScheduleTime metav1.Time `json:"lastScheduleTime,omitempty"`
 	LastTaskName     string      `json:"lastTaskName,omitempty"`
+	TaskNames        []string    `json:"TaskNames,omitempty"`
 	LastTaskStatus   Phase       `json:"lastTaskStatus,omitempty"`
-	NextScheduleTime metav1.Time `json:"nextScheduleTime"`
+	NextScheduleTime metav1.Time `json:"nextScheduleTime,omitempty"`
 }
 
 // +genclient

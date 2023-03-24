@@ -40,6 +40,8 @@ spec:
                   type: string
                 minItems: 1
                 type: array
+              maxTasks:
+                type: integer
               ruleNames:
                 items:
                   type: string
@@ -58,6 +60,10 @@ spec:
           status:
             description: InspectPlanStatus defines the observed state of InspectPlan
             properties:
+              TaskNames:
+                items:
+                  type: string
+                type: array
               lastScheduleTime:
                 description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
                   of cluster Important: Run "make" to regenerate code after modifying
@@ -71,8 +77,6 @@ spec:
               nextScheduleTime:
                 format: date-time
                 type: string
-            required:
-            - nextScheduleTime
             type: object
         type: object
     served: true

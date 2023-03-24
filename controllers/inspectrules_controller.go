@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/utils"
@@ -56,17 +57,36 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	err := r.Get(ctx, req.NamespacedName, inspectRules)
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
-			controller_log.Error(err, "inspect rules is not found")
+			fmt.Printf("inspect rules is not found;name:%s,namespect:%s\n", req.Name, req.Namespace)
 			return ctrl.Result{}, nil
 		}
 		controller_log.Error(err, "failed to get inspect rules")
 		return ctrl.Result{}, err
 	}
 
-	if !inspectRules.DeletionTimestamp.IsZero() {
+	if inspectRules.DeletionTimestamp.IsZero() {
+		if _, b := utils.ArrayFind(Finalizers, inspectRules.Finalizers); !b {
+			inspectRules.Finalizers = append(inspectRules.Finalizers, Finalizers)
+			err = r.Client.Update(ctx, inspectRules)
+			if err != nil {
+				controller_log.Info("Failed to inspect plan add finalizers")
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
+		}
+
+	} else {
+		newFinalizers := utils.SliceRemove(Finalizers, inspectRules.Finalizers)
+		inspectRules.Finalizers = newFinalizers.([]string)
 		controller_log.Info("inspect rules is being deleted")
+		err = r.Client.Update(ctx, inspectRules)
+		if err != nil {
+			controller_log.Info("Failed to inspect plan add finalizers")
+			return ctrl.Result{}, err
+		}
 		return ctrl.Result{}, nil
 	}
+
 	if inspectRules.Status.State == "" {
 		inspectRules.Status.State = kubeeyev1alpha2.StartImport
 		err = r.Status().Update(ctx, inspectRules)

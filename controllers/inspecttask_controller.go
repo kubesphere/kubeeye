@@ -18,6 +18,8 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	"github.com/kubesphere/kubeeye/pkg/utils"
 	"time"
 
 	"github.com/kubesphere/kubeeye/constant"
@@ -64,54 +66,72 @@ type InspectTaskReconciler struct {
 func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
 
-	auditTask := &kubeeyev1alpha2.InspectTask{}
-	err := r.Get(ctx, req.NamespacedName, auditTask)
+	inspectTask := &kubeeyev1alpha2.InspectTask{}
+	err := r.Get(ctx, req.NamespacedName, inspectTask)
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			delete(r.Audit.TaskOnceMap, req.NamespacedName)
-			delete(r.Audit.TaskResults, auditTask.Name)
-			logger.Error(err, "inspect task is not found")
+			delete(r.Audit.TaskResults, inspectTask.Name)
+			fmt.Printf("inspect task is not found;name:%s,namespect:%s\n", req.Name, req.Namespace)
 			return ctrl.Result{}, nil
 		}
 		logger.Error(err, "failed to get inspect task")
 		return ctrl.Result{}, err
 	}
 
-	if !auditTask.DeletionTimestamp.IsZero() {
+	if inspectTask.DeletionTimestamp.IsZero() {
+		if _, b := utils.ArrayFind(Finalizers, inspectTask.Finalizers); !b {
+			inspectTask.Finalizers = append(inspectTask.Finalizers, Finalizers)
+			err = r.Client.Update(ctx, inspectTask)
+			if err != nil {
+				controller_log.Info("Failed to inspect plan add finalizers")
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
+		}
+
+	} else {
+		newFinalizers := utils.SliceRemove(Finalizers, inspectTask.Finalizers)
+		inspectTask.Finalizers = newFinalizers.([]string)
+		controller_log.Info("inspect rules is being deleted")
+		err = r.Client.Update(ctx, inspectTask)
+		if err != nil {
+			controller_log.Info("Failed to inspect plan add finalizers")
+			return ctrl.Result{}, err
+		}
 		delete(r.Audit.TaskOnceMap, req.NamespacedName)
-		delete(r.Audit.TaskResults, auditTask.Name)
-		logger.Info("inspect task is being deleted")
+		delete(r.Audit.TaskResults, inspectTask.Name)
 		return ctrl.Result{}, nil
 	}
 
-	if auditTask.Status.StartTimestamp.IsZero() { // if Audit task have not start, trigger kubeeye and plugin
+	if inspectTask.Status.StartTimestamp.IsZero() { // if Audit task have not start, trigger kubeeye and plugin
 
 		// start Audit
 		r.Audit.AddTaskToQueue(req.NamespacedName)
 
-		auditTask.Status.StartTimestamp = &metav1.Time{Time: time.Now()}
-		auditTask.Status.Phase = kubeeyev1alpha2.PhaseRunning
+		inspectTask.Status.StartTimestamp = &metav1.Time{Time: time.Now()}
+		inspectTask.Status.Phase = kubeeyev1alpha2.PhaseRunning
 		// get cluster info : ClusterVersion, NodesCount, NamespaceCount
-		auditTask.Status.ClusterInfo, err = r.getClusterInfo(ctx)
+		inspectTask.Status.ClusterInfo, err = r.getClusterInfo(ctx)
 		if err != nil {
 			logger.Error(err, "failed to get cluster info")
 			return ctrl.Result{}, err
 		}
 		logger.Info("start task ", "name", req.Name)
 	} else {
-		if auditTask.Status.Phase == kubeeyev1alpha2.PhaseSucceeded || auditTask.Status.Phase == kubeeyev1alpha2.PhaseFailed {
+		if inspectTask.Status.Phase == kubeeyev1alpha2.PhaseSucceeded || inspectTask.Status.Phase == kubeeyev1alpha2.PhaseFailed {
 			// remove from processing queue
-			delete(r.Audit.TaskResults, auditTask.Name)
+			delete(r.Audit.TaskResults, inspectTask.Name)
 			return ctrl.Result{}, nil
 		} else {
-			resultMap, ok := r.Audit.TaskResults[auditTask.Name]
+			resultMap, ok := r.Audit.TaskResults[inspectTask.Name]
 			if !ok {
 				r.Audit.AddTaskToQueue(req.NamespacedName)
 				return ctrl.Result{}, nil
 			}
 			var results []kubeeyev1alpha2.AuditResult
 			completed := 0
-			for _, auditor := range auditTask.Spec.Auditors {
+			for _, auditor := range inspectTask.Spec.Auditors {
 				if result, ok := resultMap[string(auditor)]; ok {
 					results = append(results, *result)
 					if result.Phase == kubeeyev1alpha2.PhaseSucceeded {
@@ -119,23 +139,23 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 					}
 				}
 			}
-			auditTask.Status.AuditResults = results
-			auditTask.Status.CompleteItemCount = completed
+			inspectTask.Status.AuditResults = results
+			inspectTask.Status.CompleteItemCount = completed
 		}
 
-		timeout, err := time.ParseDuration(auditTask.Spec.Timeout)
+		timeout, err := time.ParseDuration(inspectTask.Spec.Timeout)
 		if err != nil {
 			timeout = constant.DefaultTimeout
 		}
-		if auditTask.Status.CompleteItemCount == len(auditTask.Spec.Auditors) {
-			auditTask.Status.Phase = kubeeyev1alpha2.PhaseSucceeded
-			auditTask.Status.EndTimestamp = &metav1.Time{Time: time.Now()}
-		} else if auditTask.Status.StartTimestamp.Add(timeout).Before(time.Now()) {
-			auditTask.Status.Phase = kubeeyev1alpha2.PhaseFailed
+		if inspectTask.Status.CompleteItemCount == len(inspectTask.Spec.Auditors) {
+			inspectTask.Status.Phase = kubeeyev1alpha2.PhaseSucceeded
+			inspectTask.Status.EndTimestamp = &metav1.Time{Time: time.Now()}
+		} else if inspectTask.Status.StartTimestamp.Add(timeout).Before(time.Now()) {
+			inspectTask.Status.Phase = kubeeyev1alpha2.PhaseFailed
 		}
 	}
 
-	err = r.Status().Update(ctx, auditTask)
+	err = r.Status().Update(ctx, inspectTask)
 	if err != nil && !kubeErr.IsNotFound(err) {
 		logger.Error(err, "failed to update audit task")
 		return ctrl.Result{RequeueAfter: 60 * time.Second}, err
