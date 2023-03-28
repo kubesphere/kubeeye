@@ -22,7 +22,7 @@ import (
 
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/kubesphere/kubeeye/pkg/audit"
+	"github.com/kubesphere/kubeeye/pkg/inspect"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"go.uber.org/zap/zapcore"
 
@@ -101,7 +101,7 @@ func main() {
 		setupLog.Error(err, "Failed to load cluster clients")
 		os.Exit(1)
 	}
-	au := &audit.Audit{
+	au := &inspect.Audit{
 		TaskQueue:   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		TaskResults: make(map[string]map[string]*kubeeyev1alpha2.AuditResult),
 		K8sClient:   clients,

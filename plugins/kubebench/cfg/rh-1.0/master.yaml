@@ -826,7 +826,7 @@ groups:
         scored: false
 
       - id: 1.2.22
-        text: "Ensure that the --audit-log-path argument is set (Manual)"
+        text: "Ensure that the --inspect-log-path argument is set (Manual)"
         audit: |
           # Should return “/var/log/kube-apiserver/audit.log"
           output=$(oc get configmap config -n openshift-kube-apiserver -o jsonpath="{['.data.config\.yaml']}" | jq '.auditConfig.auditFilePath')
@@ -850,8 +850,8 @@ groups:
         tests:
           bin_op: or
           test_items:
-            - flag: "/var/log/kube-apiserver/audit.log"
-            - flag: "/var/log/openshift-apiserver/audit.log"
+            - flag: "/var/log/kube-apiserver/inspect.log"
+            - flag: "/var/log/openshift-apiserver/inspect.log"
             - flag: "exit_code=0"
             - flag: "null"
         remediation: |
@@ -859,7 +859,7 @@ groups:
         scored: false
 
       - id: 1.2.23
-        text: "Ensure that the audit logs are forwarded off the cluster for retention (Manual)"
+        text: "Ensure that the inspect logs are forwarded off the cluster for retention (Manual)"
         type: "manual"
         remediation: |
           Follow the documentation for log forwarding. Forwarding logs to third party systems
@@ -887,7 +887,7 @@ groups:
               compare:
                 op: gte
                 value: 10
-            - flag: "audit-log-maxbackup"
+            - flag: "inspect-log-maxbackup"
               compare:
                 op: gte
                 value: 10
@@ -915,7 +915,7 @@ groups:
               compare:
                 op: gte
                 value: 100
-            - flag: "audit-log-maxsize"
+            - flag: "inspect-log-maxsize"
               compare:
                 op: gte
                 value: 100

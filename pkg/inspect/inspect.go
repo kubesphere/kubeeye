@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package audit
+package inspect
 
 import (
 	"context"
@@ -96,14 +96,14 @@ func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName)
 	err := k.Cli.Get(ctx, client.ObjectKeyFromObject(auditTask), auditTask)
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
-			klog.Error(err, "audit task is not found")
+			klog.Error(err, "inspect task is not found")
 			return nil
 		}
-		klog.Error(err, "failed to get audit task")
+		klog.Error(err, "failed to get inspect task")
 		return err
 	}
 	if !auditTask.DeletionTimestamp.IsZero() {
-		klog.Error(err, "audit task is deleted")
+		klog.Error(err, "inspect task is deleted")
 		return nil
 	}
 	timeout, err := time.ParseDuration(auditTask.Spec.Timeout)
@@ -123,7 +123,7 @@ func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName)
 			}
 			err = k.Cli.Get(ctx, client.ObjectKeyFromObject(auditorSvcMap), auditorSvcMap)
 			if err != nil {
-				klog.Error(err, " failed to get audit service configmap")
+				klog.Error(err, " failed to get inspect service configmap")
 				return err
 			}
 
@@ -142,14 +142,14 @@ func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName)
 			err := k.Cli.Get(ctx, client.ObjectKeyFromObject(auditTask), auditTask)
 			if err != nil {
 				if kubeErr.IsNotFound(err) {
-					klog.Error(err, "audit task is not found")
+					klog.Error(err, "inspect task is not found")
 					return nil
 				}
-				klog.Error(err, "failed to get audit task")
+				klog.Error(err, "failed to get inspect task")
 				continue
 			}
 			if !auditTask.DeletionTimestamp.IsZero() {
-				klog.Error(err, "audit task is deleted")
+				klog.Error(err, "inspect task is deleted")
 				return nil
 			}
 			if auditTask.Status.Phase == kubeeyev1alpha2.PhaseSucceeded {
@@ -160,12 +160,12 @@ func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName)
 }
 
 func (k *Audit) KubeeyeAudit(taskName types.NamespacedName, ctx context.Context) {
-	klog.Infof("%s : start kubeeye audit", taskName)
+	klog.Infof("%s : start kubeeye inspect", taskName)
 	auditResult := &kubeeyev1alpha2.AuditResult{Name: "kubeeye", Phase: kubeeyev1alpha2.PhaseRunning}
 
 	k.TaskResults[taskName.Name]["kubeeye"] = auditResult
 
-	// start kubeeye audit
+	// start kubeeye inspect
 	K8SResources, validationResultsChan, Percent := ValidationResults(ctx, k.K8sClient, taskName, "")
 
 	kubeeyeResult := kubeeyev1alpha2.KubeeyeAuditResult{}
@@ -177,7 +177,7 @@ func (k *Audit) KubeeyeAudit(taskName types.NamespacedName, ctx context.Context)
 		for {
 			select {
 			case <-ticker.C:
-				kubeeyeResult.Percent = Percent.AuditPercent // update kubeeye audit percent
+				kubeeyeResult.Percent = Percent.AuditPercent // update kubeeye inspect percent
 				ext := runtime.RawExtension{}
 				marshal, err := json.Marshal(kubeeyeResult)
 				if err != nil {
@@ -219,7 +219,7 @@ func (k *Audit) KubeeyeAudit(taskName types.NamespacedName, ctx context.Context)
 
 	auditResult.Phase = kubeeyev1alpha2.PhaseSucceeded
 
-	klog.Infof("%s : finish kubeeye audit", taskName)
+	klog.Infof("%s : finish kubeeye inspect", taskName)
 }
 
 func (k *Audit) PluginsResultsReceiver(pluginsResultsReceiverAddr string) {
@@ -228,7 +228,7 @@ func (k *Audit) PluginsResultsReceiver(pluginsResultsReceiverAddr string) {
 	ServeMux.Handle("/plugins", http.HandlerFunc(k.PluginsResult))
 	err := http.ListenAndServe(pluginsResultsReceiverAddr, ServeMux)
 	if err != nil {
-		klog.Error("failed to listen plugin audit result")
+		klog.Error("failed to listen plugin inspect result")
 		return
 	}
 }
@@ -265,6 +265,6 @@ func (k *Audit) PluginAudit(ctx context.Context, taskName string, pluginName str
 	url := fmt.Sprintf("http://%s/start?taskname=%s&kubeeyesvc=%s", service, taskName, auditorMap["kubeeye"])
 	_, err := http.Get(url)
 	if err != nil {
-		klog.Error(err, "%s : failed to request %s audit", taskName, pluginName)
+		klog.Error(err, "%s : failed to request %s inspect", taskName, pluginName)
 	}
 }

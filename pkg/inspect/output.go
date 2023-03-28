@@ -1,4 +1,4 @@
-package audit
+package inspect
 
 import (
 	"encoding/csv"
@@ -108,6 +108,6 @@ func CSVOutput(receiver <-chan []v1alpha2.ResourceResult) error {
 	if err := w.WriteAll(contents); err != nil {
 		return err
 	}
-	fmt.Printf("The result is exported to kubeEyeAuditResult.CSV, please check it for audit result.\n")
+	fmt.Printf("The result is exported to kubeEyeAuditResult.CSV, please check it for inspect result.\n")
 	return nil
 }

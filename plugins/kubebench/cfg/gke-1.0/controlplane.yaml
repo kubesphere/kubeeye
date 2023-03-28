@@ -23,11 +23,11 @@ groups:
     type: skip
     checks:
       - id: 3.2.1
-        text: "Ensure that a minimal audit policy is created (Not Scored)"
+        text: "Ensure that a minimal inspect policy is created (Not Scored)"
         remediation: "This control cannot be modified in GKE."
         scored: false
 
       - id: 3.2.2
-        text: "Ensure that the audit policy covers key security concerns (Not Scored) "
+        text: "Ensure that the inspect policy covers key security concerns (Not Scored) "
         remediation: "This control cannot be modified in GKE."
         scored: false

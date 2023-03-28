@@ -12,7 +12,7 @@ import (
 )
 
 func KubeHunterAudit() (result *KubeHunterResults, err error) {
-	log.Println("start kubehunter audit")
+	log.Println("start kubehunter inspect")
 	cmd := exec.Command("kube-hunter", "--pod", "--report", "json")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -43,6 +43,6 @@ func KubeHunterAudit() (result *KubeHunterResults, err error) {
 	if err := cmd.Wait(); err != nil {
 		return result, errors.Wrap(err, "the command kube-hunter exec failed")
 	}
-	log.Println("KubeHunter audit finished")
+	log.Println("KubeHunter inspect finished")
 	return result, nil
 }

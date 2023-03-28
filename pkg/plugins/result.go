@@ -12,12 +12,12 @@ import (
 func TriggerPluginsAudit(pluginList []string) {
 	for _, pluginName := range pluginList {
 		if CheckPluginsHealth(pluginName) {
-			klog.Infof("trigger plugin %s audit", pluginName)
+			klog.Infof("trigger plugin %s inspect", pluginName)
 			err, _ := TriggerAudit(pluginName)
 			if err != nil {
-				klog.Errorf("trigger plugin %s audit failed", pluginName, err)
+				klog.Errorf("trigger plugin %s inspect failed", pluginName, err)
 			}
-			klog.Infof("trigger plugin %s audit successful", pluginName)
+			klog.Infof("trigger plugin %s inspect successful", pluginName)
 		} else {
 			klog.Errorf("plugin %s not ready", pluginName)
 		}

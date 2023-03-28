@@ -43,7 +43,7 @@ KubeEye 通过 Kubernetes API 获取资源详情，通过巡检规则和插件�
 3. 使用 KubeEye 进行巡检。
 
 ```shell
-kubeeye audit
+kubeeye inspect
 KIND          NAMESPACE        NAME                                                           REASON                                        LEVEL    MESSAGE
 Node                           docker-desktop                                                 kubelet has no sufficient memory available   warning    KubeletHasNoSufficientMemory
 Node                           docker-desktop                                                 kubelet has no sufficient PID available      warning    KubeletHasNoSufficientPID
@@ -160,7 +160,7 @@ ClusterRole                    vpnkit-controller                                
   > 提示：KubeEye 将读取指定目录下所有 *.rego* 结尾的文件。
 
 ```shell
-kubeeye audit -p ./opa -f ~/.kube/config
+kubeeye inspect -p ./opa -f ~/.kube/config
 NAMESPACE     NAME              KIND          MESSAGE
 default       nginx1            Deployment    [ImageRegistryNotmyregistry NotReadOnlyRootFilesystem NotRunAsNonRoot]
 default       nginx11           Deployment    [ImageRegistryNotmyregistry PrivilegeEscalationAllowed HighRiskCapabilities HostIPCAllowed HostPortAllowed ImagePullPolicyNotAlways ImageTagIsLatest InsecureCapabilities NoPriorityClassName PrivilegedAllowed NotReadOnlyRootFilesystem NotRunAsNonRoot]

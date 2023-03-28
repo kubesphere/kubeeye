@@ -218,7 +218,7 @@ groups:
         scored: true
 
       - id: 1.15
-        text: "Configure API server auditing - audit log file path"
+        text: "Configure API server auditing - inspect log file path"
         audit_config: "cat /etc/origin/master/master-config.yaml"
         tests:
           test_items:
@@ -241,7 +241,7 @@ groups:
         scored: true
 
       - id: 1.16
-        text: "Configure API server auditing - audit log retention"
+        text: "Configure API server auditing - inspect log retention"
         audit_config: "cat /etc/origin/master/master-config.yaml"
         tests:
           test_items:
@@ -265,7 +265,7 @@ groups:
         scored: true
 
       - id: 1.17
-        text: "Configure API server auditing - audit log backup retention"
+        text: "Configure API server auditing - inspect log backup retention"
         audit_config: "cat /etc/origin/master/master-config.yaml"
         tests:
           test_items:
@@ -289,7 +289,7 @@ groups:
         scored: true
 
       - id: 1.18
-        text: "Configure audit log file size"
+        text: "Configure inspect log file size"
         audit_config: "cat /etc/origin/master/master-config.yaml"
         tests:
           test_items:

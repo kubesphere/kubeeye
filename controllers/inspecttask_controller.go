@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/kubesphere/kubeeye/constant"
-	"github.com/kubesphere/kubeeye/pkg/audit"
 	"github.com/kubesphere/kubeeye/pkg/conf"
+	"github.com/kubesphere/kubeeye/pkg/inspect"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,7 +42,7 @@ import (
 type InspectTaskReconciler struct {
 	client.Client
 	Scheme     *runtime.Scheme
-	Audit      *audit.Audit
+	Audit      *inspect.Audit
 	K8sClients *kube.KubernetesClient
 }
 
@@ -157,7 +157,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	err = r.Status().Update(ctx, inspectTask)
 	if err != nil && !kubeErr.IsNotFound(err) {
-		logger.Error(err, "failed to update audit task")
+		logger.Error(err, "failed to update inspect task")
 		return ctrl.Result{RequeueAfter: 60 * time.Second}, err
 	}
 	return ctrl.Result{RequeueAfter: 3 * time.Second}, nil

@@ -21,17 +21,17 @@ groups:
     text: "Logging"
     checks:
       - id: 3.2.1
-        text: "Ensure that a minimal audit policy is created (Manual)"
+        text: "Ensure that a minimal inspect policy is created (Manual)"
         audit: "/bin/ps -ef | grep $apiserverbin | grep -v grep"
         tests:
           test_items:
-            - flag: "--audit-policy-file"
+            - flag: "--inspect-policy-file"
         remediation: |
           Create an audit policy file for your cluster.
         scored: false
 
       - id: 3.2.2
-        text: "Ensure that the audit policy covers key security concerns (Manual)"
+        text: "Ensure that the inspect policy covers key security concerns (Manual)"
         type: "manual"
         remediation: |
           Consider modification of the audit policy in use on the cluster to include these items, at a

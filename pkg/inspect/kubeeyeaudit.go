@@ -1,4 +1,4 @@
-package audit
+package inspect
 
 import (
 	"context"
@@ -98,7 +98,7 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 	klog.Info("getting and merging the Rego rules")
 	regoRulesChan := regorules.MergeRegoRules(ctx, regorules.GetRegoRules(ctx, taskName, kubernetesClient.VersionClientSet), regorules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
 
-	klog.Info("starting audit kubernetes resources")
+	klog.Info("starting inspect kubernetes resources")
 	RegoRulesValidateChan := MergeRegoRulesValidate(ctx, regoRulesChan,
 		RegoRulesValidate(workloads, k8sResources, auditPercent),
 		RegoRulesValidate(rbac, k8sResources, auditPercent),
@@ -108,7 +108,7 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 	)
 
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-	klog.Info("get audit results")
+	klog.Info("get inspect results")
 	return k8sResources, RegoRulesValidateChan, auditPercent
 }
 

@@ -13,7 +13,7 @@ import (
 )
 
 func KubescapeAudit() (result []reporthandling.FrameworkReport, err error) {
-	log.Println("start KubeScape audit")
+	log.Println("start KubeScape inspect")
 	cmd := exec.Command("kubescape", "scan", "-e", "kube-system", "-f", "json")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -44,6 +44,6 @@ func KubescapeAudit() (result []reporthandling.FrameworkReport, err error) {
 	if err := cmd.Wait(); err != nil {
 		return nil, errors.Wrap(err, "the command KubeScape exec failed")
 	}
-	log.Println("KubeScape audit finished")
+	log.Println("KubeScape inspect finished")
 	return result, nil
 }

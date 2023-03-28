@@ -12,10 +12,10 @@ import (
 func KubeBenchAPI() {
 	mux := http.NewServeMux()
 	mux.Handle("/plugins", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		log.Printf("Starting KubeBench audit")
+		log.Printf("Starting KubeBench inspect")
 		result, err := KubeBenchAudit()
 		if err != nil {
-			log.Printf("KubeBench audit failed: %+v", err)
+			log.Printf("KubeBench inspect failed: %+v", err)
 		}
 		jsonResults, err := json.Marshal(&result)
 		if err != nil {
@@ -36,7 +36,7 @@ func KubeBenchAPI() {
 		writer.WriteHeader(http.StatusOK)
 	}))
 
-	log.Println("KubeBench audit API ready")
+	log.Println("KubeBench inspect API ready")
 	log.Fatal(http.ListenAndServe(":80", mux))
 }
 
@@ -47,7 +47,7 @@ func pluginAudit(request *http.Request) {
 	go func() {
 		result, err := KubeBenchAudit()
 		if err != nil {
-			log.Printf("KubeBench audit failed: %+v", err)
+			log.Printf("KubeBench inspect failed: %+v", err)
 		}
 		jsonResults, err := json.Marshal(&result)
 		if err != nil {

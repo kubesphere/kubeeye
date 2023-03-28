@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/kubesphere/kubeeye/pkg/audit"
+	"github.com/kubesphere/kubeeye/pkg/inspect"
 )
 
 var KubeConfig string
@@ -28,12 +28,12 @@ var additionalregoruleputh string
 var output string
 
 var auditCmd = &cobra.Command{
-	Use:   "audit",
-	Short: "audit resources from the cluster",
+	Use:   "inspect",
+	Short: "inspect resources from the cluster",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := audit.AuditCluster(cmd.Context(), KubeConfig, additionalregoruleputh, audit.OutputType(output))
+		err := inspect.AuditCluster(cmd.Context(), KubeConfig, additionalregoruleputh, inspect.OutputType(output))
 		if err != nil {
-			glog.Fatalf("kubeeye audit failed with error: %v", err)
+			glog.Fatalf("kubeeye inspect failed with error: %v", err)
 		}
 	},
 }

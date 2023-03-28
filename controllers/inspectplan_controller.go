@@ -99,7 +99,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if inspectPlan.Spec.Suspend {
-		controller_log.Info("audit plan suspend")
+		controller_log.Info("inspect plan suspend")
 		return ctrl.Result{}, nil
 	}
 
@@ -157,7 +157,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		inspectPlan.Status.NextScheduleTime = metav1.Time{Time: schedule.Next(now)}
 		err = r.Status().Update(ctx, inspectPlan)
 		if err != nil {
-			controller_log.Error(err, "failed to update audit plan")
+			controller_log.Error(err, "failed to update inspect plan")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{RequeueAfter: 3 * time.Second}, nil

@@ -14,7 +14,7 @@ func KubeHunterAPI() {
 	mux.Handle("/plugins", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		result, err := KubeHunterAudit()
 		if err != nil {
-			log.Printf("KubeHunter audit failed: %+v", err)
+			log.Printf("KubeHunter inspect failed: %+v", err)
 		}
 		jsonResults, err := json.Marshal(&result)
 		if err != nil {
@@ -35,7 +35,7 @@ func KubeHunterAPI() {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	log.Println("KubeHunter audit API ready")
+	log.Println("KubeHunter inspect API ready")
 	log.Fatal(http.ListenAndServe(":80", mux))
 }
 
@@ -47,7 +47,7 @@ func pluginAudit(request *http.Request) {
 
 		result, err := KubeHunterAudit()
 		if err != nil {
-			log.Printf("KubeHunter audit failed: %+v", err)
+			log.Printf("KubeHunter inspect failed: %+v", err)
 		}
 		jsonResults, err := json.Marshal(&result)
 		if err != nil {

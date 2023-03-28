@@ -14,7 +14,7 @@ func KubeScapeAPI() {
 	mux.Handle("/plugins", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		result, err := KubescapeAudit()
 		if err != nil {
-			log.Printf("KubeScape audit failed: %+v", err)
+			log.Printf("KubeScape inspect failed: %+v", err)
 		}
 		jsonResults, err := json.Marshal(&result)
 		if err != nil {
@@ -35,7 +35,7 @@ func KubeScapeAPI() {
 		writer.WriteHeader(http.StatusOK)
 	}))
 
-	log.Println("KubeScape audit API ready")
+	log.Println("KubeScape inspect API ready")
 	log.Fatal(http.ListenAndServe(":80", mux))
 }
 
@@ -46,7 +46,7 @@ func pluginAudit(request *http.Request) {
 	go func() {
 		result, err := KubescapeAudit()
 		if err != nil {
-			log.Printf("KubeScape audit failed: %+v", err)
+			log.Printf("KubeScape inspect failed: %+v", err)
 		}
 		jsonResults, err := json.Marshal(&result)
 		if err != nil {

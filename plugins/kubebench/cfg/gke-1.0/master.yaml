@@ -227,22 +227,22 @@ groups:
         scored: false
 
       - id: 1.2.22
-        text: "Ensure that the --audit-log-path argument is set (Not Scored)"
+        text: "Ensure that the --inspect-log-path argument is set (Not Scored)"
         remediation: "This control cannot be modified in GKE."
         scored: false
 
       - id: 1.2.23
-        text: "Ensure that the --audit-log-maxage argument is set to 30 or as appropriate (Not Scored)"
+        text: "Ensure that the --inspect-log-maxage argument is set to 30 or as appropriate (Not Scored)"
         remediation: "This control cannot be modified in GKE."
         scored: false
 
       - id: 1.2.24
-        text: "Ensure that the --audit-log-maxbackup argument is set to 10 or as appropriate (Not Scored)"
+        text: "Ensure that the --inspect-log-maxbackup argument is set to 10 or as appropriate (Not Scored)"
         remediation: "This control cannot be modified in GKE."
         scored: false
 
       - id: 1.2.25
-        text: "Ensure that the --audit-log-maxsize argument is set to 100 or as appropriate (Not Scored)"
+        text: "Ensure that the --inspect-log-maxsize argument is set to 100 or as appropriate (Not Scored)"
         remediation: "This control cannot be modified in GKE."
         scored: false
 

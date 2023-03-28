@@ -9,7 +9,7 @@ groups:
     text: "Logging"
     checks:
       - id: 2.1.1
-        text: "Enable audit Logs"
+        text: "Enable inspect Logs"
         type: "manual"
         remediation: |
           Azure audit logs are enabled and managed in the Azure portal. To enable log collection for

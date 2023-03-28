@@ -98,7 +98,7 @@ func init() {
 	SchemeBuilder.Register(&InspectTask{}, &InspectTaskList{})
 }
 
-// kubeeye audit result
+// kubeeye inspect result
 type KubeeyeAuditResult struct {
 	ScoreInfo       `json:"scoreInfo,omitempty"`
 	ResourceResults []ResourceResult `json:"resourceResults,omitempty"`

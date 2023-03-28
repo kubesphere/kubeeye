@@ -45,7 +45,7 @@ KubeEye obtains cluster resource details by using Kubernetes APIs, inspects reso
 > Note: The results of KubeEye are sorted by resource kind.
 
 ```shell
-kubeeye audit
+kubeeye inspect
 KIND          NAMESPACE        NAME                                                           REASON                                        LEVEL    MESSAGE
 Node                           docker-desktop                                                 kubelet has no sufficient memory available   warning    KubeletHasNoSufficientMemory
 Node                           docker-desktop                                                 kubelet has no sufficient PID available      warning    KubeletHasNoSufficientPID
@@ -160,7 +160,7 @@ ClusterRole                    vpnkit-controller                                
   > Note: Kubeeye will read all files ending with *.rego* in the directory.
 
   ```shell
-  root:# kubeeye audit -p ./opa
+  root:# kubeeye inspect -p ./opa
   NAMESPACE     NAME              KIND          MESSAGE
   default       nginx1            Deployment    [ImageRegistryNotmyregistry NotReadOnlyRootFilesystem NotRunAsNonRoot]
   default       nginx11           Deployment    [ImageRegistryNotmyregistry PrivilegeEscalationAllowed HighRiskCapabilities HostIPCAllowed HostPortAllowed ImagePullPolicyNotAlways ImageTagIsLatest InsecureCapabilities NoPriorityClassName PrivilegedAllowed NotReadOnlyRootFilesystem NotRunAsNonRoot]

@@ -33,7 +33,7 @@ groups:
     text: "Logging"
     checks:
       - id: 3.2.1
-        text: "Ensure that a minimal audit policy is created (Manual)"
+        text: "Ensure that a minimal inspect policy is created (Manual)"
         audit: |
           #To view kube apiserver log files
           oc adm node-logs --role=master --path=kube-apiserver/
@@ -49,7 +49,7 @@ groups:
         scored: false
 
       - id: 3.2.2
-        text: "Ensure that the audit policy covers key security concerns (Manual)"
+        text: "Ensure that the inspect policy covers key security concerns (Manual)"
         audit: |
           #To verify openshift apiserver audit config
           oc get configmap config -n openshift-kube-apiserver -ojson | jq -r '.data["config.yaml"]' | jq '.auditConfig.policyConfiguration.rules[]'

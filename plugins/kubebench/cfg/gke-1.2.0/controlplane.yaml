@@ -23,13 +23,13 @@ groups:
     type: skip
     checks:
       - id: 2.2.1
-        text: "Ensure that a minimal audit policy is created (Manual)"
+        text: "Ensure that a minimal inspect policy is created (Manual)"
         type: "manual"
         remediation: "This control cannot be modified in GKE."
         scored: false
 
       - id: 2.2.2
-        text: "Ensure that the audit policy covers key security concerns (Manual)"
+        text: "Ensure that the inspect policy covers key security concerns (Manual)"
         type: "manual"
         remediation: "This control cannot be modified in GKE."
         scored: false

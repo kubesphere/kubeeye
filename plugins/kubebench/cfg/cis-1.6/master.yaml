@@ -652,11 +652,11 @@ groups:
         scored: true
 
       - id: 1.2.22
-        text: "Ensure that the --audit-log-path argument is set (Automated)"
+        text: "Ensure that the --inspect-log-path argument is set (Automated)"
         audit: "/bin/ps -ef | grep $apiserverbin | grep -v grep"
         tests:
           test_items:
-            - flag: "--audit-log-path"
+            - flag: "--inspect-log-path"
         remediation: |
           Edit the API server pod specification file $apiserverconf
           on the master node and set the --audit-log-path parameter to a suitable path and
@@ -665,11 +665,11 @@ groups:
         scored: true
 
       - id: 1.2.23
-        text: "Ensure that the --audit-log-maxage argument is set to 30 or as appropriate (Automated)"
+        text: "Ensure that the --inspect-log-maxage argument is set to 30 or as appropriate (Automated)"
         audit: "/bin/ps -ef | grep $apiserverbin | grep -v grep"
         tests:
           test_items:
-            - flag: "--audit-log-maxage"
+            - flag: "--inspect-log-maxage"
               compare:
                 op: gte
                 value: 30
@@ -680,11 +680,11 @@ groups:
         scored: true
 
       - id: 1.2.24
-        text: "Ensure that the --audit-log-maxbackup argument is set to 10 or as appropriate (Automated)"
+        text: "Ensure that the --inspect-log-maxbackup argument is set to 10 or as appropriate (Automated)"
         audit: "/bin/ps -ef | grep $apiserverbin | grep -v grep"
         tests:
           test_items:
-            - flag: "--audit-log-maxbackup"
+            - flag: "--inspect-log-maxbackup"
               compare:
                 op: gte
                 value: 10
@@ -696,11 +696,11 @@ groups:
         scored: true
 
       - id: 1.2.25
-        text: "Ensure that the --audit-log-maxsize argument is set to 100 or as appropriate (Automated)"
+        text: "Ensure that the --inspect-log-maxsize argument is set to 100 or as appropriate (Automated)"
         audit: "/bin/ps -ef | grep $apiserverbin | grep -v grep"
         tests:
           test_items:
-            - flag: "--audit-log-maxsize"
+            - flag: "--inspect-log-maxsize"
               compare:
                 op: gte
                 value: 100
