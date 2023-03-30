@@ -50,10 +50,8 @@ spec:
                 type: string
               suspend:
                 type: boolean
-              tags:
-                items:
-                  type: string
-                type: array
+              tag:
+                type: string
               timeout:
                 type: string
             type: object

@@ -73,42 +73,62 @@ func GetDefaultRegofile(path string) []map[string][]byte {
 
 func RegoToRuleYaml(path string) {
 	regofile := GetDefaultRegofile(path)
-	var rules kubeeyev1alpha2.InspectRules
-	var ruleItems []kubeeyev1alpha2.RuleItems
+	var inspectRules []kubeeyev1alpha2.InspectRules
+
 	for _, m := range regofile {
-		ruleType := kubeeyev1alpha2.RuleItems{}
-		ruleType.RuleName = strings.Replace(string(m["name"]), ".rego", "", -1)
-		ruleType.Opa = string(m["rule"])
+		var ruleItems []kubeeyev1alpha2.OpaRule
+		var inspectRule kubeeyev1alpha2.InspectRules
+		opaRule := kubeeyev1alpha2.OpaRule{}
+		var space string
+		opaRule.Name = strings.Replace(string(m["name"]), ".rego", "", -1)
+		opaRule.Rule = string(m["rule"])
 		scanner := bufio.NewScanner(bytes.NewReader(m["rule"]))
 		if scanner.Scan() {
-			space := strings.TrimSpace(strings.Replace(scanner.Text(), "package", "", -1))
-			ruleType.Desc = space
-			ruleType.Tags = []string{space}
+			space = strings.TrimSpace(strings.Replace(scanner.Text(), "package", "", -1))
 		}
-		ruleItems = append(ruleItems, ruleType)
-	}
-	rules.Spec.Rules = ruleItems
-	rules.Name = fmt.Sprintf("%s-%s", "kubeeye-inspectrules", strconv.Itoa(int(time.Now().Unix())))
-	rules.Namespace = "kubeeye-system"
-	rules.APIVersion = "kubeeye.kubesphere.io/v1alpha2"
-	rules.Kind = "InspectRules"
-	rules.Labels = map[string]string{
-		"app.kubernetes.io/name":       "inspectrules",
-		"app.kubernetes.io/instance":   "inspectrules-sample",
-		"app.kubernetes.io/part-of":    "kubeeye",
-		"app.kubernetes.io/managed-by": "kustomize",
-		"app.kubernetes.io/created-by": "kubeeye",
-	}
-	data, err := yaml.Marshal(&rules)
-	if err != nil {
-		panic(err)
-	}
-	filename := fmt.Sprintf("./%s-%s.yaml", "kubeeye-inspectrules", strconv.Itoa(int(time.Now().Unix())))
-	err = ioutil.WriteFile(filename, data, 0644)
-	if err != nil {
-		panic(err)
+		opaRule.Module = space
+		for i := range inspectRules {
+			if space == inspectRules[i].Labels[constant.LabelRuleTag] {
+				inspectRule = inspectRules[i]
+				inspectRules = append(inspectRules[:i], inspectRules[i+1:]...)
+				break
+			}
+		}
+
+		ruleItems = append(ruleItems, opaRule)
+
+		inspectRule.Labels = map[string]string{
+			"app.kubernetes.io/name":       "inspectrules",
+			"app.kubernetes.io/instance":   "inspectrules-sample",
+			"app.kubernetes.io/part-of":    "kubeeye",
+			"app.kubernetes.io/managed-by": "kustomize",
+			"app.kubernetes.io/created-by": "kubeeye",
+			constant.LabelRuleTag:          space,
+		}
+		if inspectRule.Spec.Opas != nil {
+			ruleItems = append(ruleItems, *inspectRule.Spec.Opas...)
+		}
+
+		inspectRule.Spec.Opas = &ruleItems
+		inspectRule.Name = fmt.Sprintf("%s-%s", "kubeeye-inspectrules", strconv.Itoa(int(time.Now().Unix())))
+		inspectRule.Namespace = "kubeeye-system"
+		inspectRule.APIVersion = "kubeeye.kubesphere.io/v1alpha2"
+		inspectRule.Kind = "InspectRules"
+		inspectRules = append(inspectRules, inspectRule)
 	}
 
+	for i := range inspectRules {
+
+		data, err := yaml.Marshal(&inspectRules[i])
+		if err != nil {
+			panic(err)
+		}
+		filename := fmt.Sprintf("./rules/kubeeye_v1alpha2_inspectrules%d_%d.yaml", i, time.Now().Unix())
+		err = ioutil.WriteFile(filename, data, 0644)
+		if err != nil {
+			panic(err)
+		}
+	}
 	fmt.Println("YAML file written successfully")
 }
 

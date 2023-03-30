@@ -102,19 +102,18 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 	controller_log.Info("starting inspect rules")
 	copyInspectRules := inspectRules.DeepCopy()
-	ruleCount := map[string]int{}
+
 	total := 0
-	for _, rule := range inspectRules.Spec.Rules {
-		newTags := utils.ArrayDeduplication(rule.Tags)
-		for _, tag := range newTags {
-			ruleCount[tag]++
-			total++
-		}
+	if inspectRules.Spec.Opas != nil {
+		total += len(*inspectRules.Spec.Opas)
 	}
-	ruleCount["total"] = total
+	if inspectRules.Spec.Prometheus != nil {
+		total += len(*inspectRules.Spec.Prometheus)
+	}
+
 	copyInspectRules.Status.ImportTime = v1.Time{Time: time.Now()}
 	copyInspectRules.Status.State = kubeeyev1alpha2.ImportSuccess
-	copyInspectRules.Status.RuleCount = ruleCount
+	copyInspectRules.Status.RuleCount = total
 	err = r.Status().Update(ctx, copyInspectRules)
 	if err != nil {
 		controller_log.Error(err, "failed to update inspect rules")

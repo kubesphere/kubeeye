@@ -35,30 +35,32 @@ spec:
           spec:
             description: InspectRulesSpec defines the desired state of InspectRules
             properties:
-              prometheusEndpoint:
-                type: string
-              rules:
+              opas:
                 items:
                   properties:
-                    desc:
+                    module:
                       type: string
-                    opa:
+                    name:
                       type: string
-                    priority:
+                    rule:
                       type: string
-                    prometheus:
-                      type: string
-                    prometheusEndpoint:
-                      type: string
-                    ruleName:
-                      type: string
-                    tags:
-                      items:
-                        type: string
-                      type: array
                   type: object
-                minItems: 1
                 type: array
+              prometheus:
+                items:
+                  properties:
+                    endpoint:
+                      type: string
+                    name:
+                      type: string
+                    rule:
+                      type: string
+                  type: object
+                type: array
+              prometheusEndpoint:
+                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                  Important: Run "make" to regenerate code after modifying this file'
+                type: string
             type: object
           status:
             description: InspectRulesStatus defines the observed state of InspectRules
@@ -67,9 +69,7 @@ spec:
                 format: date-time
                 type: string
               ruleCount:
-                additionalProperties:
-                  type: integer
-                type: object
+                type: integer
               state:
                 type: string
             type: object

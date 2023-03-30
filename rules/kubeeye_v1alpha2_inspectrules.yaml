@@ -7,14 +7,14 @@ metadata:
     app.kubernetes.io/part-of: kubeeye
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kubeeye
+    kubeeye.kubesphere.io/rule-tag: kubeeye_workloads_rego
   name: inspectrules-sample
   namespace: kubeeye-system
 spec:
   prometheusEndpoint: http://10.0.0.1:8888
-  rules:
-    - ruleName: kubeeye_workloads_rego
-      desc: kubeeye_workloads_rego
-      opa: |
+  opa:
+    - name: kubeeye_workloads_rego
+      rule: |
         package kubeeye_workloads_rego
 
         deny[msg] {
@@ -89,5 +89,3 @@ spec:
             imagePullPolicy := resource.Object.spec.jobTemplate.spec.template.spec.containers[_].imagePullPolicy
             imagePullPolicy != "Always"
         }
-      tags:
-        - test

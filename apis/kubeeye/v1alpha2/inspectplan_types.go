@@ -40,7 +40,7 @@ type InspectPlanSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	Auditors  []Auditor `json:"auditors,omitempty"` // like "kubeeye,kubebench"
 	Timeout   string    `json:"timeout,omitempty"`
-	Tags      []string  `json:"tags,omitempty"`
+	Tag       string    `json:"tag,omitempty"`
 	RuleNames []string  `json:"ruleNames,omitempty"`
 	MaxTasks  int       `json:"maxTasks,omitempty"`
 }

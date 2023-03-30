@@ -27,11 +27,28 @@ import (
 type InspectRulesSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	PrometheusEndpoint string            `yaml:"prometheusEndpoint,omitempty" json:"prometheusEndpoint,omitempty"`
+	Opas               *[]OpaRule        `yaml:"opas,omitempty" json:"opas,omitempty"`
+	Prometheus         *[]PrometheusRule `yaml:"prometheus,omitempty" json:"prometheus,omitempty"`
+	FileChange         *[]FileChangeRule `json:"fileChange,omitempty" yaml:"fileChange,omitempty"`
+}
+type RuleItemBases struct {
+	Name string `json:"name,omitempty" yaml:"name,omitempty"`
+	Rule string `json:"rule,omitempty" yaml:"rule,omitempty"`
+}
 
-	// +operator-sdk:validation:Optional
-	PrometheusEndpoint string `json:"prometheusEndpoint,omitempty" yaml:"prometheusEndpoint"`
-	// +kubebuilder:validation:MinItems=1
-	Rules []RuleItems `yaml:"rules,omitempty" json:"rules,omitempty"`
+type OpaRule struct {
+	RuleItemBases `json:",inline"`
+	Module        string `json:"module,omitempty" json:"module,omitempty"`
+}
+type PrometheusRule struct {
+	RuleItemBases `json:",inline"`
+	Endpoint      string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+}
+
+type FileChangeRule struct {
+	RuleItemBases `json:",inline"`
+	Base          string `json:"base,omitempty"`
 }
 
 type State string
@@ -40,16 +57,6 @@ const (
 	StartImport   State = "StartImport"
 	ImportSuccess State = "importSuccess"
 )
-
-type RuleItems struct {
-	RuleName           string   `yaml:"ruleName,omitempty" json:"ruleName,omitempty" `
-	Desc               string   `yaml:"desc,omitempty" json:"desc,omitempty"`
-	Opa                string   `yaml:"opa,omitempty" json:"opa,omitempty"`
-	Prometheus         string   `yaml:"prometheus,omitempty" json:"prometheus,omitempty"`
-	PrometheusEndpoint string   `yaml:"prometheusEndpoint,omitempty" json:"prometheusEndpoint,omitempty"`
-	Priority           string   `yaml:"priority,omitempty" json:"priority,omitempty"`
-	Tags               []string `yaml:"tags,omitempty" json:"tags,omitempty"`
-}
 
 // InspectRulesStatus defines the observed state of InspectRules
 type InspectRulesStatus struct {
@@ -60,7 +67,7 @@ type InspectRulesStatus struct {
 
 	State State `yaml:"state,omitempty" json:"state,omitempty"`
 
-	RuleCount map[string]int `yaml:"ruleCount,omitempty" json:"ruleCount,omitempty"`
+	RuleCount int `yaml:"ruleCount,omitempty" json:"ruleCount,omitempty"`
 }
 
 // +genclient

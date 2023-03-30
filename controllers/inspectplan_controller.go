@@ -217,11 +217,12 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 }
 
 func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) ([]map[string]string, error) {
-	if len(inspectPlan.Spec.Tags) == 0 && len(inspectPlan.Spec.RuleNames) == 0 {
+	if len(inspectPlan.Spec.Tag) == 0 && len(inspectPlan.Spec.RuleNames) == 0 {
 		return nil, errors.New("Failed to get tags and rule names")
 	}
 
-	list, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules(v1.NamespaceAll).List(ctx, metav1.ListOptions{})
+	selector := metav1.FormatLabelSelector(metav1.SetAsLabelSelector(map[string]string{constant.LabelRuleTag: inspectPlan.Spec.Tag}))
+	list, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules(v1.NamespaceAll).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			controller_log.Error(err, "failed get to inspectrules not found")
@@ -233,20 +234,13 @@ func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPl
 	var resultRules []map[string]string
 
 	for _, item := range list.Items {
-		for _, rules := range item.Spec.Rules {
-			for _, tag := range inspectPlan.Spec.Tags {
-				if _, b := utils.ArrayFind(tag, rules.Tags); b && (rules.Opa != "" || rules.Prometheus != "") {
-					ruleType := constant.Prometheus
-					rule := rules.Prometheus
-					if rules.Opa != "" {
-						ruleType = constant.Opa
-						rule = rules.Opa
-					}
-					resultRules = append(resultRules, map[string]string{constant.RuleType: ruleType, constant.Rules: rule})
-				}
-			}
 
+		if item.Spec.Opas != nil {
+			for _, opa := range *item.Spec.Opas {
+				resultRules = append(resultRules, map[string]string{constant.RuleType: constant.Opa, constant.Rules: opa.Rule})
+			}
 		}
+
 	}
 
 	return resultRules, nil

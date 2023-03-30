@@ -15,3 +15,4 @@ const (
 	Prometheus = "prometheus"
 )
 const LabelName = "kubeeye.kubesphere.io/name"
+const LabelRuleTag = "kubeeye.kubesphere.io/rule-tag"
