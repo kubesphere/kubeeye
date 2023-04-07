@@ -3,8 +3,9 @@ package inspect
 import (
 	"context"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/regorules"
+	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
@@ -95,21 +96,25 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 	auditPercent.TotalAuditCount++
 	auditPercent.CurrentAuditCount = auditPercent.TotalAuditCount
 
-	klog.Info("getting and merging the Rego rules")
-	regoRulesChan := regorules.MergeRegoRules(ctx, regorules.GetRegoRules(ctx, taskName, kubernetesClient.VersionClientSet), regorules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
+	klog.Info("getting and merging the Rego ruleFiles")
+	getRules, ruleType := rules.GetRules(ctx, taskName, kubernetesClient.VersionClientSet)
+	var RulesValidateChan []kubeeyev1alpha2.ResourceResult
+	if ruleType == constant.Opa {
+		regoRulesChan := rules.MergeRegoRules(ctx, getRules, rules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
+		RulesValidateChan := MergeRegoRulesValidate(ctx, regoRulesChan,
+			RegoRulesValidate(workloads, k8sResources, auditPercent),
+			RegoRulesValidate(rbac, k8sResources, auditPercent),
+			RegoRulesValidate(events, k8sResources, auditPercent),
+			RegoRulesValidate(nodes, k8sResources, auditPercent),
+			RegoRulesValidate(certexp, k8sResources, auditPercent),
+		)
+	}
 
 	klog.Info("starting inspect kubernetes resources")
-	RegoRulesValidateChan := MergeRegoRulesValidate(ctx, regoRulesChan,
-		RegoRulesValidate(workloads, k8sResources, auditPercent),
-		RegoRulesValidate(rbac, k8sResources, auditPercent),
-		RegoRulesValidate(events, k8sResources, auditPercent),
-		RegoRulesValidate(nodes, k8sResources, auditPercent),
-		RegoRulesValidate(certexp, k8sResources, auditPercent),
-	)
 
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
 	klog.Info("get inspect results")
-	return k8sResources, RegoRulesValidateChan, auditPercent
+	return k8sResources, RulesValidateChan, auditPercent
 }
 
 func CalculateScore(fmResultss []kubeeyev1alpha2.ResourceResult, k8sResources kube.K8SResource) (scoreInfo kubeeyev1alpha2.ScoreInfo) {

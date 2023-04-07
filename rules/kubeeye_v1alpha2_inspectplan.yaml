@@ -8,4 +8,4 @@ spec:
   maxTasks: 10
   auditors:
     - kubeeye
-  tags: kubeeye_workloads_rego
+  tag: kubeeye_workloads_rego

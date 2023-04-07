@@ -1,4 +1,4 @@
-package regorules
+package rules
 
 import (
 	"bufio"
@@ -21,10 +21,10 @@ import (
 	"time"
 )
 
-//go:embed rules
+//go:embed ruleFiles
 var defaultRegoRules embed.FS
 
-// GetAdditionalRegoRulesfiles get Additional rego rules , put it into pointer of RegoRulesList
+// GetAdditionalRegoRulesfiles get Additional rego ruleFiles , put it into pointer of RegoRulesList
 func GetAdditionalRegoRulesfiles(path string) []string {
 	var regoRules []string
 	if path == "" {
@@ -49,7 +49,7 @@ func GetAdditionalRegoRulesfiles(path string) []string {
 
 		getregoRule, err := ioutil.ReadFile(pathabs + file.Name())
 		if err != nil {
-			fmt.Printf("Failed to read the files of additional rego rules.\n")
+			fmt.Printf("Failed to read the files of additional rego ruleFiles.\n")
 		}
 		regoRule := string(getregoRule)
 		regoRules = append(regoRules, regoRule)
@@ -123,7 +123,7 @@ func RegoToRuleYaml(path string) {
 		if err != nil {
 			panic(err)
 		}
-		filename := fmt.Sprintf("./rules/kubeeye_v1alpha2_inspectrules%d_%d.yaml", i, time.Now().Unix())
+		filename := fmt.Sprintf("./ruleFiles/kubeeye_v1alpha2_inspectrules%d_%d.yaml", i, time.Now().Unix())
 		err = ioutil.WriteFile(filename, data, 0644)
 		if err != nil {
 			panic(err)
@@ -132,27 +132,33 @@ func RegoToRuleYaml(path string) {
 	fmt.Println("YAML file written successfully")
 }
 
-func GetRegoRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) []string {
+func GetRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) ([]string, string) {
 	var rules []string
-
+	var ruleType string
 	inspectTask, err := client.KubeeyeV1alpha2().InspectTasks(task.Namespace).Get(ctx, task.Name, metav1.GetOptions{})
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
-			fmt.Printf("rego rules not found .\n")
-			return nil
+			fmt.Printf("rego ruleFiles not found .\n")
+			return nil, ""
 		}
-		fmt.Printf("Failed to Get rego rules.\n")
-		return nil
+		fmt.Printf("Failed to Get rego ruleFiles.\n")
+		return nil, ""
 	}
 	for _, rule := range inspectTask.Spec.Rules {
-		if rule[constant.RuleType] == constant.Opa {
-			rules = append(rules, rule[constant.Rules])
+		switch rule[constant.RuleType] {
+		case constant.Opa:
+			ruleType = constant.Opa
+			break
+		case constant.Prometheus:
+			ruleType = constant.Prometheus
+			break
 		}
+		rules = append(rules, rule[constant.Rules])
 	}
-	return rules
+	return rules, ruleType
 }
 
-// MergeRegoRules fun-out merge rego rules
+// MergeRegoRules fun-out merge rego ruleFiles
 func MergeRegoRules(ctx context.Context, channels ...[]string) <-chan string {
 	res := make(chan string)
 	var wg sync.WaitGroup

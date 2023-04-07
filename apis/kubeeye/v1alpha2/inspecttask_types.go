@@ -33,7 +33,7 @@ type InspectTaskSpec struct {
 	Auditors []Auditor `json:"auditors,omitempty"` // like "kubeeye,kubebench"
 	Timeout  string    `json:"timeout,omitempty"`
 	// +kubebuilder:validation:MinItems=1
-	Rules []map[string]string `json:"rules,omitempty"`
+	Rules []map[string]string `json:"ruleFiles,omitempty"`
 }
 
 // InspectTaskStatus defines the observed state of InspectTask

@@ -123,8 +123,8 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 		controller_log.Info("create a new inspect task ", "task name", taskName)
-		selector := metav1.FormatLabelSelector(&metav1.LabelSelector{MatchLabels: map[string]string{constant.LabelName: inspectPlan.Name}})
-		tasks, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks(metav1.NamespaceAll).List(ctx, metav1.ListOptions{LabelSelector: selector})
+		findTaskSelector := metav1.FormatLabelSelector(&metav1.LabelSelector{MatchLabels: map[string]string{constant.LabelName: inspectPlan.Name}})
+		tasks, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks(metav1.NamespaceAll).List(ctx, metav1.ListOptions{LabelSelector: findTaskSelector})
 		if err != nil {
 			controller_log.Error(err, "Failed to get inspecttask")
 		}
@@ -135,22 +135,20 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		var taskNames []string
 		saveTasks := tasks.Items
 		if inspectPlan.Spec.MaxTasks > 0 && len(tasks.Items) > inspectPlan.Spec.MaxTasks {
-			controller_log.Info("auto delete")
 			saveTasks = tasks.Items[:inspectPlan.Spec.MaxTasks]
 			delTasks := tasks.Items[inspectPlan.Spec.MaxTasks:]
 			for _, task := range delTasks {
+				controller_log.Info("auto delete")
 				err = r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks(task.Namespace).Delete(ctx, task.Name, metav1.DeleteOptions{})
 				if err != nil {
 					controller_log.Error(err, "Failed to delete task")
 				}
 			}
+		}
+		for _, item := range saveTasks {
+			taskNames = append(taskNames, item.Name)
+		}
 
-		}
-		for i, item := range saveTasks {
-			if i < inspectPlan.Spec.MaxTasks {
-				taskNames = append(taskNames, item.Name)
-			}
-		}
 		inspectPlan.Status.LastScheduleTime = metav1.Time{Time: now}
 		inspectPlan.Status.LastTaskName = taskName
 		inspectPlan.Status.TaskNames = taskNames

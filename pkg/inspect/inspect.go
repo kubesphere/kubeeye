@@ -206,6 +206,16 @@ func (k *Audit) KubeeyeAudit(taskName types.NamespacedName, ctx context.Context)
 		WorkloadsCount: K8SResources.WorkloadsCount,
 		NamespacesList: K8SResources.NameSpacesList,
 	}
+	//var t kubeeyev1alpha2.ResourceResult
+	//t.Name = "test"
+	//t.ResourceType = "test"
+	//t.NameSpace = "test"
+	//var i kubeeyev1alpha2.ResultItem
+	//i.Level = "test"
+	//i.Message = "test"
+	//i.Reason = "test"
+	//t.ResultItems = append(t.ResultItems, i)
+	//results = append(results, t)
 	kubeeyeResult.ResourceResults = results
 
 	ext := runtime.RawExtension{}

@@ -93,7 +93,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	} else {
 		newFinalizers := utils.SliceRemove(Finalizers, inspectTask.Finalizers)
 		inspectTask.Finalizers = newFinalizers.([]string)
-		controller_log.Info("inspect rules is being deleted")
+		controller_log.Info("inspect ruleFiles is being deleted")
 		err = r.Client.Update(ctx, inspectTask)
 		if err != nil {
 			controller_log.Info("Failed to inspect plan add finalizers")

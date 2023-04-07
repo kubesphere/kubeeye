@@ -183,7 +183,7 @@ kube::util::find-binary-for-platform() {
     "${KUBE_ROOT}/platforms/${platform}/${lookfor}"
   )
   # Also search for binary in bazel build tree.
-  # The bazel go rules place some binaries in subtrees like
+  # The bazel go ruleFiles place some binaries in subtrees like
   # "bazel-bin/source/path/linux_amd64_pure_stripped/binaryname", so make sure
   # the platform name is matched in the path.
   while IFS=$'\n' read -r location; do

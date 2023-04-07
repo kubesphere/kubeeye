@@ -57,10 +57,10 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	err := r.Get(ctx, req.NamespacedName, inspectRules)
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
-			fmt.Printf("inspect rules is not found;name:%s,namespect:%s\n", req.Name, req.Namespace)
+			fmt.Printf("inspect ruleFiles is not found;name:%s,namespect:%s\n", req.Name, req.Namespace)
 			return ctrl.Result{}, nil
 		}
-		controller_log.Error(err, "failed to get inspect rules")
+		controller_log.Error(err, "failed to get inspect ruleFiles")
 		return ctrl.Result{}, err
 	}
 
@@ -78,7 +78,7 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	} else {
 		newFinalizers := utils.SliceRemove(Finalizers, inspectRules.Finalizers)
 		inspectRules.Finalizers = newFinalizers.([]string)
-		controller_log.Info("inspect rules is being deleted")
+		controller_log.Info("inspect ruleFiles is being deleted")
 		err = r.Client.Update(ctx, inspectRules)
 		if err != nil {
 			controller_log.Info("Failed to inspect plan add finalizers")
@@ -91,16 +91,16 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		inspectRules.Status.State = kubeeyev1alpha2.StartImport
 		err = r.Status().Update(ctx, inspectRules)
 		if err != nil {
-			controller_log.Error(err, "failed to update inspect rules")
+			controller_log.Error(err, "failed to update inspect ruleFiles")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil
 	}
 	if inspectRules.Status.State == kubeeyev1alpha2.ImportSuccess {
-		controller_log.Info("import inspect rules success")
+		controller_log.Info("import inspect ruleFiles success")
 		return ctrl.Result{}, nil
 	}
-	controller_log.Info("starting inspect rules")
+	controller_log.Info("starting inspect ruleFiles")
 	copyInspectRules := inspectRules.DeepCopy()
 
 	total := 0
@@ -110,13 +110,16 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if inspectRules.Spec.Prometheus != nil {
 		total += len(*inspectRules.Spec.Prometheus)
 	}
+	if inspectRules.Spec.FileChange != nil {
+		total += len(*inspectRules.Spec.FileChange)
+	}
 
 	copyInspectRules.Status.ImportTime = v1.Time{Time: time.Now()}
 	copyInspectRules.Status.State = kubeeyev1alpha2.ImportSuccess
 	copyInspectRules.Status.RuleCount = total
 	err = r.Status().Update(ctx, copyInspectRules)
 	if err != nil {
-		controller_log.Error(err, "failed to update inspect rules")
+		controller_log.Error(err, "failed to update inspect ruleFiles")
 		return ctrl.Result{}, err
 	}
 

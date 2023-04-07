@@ -35,6 +35,17 @@ spec:
           spec:
             description: InspectRulesSpec defines the desired state of InspectRules
             properties:
+              fileChange:
+                items:
+                  properties:
+                    base:
+                      type: string
+                    name:
+                      type: string
+                    rule:
+                      type: string
+                  type: object
+                type: array
               opas:
                 items:
                   properties:
