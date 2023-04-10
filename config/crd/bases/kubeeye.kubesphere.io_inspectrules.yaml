@@ -40,6 +40,8 @@ spec:
                   properties:
                     base:
                       type: string
+                    desc:
+                      type: string
                     name:
                       type: string
                     rule:
@@ -49,6 +51,8 @@ spec:
               opas:
                 items:
                   properties:
+                    desc:
+                      type: string
                     module:
                       type: string
                     name:
@@ -60,6 +64,8 @@ spec:
               prometheus:
                 items:
                   properties:
+                    desc:
+                      type: string
                     endpoint:
                       type: string
                     name:

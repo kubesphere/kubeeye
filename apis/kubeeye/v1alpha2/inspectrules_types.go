@@ -35,6 +35,7 @@ type InspectRulesSpec struct {
 type RuleItemBases struct {
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 	Rule string `json:"rule,omitempty" yaml:"rule,omitempty"`
+	Desc string `json:"desc,omitempty"`
 }
 
 type OpaRule struct {

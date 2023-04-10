@@ -60,7 +60,9 @@ spec:
             properties:
               TaskNames:
                 items:
-                  type: string
+                  items:
+                    type: string
+                  type: array
                 type: array
               lastScheduleTime:
                 description: 'INSERT ADDITIONAL STATUS FIELD - define observed state

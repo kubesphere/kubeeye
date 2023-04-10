@@ -24,8 +24,9 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-	"sort"
+	"k8s.io/apimachinery/pkg/util/json"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -123,35 +124,34 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 		controller_log.Info("create a new inspect task ", "task name", taskName)
-		findTaskSelector := metav1.FormatLabelSelector(&metav1.LabelSelector{MatchLabels: map[string]string{constant.LabelName: inspectPlan.Name}})
-		tasks, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks(metav1.NamespaceAll).List(ctx, metav1.ListOptions{LabelSelector: findTaskSelector})
-		if err != nil {
-			controller_log.Error(err, "Failed to get inspecttask")
-		}
 
-		sort.Slice(tasks.Items, func(i, j int) bool {
-			return tasks.Items[i].CreationTimestamp.After(tasks.Items[j].CreationTimestamp.Time)
-		})
-		var taskNames []string
-		saveTasks := tasks.Items
-		if inspectPlan.Spec.MaxTasks > 0 && len(tasks.Items) > inspectPlan.Spec.MaxTasks {
-			saveTasks = tasks.Items[:inspectPlan.Spec.MaxTasks]
-			delTasks := tasks.Items[inspectPlan.Spec.MaxTasks:]
-			for _, task := range delTasks {
-				controller_log.Info("auto delete")
-				err = r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks(task.Namespace).Delete(ctx, task.Name, metav1.DeleteOptions{})
-				if err != nil {
-					controller_log.Error(err, "Failed to delete task")
-				}
-			}
-		}
-		for _, item := range saveTasks {
-			taskNames = append(taskNames, item.Name)
-		}
+		//findTaskSelector := metav1.FormatLabelSelector(&metav1.LabelSelector{MatchLabels: map[string]string{constant.LabelName: inspectPlan.Name}})
+		//tasks, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks(metav1.NamespaceAll).List(ctx, metav1.ListOptions{LabelSelector: findTaskSelector})
+		//if err != nil {
+		//	controller_log.Error(err, "Failed to get inspecttask")
+		//}
+		//
+		//sort.Slice(tasks.Items, func(i, j int) bool {
+		//	return tasks.Items[i].CreationTimestamp.After(tasks.Items[j].CreationTimestamp.Time)
+		//})
+
+		//saveTasks := tasks.Items
+		//if inspectPlan.Spec.MaxTasks > 0 && len(tasks.Items) > inspectPlan.Spec.MaxTasks {
+		//	saveTasks = tasks.Items[:inspectPlan.Spec.MaxTasks]
+		//	delTasks := tasks.Items[inspectPlan.Spec.MaxTasks:]
+		//	for _, task := range delTasks {
+		//		controller_log.Info("auto delete")
+		//		err = r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks(task.Namespace).Delete(ctx, task.Name, metav1.DeleteOptions{})
+		//		if err != nil {
+		//			controller_log.Error(err, "Failed to delete task")
+		//		}
+		//	}
+		//}
+		//
 
 		inspectPlan.Status.LastScheduleTime = metav1.Time{Time: now}
-		inspectPlan.Status.LastTaskName = taskName
-		inspectPlan.Status.TaskNames = taskNames
+		inspectPlan.Status.LastTaskName = strings.Join(taskName, ",")
+		inspectPlan.Status.TaskNames = append(inspectPlan.Status.TaskNames, taskName)
 		inspectPlan.Status.NextScheduleTime = metav1.Time{Time: schedule.Next(now)}
 		err = r.Status().Update(ctx, inspectPlan)
 		if err != nil {
@@ -180,11 +180,12 @@ func nextScheduledTimeDuration(sched cron.Schedule, now time.Time) *time.Duratio
 	return &nextTime
 }
 
-func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (string, error) {
+func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) ([]string, error) {
 	var inspectTask kubeeyev1alpha2.InspectTask
 	rules, err := r.scanRules(inspectPlan, ctx)
+	var taskNames []string
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	ownerController := true
 	ownerRef := metav1.OwnerReference{
@@ -195,26 +196,34 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 		Controller:         &ownerController,
 		BlockOwnerDeletion: &ownerController,
 	}
-
-	inspectTask.Labels = map[string]string{constant.LabelName: inspectPlan.Name}
-	inspectTask.OwnerReferences = []metav1.OwnerReference{ownerRef}
-	inspectTask.Name = fmt.Sprintf("%s-%s", inspectPlan.Name, strconv.Itoa(int(time.Now().Unix())))
-	inspectTask.Namespace = inspectPlan.Namespace
 	audits := inspectPlan.Spec.Auditors
 	if len(audits) == 0 {
 		audits = append(audits, kubeeyev1alpha2.AuditorKubeeye)
 	}
+	inspectTask.Labels = map[string]string{constant.LabelName: inspectPlan.Name}
+	inspectTask.OwnerReferences = []metav1.OwnerReference{ownerRef}
+	inspectTask.Namespace = inspectPlan.Namespace
 	inspectTask.Spec.Auditors = audits
 	inspectTask.Spec.Timeout = inspectPlan.Spec.Timeout
-	inspectTask.Spec.Rules = rules
-	err = r.Client.Create(ctx, &inspectTask)
-	if err != nil {
-		return "", err
+	for key, val := range rules {
+		marshal, err := json.Marshal(val)
+		if err != nil {
+			fmt.Println("Failed to marshal")
+			return nil, err
+		}
+		inspectTask.Spec.Rules = map[string][]byte{key: marshal}
+		inspectTask.Name = fmt.Sprintf("%s-%s-%s", inspectPlan.Name, key, strconv.Itoa(int(time.Now().Unix())))
+		err = r.Client.Create(ctx, &inspectTask)
+		if err != nil {
+			fmt.Printf("create inspectTask failed err:%s", err)
+			return nil, err
+		}
+		taskNames = append(taskNames, inspectTask.Name)
 	}
-	return inspectTask.Name, nil
+	return taskNames, nil
 }
 
-func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) ([]map[string]string, error) {
+func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (map[string]interface{}, error) {
 	if len(inspectPlan.Spec.Tag) == 0 && len(inspectPlan.Spec.RuleNames) == 0 {
 		return nil, errors.New("Failed to get tags and rule names")
 	}
@@ -229,14 +238,32 @@ func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPl
 		controller_log.Error(err, "failed get to inspectrules")
 		return nil, err
 	}
-	var resultRules []map[string]string
+	var resultRules = make(map[string]interface{}, 1)
 
 	for _, item := range list.Items {
 
 		if item.Spec.Opas != nil {
-			for _, opa := range *item.Spec.Opas {
-				resultRules = append(resultRules, map[string]string{constant.RuleType: constant.Opa, constant.Rules: opa.Rule})
+			var rules []kubeeyev1alpha2.OpaRule
+			val, result := resultRules[constant.Opa]
+			if result {
+				rules = val.([]kubeeyev1alpha2.OpaRule)
 			}
+			for _, opa := range *item.Spec.Opas {
+				rules = append(rules, opa)
+			}
+			resultRules[constant.Opa] = rules
+
+		}
+		if item.Spec.Prometheus != nil {
+			var pro []kubeeyev1alpha2.PrometheusRule
+			val, result := resultRules[constant.Prometheus]
+			if result {
+				pro = val.([]kubeeyev1alpha2.PrometheusRule)
+			}
+			for _, prometheusRule := range *item.Spec.Prometheus {
+				pro = append(pro, prometheusRule)
+			}
+			resultRules[constant.Prometheus] = pro
 		}
 
 	}

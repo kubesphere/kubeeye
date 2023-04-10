@@ -30,10 +30,9 @@ type InspectTaskSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// +kubebuilder:validation:MinItems=1
-	Auditors []Auditor `json:"auditors,omitempty"` // like "kubeeye,kubebench"
-	Timeout  string    `json:"timeout,omitempty"`
-	// +kubebuilder:validation:MinItems=1
-	Rules []map[string]string `json:"ruleFiles,omitempty"`
+	Auditors []Auditor         `json:"auditors,omitempty"` // like "kubeeye,kubebench"
+	Timeout  string            `json:"timeout,omitempty"`
+	Rules    map[string][]byte `json:"rules,omitempty"`
 }
 
 // InspectTaskStatus defines the observed state of InspectTask

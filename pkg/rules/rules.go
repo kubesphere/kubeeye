@@ -132,8 +132,8 @@ func RegoToRuleYaml(path string) {
 	fmt.Println("YAML file written successfully")
 }
 
-func GetRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) ([]string, string) {
-	var rules []string
+func GetRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) ([]byte, string) {
+	var rules []byte
 	var ruleType string
 	inspectTask, err := client.KubeeyeV1alpha2().InspectTasks(task.Namespace).Get(ctx, task.Name, metav1.GetOptions{})
 	if err != nil {
@@ -144,8 +144,8 @@ func GetRules(ctx context.Context, task types.NamespacedName, client versioned.I
 		fmt.Printf("Failed to Get rego ruleFiles.\n")
 		return nil, ""
 	}
-	for _, rule := range inspectTask.Spec.Rules {
-		switch rule[constant.RuleType] {
+	for key, rule := range inspectTask.Spec.Rules {
+		switch key {
 		case constant.Opa:
 			ruleType = constant.Opa
 			break
@@ -153,7 +153,7 @@ func GetRules(ctx context.Context, task types.NamespacedName, client versioned.I
 			ruleType = constant.Prometheus
 			break
 		}
-		rules = append(rules, rule[constant.Rules])
+		rules = append(rules, rule...)
 	}
 	return rules, ruleType
 }

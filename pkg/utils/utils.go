@@ -1,12 +1,36 @@
 package utils
 
+import "fmt"
+
 func ArrayFind(s string, sub []string) (int, bool) {
-	for i := range sub {
-		if sub[i] == s {
-			return i, true
+
+	index, b, _ := ArrayFinds(sub, func(m string) bool {
+		return s == m
+	})
+	return index, b
+}
+
+func ArrayFinds(maps interface{}, f func(m string) bool) (int, bool, interface{}) {
+	switch maps.(type) {
+	case []string:
+		strings := maps.([]string)
+		for i := range strings {
+			if b := f(strings[i]); b {
+				return i, b, strings[i]
+			}
+
 		}
+	case map[string]interface{}:
+		m := maps.(map[string]interface{})
+		for key, val := range m {
+			if b := f(key); b {
+				return 0, b, val
+			}
+		}
+	default:
+		fmt.Printf("%T\n", maps)
 	}
-	return -1, false
+	return -1, false, nil
 }
 
 func ArrayDeduplication(sub []string) []string {
@@ -16,6 +40,7 @@ func ArrayDeduplication(sub []string) []string {
 			newSub = append(newSub, s)
 		}
 	}
+
 	return newSub
 }
 

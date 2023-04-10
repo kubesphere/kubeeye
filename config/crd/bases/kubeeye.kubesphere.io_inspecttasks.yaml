@@ -41,12 +41,10 @@ spec:
                 minItems: 1
                 type: array
               rules:
-                items:
-                  additionalProperties:
-                    type: string
-                  type: object
-                minItems: 1
-                type: array
+                additionalProperties:
+                  format: byte
+                  type: string
+                type: object
               timeout:
                 type: string
             type: object

@@ -2,6 +2,8 @@ package inspect
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
@@ -98,10 +100,19 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 
 	klog.Info("getting and merging the Rego ruleFiles")
 	getRules, ruleType := rules.GetRules(ctx, taskName, kubernetesClient.VersionClientSet)
-	var RulesValidateChan []kubeeyev1alpha2.ResourceResult
+	var RulesValidateChan <-chan []kubeeyev1alpha2.ResourceResult
 	if ruleType == constant.Opa {
-		regoRulesChan := rules.MergeRegoRules(ctx, getRules, rules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
-		RulesValidateChan := MergeRegoRulesValidate(ctx, regoRulesChan,
+		var opaRules []kubeeyev1alpha2.OpaRule
+		err := json.Unmarshal(getRules, &opaRules)
+		if err != nil {
+			fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
+		}
+		var RegoRules []string
+		for i := range opaRules {
+			RegoRules = append(RegoRules, opaRules[i].Rule)
+		}
+		regoRulesChan := rules.MergeRegoRules(ctx, RegoRules, rules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
+		RulesValidateChan = MergeRegoRulesValidate(ctx, regoRulesChan,
 			RegoRulesValidate(workloads, k8sResources, auditPercent),
 			RegoRulesValidate(rbac, k8sResources, auditPercent),
 			RegoRulesValidate(events, k8sResources, auditPercent),

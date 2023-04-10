@@ -338,11 +338,11 @@ func (in *InspectTaskSpec) DeepCopyInto(out *InspectTaskSpec) {
 	}
 	if in.Rules != nil {
 		in, out := &in.Rules, &out.Rules
-		*out = make([]map[string]string, len(*in))
+		*out = make(map[string][]byte, len(*in))
 		for i := range *in {
 			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = make(map[string]string, len(*in))
+				//in, out := &(*in)[i], &(*out)[i]
+				*out = make(map[string][]byte, len(*in))
 				for key, val := range *in {
 					(*out)[key] = val
 				}
