@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"time"
 
@@ -30,12 +29,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 )
 
 // InspectTaskReconciler reconciles a InspectTask object
@@ -64,7 +61,7 @@ type InspectTaskReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
 func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
+	//logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
 
 	inspectTask := &kubeeyev1alpha2.InspectTask{}
 	err := r.Get(ctx, req.NamespacedName, inspectTask)
@@ -72,10 +69,10 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if kubeErr.IsNotFound(err) {
 			delete(r.Audit.TaskOnceMap, req.NamespacedName)
 			delete(r.Audit.TaskResults, inspectTask.Name)
-			fmt.Printf("inspect task is not found;name:%s,namespect:%s\n", req.Name, req.Namespace)
+			klog.Infof("inspect task is not found;name:%s,namespect:%s\n", req.Name, req.Namespace)
 			return ctrl.Result{}, nil
 		}
-		logger.Error(err, "failed to get inspect task")
+		klog.Error("failed to get inspect task. ", err)
 		return ctrl.Result{}, err
 	}
 
@@ -84,7 +81,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			inspectTask.Finalizers = append(inspectTask.Finalizers, Finalizers)
 			err = r.Client.Update(ctx, inspectTask)
 			if err != nil {
-				controller_log.Info("Failed to inspect plan add finalizers")
+				klog.Error("Failed to inspect plan add finalizers", err)
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{}, nil
@@ -93,10 +90,10 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	} else {
 		newFinalizers := utils.SliceRemove(Finalizers, inspectTask.Finalizers)
 		inspectTask.Finalizers = newFinalizers.([]string)
-		controller_log.Info("inspect ruleFiles is being deleted")
+		klog.Infof("inspect ruleFiles is being deleted")
 		err = r.Client.Update(ctx, inspectTask)
 		if err != nil {
-			controller_log.Info("Failed to inspect plan add finalizers")
+			klog.Error("Failed to inspect plan add finalizers. ", err)
 			return ctrl.Result{}, err
 		}
 		delete(r.Audit.TaskOnceMap, req.NamespacedName)
@@ -114,10 +111,10 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		// get cluster info : ClusterVersion, NodesCount, NamespaceCount
 		inspectTask.Status.ClusterInfo, err = r.getClusterInfo(ctx)
 		if err != nil {
-			logger.Error(err, "failed to get cluster info")
+			klog.Error("failed to get cluster info. ", err)
 			return ctrl.Result{}, err
 		}
-		logger.Info("start task ", "name", req.Name)
+		klog.Infof("%s start task ", req.Name)
 	} else {
 		if inspectTask.Status.Phase == kubeeyev1alpha2.PhaseSucceeded || inspectTask.Status.Phase == kubeeyev1alpha2.PhaseFailed {
 			// remove from processing queue
@@ -129,7 +126,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				r.Audit.AddTaskToQueue(req.NamespacedName)
 				return ctrl.Result{}, nil
 			}
-			var results []kubeeyev1alpha2.AuditResult
+			var results []kubeeyev1alpha2.InspectResult
 			completed := 0
 			for _, auditor := range inspectTask.Spec.Auditors {
 				if result, ok := resultMap[string(auditor)]; ok {
@@ -139,7 +136,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 					}
 				}
 			}
-			inspectTask.Status.AuditResults = results
+			inspectTask.Status.InspectResults = results
 			inspectTask.Status.CompleteItemCount = completed
 		}
 
@@ -157,7 +154,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	err = r.Status().Update(ctx, inspectTask)
 	if err != nil && !kubeErr.IsNotFound(err) {
-		logger.Error(err, "failed to update inspect task")
+		klog.Error("failed to update inspect task. ", err)
 		return ctrl.Result{RequeueAfter: 60 * time.Second}, err
 	}
 	return ctrl.Result{RequeueAfter: 3 * time.Second}, nil

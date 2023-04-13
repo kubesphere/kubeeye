@@ -1,7 +1,7 @@
 apiVersion: kubeeye.kubesphere.io/v1alpha2
 kind: InspectPlan
 metadata:
-  name: inspectplan-sample
+  name: inspectplan
   namespace: kubeeye-system
 spec:
   schedule: "*/3 * * *  ?"

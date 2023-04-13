@@ -103,7 +103,7 @@ func main() {
 	}
 	au := &inspect.Audit{
 		TaskQueue:   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		TaskResults: make(map[string]map[string]*kubeeyev1alpha2.AuditResult),
+		TaskResults: make(map[string]map[string]*kubeeyev1alpha2.InspectResult),
 		K8sClient:   clients,
 		Cli:         mgr.GetClient(),
 		TaskOnceMap: make(map[types.NamespacedName]*sync.Once),

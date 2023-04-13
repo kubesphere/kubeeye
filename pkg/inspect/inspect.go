@@ -40,7 +40,7 @@ import (
 
 type Audit struct {
 	TaskQueue   workqueue.RateLimitingInterface
-	TaskResults map[string]map[string]*kubeeyev1alpha2.AuditResult
+	TaskResults map[string]map[string]*kubeeyev1alpha2.InspectResult
 	K8sClient   *kube.KubernetesClient
 	Cli         client.Client
 	TaskOnceMap map[types.NamespacedName]*sync.Once
@@ -112,7 +112,7 @@ func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName)
 		timeout = constant.DefaultTimeout
 	}
 
-	k.TaskResults[taskName.Name] = make(map[string]*kubeeyev1alpha2.AuditResult, len(auditTask.Spec.Auditors))
+	k.TaskResults[taskName.Name] = make(map[string]*kubeeyev1alpha2.InspectResult, len(auditTask.Spec.Auditors))
 
 	for _, auditor := range auditTask.Spec.Auditors {
 		if auditor == "kubeeye" {
@@ -161,14 +161,14 @@ func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName)
 
 func (k *Audit) KubeeyeAudit(taskName types.NamespacedName, ctx context.Context) {
 	klog.Infof("%s : start kubeeye inspect", taskName)
-	auditResult := &kubeeyev1alpha2.AuditResult{Name: "kubeeye", Phase: kubeeyev1alpha2.PhaseRunning}
+	auditResult := &kubeeyev1alpha2.InspectResult{Name: "kubeeye", Phase: kubeeyev1alpha2.PhaseRunning}
 
 	k.TaskResults[taskName.Name]["kubeeye"] = auditResult
 
 	// start kubeeye inspect
 	K8SResources, validationResultsChan, Percent := ValidationResults(ctx, k.K8sClient, taskName, "")
 
-	kubeeyeResult := kubeeyev1alpha2.KubeeyeAuditResult{}
+	OpaRuleResult := kubeeyev1alpha2.KubeeyeOpaResult{}
 	var results []kubeeyev1alpha2.ResourceResult
 	ctxCancel, cancel := context.WithCancel(ctx)
 
@@ -177,9 +177,9 @@ func (k *Audit) KubeeyeAudit(taskName types.NamespacedName, ctx context.Context)
 		for {
 			select {
 			case <-ticker.C:
-				kubeeyeResult.Percent = Percent.AuditPercent // update kubeeye inspect percent
+				OpaRuleResult.Percent = Percent.AuditPercent // update kubeeye inspect percent
 				ext := runtime.RawExtension{}
-				marshal, err := json.Marshal(kubeeyeResult)
+				marshal, err := json.Marshal(OpaRuleResult)
 				if err != nil {
 					klog.Error(err, " failed marshal kubeeye result")
 					return
@@ -200,26 +200,17 @@ func (k *Audit) KubeeyeAudit(taskName types.NamespacedName, ctx context.Context)
 
 	cancel()
 	scoreInfo := CalculateScore(results, K8SResources)
-	kubeeyeResult.Percent = 100
-	kubeeyeResult.ScoreInfo = scoreInfo
-	kubeeyeResult.ExtraInfo = kubeeyev1alpha2.ExtraInfo{
+	OpaRuleResult.Percent = 100
+	OpaRuleResult.ScoreInfo = scoreInfo
+	OpaRuleResult.ExtraInfo = kubeeyev1alpha2.ExtraInfo{
 		WorkloadsCount: K8SResources.WorkloadsCount,
 		NamespacesList: K8SResources.NameSpacesList,
 	}
-	//var t kubeeyev1alpha2.ResourceResult
-	//t.Name = "test"
-	//t.ResourceType = "test"
-	//t.NameSpace = "test"
-	//var i kubeeyev1alpha2.ResultItem
-	//i.Level = "test"
-	//i.Message = "test"
-	//i.Reason = "test"
-	//t.ResultItems = append(t.ResultItems, i)
-	//results = append(results, t)
-	kubeeyeResult.ResourceResults = results
+
+	OpaRuleResult.ResourceResults = results
 
 	ext := runtime.RawExtension{}
-	marshal, err := json.Marshal(kubeeyeResult)
+	marshal, err := json.Marshal(OpaRuleResult)
 	if err != nil {
 		klog.Error(err, " failed marshal kubeeye result")
 		return
@@ -243,7 +234,7 @@ func (k *Audit) PluginsResultsReceiver(pluginsResultsReceiverAddr string) {
 	}
 }
 
-// receive extra plugin result
+// PluginsResult receive extra plugin result
 func (k *Audit) PluginsResult(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -256,7 +247,7 @@ func (k *Audit) PluginsResult(w http.ResponseWriter, r *http.Request) {
 	ext := runtime.RawExtension{}
 
 	ext.Raw = []byte(pluginResult)
-	result := &kubeeyev1alpha2.AuditResult{
+	result := &kubeeyev1alpha2.InspectResult{
 		Result: ext,
 		Name:   pluginName,
 		Phase:  kubeeyev1alpha2.PhaseSucceeded,

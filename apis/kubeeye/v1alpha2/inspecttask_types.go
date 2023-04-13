@@ -40,14 +40,14 @@ type InspectTaskStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	ClusterInfo       `json:"clusterInfo,omitempty"`
-	AuditResults      []AuditResult `json:"auditResults,omitempty"`
-	Phase             Phase         `json:"phase,omitempty"`
-	CompleteItemCount int           `json:"completeItemCount,omitempty"`
-	StartTimestamp    *metav1.Time  `json:"startTimestamp,omitempty"`
-	EndTimestamp      *metav1.Time  `json:"endTimestamp,omitempty"`
+	InspectResults    []InspectResult `json:"inspectResults,omitempty"`
+	Phase             Phase           `json:"phase,omitempty"`
+	CompleteItemCount int             `json:"completeItemCount,omitempty"`
+	StartTimestamp    *metav1.Time    `json:"startTimestamp,omitempty"`
+	EndTimestamp      *metav1.Time    `json:"endTimestamp,omitempty"`
 }
 
-type AuditResult struct {
+type InspectResult struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Result runtime.RawExtension `json:"result,omitempty"`
 	Name   string               `json:"pluginName,omitempty"`
@@ -98,7 +98,7 @@ func init() {
 }
 
 // kubeeye inspect result
-type KubeeyeAuditResult struct {
+type KubeeyeOpaResult struct {
 	ScoreInfo       `json:"scoreInfo,omitempty"`
 	ResourceResults []ResourceResult `json:"resourceResults,omitempty"`
 	Percent         int              `json:"percent,omitempty"`

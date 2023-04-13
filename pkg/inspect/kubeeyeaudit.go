@@ -9,8 +9,12 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/api"
+	apiprometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
+	"time"
 )
 
 var (
@@ -99,29 +103,57 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 	auditPercent.CurrentAuditCount = auditPercent.TotalAuditCount
 
 	klog.Info("getting and merging the Rego ruleFiles")
-	getRules, ruleType := rules.GetRules(ctx, taskName, kubernetesClient.VersionClientSet)
+	getRules := rules.GetRules(ctx, taskName, kubernetesClient.VersionClientSet)
 	var RulesValidateChan <-chan []kubeeyev1alpha2.ResourceResult
-	if ruleType == constant.Opa {
-		var opaRules []kubeeyev1alpha2.OpaRule
-		err := json.Unmarshal(getRules, &opaRules)
-		if err != nil {
-			fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
-		}
-		var RegoRules []string
-		for i := range opaRules {
-			RegoRules = append(RegoRules, opaRules[i].Rule)
-		}
-		regoRulesChan := rules.MergeRegoRules(ctx, RegoRules, rules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
-		RulesValidateChan = MergeRegoRulesValidate(ctx, regoRulesChan,
-			RegoRulesValidate(workloads, k8sResources, auditPercent),
-			RegoRulesValidate(rbac, k8sResources, auditPercent),
-			RegoRulesValidate(events, k8sResources, auditPercent),
-			RegoRulesValidate(nodes, k8sResources, auditPercent),
-			RegoRulesValidate(certexp, k8sResources, auditPercent),
-		)
-	}
+	for key, rule := range getRules {
+		if key == constant.Opa {
+			var opaRules []kubeeyev1alpha2.OpaRule
+			err := json.Unmarshal(rule, &opaRules)
+			if err != nil {
+				fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
+				continue
+			}
+			var RegoRules []string
+			for i := range opaRules {
+				RegoRules = append(RegoRules, opaRules[i].Rule)
+			}
+			//regoRulesChan := rules.MergeRegoRules(ctx, RegoRules, rules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
+			RulesValidateChan = MergeRegoRulesValidate(ctx, RegoRules,
+				RegoRulesValidate(workloads, k8sResources, auditPercent),
+				RegoRulesValidate(rbac, k8sResources, auditPercent),
+				RegoRulesValidate(events, k8sResources, auditPercent),
+				RegoRulesValidate(nodes, k8sResources, auditPercent),
+				RegoRulesValidate(certexp, k8sResources, auditPercent),
+			)
+			//MergeOpaResult(ctx,nil,auditPercent,RulesValidateChan,k8sResources)
+		} else if key == constant.Prometheus {
+			var proRules []kubeeyev1alpha2.PrometheusRule
+			err := json.Unmarshal(rule, &proRules)
+			if err != nil {
+				fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
+				continue
+			}
+			client, err := api.NewClient(api.Config{
+				Address: proRules[0].Endpoint,
+			})
+			if err != nil {
+				klog.Error("create prometheus client failed", err)
+			}
+			queryApi := apiprometheusv1.NewAPI(client)
+			for _, proRule := range proRules {
 
-	klog.Info("starting inspect kubernetes resources")
+				query, _, _ := queryApi.Query(ctx, proRule.Rule, time.Now())
+				marshal, err := json.Marshal(query)
+
+				var samples model.Samples
+				err = json.Unmarshal(marshal, &samples)
+				fmt.Println(samples)
+				fmt.Println(err)
+			}
+
+			RulesValidateChan = MergeRegoRulesValidate(ctx, []string{})
+		}
+	}
 
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
 	klog.Info("get inspect results")

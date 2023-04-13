@@ -51,18 +51,6 @@ spec:
           status:
             description: InspectTaskStatus defines the observed state of InspectTask
             properties:
-              auditResults:
-                items:
-                  properties:
-                    phase:
-                      type: string
-                    pluginName:
-                      type: string
-                    result:
-                      type: object
-                      x-kubernetes-preserve-unknown-fields: true
-                  type: object
-                type: array
               clusterInfo:
                 description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
                   of cluster Important: Run "make" to regenerate code after modifying
@@ -80,6 +68,18 @@ spec:
               endTimestamp:
                 format: date-time
                 type: string
+              inspectResults:
+                items:
+                  properties:
+                    phase:
+                      type: string
+                    pluginName:
+                      type: string
+                    result:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                  type: object
+                type: array
               phase:
                 type: string
               startTimestamp:

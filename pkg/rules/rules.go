@@ -132,30 +132,29 @@ func RegoToRuleYaml(path string) {
 	fmt.Println("YAML file written successfully")
 }
 
-func GetRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) ([]byte, string) {
-	var rules []byte
-	var ruleType string
+func GetRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) map[string][]byte {
+
 	inspectTask, err := client.KubeeyeV1alpha2().InspectTasks(task.Namespace).Get(ctx, task.Name, metav1.GetOptions{})
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			fmt.Printf("rego ruleFiles not found .\n")
-			return nil, ""
+			return nil
 		}
 		fmt.Printf("Failed to Get rego ruleFiles.\n")
-		return nil, ""
+		return nil
 	}
-	for key, rule := range inspectTask.Spec.Rules {
-		switch key {
-		case constant.Opa:
-			ruleType = constant.Opa
-			break
-		case constant.Prometheus:
-			ruleType = constant.Prometheus
-			break
-		}
-		rules = append(rules, rule...)
-	}
-	return rules, ruleType
+	//for key, rule := range inspectTask.Spec.Rules {
+	//	switch key {
+	//	case constant.Opa:
+	//		ruleType = constant.Opa
+	//		break
+	//	case constant.Prometheus:
+	//		ruleType = constant.Prometheus
+	//		break
+	//	}
+	//	rules = append(rules, rule...)
+	//}
+	return inspectTask.Spec.Rules
 }
 
 // MergeRegoRules fun-out merge rego ruleFiles
