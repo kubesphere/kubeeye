@@ -19,6 +19,9 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/client_golang/api"
+	apiprometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	"net/http"
@@ -182,7 +185,49 @@ func MergeRegoRulesValidate(ctx context.Context, regoRulesChan []string, vfuncs 
 	return resultChan
 }
 
-func MergeOpaResult(ctx context.Context, auditResult *v1alpha2.InspectResult, Percent *PercentOutput, validationResultsChan <-chan []v1alpha2.ResourceResult, K8SResources kube.K8SResource) {
+func VailOpaRulesResult(ctx context.Context, auditResult *v1alpha2.InspectResult, k8sResources kube.K8SResource, RegoRules []string) v1alpha2.KubeeyeOpaResult {
+	klog.Info("start Opa rule inspect")
+	auditPercent := &PercentOutput{}
+
+	if k8sResources.Deployments != nil {
+		auditPercent.TotalAuditCount += len(k8sResources.Deployments.Items)
+	}
+	if k8sResources.StatefulSets != nil {
+		auditPercent.TotalAuditCount += len(k8sResources.StatefulSets.Items)
+	}
+	if k8sResources.DaemonSets != nil {
+		auditPercent.TotalAuditCount += len(k8sResources.DaemonSets.Items)
+	}
+	if k8sResources.Jobs != nil {
+		auditPercent.TotalAuditCount += len(k8sResources.Jobs.Items)
+	}
+	if k8sResources.CronJobs != nil {
+		auditPercent.TotalAuditCount += len(k8sResources.CronJobs.Items)
+	}
+	if k8sResources.Roles != nil {
+		auditPercent.TotalAuditCount += len(k8sResources.Roles.Items)
+	}
+	if k8sResources.ClusterRoles != nil {
+		auditPercent.TotalAuditCount += len(k8sResources.ClusterRoles.Items)
+	}
+	if k8sResources.Nodes != nil {
+		auditPercent.TotalAuditCount += len(k8sResources.Nodes.Items)
+	}
+	if k8sResources.Events != nil {
+		auditPercent.TotalAuditCount += len(k8sResources.Events.Items)
+	}
+	auditPercent.TotalAuditCount++
+	auditPercent.CurrentAuditCount = auditPercent.TotalAuditCount
+
+	//regoRulesChan := rules.MergeRegoRules(ctx, RegoRules, rules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
+	RulesValidateChan := MergeRegoRulesValidate(ctx, RegoRules,
+		RegoRulesValidate(workloads, k8sResources, auditPercent),
+		RegoRulesValidate(rbac, k8sResources, auditPercent),
+		RegoRulesValidate(events, k8sResources, auditPercent),
+		RegoRulesValidate(nodes, k8sResources, auditPercent),
+		RegoRulesValidate(certexp, k8sResources, auditPercent),
+	)
+	klog.Info("get inspect results")
 
 	OpaRuleResult := v1alpha2.KubeeyeOpaResult{}
 	var results []v1alpha2.ResourceResult
@@ -193,7 +238,7 @@ func MergeOpaResult(ctx context.Context, auditResult *v1alpha2.InspectResult, Pe
 		for {
 			select {
 			case <-ticker.C:
-				OpaRuleResult.Percent = Percent.AuditPercent // update kubeeye inspect percent
+				OpaRuleResult.Percent = auditPercent.AuditPercent // update kubeeye inspect percent
 				ext := runtime.RawExtension{}
 				marshal, err := json.Marshal(OpaRuleResult)
 				if err != nil {
@@ -208,26 +253,49 @@ func MergeOpaResult(ctx context.Context, auditResult *v1alpha2.InspectResult, Pe
 		}
 	}(ctxCancel)
 
-	for r := range validationResultsChan {
+	for r := range RulesValidateChan {
 		for _, result := range r {
 			results = append(results, result)
 		}
 	}
 
 	cancel()
-	scoreInfo := CalculateScore(results, K8SResources)
+	scoreInfo := CalculateScore(results, k8sResources)
 	OpaRuleResult.Percent = 100
 	OpaRuleResult.ScoreInfo = scoreInfo
 	OpaRuleResult.ExtraInfo = v1alpha2.ExtraInfo{
-		WorkloadsCount: K8SResources.WorkloadsCount,
-		NamespacesList: K8SResources.NameSpacesList,
+		WorkloadsCount: k8sResources.WorkloadsCount,
+		NamespacesList: k8sResources.NameSpacesList,
 	}
 
 	OpaRuleResult.ResourceResults = results
+	return OpaRuleResult
 }
 
-func MergePrometheusRulesValidate() {
+func InspectPrometheusRulesResult(ctx context.Context, proRules []v1alpha2.PrometheusRule) map[string][]map[string]interface{} {
+	client, err := api.NewClient(api.Config{
+		Address: proRules[0].Endpoint,
+	})
+	if err != nil {
+		klog.Error("create prometheus client failed", err)
+	}
+	queryApi := apiprometheusv1.NewAPI(client)
+	var proRuleResult []map[string]interface{}
+	for _, proRule := range proRules {
 
+		query, _, _ := queryApi.Query(ctx, proRule.Rule, time.Now())
+		marshal, err := json.Marshal(query)
+
+		var samples model.Samples
+		err = json.Unmarshal(marshal, &samples)
+		if err != nil {
+			klog.Error("unmarshal modal Samples failed", err)
+			continue
+		}
+		smap := map[string]interface{}{"Metric": samples[0].Metric, "value": samples[0].Value, "Timestamp": samples[0].Timestamp.String()}
+		proRuleResult = append(proRuleResult, smap)
+	}
+	return map[string][]map[string]interface{}{"result": proRuleResult}
 }
 
 // ValidateK8SResource validate kubernetes resource by rego, return the validate results.

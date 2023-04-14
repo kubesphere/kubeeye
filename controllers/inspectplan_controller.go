@@ -119,7 +119,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 		taskName, err := r.createInspectTask(inspectPlan, ctx)
 		if err != nil {
-			klog.Error("failed to create Inspect task.", err)
+			klog.Error("failed to create InspectTask.", err)
 			return ctrl.Result{}, err
 		}
 		klog.Error("create a new inspect task.", taskName)
@@ -177,10 +177,10 @@ func nextScheduledTimeDuration(sched cron.Schedule, now time.Time) *time.Duratio
 func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) ([]string, error) {
 
 	rules, err := r.scanRules(inspectPlan, ctx)
-	var taskNames []string
 	if err != nil {
 		return nil, err
 	}
+	var taskNames []string
 	ownerController := true
 	ownerRef := metav1.OwnerReference{
 		APIVersion:         inspectPlan.APIVersion,
@@ -234,7 +234,12 @@ func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPl
 		klog.Error("failed get to inspectrules.", err)
 		return nil, err
 	}
-	var resultRules = make(map[string]interface{}, 1)
+	if ruleLists.Items == nil || len(ruleLists.Items) == 0 {
+		klog.Errorf("Failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
+		return nil, errors.Errorf("Failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
+	}
+
+	var resultRules = make(map[string]interface{})
 
 	for _, item := range ruleLists.Items {
 
@@ -264,7 +269,6 @@ func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPl
 			}
 			resultRules[constant.Prometheus] = pro
 		}
-
 	}
 
 	return resultRules, nil

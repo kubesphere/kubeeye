@@ -9,12 +9,8 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/api"
-	apiprometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	"github.com/prometheus/common/model"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	"time"
 )
 
 var (
@@ -44,67 +40,33 @@ func AuditCluster(ctx context.Context, kubeConfigPath string, additionalregorule
 		return err
 	}
 
-	_, validationResultsChan, _ := ValidationResults(ctx, clients, types.NamespacedName{}, additionalregoruleputh)
-
-	// Set the output mode, support default output JSON and CSV.
-	switch output {
-	case "JSON", "json", "Json":
-		if err := JSONOutput(validationResultsChan); err != nil {
-			return err
-		}
-	case "CSV", "csv", "Csv":
-		if err := CSVOutput(validationResultsChan); err != nil {
-			return err
-		}
-	default:
-		if err := defaultOutput(validationResultsChan); err != nil {
-			return err
-		}
-	}
+	_ = ValidationResults(ctx, clients, types.NamespacedName{}, nil)
+	//
+	//// Set the output mode, support default output JSON and CSV.
+	//switch output {
+	//case "JSON", "json", "Json":
+	//	if err := JSONOutput(validationResultsChan); err != nil {
+	//		return err
+	//	}
+	//case "CSV", "csv", "Csv":
+	//	if err := CSVOutput(validationResultsChan); err != nil {
+	//		return err
+	//	}
+	//default:
+	//	if err := defaultOutput(validationResultsChan); err != nil {
+	//		return err
+	//	}
+	//}
 	return nil
 }
 
-func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, taskName types.NamespacedName, additionalregoruleputh string) (kube.K8SResource, <-chan []kubeeyev1alpha2.ResourceResult, *PercentOutput) {
+func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, taskName types.NamespacedName, auditResult *kubeeyev1alpha2.InspectResult) interface{} {
 	// get kubernetes resources and put into the channel.
 	klog.Info("starting get kubernetes resources")
-
 	k8sResources := kube.GetK8SResources(ctx, kubernetesClient)
-
-	auditPercent := &PercentOutput{}
-
-	if k8sResources.Deployments != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.Deployments.Items)
-	}
-	if k8sResources.StatefulSets != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.StatefulSets.Items)
-	}
-	if k8sResources.DaemonSets != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.DaemonSets.Items)
-	}
-	if k8sResources.Jobs != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.Jobs.Items)
-	}
-	if k8sResources.CronJobs != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.CronJobs.Items)
-	}
-	if k8sResources.Roles != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.Roles.Items)
-	}
-	if k8sResources.ClusterRoles != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.ClusterRoles.Items)
-	}
-	if k8sResources.Nodes != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.Nodes.Items)
-	}
-	if k8sResources.Events != nil {
-		auditPercent.TotalAuditCount += len(k8sResources.Events.Items)
-	}
-	auditPercent.TotalAuditCount++
-	auditPercent.CurrentAuditCount = auditPercent.TotalAuditCount
-
-	klog.Info("getting and merging the Rego ruleFiles")
+	klog.Info("getting  Rego rules")
 	getRules := rules.GetRules(ctx, taskName, kubernetesClient.VersionClientSet)
-	var RulesValidateChan <-chan []kubeeyev1alpha2.ResourceResult
+
 	for key, rule := range getRules {
 		if key == constant.Opa {
 			var opaRules []kubeeyev1alpha2.OpaRule
@@ -117,15 +79,8 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 			for i := range opaRules {
 				RegoRules = append(RegoRules, opaRules[i].Rule)
 			}
-			//regoRulesChan := rules.MergeRegoRules(ctx, RegoRules, rules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
-			RulesValidateChan = MergeRegoRulesValidate(ctx, RegoRules,
-				RegoRulesValidate(workloads, k8sResources, auditPercent),
-				RegoRulesValidate(rbac, k8sResources, auditPercent),
-				RegoRulesValidate(events, k8sResources, auditPercent),
-				RegoRulesValidate(nodes, k8sResources, auditPercent),
-				RegoRulesValidate(certexp, k8sResources, auditPercent),
-			)
-			//MergeOpaResult(ctx,nil,auditPercent,RulesValidateChan,k8sResources)
+
+			return VailOpaRulesResult(ctx, auditResult, k8sResources, RegoRules)
 		} else if key == constant.Prometheus {
 			var proRules []kubeeyev1alpha2.PrometheusRule
 			err := json.Unmarshal(rule, &proRules)
@@ -133,31 +88,14 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 				fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
 				continue
 			}
-			client, err := api.NewClient(api.Config{
-				Address: proRules[0].Endpoint,
-			})
-			if err != nil {
-				klog.Error("create prometheus client failed", err)
-			}
-			queryApi := apiprometheusv1.NewAPI(client)
-			for _, proRule := range proRules {
-
-				query, _, _ := queryApi.Query(ctx, proRule.Rule, time.Now())
-				marshal, err := json.Marshal(query)
-
-				var samples model.Samples
-				err = json.Unmarshal(marshal, &samples)
-				fmt.Println(samples)
-				fmt.Println(err)
-			}
-
-			RulesValidateChan = MergeRegoRulesValidate(ctx, []string{})
+			return InspectPrometheusRulesResult(ctx, proRules)
 		}
 	}
 
 	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-	klog.Info("get inspect results")
-	return k8sResources, RulesValidateChan, auditPercent
+
+	//return k8sResources, RulesValidateChan, auditPercent
+	return nil
 }
 
 func CalculateScore(fmResultss []kubeeyev1alpha2.ResourceResult, k8sResources kube.K8SResource) (scoreInfo kubeeyev1alpha2.ScoreInfo) {
