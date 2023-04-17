@@ -88,7 +88,7 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 				fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
 				continue
 			}
-			return InspectPrometheusRulesResult(ctx, proRules)
+			return MergePrometheusRulesResult(ctx, proRules)
 		}
 	}
 

@@ -272,30 +272,32 @@ func VailOpaRulesResult(ctx context.Context, auditResult *v1alpha2.InspectResult
 	return OpaRuleResult
 }
 
-func InspectPrometheusRulesResult(ctx context.Context, proRules []v1alpha2.PrometheusRule) map[string][]map[string]interface{} {
-	client, err := api.NewClient(api.Config{
-		Address: proRules[0].Endpoint,
-	})
-	if err != nil {
-		klog.Error("create prometheus client failed", err)
-	}
-	queryApi := apiprometheusv1.NewAPI(client)
-	var proRuleResult []map[string]interface{}
-	for _, proRule := range proRules {
+func MergePrometheusRulesResult(ctx context.Context, proRules []v1alpha2.PrometheusRule) map[string][]model.Samples {
 
+	var proRuleResult []model.Samples
+	for _, proRule := range proRules {
+		client, err := api.NewClient(api.Config{
+			Address: proRule.Endpoint,
+		})
+		if err != nil {
+			klog.Error("create prometheus client failed", err)
+			continue
+		}
+		queryApi := apiprometheusv1.NewAPI(client)
 		query, _, _ := queryApi.Query(ctx, proRule.Rule, time.Now())
 		marshal, err := json.Marshal(query)
 
-		var samples model.Samples
-		err = json.Unmarshal(marshal, &samples)
+		var queryResults model.Samples
+		err = json.Unmarshal(marshal, &queryResults)
 		if err != nil {
 			klog.Error("unmarshal modal Samples failed", err)
 			continue
 		}
-		smap := map[string]interface{}{"Metric": samples[0].Metric, "value": samples[0].Value, "Timestamp": samples[0].Timestamp.String()}
-		proRuleResult = append(proRuleResult, smap)
+
+		proRuleResult = append(proRuleResult, queryResults)
+
 	}
-	return map[string][]map[string]interface{}{"result": proRuleResult}
+	return map[string][]model.Samples{"result": proRuleResult}
 }
 
 // ValidateK8SResource validate kubernetes resource by rego, return the validate results.

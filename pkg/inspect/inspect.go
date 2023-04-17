@@ -167,48 +167,6 @@ func (k *Audit) KubeeyeAudit(taskName types.NamespacedName, ctx context.Context)
 
 	// start kubeeye inspect
 	OpaRuleResult := ValidationResults(ctx, k.K8sClient, taskName, auditResult)
-	//
-	//OpaRuleResult := kubeeyev1alpha2.KubeeyeOpaResult{}
-	//var results []kubeeyev1alpha2.ResourceResult
-	//ctxCancel, cancel := context.WithCancel(ctx)
-	//
-	//go func(ctx context.Context) {
-	//	ticker := time.NewTicker(1 * time.Second)
-	//	for {
-	//		select {
-	//		case <-ticker.C:
-	//			OpaRuleResult.Percent = Percent.AuditPercent // update kubeeye inspect percent
-	//			ext := runtime.RawExtension{}
-	//			marshal, err := json.Marshal(OpaRuleResult)
-	//			if err != nil {
-	//				klog.Error(err, " failed marshal kubeeye result")
-	//				return
-	//			}
-	//			ext.Raw = marshal
-	//			auditResult.Result = ext
-	//		case <-ctx.Done():
-	//			return
-	//		}
-	//	}
-	//}(ctxCancel)
-	//
-	//for r := range validationResultsChan {
-	//	for _, result := range r {
-	//		results = append(results, result)
-	//	}
-	//}
-	//
-	//cancel()
-	//scoreInfo := CalculateScore(results, K8SResources)
-	//OpaRuleResult.Percent = 100
-	//OpaRuleResult.ScoreInfo = scoreInfo
-	//OpaRuleResult.ExtraInfo = kubeeyev1alpha2.ExtraInfo{
-	//	WorkloadsCount: K8SResources.WorkloadsCount,
-	//	NamespacesList: K8SResources.NameSpacesList,
-	//}
-	//
-	//OpaRuleResult.ResourceResults = results
-
 	ext := runtime.RawExtension{}
 	marshal, err := json.Marshal(OpaRuleResult)
 	if err != nil {
