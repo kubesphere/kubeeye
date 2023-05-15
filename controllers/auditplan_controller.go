@@ -89,7 +89,7 @@ func (r *AuditPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	now := time.Now()
 	scheduledTime := nextScheduledTimeDuration(schedule, auditPlan.Status.LastScheduleTime.Time)
-	if auditPlan.Status.LastScheduleTime.Add(*scheduledTime).Before(now) { // if the scheduled time has arrived, create Audit task
+	if auditPlan.Status.LastScheduleTime.IsZero() && auditPlan.Status.LastScheduleTime.Add(*scheduledTime).Before(now) { // if the scheduled time has arrived, create Audit task
 
 		taskName, err := r.createAuditTask(auditPlan, ctx)
 		if err != nil {
