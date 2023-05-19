@@ -87,28 +87,42 @@ func (r *AuditPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		auditPlan.Spec.Timeout = "10m"
 	}
 
-	now := time.Now()
-	scheduledTime := nextScheduledTimeDuration(schedule, auditPlan.Status.LastScheduleTime.Time)
-	if auditPlan.Status.LastScheduleTime.IsZero() && auditPlan.Status.LastScheduleTime.Add(*scheduledTime).Before(now) { // if the scheduled time has arrived, create Audit task
-
-		taskName, err := r.createAuditTask(auditPlan, ctx)
-		if err != nil {
-			logger.Error(err, "failed to create Audit task")
-			return ctrl.Result{}, err
-		}
-		logger.Info("create a new audit task ", "task name", taskName)
-		auditPlan.Status.LastScheduleTime = metav1.Time{Time: now}
-		auditPlan.Status.LastTaskName = taskName
-		err = r.Status().Update(ctx, auditPlan)
-		if err != nil {
-			logger.Error(err, "failed to update audit plan")
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{}, nil
+	var scheduleStart time.Time
+	// if the auditplan have just been created
+	// we use its creation time as the start time to determine the next schedule
+	if auditPlan.Status.LastScheduleTime.IsZero() {
+		scheduleStart = auditPlan.CreationTimestamp.Time
 	} else {
-		nextScheduledTime := nextScheduledTimeDuration(schedule, now)
-		return ctrl.Result{RequeueAfter: *nextScheduledTime}, nil
+		scheduleStart = auditPlan.Status.LastScheduleTime.Time
 	}
+
+	missedCount, lastMissedScheduleTime, nextScheduleTime := getNextScheduleTime(schedule, scheduleStart)
+
+	// no missed schedule, wait for the next schedule time to come
+	if missedCount == 0 || lastMissedScheduleTime.IsZero() {
+		return ctrl.Result{RequeueAfter: time.Until(nextScheduleTime)}, nil
+	}
+
+	if lastMissedScheduleTime.Add(time.Minute).Before(time.Now()) {
+		logger.Info("last schedule time is missed for too long, skip and wait for the next schedule", "missedCount", missedCount)
+		return ctrl.Result{RequeueAfter: time.Until(nextScheduleTime)}, nil
+	}
+
+	// the last missed schedule is right on time
+	taskName, err := r.createAuditTask(auditPlan, ctx)
+	if err != nil {
+		logger.Error(err, "failed to create Audit task")
+		return ctrl.Result{}, err
+	}
+	logger.Info("create a new audit task ", "task name", taskName)
+	auditPlan.Status.LastScheduleTime = metav1.Time{Time: time.Now()}
+	auditPlan.Status.LastTaskName = taskName
+	err = r.Status().Update(ctx, auditPlan)
+	if err != nil {
+		logger.Error(err, "failed to update audit plan")
+		return ctrl.Result{}, err
+	}
+	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -121,9 +135,14 @@ func (r *AuditPlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // nextScheduledTimeDuration returns the time duration to requeue based on
 // the schedule and given time. It adds a 100ms padding to the next requeue to account
 // for Network Time Protocol(NTP) time skews.
-func nextScheduledTimeDuration(sched cron.Schedule, now time.Time) *time.Duration {
-	nextTime := sched.Next(now).Add(100 * time.Millisecond).Sub(now)
-	return &nextTime
+// if controller has
+func getNextScheduleTime(sched cron.Schedule, scheduleStart time.Time) (missedCount int, lastMissedScheduleTime time.Time, nextScheduleTime time.Time) {
+	now := time.Now()
+	for t := sched.Next(scheduleStart); !t.After(now); t = sched.Next(t) {
+		lastMissedScheduleTime = t
+		missedCount++
+	}
+	return missedCount, lastMissedScheduleTime, sched.Next(now).Add(100 * time.Millisecond)
 }
 
 func (r *AuditPlanReconciler) createAuditTask(auditPlan *kubeeyev1alpha2.AuditPlan, ctx context.Context) (string, error) {
