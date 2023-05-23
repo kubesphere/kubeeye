@@ -285,7 +285,7 @@ func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	var proRuleResult []model.Samples
+	var proRuleResult [][]map[string]string
 	for _, proRule := range proRules {
 		client, err := api.NewClient(api.Config{
 			Address: proRule.Endpoint,
@@ -304,7 +304,18 @@ func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
 			klog.Error("unmarshal modal Samples failed", err)
 			continue
 		}
-		proRuleResult = append(proRuleResult, queryResults)
+		var queryResultsMap []map[string]string
+		for i, result := range queryResults {
+			temp := map[string]string{"value": result.Value.String(), "time": result.Timestamp.String()}
+			klog.Info(i, result)
+			for name, value := range result.Metric {
+				klog.Info(name, value)
+				temp[string(name)] = string(value)
+			}
+			queryResultsMap = append(queryResultsMap, temp)
+		}
+
+		proRuleResult = append(proRuleResult, queryResultsMap)
 	}
 	if proRules == nil && len(proRules) == 0 {
 		return nil, nil

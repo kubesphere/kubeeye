@@ -109,15 +109,15 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			klog.Error("failed to get cluster info. ", err)
 			return ctrl.Result{}, err
 		}
-		//JobPhase, err := r.createJobsInspect(ctx, inspectTask)
-		//if err != nil {
-		//	return ctrl.Result{}, err
-		//}
-		//inspectTask.Status.JobPhase = JobPhase
+		JobPhase, err := r.createJobsInspect(ctx, inspectTask)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		inspectTask.Status.JobPhase = JobPhase
 		klog.Infof("%s start task ", req.Name)
 	} else {
 		if r.IsComplete(inspectTask) {
-			klog.Info("all job finished")
+			klog.Infof("all job finished for taskName:%s", inspectTask.Name)
 			return ctrl.Result{}, nil
 		}
 
@@ -141,7 +141,10 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				case constant.Opa:
 					break
 				case constant.Prometheus:
-					klog.Info("进来了")
+					err = inspect.GetPrometheusResult(ctx, r.Client, configs, inspectTask)
+					if err != nil {
+						return ctrl.Result{}, err
+					}
 					break
 				case constant.FileChange:
 					err = inspect.GetFileChangeResult(ctx, r.Client, jobs, configs, inspectTask)
@@ -188,7 +191,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		klog.Error("failed to update inspect task. ", err)
 		return ctrl.Result{RequeueAfter: 60 * time.Second}, err
 	}
-	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 }
 
 func (r *InspectTaskReconciler) getClusterInfo(ctx context.Context) (kubeeyev1alpha2.ClusterInfo, error) {
@@ -226,7 +229,7 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 	var jobNames []kubeeyev1alpha2.JobPhase
 	for key := range inspectTask.Spec.Rules {
 		if key == constant.Prometheus || key == constant.Opa {
-			jobName, err := r.inspectJobsTemplate(ctx, name, inspectTask, "", constant.Prometheus)
+			jobName, err := r.inspectJobsTemplate(ctx, fmt.Sprintf("%s-%s", name, key), inspectTask, "", key)
 			if err != nil {
 				klog.Errorf("Failed to create Jobs for node name:%s,err:%s", err, err)
 				return nil, err
@@ -265,7 +268,7 @@ func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName
 		BlockOwnerDeletion: &ownerController,
 	}
 	var resetBack int32 = 5
-	var autoDelTime int32 = 30
+	//var autoDelTime int32 = 60
 	inspectJob := v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            jobName,
@@ -274,14 +277,14 @@ func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName
 			Labels:          map[string]string{constant.LabelResultName: taskType},
 		},
 		Spec: v1.JobSpec{
-			BackoffLimit:            &resetBack,
-			TTLSecondsAfterFinished: &autoDelTime,
+			BackoffLimit: &resetBack,
+			//TTLSecondsAfterFinished: &autoDelTime,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{Name: "inspect-job-pod", Namespace: inspectTask.Namespace},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Name:    "inspect-task-kubeeye",
-						Image:   "jw008/kubeeye:amd64",
+						Image:   "jw008/kubeeye:dev",
 						Command: []string{"inspect"},
 						Args:    []string{taskType, "--task-name", inspectTask.Name, "--task-namespace", inspectTask.Namespace, "--result-name", jobName},
 						VolumeMounts: []corev1.VolumeMount{{

@@ -55,6 +55,14 @@ spec:
                       type: string
                   type: object
                 type: array
+              prometheusResult:
+                items:
+                  items:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  type: array
+                type: array
             type: object
           status:
             description: InspectResultStatus defines the observed state of InspectResult

@@ -28,7 +28,8 @@ type InspectResultSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	FileChangeResult []FileChangeResult `json:"fileChangeResult,omitempty"`
+	FileChangeResult []FileChangeResult    `json:"fileChangeResult,omitempty"`
+	PrometheusResult [][]map[string]string `json:"prometheusResult,omitempty"`
 }
 
 // InspectResultStatus defines the observed state of InspectResult

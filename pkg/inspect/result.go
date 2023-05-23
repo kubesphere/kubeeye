@@ -65,3 +65,33 @@ func GetFileChangeResult(ctx context.Context, c client.Client, jobs *v1.Job, res
 	return nil
 
 }
+
+func GetPrometheusResult(ctx context.Context, c client.Client, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+	var prometheus [][]map[string]string
+	err := json.Unmarshal(result.BinaryData[constant.Result], &prometheus)
+	if err != nil {
+		return err
+	}
+	var ownerRefBol = true
+	resultRef := metav1.OwnerReference{
+		APIVersion:         task.APIVersion,
+		Kind:               task.Kind,
+		Name:               task.Name,
+		UID:                task.UID,
+		Controller:         &ownerRefBol,
+		BlockOwnerDeletion: &ownerRefBol,
+	}
+
+	var inspectResult kubeeyev1alpha2.InspectResult
+	inspectResult.Name = fmt.Sprintf("%s-%s", task.Name, constant.Prometheus)
+	inspectResult.Namespace = task.Namespace
+	inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
+
+	inspectResult.Spec.PrometheusResult = prometheus
+	err = c.Create(ctx, &inspectResult)
+	if err != nil {
+		klog.Error("Failed to create inspect result", err)
+		return err
+	}
+	return nil
+}

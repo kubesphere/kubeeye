@@ -1,5 +1,15 @@
 package main
 
+import (
+	"context"
+	"encoding/json"
+	"github.com/prometheus/client_golang/api"
+	apiprometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
+	"k8s.io/klog/v2"
+	"time"
+)
+
 func main() {
 
 	//cluster, _ := kube.GetKubeConfigInCluster()
@@ -79,17 +89,32 @@ func main() {
 	//	os.Exit(1)
 	//}
 	//
-	//klog.Info(get.Spec.Result)
-	//var data = make(map[string][]byte)
-	//err = json.Unmarshal(get.Spec.Result.Raw, &data)
-	//if err != nil {
-	//	klog.Error(err)
-	//}
-	//fmt.Println(rand.Intn(100))
-	//data[fmt.Sprintf("node%d", rand.Intn(100))] = s["node1"]
-	//marshal, err := json.Marshal(data)
-	//get.Spec.Result.Raw = marshal
-	//_, err = clients.VersionClientSet.KubeeyeV1alpha2().InspectResults("kubeeye-system").Update(context.TODO(), get, metav1.UpdateOptions{})
-	//klog.Error(err)
-	//fmt.Println(IsComplete(nil))
+
+	client, err := api.NewClient(api.Config{
+		Address: "http://172.31.73.216:30258",
+	})
+	if err != nil {
+		klog.Error("create prometheus client failed", err)
+	}
+	queryApi := apiprometheusv1.NewAPI(client)
+	query, _, _ := queryApi.Query(context.TODO(), "harbor_health==1", time.Now())
+	marshal, err := json.Marshal(query)
+
+	var queryResults model.Samples
+	err = json.Unmarshal(marshal, &queryResults)
+	if err != nil {
+		klog.Error("unmarshal modal Samples failed", err)
+	}
+
+	var mapresult []map[string]string
+	for i, result := range queryResults {
+		temp := map[string]string{"value": result.Value.String(), "time": result.Timestamp.String()}
+		klog.Info(i, result)
+		for name, value := range result.Metric {
+			klog.Info(name, value)
+			temp[string(name)] = string(value)
+		}
+		mapresult = append(mapresult, temp)
+	}
+	klog.Info(mapresult)
 }
