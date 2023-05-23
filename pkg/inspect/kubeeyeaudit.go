@@ -65,7 +65,7 @@ func AuditCluster(ctx context.Context, kubeConfigPath string, additionalregorule
 func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, taskName types.NamespacedName, auditResult *kubeeyev1alpha2.Result) interface{} {
 	// get kubernetes resources and put into the channel.
 	klog.Info("starting get kubernetes resources")
-	k8sResources := kube.GetK8SResources(ctx, kubernetesClient)
+	//k8sResources := kube.GetK8SResources(ctx, kubernetesClient)
 	klog.Info("getting  Rego rules")
 	getRules := rules.GetRules(ctx, taskName, kubernetesClient.VersionClientSet)
 
@@ -82,7 +82,7 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 				RegoRules = append(RegoRules, opaRules[i].Rule)
 			}
 
-			return VailOpaRulesResult(ctx, auditResult, k8sResources, RegoRules)
+			//return VailOpaRulesResult(ctx, k8sResources, RegoRules)
 		} else if key == constant.Prometheus {
 			var proRules []kubeeyev1alpha2.PrometheusRule
 			err := json.Unmarshal(rule, &proRules)
@@ -147,6 +147,7 @@ func JobInspect(ctx context.Context, taskName string, taskNamespace string, resu
 	var result []byte
 	switch ruleType {
 	case constant.Opa:
+		result, err = OpaRuleResult(ctx, task.Spec.Rules[ruleType], clients)
 		break
 	case constant.Prometheus:
 		result, err = PrometheusRulesResult(ctx, task.Spec.Rules[ruleType])

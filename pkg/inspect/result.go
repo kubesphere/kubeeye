@@ -95,3 +95,33 @@ func GetPrometheusResult(ctx context.Context, c client.Client, result *corev1.Co
 	}
 	return nil
 }
+
+func GetOpaResult(ctx context.Context, c client.Client, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+	var opaResult kubeeyev1alpha2.KubeeyeOpaResult
+	err := json.Unmarshal(result.BinaryData[constant.Result], &opaResult)
+	if err != nil {
+		return err
+	}
+	var ownerRefBol = true
+	resultRef := metav1.OwnerReference{
+		APIVersion:         task.APIVersion,
+		Kind:               task.Kind,
+		Name:               task.Name,
+		UID:                task.UID,
+		Controller:         &ownerRefBol,
+		BlockOwnerDeletion: &ownerRefBol,
+	}
+
+	var inspectResult kubeeyev1alpha2.InspectResult
+	inspectResult.Name = fmt.Sprintf("%s-%s", task.Name, constant.Opa)
+	inspectResult.Namespace = task.Namespace
+	inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
+
+	inspectResult.Spec.OpaResult = opaResult
+	err = c.Create(ctx, &inspectResult)
+	if err != nil {
+		klog.Error("Failed to create inspect result", err)
+		return err
+	}
+	return nil
+}

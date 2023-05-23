@@ -30,6 +30,7 @@ type InspectResultSpec struct {
 
 	FileChangeResult []FileChangeResult    `json:"fileChangeResult,omitempty"`
 	PrometheusResult [][]map[string]string `json:"prometheusResult,omitempty"`
+	OpaResult        KubeeyeOpaResult      `json:"opaResult,omitempty"`
 }
 
 // InspectResultStatus defines the observed state of InspectResult

@@ -139,6 +139,10 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				}
 				switch jobs.Labels[constant.LabelResultName] {
 				case constant.Opa:
+					err = inspect.GetOpaResult(ctx, r.Client, configs, inspectTask)
+					if err != nil {
+						return ctrl.Result{}, err
+					}
 					break
 				case constant.Prometheus:
 					err = inspect.GetPrometheusResult(ctx, r.Client, configs, inspectTask)

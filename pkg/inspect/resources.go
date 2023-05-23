@@ -190,7 +190,7 @@ func MergeRegoRulesValidate(ctx context.Context, regoRulesChan []string, vfuncs 
 	return resultChan
 }
 
-func VailOpaRulesResult(ctx context.Context, auditResult *v1alpha2.Result, k8sResources kube.K8SResource, RegoRules []string) v1alpha2.KubeeyeOpaResult {
+func VailOpaRulesResult(ctx context.Context, k8sResources kube.K8SResource, RegoRules []string) v1alpha2.KubeeyeOpaResult {
 	klog.Info("start Opa rule inspect")
 	auditPercent := &PercentOutput{}
 
@@ -234,7 +234,7 @@ func VailOpaRulesResult(ctx context.Context, auditResult *v1alpha2.Result, k8sRe
 	)
 	klog.Info("get inspect results")
 
-	OpaRuleResult := v1alpha2.KubeeyeOpaResult{}
+	RuleResult := v1alpha2.KubeeyeOpaResult{}
 	var results []v1alpha2.ResourceResult
 	ctxCancel, cancel := context.WithCancel(ctx)
 
@@ -243,15 +243,15 @@ func VailOpaRulesResult(ctx context.Context, auditResult *v1alpha2.Result, k8sRe
 		for {
 			select {
 			case <-ticker.C:
-				OpaRuleResult.Percent = auditPercent.AuditPercent // update kubeeye inspect percent
+				RuleResult.Percent = auditPercent.AuditPercent // update kubeeye inspect percent
 				ext := runtime.RawExtension{}
-				marshal, err := json.Marshal(OpaRuleResult)
+				marshal, err := json.Marshal(RuleResult)
 				if err != nil {
 					klog.Error(err, " failed marshal kubeeye result")
 					return
 				}
 				ext.Raw = marshal
-				auditResult.Result = ext
+				//auditResult.Result = ext
 			case <-ctx.Done():
 				return
 			}
@@ -266,15 +266,15 @@ func VailOpaRulesResult(ctx context.Context, auditResult *v1alpha2.Result, k8sRe
 
 	cancel()
 	scoreInfo := CalculateScore(results, k8sResources)
-	OpaRuleResult.Percent = 100
-	OpaRuleResult.ScoreInfo = scoreInfo
-	OpaRuleResult.ExtraInfo = v1alpha2.ExtraInfo{
+	RuleResult.Percent = 100
+	RuleResult.ScoreInfo = scoreInfo
+	RuleResult.ExtraInfo = v1alpha2.ExtraInfo{
 		WorkloadsCount: k8sResources.WorkloadsCount,
 		NamespacesList: k8sResources.NameSpacesList,
 	}
 
-	OpaRuleResult.ResourceResults = results
-	return OpaRuleResult
+	RuleResult.ResourceResults = results
+	return RuleResult
 }
 
 func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
@@ -386,6 +386,29 @@ func FileChangeRuleResult(ctx context.Context, rule []byte, namespace string, cl
 		return nil, nil
 	}
 	marshal, err := json.Marshal(fileChangeResult)
+	if err != nil {
+		return nil, err
+	}
+	return marshal, nil
+}
+
+func OpaRuleResult(ctx context.Context, rule []byte, clients *kube.KubernetesClient) ([]byte, error) {
+	k8sResources := kube.GetK8SResources(ctx, clients)
+	klog.Info("getting  Rego rules")
+
+	var opaRules []v1alpha2.OpaRule
+	err := json.Unmarshal(rule, &opaRules)
+	if err != nil {
+		fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
+
+	}
+	var RegoRules []string
+	for i := range opaRules {
+		RegoRules = append(RegoRules, opaRules[i].Rule)
+	}
+
+	result := VailOpaRulesResult(ctx, k8sResources, RegoRules)
+	marshal, err := json.Marshal(result)
 	if err != nil {
 		return nil, err
 	}

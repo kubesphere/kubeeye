@@ -55,6 +55,58 @@ spec:
                       type: string
                   type: object
                 type: array
+              opaResult:
+                description: kubeeye inspect result
+                properties:
+                  extraInfo:
+                    properties:
+                      namespacesList:
+                        items:
+                          type: string
+                        type: array
+                      workloadsCount:
+                        type: integer
+                    type: object
+                  percent:
+                    type: integer
+                  resourceResults:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        resourceType:
+                          type: string
+                        resultItems:
+                          items:
+                            properties:
+                              level:
+                                type: string
+                              message:
+                                type: string
+                              reason:
+                                type: string
+                            type: object
+                          type: array
+                      type: object
+                    type: array
+                  scoreInfo:
+                    properties:
+                      dangerous:
+                        type: integer
+                      ignore:
+                        type: integer
+                      passing:
+                        type: integer
+                      score:
+                        type: integer
+                      total:
+                        type: integer
+                      warning:
+                        type: integer
+                    type: object
+                type: object
               prometheusResult:
                 items:
                   items:
