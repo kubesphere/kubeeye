@@ -54,6 +54,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=kubeeye.kubesphere.io, Version=v1alpha2
 	case v1alpha2.SchemeGroupVersion.WithResource("inspectplans"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeeye().V1alpha2().InspectPlans().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("inspectresults"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeeye().V1alpha2().InspectResults().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("inspectrules"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeeye().V1alpha2().InspectRules().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("inspecttasks"):

@@ -1,6 +1,11 @@
 package utils
 
-import "fmt"
+import (
+	"bufio"
+	"fmt"
+	"github.com/sergi/go-diff/diffmatchpatch"
+	"strings"
+)
 
 func ArrayFind(s string, sub []string) (int, bool) {
 
@@ -11,12 +16,13 @@ func ArrayFind(s string, sub []string) (int, bool) {
 }
 
 func ArrayFinds(maps interface{}, f func(m string) bool) (int, bool, interface{}) {
+
 	switch maps.(type) {
 	case []string:
-		strings := maps.([]string)
-		for i := range strings {
-			if b := f(strings[i]); b {
-				return i, b, strings[i]
+		s := maps.([]string)
+		for i := range s {
+			if b := f(s[i]); b {
+				return i, b, s[i]
 			}
 
 		}
@@ -54,4 +60,21 @@ func SliceRemove(s string, o interface{}) interface{} {
 		return stringArray
 	}
 	return nil
+}
+
+func DiffString(base1 string, base2 string) []string {
+	dmp := diffmatchpatch.New()
+	diffs := dmp.DiffMain(base1, base2, false)
+	fmt.Println(dmp.DiffPrettyText(diffs))
+	scan := bufio.NewScanner(strings.NewReader(dmp.DiffPrettyText(diffs)))
+	lineNum := 1
+	var isseus []string
+	for scan.Scan() {
+		line := scan.Text()
+		if strings.Contains(line, "\x1b[3") {
+			isseus = append(isseus, fmt.Sprintf("%d行 %s\n", lineNum, line))
+		}
+		lineNum++
+	}
+	return isseus
 }

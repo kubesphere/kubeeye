@@ -19,6 +19,8 @@ package v1alpha2
 
 type InspectPlanExpansion interface{}
 
+type InspectResultExpansion interface{}
+
 type InspectRulesExpansion interface{}
 
 type InspectTaskExpansion interface{}

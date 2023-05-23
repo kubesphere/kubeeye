@@ -32,7 +32,7 @@ import (
 )
 
 // InspectRulesInformer provides access to a shared informer and lister for
-// InspectRules.
+// InspectRule.
 type InspectRulesInformer interface {
 	Informer() cache.SharedIndexInformer
 	Lister() v1alpha2.InspectRulesLister
@@ -44,14 +44,14 @@ type inspectRulesInformer struct {
 	namespace        string
 }
 
-// NewInspectRulesInformer constructs a new informer for InspectRules type.
+// NewInspectRulesInformer constructs a new informer for InspectRule type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewInspectRulesInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewFilteredInspectRulesInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredInspectRulesInformer constructs a new informer for InspectRules type.
+// NewFilteredInspectRulesInformer constructs a new informer for InspectRule type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredInspectRulesInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
@@ -70,7 +70,7 @@ func NewFilteredInspectRulesInformer(client versioned.Interface, namespace strin
 				return client.KubeeyeV1alpha2().InspectRules(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&kubeeyev1alpha2.InspectRules{},
+		&kubeeyev1alpha2.InspectRule{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *inspectRulesInformer) defaultInformer(client versioned.Interface, resyn
 }
 
 func (f *inspectRulesInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&kubeeyev1alpha2.InspectRules{}, f.defaultInformer)
+	return f.factory.InformerFor(&kubeeyev1alpha2.InspectRule{}, f.defaultInformer)
 }
 
 func (f *inspectRulesInformer) Lister() v1alpha2.InspectRulesLister {

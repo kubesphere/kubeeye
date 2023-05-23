@@ -19,9 +19,14 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/utils"
 	"github.com/prometheus/client_golang/api"
 	apiprometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
+	corev1 "k8s.io/api/core/v1"
+	kubeErr "k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	"net/http"
@@ -185,7 +190,7 @@ func MergeRegoRulesValidate(ctx context.Context, regoRulesChan []string, vfuncs 
 	return resultChan
 }
 
-func VailOpaRulesResult(ctx context.Context, auditResult *v1alpha2.InspectResult, k8sResources kube.K8SResource, RegoRules []string) v1alpha2.KubeeyeOpaResult {
+func VailOpaRulesResult(ctx context.Context, auditResult *v1alpha2.Result, k8sResources kube.K8SResource, RegoRules []string) v1alpha2.KubeeyeOpaResult {
 	klog.Info("start Opa rule inspect")
 	auditPercent := &PercentOutput{}
 
@@ -272,7 +277,13 @@ func VailOpaRulesResult(ctx context.Context, auditResult *v1alpha2.InspectResult
 	return OpaRuleResult
 }
 
-func MergePrometheusRulesResult(ctx context.Context, proRules []v1alpha2.PrometheusRule) map[string][]model.Samples {
+func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
+	var proRules []v1alpha2.PrometheusRule
+	err := json.Unmarshal(rule, &proRules)
+	if err != nil {
+		klog.Error(err, " Failed to marshal kubeeye result")
+		return nil, err
+	}
 
 	var proRuleResult []model.Samples
 	for _, proRule := range proRules {
@@ -293,11 +304,81 @@ func MergePrometheusRulesResult(ctx context.Context, proRules []v1alpha2.Prometh
 			klog.Error("unmarshal modal Samples failed", err)
 			continue
 		}
-
 		proRuleResult = append(proRuleResult, queryResults)
-
 	}
-	return map[string][]model.Samples{"result": proRuleResult}
+	if proRules == nil && len(proRules) == 0 {
+		return nil, nil
+	}
+	marshal, err := json.Marshal(proRuleResult)
+	if err != nil {
+		return nil, err
+	}
+	return marshal, nil
+}
+
+func FileChangeRuleResult(ctx context.Context, rule []byte, namespace string, clients *kube.KubernetesClient, ownerRef ...v1.OwnerReference) ([]byte, error) {
+
+	var fileRule []v1alpha2.FileChangeRule
+
+	err := json.Unmarshal(rule, &fileRule)
+	if err != nil {
+		klog.Error(err, " Failed to marshal kubeeye result")
+		return nil, err
+	}
+
+	var fileChangeResult []v1alpha2.FileChangeResultItem
+	for _, file := range fileRule {
+		resultItem := &v1alpha2.FileChangeResultItem{
+			FileName: file.Name,
+			Path:     file.Base,
+		}
+		baseFile, err := os.ReadFile(file.Base)
+		if err != nil {
+			klog.Error(err, ",Failed to open base file")
+			resultItem.Issues = []string{fmt.Sprintf("%s:The file does not exist", file.Name)}
+			fileChangeResult = append(fileChangeResult, *resultItem)
+			continue
+		}
+		baseFileName := fmt.Sprintf("%s-%s", constant.BaseFilePrefix, file.Name)
+		baseConfig, err := clients.ClientSet.CoreV1().ConfigMaps(namespace).Get(ctx, baseFileName, v1.GetOptions{})
+		if err != nil {
+			klog.Error(err, "Failed to open file. cause：file Do not exist")
+			if kubeErr.IsNotFound(err) {
+				var Immutable = true
+				baseConfigMap := &corev1.ConfigMap{
+					ObjectMeta: v1.ObjectMeta{
+						Name:            baseFileName,
+						Namespace:       namespace,
+						OwnerReferences: ownerRef,
+						Labels:          map[string]string{constant.LabelConfigType: constant.BaseFile},
+					},
+					Immutable:  &Immutable,
+					BinaryData: map[string][]byte{constant.FileChange: baseFile},
+				}
+				_, err := clients.ClientSet.CoreV1().ConfigMaps(namespace).Create(ctx, baseConfigMap, v1.CreateOptions{})
+				if err != nil {
+					resultItem.Issues = []string{fmt.Sprintf("%s:create configMap failed", file.Name)}
+					fileChangeResult = append(fileChangeResult, *resultItem)
+				}
+				continue
+			}
+		}
+		baseContent := baseConfig.BinaryData[constant.FileChange]
+		//baseContent configmap读取的基准内容  baseFile文件读取需要对比的内容
+		diffString := utils.DiffString(string(baseContent), string(baseFile))
+
+		resultItem.Issues = diffString
+		fileChangeResult = append(fileChangeResult, *resultItem)
+	}
+
+	if fileChangeResult == nil && len(fileChangeResult) == 0 {
+		return nil, nil
+	}
+	marshal, err := json.Marshal(fileChangeResult)
+	if err != nil {
+		return nil, err
+	}
+	return marshal, nil
 }
 
 // ValidateK8SResource validate kubernetes resource by rego, return the validate results.

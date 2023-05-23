@@ -29,7 +29,7 @@ import (
 type InspectRulesLister interface {
 	// List lists all InspectRules in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.InspectRules, err error)
+	List(selector labels.Selector) (ret []*v1alpha2.InspectRule, err error)
 	// InspectRules returns an object that can list and get InspectRules.
 	InspectRules(namespace string) InspectRulesNamespaceLister
 	InspectRulesListerExpansion
@@ -46,9 +46,9 @@ func NewInspectRulesLister(indexer cache.Indexer) InspectRulesLister {
 }
 
 // List lists all InspectRules in the indexer.
-func (s *inspectRulesLister) List(selector labels.Selector) (ret []*v1alpha2.InspectRules, err error) {
+func (s *inspectRulesLister) List(selector labels.Selector) (ret []*v1alpha2.InspectRule, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.InspectRules))
+		ret = append(ret, m.(*v1alpha2.InspectRule))
 	})
 	return ret, err
 }
@@ -58,15 +58,15 @@ func (s *inspectRulesLister) InspectRules(namespace string) InspectRulesNamespac
 	return inspectRulesNamespaceLister{indexer: s.indexer, namespace: namespace}
 }
 
-// InspectRulesNamespaceLister helps list and get InspectRules.
+// InspectRulesNamespaceLister helps list and get InspectRule.
 // All objects returned here must be treated as read-only.
 type InspectRulesNamespaceLister interface {
-	// List lists all InspectRules in the indexer for a given namespace.
+	// List lists all InspectRule in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.InspectRules, err error)
-	// Get retrieves the InspectRules from the indexer for a given namespace and name.
+	List(selector labels.Selector) (ret []*v1alpha2.InspectRule, err error)
+	// Get retrieves the InspectRule from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.InspectRules, error)
+	Get(name string) (*v1alpha2.InspectRule, error)
 	InspectRulesNamespaceListerExpansion
 }
 
@@ -77,16 +77,16 @@ type inspectRulesNamespaceLister struct {
 	namespace string
 }
 
-// List lists all InspectRules in the indexer for a given namespace.
-func (s inspectRulesNamespaceLister) List(selector labels.Selector) (ret []*v1alpha2.InspectRules, err error) {
+// List lists all InspectRule in the indexer for a given namespace.
+func (s inspectRulesNamespaceLister) List(selector labels.Selector) (ret []*v1alpha2.InspectRule, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.InspectRules))
+		ret = append(ret, m.(*v1alpha2.InspectRule))
 	})
 	return ret, err
 }
 
-// Get retrieves the InspectRules from the indexer for a given namespace and name.
-func (s inspectRulesNamespaceLister) Get(name string) (*v1alpha2.InspectRules, error) {
+// Get retrieves the InspectRule from the indexer for a given namespace and name.
+func (s inspectRulesNamespaceLister) Get(name string) (*v1alpha2.InspectRule, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err
@@ -94,5 +94,5 @@ func (s inspectRulesNamespaceLister) Get(name string) (*v1alpha2.InspectRules, e
 	if !exists {
 		return nil, errors.NewNotFound(v1alpha2.Resource("inspectrules"), name)
 	}
-	return obj.(*v1alpha2.InspectRules), nil
+	return obj.(*v1alpha2.InspectRule), nil
 }

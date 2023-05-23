@@ -28,6 +28,7 @@ import (
 type KubeeyeV1alpha2Interface interface {
 	RESTClient() rest.Interface
 	InspectPlansGetter
+	InspectResultsGetter
 	InspectRulesesGetter
 	InspectTasksGetter
 }
@@ -39,6 +40,10 @@ type KubeeyeV1alpha2Client struct {
 
 func (c *KubeeyeV1alpha2Client) InspectPlans(namespace string) InspectPlanInterface {
 	return newInspectPlans(c, namespace)
+}
+
+func (c *KubeeyeV1alpha2Client) InspectResults(namespace string) InspectResultInterface {
+	return newInspectResults(c, namespace)
 }
 
 func (c *KubeeyeV1alpha2Client) InspectRules(namespace string) InspectRulesInterface {

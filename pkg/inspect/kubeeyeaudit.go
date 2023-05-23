@@ -9,6 +9,8 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 )
@@ -60,7 +62,7 @@ func AuditCluster(ctx context.Context, kubeConfigPath string, additionalregorule
 	return nil
 }
 
-func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, taskName types.NamespacedName, auditResult *kubeeyev1alpha2.InspectResult) interface{} {
+func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, taskName types.NamespacedName, auditResult *kubeeyev1alpha2.Result) interface{} {
 	// get kubernetes resources and put into the channel.
 	klog.Info("starting get kubernetes resources")
 	k8sResources := kube.GetK8SResources(ctx, kubernetesClient)
@@ -88,13 +90,10 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 				fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
 				continue
 			}
-			return MergePrometheusRulesResult(ctx, proRules)
+			//return PrometheusRulesResult(ctx, proRules)
 		}
 	}
 
-	// ValidateResources Validate Kubernetes Resource, put the results into the channels.
-
-	//return k8sResources, RulesValidateChan, auditPercent
 	return nil
 }
 
@@ -126,4 +125,57 @@ func CalculateScore(fmResultss []kubeeyev1alpha2.ResourceResult, k8sResources ku
 	scoreInfo.Passing = countSuccess
 
 	return scoreInfo
+}
+
+func JobInspect(ctx context.Context, taskName string, taskNamespace string, resultName string, clients *kube.KubernetesClient, ruleType string) error {
+	task, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks(taskNamespace).Get(ctx, taskName, v1.GetOptions{})
+	apiVersion := clients.VersionClientSet.KubeeyeV1alpha2().RESTClient().APIVersion().String()
+	if err != nil || task.Spec.Rules == nil {
+		klog.Error(err, ",Failed to get file Change rule not found")
+		return err
+	}
+
+	var ownerRefBol = true
+	ownerRef := v1.OwnerReference{
+		APIVersion:         apiVersion,
+		Kind:               "InspectTask",
+		Name:               task.Name,
+		UID:                task.UID,
+		Controller:         &ownerRefBol,
+		BlockOwnerDeletion: &ownerRefBol,
+	}
+	var result []byte
+	switch ruleType {
+	case constant.Opa:
+		break
+	case constant.Prometheus:
+		result, err = PrometheusRulesResult(ctx, task.Spec.Rules[ruleType])
+		break
+	case constant.FileChange:
+		result, err = FileChangeRuleResult(ctx, task.Spec.Rules[ruleType], task.Namespace, clients, ownerRef)
+		break
+	}
+	if err != nil {
+		return err
+	}
+
+	if result == nil {
+		klog.Info("There are no new issues")
+		return nil
+	}
+	resultConfigMap := &corev1.ConfigMap{
+		ObjectMeta: v1.ObjectMeta{
+			Name:            resultName,
+			Namespace:       task.Namespace,
+			OwnerReferences: []v1.OwnerReference{ownerRef},
+			Labels:          map[string]string{constant.LabelName: task.Name, constant.LabelConfigType: constant.Result},
+		},
+		BinaryData: map[string][]byte{constant.Result: result},
+	}
+	_, err = clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Create(ctx, resultConfigMap, v1.CreateOptions{})
+	if err != nil {
+		return errors.New(fmt.Sprintf("create configMap failed. err:%s", err))
+	}
+
+	return nil
 }

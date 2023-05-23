@@ -40,7 +40,7 @@ import (
 
 type Audit struct {
 	TaskQueue   workqueue.RateLimitingInterface
-	TaskResults map[string]map[string]*kubeeyev1alpha2.InspectResult
+	TaskResults map[string]map[string]*kubeeyev1alpha2.Result
 	K8sClient   *kube.KubernetesClient
 	Cli         client.Client
 	TaskOnceMap map[types.NamespacedName]*sync.Once
@@ -112,7 +112,7 @@ func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName)
 		timeout = constant.DefaultTimeout
 	}
 
-	k.TaskResults[taskName.Name] = make(map[string]*kubeeyev1alpha2.InspectResult, len(auditTask.Spec.Auditors))
+	k.TaskResults[taskName.Name] = make(map[string]*kubeeyev1alpha2.Result, len(auditTask.Spec.Auditors))
 
 	for _, auditor := range auditTask.Spec.Auditors {
 		if auditor == "kubeeye" {
@@ -152,16 +152,16 @@ func (k *Audit) processAudit(ctx context.Context, taskName types.NamespacedName)
 				klog.Error(err, "inspect task is deleted")
 				return nil
 			}
-			if auditTask.Status.Phase == kubeeyev1alpha2.PhaseSucceeded {
-				return nil
-			}
+			//if auditTask.Status.Phase == kubeeyev1alpha2.PhaseSucceeded {
+			//	return nil
+			//}
 		}
 	}
 }
 
 func (k *Audit) KubeeyeAudit(taskName types.NamespacedName, ctx context.Context) {
 	klog.Infof("%s : start kubeeye inspect", taskName)
-	auditResult := &kubeeyev1alpha2.InspectResult{Name: "kubeeye", Phase: kubeeyev1alpha2.PhaseRunning}
+	auditResult := &kubeeyev1alpha2.Result{Name: "kubeeye", Phase: kubeeyev1alpha2.PhaseRunning}
 
 	k.TaskResults[taskName.Name]["kubeeye"] = auditResult
 
@@ -205,7 +205,7 @@ func (k *Audit) PluginsResult(w http.ResponseWriter, r *http.Request) {
 	ext := runtime.RawExtension{}
 
 	ext.Raw = []byte(pluginResult)
-	result := &kubeeyev1alpha2.InspectResult{
+	result := &kubeeyev1alpha2.Result{
 		Result: ext,
 		Name:   pluginName,
 		Phase:  kubeeyev1alpha2.PhaseSucceeded,

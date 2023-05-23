@@ -18,7 +18,11 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"github.com/kubesphere/kubeeye/pkg/utils"
+	v1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	"strconv"
 	"time"
 
 	"github.com/kubesphere/kubeeye/constant"
@@ -67,8 +71,6 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	err := r.Get(ctx, req.NamespacedName, inspectTask)
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
-			delete(r.Audit.TaskOnceMap, req.NamespacedName)
-			delete(r.Audit.TaskResults, inspectTask.Name)
 			klog.Infof("inspect task is not found;name:%s,namespect:%s\n", req.Name, req.Namespace)
 			return ctrl.Result{}, nil
 		}
@@ -96,60 +98,89 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			klog.Error("Failed to inspect plan add finalizers. ", err)
 			return ctrl.Result{}, err
 		}
-		delete(r.Audit.TaskOnceMap, req.NamespacedName)
-		delete(r.Audit.TaskResults, inspectTask.Name)
+
 		return ctrl.Result{}, nil
 	}
-
-	if inspectTask.Status.StartTimestamp.IsZero() { // if Audit task have not start, trigger kubeeye and plugin
-
-		// start Audit
-		r.Audit.AddTaskToQueue(req.NamespacedName)
-
+	// if Audit task have not start, trigger kubeeye and plugin
+	if inspectTask.Status.StartTimestamp.IsZero() {
 		inspectTask.Status.StartTimestamp = &metav1.Time{Time: time.Now()}
-		inspectTask.Status.Phase = kubeeyev1alpha2.PhaseRunning
-		// get cluster info : ClusterVersion, NodesCount, NamespaceCount
 		inspectTask.Status.ClusterInfo, err = r.getClusterInfo(ctx)
 		if err != nil {
 			klog.Error("failed to get cluster info. ", err)
 			return ctrl.Result{}, err
 		}
+		//JobPhase, err := r.createJobsInspect(ctx, inspectTask)
+		//if err != nil {
+		//	return ctrl.Result{}, err
+		//}
+		//inspectTask.Status.JobPhase = JobPhase
 		klog.Infof("%s start task ", req.Name)
 	} else {
-		if inspectTask.Status.Phase == kubeeyev1alpha2.PhaseSucceeded || inspectTask.Status.Phase == kubeeyev1alpha2.PhaseFailed {
-			// remove from processing queue
-			delete(r.Audit.TaskResults, inspectTask.Name)
+		if r.IsComplete(inspectTask) {
+			klog.Info("all job finished")
 			return ctrl.Result{}, nil
-		} else {
-			resultMap, ok := r.Audit.TaskResults[inspectTask.Name]
-			if !ok {
-				r.Audit.AddTaskToQueue(req.NamespacedName)
-				return ctrl.Result{}, nil
+		}
+
+		for i, job := range inspectTask.Status.JobPhase {
+			if job.Phase != kubeeyev1alpha2.PhaseRunning {
+				continue
 			}
-			var results []kubeeyev1alpha2.InspectResult
-			completed := 0
-			for _, auditor := range inspectTask.Spec.Auditors {
-				if result, ok := resultMap[string(auditor)]; ok {
-					results = append(results, *result)
-					if result.Phase == kubeeyev1alpha2.PhaseSucceeded {
-						completed++
+
+			jobs, err := r.K8sClients.ClientSet.BatchV1().Jobs(inspectTask.Namespace).Get(ctx, job.JobName, metav1.GetOptions{})
+			if err != nil {
+				klog.Error(err)
+				continue
+			}
+			if jobs.Status.CompletionTime != nil && !jobs.Status.CompletionTime.IsZero() && jobs.Status.Active == 0 {
+				configs, err := r.K8sClients.ClientSet.CoreV1().ConfigMaps(inspectTask.Namespace).Get(ctx, job.JobName, metav1.GetOptions{})
+				if err != nil {
+					klog.Error(err)
+					continue
+				}
+				switch jobs.Labels[constant.LabelResultName] {
+				case constant.Opa:
+					break
+				case constant.Prometheus:
+					klog.Info("进来了")
+					break
+				case constant.FileChange:
+					err = inspect.GetFileChangeResult(ctx, r.Client, jobs, configs, inspectTask)
+					if err != nil {
+						return ctrl.Result{}, err
 					}
+					break
+				default:
+					klog.Error("Unable to get results")
+					break
+				}
+				inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseSucceeded
+				err = r.K8sClients.ClientSet.CoreV1().ConfigMaps(inspectTask.Namespace).Delete(ctx, job.JobName, metav1.DeleteOptions{})
+				if err != nil {
+					klog.Errorf("failed to delete result for configMap:%s", job.JobName)
+					continue
 				}
 			}
-			inspectTask.Status.InspectResults = results
-			inspectTask.Status.CompleteItemCount = completed
+			if jobs.Status.Conditions != nil && jobs.Status.Conditions[0].Type == v1.JobFailed {
+				inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
+			}
 		}
 
 		timeout, err := time.ParseDuration(inspectTask.Spec.Timeout)
 		if err != nil {
 			timeout = constant.DefaultTimeout
 		}
-		if inspectTask.Status.CompleteItemCount == len(inspectTask.Spec.Auditors) {
-			inspectTask.Status.Phase = kubeeyev1alpha2.PhaseSucceeded
-			inspectTask.Status.EndTimestamp = &metav1.Time{Time: time.Now()}
-		} else if inspectTask.Status.StartTimestamp.Add(timeout).Before(time.Now()) {
-			inspectTask.Status.Phase = kubeeyev1alpha2.PhaseFailed
+		if inspectTask.Status.StartTimestamp.Add(timeout).Before(time.Now()) {
+			for i, job := range inspectTask.Status.JobPhase {
+				inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
+				var DeletePro = metav1.DeletePropagationBackground
+				err := r.K8sClients.ClientSet.BatchV1().Jobs(inspectTask.Namespace).Delete(ctx, job.JobName, metav1.DeleteOptions{PropagationPolicy: &DeletePro})
+				if err != nil {
+					klog.Errorf("failed to delete jobs for jobName:%s", job.JobName)
+					continue
+				}
+			}
 		}
+
 	}
 
 	err = r.Status().Update(ctx, inspectTask)
@@ -157,7 +188,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		klog.Error("failed to update inspect task. ", err)
 		return ctrl.Result{RequeueAfter: 60 * time.Second}, err
 	}
-	return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
+	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 }
 
 func (r *InspectTaskReconciler) getClusterInfo(ctx context.Context) (kubeeyev1alpha2.ClusterInfo, error) {
@@ -188,4 +219,108 @@ func (r *InspectTaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kubeeyev1alpha2.InspectTask{}).
 		Complete(r)
+}
+
+func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTask *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
+	var name = fmt.Sprintf("inspect-job-%s", strconv.Itoa(int(time.Now().Unix())))
+	var jobNames []kubeeyev1alpha2.JobPhase
+	for key := range inspectTask.Spec.Rules {
+		if key == constant.Prometheus || key == constant.Opa {
+			jobName, err := r.inspectJobsTemplate(ctx, name, inspectTask, "", constant.Prometheus)
+			if err != nil {
+				klog.Errorf("Failed to create Jobs for node name:%s,err:%s", err, err)
+				return nil, err
+			}
+			jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: jobName, Phase: kubeeyev1alpha2.PhaseRunning})
+		}
+		if key == constant.FileChange {
+			nodes, err := r.K8sClients.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+			if err != nil {
+				klog.Error("Failed to get nodes info", err)
+				return nil, err
+			}
+			for _, node := range nodes.Items {
+				jobName, err := r.inspectJobsTemplate(ctx, fmt.Sprintf("%s-%s", name, node.Name), inspectTask, node.Name, constant.FileChange)
+				if err != nil {
+					klog.Errorf("Failed to create Jobs for node name:%s,err:%s", err, err)
+					return nil, err
+				}
+				jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: jobName, Phase: kubeeyev1alpha2.PhaseRunning})
+			}
+
+		}
+	}
+
+	return jobNames, nil
+}
+
+func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName string, inspectTask *kubeeyev1alpha2.InspectTask, nodeName string, taskType string) (string, error) {
+	var ownerController = true
+	ownerRef := metav1.OwnerReference{
+		APIVersion:         inspectTask.APIVersion,
+		Kind:               inspectTask.Kind,
+		Name:               inspectTask.Name,
+		UID:                inspectTask.UID,
+		Controller:         &ownerController,
+		BlockOwnerDeletion: &ownerController,
+	}
+	var resetBack int32 = 5
+	var autoDelTime int32 = 30
+	inspectJob := v1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            jobName,
+			Namespace:       inspectTask.Namespace,
+			OwnerReferences: []metav1.OwnerReference{ownerRef},
+			Labels:          map[string]string{constant.LabelResultName: taskType},
+		},
+		Spec: v1.JobSpec{
+			BackoffLimit:            &resetBack,
+			TTLSecondsAfterFinished: &autoDelTime,
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{Name: "inspect-job-pod", Namespace: inspectTask.Namespace},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name:    "inspect-task-kubeeye",
+						Image:   "jw008/kubeeye:amd64",
+						Command: []string{"inspect"},
+						Args:    []string{taskType, "--task-name", inspectTask.Name, "--task-namespace", inspectTask.Namespace, "--result-name", jobName},
+						VolumeMounts: []corev1.VolumeMount{{
+							Name:      "root-path",
+							ReadOnly:  true,
+							MountPath: "/host",
+						}},
+						ImagePullPolicy: "Always",
+					}},
+					ServiceAccountName: "kubeeye-controller-manager",
+					NodeName:           nodeName,
+					RestartPolicy:      corev1.RestartPolicyNever,
+					Volumes: []corev1.Volume{{
+						Name: "root-path",
+						VolumeSource: corev1.VolumeSource{
+							HostPath: &corev1.HostPathVolumeSource{
+								Path: "/",
+							},
+						},
+					}},
+				},
+			},
+		},
+	}
+	err := r.Create(ctx, &inspectJob)
+
+	if err != nil {
+		klog.Error(err)
+		return "", err
+	}
+	return inspectJob.Name, nil
+}
+
+func (r *InspectTaskReconciler) IsComplete(task *kubeeyev1alpha2.InspectTask) bool {
+	for _, job := range task.Status.JobPhase {
+		if job.Phase == kubeeyev1alpha2.PhaseRunning {
+			return false
+		}
+	}
+
+	return true
 }

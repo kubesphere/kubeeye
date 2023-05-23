@@ -25,6 +25,14 @@ type InspectPlanListerExpansion interface{}
 // InspectPlanNamespaceLister.
 type InspectPlanNamespaceListerExpansion interface{}
 
+// InspectResultListerExpansion allows custom methods to be added to
+// InspectResultLister.
+type InspectResultListerExpansion interface{}
+
+// InspectResultNamespaceListerExpansion allows custom methods to be added to
+// InspectResultNamespaceLister.
+type InspectResultNamespaceListerExpansion interface{}
+
 // InspectRulesListerExpansion allows custom methods to be added to
 // InspectRulesLister.
 type InspectRulesListerExpansion interface{}

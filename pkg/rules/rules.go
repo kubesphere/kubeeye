@@ -73,11 +73,11 @@ func GetDefaultRegofile(path string) []map[string][]byte {
 
 func RegoToRuleYaml(path string) {
 	regofile := GetDefaultRegofile(path)
-	var inspectRules []kubeeyev1alpha2.InspectRules
+	var inspectRules []kubeeyev1alpha2.InspectRule
 
 	for _, m := range regofile {
 		var ruleItems []kubeeyev1alpha2.OpaRule
-		var inspectRule kubeeyev1alpha2.InspectRules
+		var inspectRule kubeeyev1alpha2.InspectRule
 		opaRule := kubeeyev1alpha2.OpaRule{}
 		var space string
 		opaRule.Name = strings.Replace(string(m["name"]), ".rego", "", -1)
@@ -106,14 +106,14 @@ func RegoToRuleYaml(path string) {
 			constant.LabelRuleTag:          space,
 		}
 		if inspectRule.Spec.Opas != nil {
-			ruleItems = append(ruleItems, *inspectRule.Spec.Opas...)
+			ruleItems = append(ruleItems, inspectRule.Spec.Opas...)
 		}
 
-		inspectRule.Spec.Opas = &ruleItems
+		inspectRule.Spec.Opas = ruleItems
 		inspectRule.Name = fmt.Sprintf("%s-%s", "kubeeye-inspectrules", strconv.Itoa(int(time.Now().Unix())))
 		inspectRule.Namespace = "kubeeye-system"
 		inspectRule.APIVersion = "kubeeye.kubesphere.io/v1alpha2"
-		inspectRule.Kind = "InspectRules"
+		inspectRule.Kind = "InspectRule"
 		inspectRules = append(inspectRules, inspectRule)
 	}
 

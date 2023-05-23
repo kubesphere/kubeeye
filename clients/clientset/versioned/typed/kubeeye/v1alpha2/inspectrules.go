@@ -35,17 +35,17 @@ type InspectRulesesGetter interface {
 	InspectRules(namespace string) InspectRulesInterface
 }
 
-// InspectRulesInterface has methods to work with InspectRules resources.
+// InspectRulesInterface has methods to work with InspectRule resources.
 type InspectRulesInterface interface {
-	Create(ctx context.Context, inspectRules *v1alpha2.InspectRules, opts v1.CreateOptions) (*v1alpha2.InspectRules, error)
-	Update(ctx context.Context, inspectRules *v1alpha2.InspectRules, opts v1.UpdateOptions) (*v1alpha2.InspectRules, error)
-	UpdateStatus(ctx context.Context, inspectRules *v1alpha2.InspectRules, opts v1.UpdateOptions) (*v1alpha2.InspectRules, error)
+	Create(ctx context.Context, inspectRules *v1alpha2.InspectRule, opts v1.CreateOptions) (*v1alpha2.InspectRule, error)
+	Update(ctx context.Context, inspectRules *v1alpha2.InspectRule, opts v1.UpdateOptions) (*v1alpha2.InspectRule, error)
+	UpdateStatus(ctx context.Context, inspectRules *v1alpha2.InspectRule, opts v1.UpdateOptions) (*v1alpha2.InspectRule, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha2.InspectRules, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha2.InspectRulesList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha2.InspectRule, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha2.InspectRuleList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.InspectRules, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.InspectRule, err error)
 	InspectRulesExpansion
 }
 
@@ -55,7 +55,7 @@ type inspectRuleses struct {
 	ns     string
 }
 
-// newInspectRuleses returns a InspectRules
+// newInspectRuleses returns a InspectRule
 func newInspectRuleses(c *KubeeyeV1alpha2Client, namespace string) *inspectRuleses {
 	return &inspectRuleses{
 		client: c.RESTClient(),
@@ -64,8 +64,8 @@ func newInspectRuleses(c *KubeeyeV1alpha2Client, namespace string) *inspectRules
 }
 
 // Get takes name of the inspectRules, and returns the corresponding inspectRules object, and an error if there is any.
-func (c *inspectRuleses) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.InspectRules, err error) {
-	result = &v1alpha2.InspectRules{}
+func (c *inspectRuleses) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.InspectRule, err error) {
+	result = &v1alpha2.InspectRule{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("inspectrules").
@@ -76,13 +76,13 @@ func (c *inspectRuleses) Get(ctx context.Context, name string, options v1.GetOpt
 	return
 }
 
-// List takes label and field selectors, and returns the list of InspectRules that match those selectors.
-func (c *inspectRuleses) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.InspectRulesList, err error) {
+// List takes label and field selectors, and returns the list of InspectRule that match those selectors.
+func (c *inspectRuleses) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.InspectRuleList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
 	}
-	result = &v1alpha2.InspectRulesList{}
+	result = &v1alpha2.InspectRuleList{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("inspectrules").
@@ -109,8 +109,8 @@ func (c *inspectRuleses) Watch(ctx context.Context, opts v1.ListOptions) (watch.
 }
 
 // Create takes the representation of a inspectRules and creates it.  Returns the server's representation of the inspectRules, and an error, if there is any.
-func (c *inspectRuleses) Create(ctx context.Context, inspectRules *v1alpha2.InspectRules, opts v1.CreateOptions) (result *v1alpha2.InspectRules, err error) {
-	result = &v1alpha2.InspectRules{}
+func (c *inspectRuleses) Create(ctx context.Context, inspectRules *v1alpha2.InspectRule, opts v1.CreateOptions) (result *v1alpha2.InspectRule, err error) {
+	result = &v1alpha2.InspectRule{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("inspectrules").
@@ -122,8 +122,8 @@ func (c *inspectRuleses) Create(ctx context.Context, inspectRules *v1alpha2.Insp
 }
 
 // Update takes the representation of a inspectRules and updates it. Returns the server's representation of the inspectRules, and an error, if there is any.
-func (c *inspectRuleses) Update(ctx context.Context, inspectRules *v1alpha2.InspectRules, opts v1.UpdateOptions) (result *v1alpha2.InspectRules, err error) {
-	result = &v1alpha2.InspectRules{}
+func (c *inspectRuleses) Update(ctx context.Context, inspectRules *v1alpha2.InspectRule, opts v1.UpdateOptions) (result *v1alpha2.InspectRule, err error) {
+	result = &v1alpha2.InspectRule{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("inspectrules").
@@ -137,8 +137,8 @@ func (c *inspectRuleses) Update(ctx context.Context, inspectRules *v1alpha2.Insp
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *inspectRuleses) UpdateStatus(ctx context.Context, inspectRules *v1alpha2.InspectRules, opts v1.UpdateOptions) (result *v1alpha2.InspectRules, err error) {
-	result = &v1alpha2.InspectRules{}
+func (c *inspectRuleses) UpdateStatus(ctx context.Context, inspectRules *v1alpha2.InspectRule, opts v1.UpdateOptions) (result *v1alpha2.InspectRule, err error) {
+	result = &v1alpha2.InspectRule{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("inspectrules").
@@ -179,8 +179,8 @@ func (c *inspectRuleses) DeleteCollection(ctx context.Context, opts v1.DeleteOpt
 }
 
 // Patch applies the patch and returns the patched inspectRules.
-func (c *inspectRuleses) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.InspectRules, err error) {
-	result = &v1alpha2.InspectRules{}
+func (c *inspectRuleses) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.InspectRule, err error) {
+	result = &v1alpha2.InspectRule{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("inspectrules").

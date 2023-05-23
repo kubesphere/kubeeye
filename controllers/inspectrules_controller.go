@@ -52,7 +52,7 @@ type InspectRulesReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
 func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
-	inspectRules := &kubeeyev1alpha2.InspectRules{}
+	inspectRules := &kubeeyev1alpha2.InspectRule{}
 
 	err := r.Get(ctx, req.NamespacedName, inspectRules)
 	if err != nil {
@@ -105,13 +105,13 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	total := 0
 	if inspectRules.Spec.Opas != nil {
-		total += len(*inspectRules.Spec.Opas)
+		total += len(inspectRules.Spec.Opas)
 	}
 	if inspectRules.Spec.Prometheus != nil {
-		total += len(*inspectRules.Spec.Prometheus)
+		total += len(inspectRules.Spec.Prometheus)
 	}
 	if inspectRules.Spec.FileChange != nil {
-		total += len(*inspectRules.Spec.FileChange)
+		total += len(inspectRules.Spec.FileChange)
 	}
 
 	copyInspectRules.Status.ImportTime = v1.Time{Time: time.Now()}
@@ -129,6 +129,6 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 // SetupWithManager sets up the controller with the Manager.
 func (r *InspectRulesReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&kubeeyev1alpha2.InspectRules{}).
+		For(&kubeeyev1alpha2.InspectRule{}).
 		Complete(r)
 }

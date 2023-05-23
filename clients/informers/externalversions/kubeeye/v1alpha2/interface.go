@@ -25,6 +25,8 @@ import (
 type Interface interface {
 	// InspectPlans returns a InspectPlanInformer.
 	InspectPlans() InspectPlanInformer
+	// InspectResults returns a InspectResultInformer.
+	InspectResults() InspectResultInformer
 	// InspectRules returns a InspectRulesInformer.
 	InspectRules() InspectRulesInformer
 	// InspectTasks returns a InspectTaskInformer.
@@ -45,6 +47,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // InspectPlans returns a InspectPlanInformer.
 func (v *version) InspectPlans() InspectPlanInformer {
 	return &inspectPlanInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// InspectResults returns a InspectResultInformer.
+func (v *version) InspectResults() InspectResultInformer {
+	return &inspectResultInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // InspectRules returns a InspectRulesInformer.

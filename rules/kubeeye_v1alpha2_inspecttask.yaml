@@ -3,4 +3,4 @@ kind: InspectTask
 metadata:
   name: inspecttask-sample
 spec:
-  # TODO(user): Add fields here
+  test: 1234

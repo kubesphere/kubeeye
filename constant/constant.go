@@ -8,11 +8,18 @@ const DefaultTimeout = 10 * time.Minute
 
 const DefaultNamespace = "kubeeye-system"
 
+const BaseFilePrefix = "kubeeye-base-file"
 const (
-	Rules      = "rules"
-	RuleType   = "ruleType"
 	Opa        = "opa"
+	FileChange = "filechange"
 	Prometheus = "prometheus"
+	BaseFile   = "baseFile"
+	Result     = "result"
 )
-const LabelName = "kubeeye.kubesphere.io/name"
-const LabelRuleTag = "kubeeye.kubesphere.io/rule-tag"
+
+const (
+	LabelName       = "kubeeye.kubesphere.io/name"
+	LabelResultName = "kubeeye.kubesphere.io/result"
+	LabelConfigType = "kubeeye.kubesphere.io/configType"
+	LabelRuleTag    = "kubeeye.kubesphere.io/rule-tag"
+)

@@ -37,23 +37,23 @@ type FakeInspectRuleses struct {
 
 var inspectrulesesResource = schema.GroupVersionResource{Group: "kubeeye.kubesphere.io", Version: "v1alpha2", Resource: "inspectrules"}
 
-var inspectrulesesKind = schema.GroupVersionKind{Group: "kubeeye.kubesphere.io", Version: "v1alpha2", Kind: "InspectRules"}
+var inspectrulesesKind = schema.GroupVersionKind{Group: "kubeeye.kubesphere.io", Version: "v1alpha2", Kind: "InspectRule"}
 
 // Get takes name of the inspectRules, and returns the corresponding inspectRules object, and an error if there is any.
-func (c *FakeInspectRuleses) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.InspectRules, err error) {
+func (c *FakeInspectRuleses) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.InspectRule, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(inspectrulesesResource, c.ns, name), &v1alpha2.InspectRules{})
+		Invokes(testing.NewGetAction(inspectrulesesResource, c.ns, name), &v1alpha2.InspectRule{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha2.InspectRules), err
+	return obj.(*v1alpha2.InspectRule), err
 }
 
-// List takes label and field selectors, and returns the list of InspectRules that match those selectors.
-func (c *FakeInspectRuleses) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.InspectRulesList, err error) {
+// List takes label and field selectors, and returns the list of InspectRule that match those selectors.
+func (c *FakeInspectRuleses) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.InspectRuleList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(inspectrulesesResource, inspectrulesesKind, c.ns, opts), &v1alpha2.InspectRulesList{})
+		Invokes(testing.NewListAction(inspectrulesesResource, inspectrulesesKind, c.ns, opts), &v1alpha2.InspectRuleList{})
 
 	if obj == nil {
 		return nil, err
@@ -63,8 +63,8 @@ func (c *FakeInspectRuleses) List(ctx context.Context, opts v1.ListOptions) (res
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1alpha2.InspectRulesList{ListMeta: obj.(*v1alpha2.InspectRulesList).ListMeta}
-	for _, item := range obj.(*v1alpha2.InspectRulesList).Items {
+	list := &v1alpha2.InspectRuleList{ListMeta: obj.(*v1alpha2.InspectRuleList).ListMeta}
+	for _, item := range obj.(*v1alpha2.InspectRuleList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -80,43 +80,43 @@ func (c *FakeInspectRuleses) Watch(ctx context.Context, opts v1.ListOptions) (wa
 }
 
 // Create takes the representation of a inspectRules and creates it.  Returns the server's representation of the inspectRules, and an error, if there is any.
-func (c *FakeInspectRuleses) Create(ctx context.Context, inspectRules *v1alpha2.InspectRules, opts v1.CreateOptions) (result *v1alpha2.InspectRules, err error) {
+func (c *FakeInspectRuleses) Create(ctx context.Context, inspectRules *v1alpha2.InspectRule, opts v1.CreateOptions) (result *v1alpha2.InspectRule, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(inspectrulesesResource, c.ns, inspectRules), &v1alpha2.InspectRules{})
+		Invokes(testing.NewCreateAction(inspectrulesesResource, c.ns, inspectRules), &v1alpha2.InspectRule{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha2.InspectRules), err
+	return obj.(*v1alpha2.InspectRule), err
 }
 
 // Update takes the representation of a inspectRules and updates it. Returns the server's representation of the inspectRules, and an error, if there is any.
-func (c *FakeInspectRuleses) Update(ctx context.Context, inspectRules *v1alpha2.InspectRules, opts v1.UpdateOptions) (result *v1alpha2.InspectRules, err error) {
+func (c *FakeInspectRuleses) Update(ctx context.Context, inspectRules *v1alpha2.InspectRule, opts v1.UpdateOptions) (result *v1alpha2.InspectRule, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(inspectrulesesResource, c.ns, inspectRules), &v1alpha2.InspectRules{})
+		Invokes(testing.NewUpdateAction(inspectrulesesResource, c.ns, inspectRules), &v1alpha2.InspectRule{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha2.InspectRules), err
+	return obj.(*v1alpha2.InspectRule), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeInspectRuleses) UpdateStatus(ctx context.Context, inspectRules *v1alpha2.InspectRules, opts v1.UpdateOptions) (*v1alpha2.InspectRules, error) {
+func (c *FakeInspectRuleses) UpdateStatus(ctx context.Context, inspectRules *v1alpha2.InspectRule, opts v1.UpdateOptions) (*v1alpha2.InspectRule, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(inspectrulesesResource, "status", c.ns, inspectRules), &v1alpha2.InspectRules{})
+		Invokes(testing.NewUpdateSubresourceAction(inspectrulesesResource, "status", c.ns, inspectRules), &v1alpha2.InspectRule{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha2.InspectRules), err
+	return obj.(*v1alpha2.InspectRule), err
 }
 
 // Delete takes name of the inspectRules and deletes it. Returns an error if one occurs.
 func (c *FakeInspectRuleses) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(inspectrulesesResource, c.ns, name, opts), &v1alpha2.InspectRules{})
+		Invokes(testing.NewDeleteActionWithOptions(inspectrulesesResource, c.ns, name, opts), &v1alpha2.InspectRule{})
 
 	return err
 }
@@ -125,17 +125,17 @@ func (c *FakeInspectRuleses) Delete(ctx context.Context, name string, opts v1.De
 func (c *FakeInspectRuleses) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(inspectrulesesResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &v1alpha2.InspectRulesList{})
+	_, err := c.Fake.Invokes(action, &v1alpha2.InspectRuleList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched inspectRules.
-func (c *FakeInspectRuleses) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.InspectRules, err error) {
+func (c *FakeInspectRuleses) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.InspectRule, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(inspectrulesesResource, c.ns, name, pt, data, subresources...), &v1alpha2.InspectRules{})
+		Invokes(testing.NewPatchSubresourceAction(inspectrulesesResource, c.ns, name, pt, data, subresources...), &v1alpha2.InspectRule{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha2.InspectRules), err
+	return obj.(*v1alpha2.InspectRule), err
 }

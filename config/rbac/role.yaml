@@ -55,6 +55,32 @@ rules:
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
+  - inspectresults
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - inspectresults/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
+  - inspectresults/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kubeeye.kubesphere.io
+  resources:
   - inspectrules
   verbs:
   - create

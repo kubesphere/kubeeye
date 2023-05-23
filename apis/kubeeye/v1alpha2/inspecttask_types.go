@@ -40,14 +40,18 @@ type InspectTaskStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	ClusterInfo       `json:"clusterInfo,omitempty"`
-	InspectResults    []InspectResult `json:"inspectResults,omitempty"`
-	Phase             Phase           `json:"phase,omitempty"`
-	CompleteItemCount int             `json:"completeItemCount,omitempty"`
-	StartTimestamp    *metav1.Time    `json:"startTimestamp,omitempty"`
-	EndTimestamp      *metav1.Time    `json:"endTimestamp,omitempty"`
+	InspectResults    []Result     `json:"inspectResults,omitempty"`
+	JobPhase          []JobPhase   `json:"phase,omitempty"`
+	CompleteItemCount int          `json:"completeItemCount,omitempty"`
+	StartTimestamp    *metav1.Time `json:"startTimestamp,omitempty"`
+	EndTimestamp      *metav1.Time `json:"endTimestamp,omitempty"`
 }
 
-type InspectResult struct {
+type JobPhase struct {
+	JobName string `json:"jobName,omitempty"`
+	Phase   Phase  `json:"phase,omitempty"`
+}
+type Result struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Result runtime.RawExtension `json:"result,omitempty"`
 	Name   string               `json:"pluginName,omitempty"`
@@ -128,4 +132,10 @@ type ScoreInfo struct {
 type ExtraInfo struct {
 	WorkloadsCount int      `json:"workloadsCount,omitempty"`
 	NamespacesList []string `json:"namespacesList,omitempty"`
+}
+
+type FileChangeResultItem struct {
+	FileName string   `json:"fileName,omitempty"`
+	Issues   []string `json:"issues,omitempty"`
+	Path     string   `json:"path,omitempty"`
 }

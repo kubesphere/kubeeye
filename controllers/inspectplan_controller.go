@@ -18,16 +18,15 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/klog/v2"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -124,27 +123,23 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 		klog.Error("create a new inspect task.", taskName)
 
-		if inspectPlan.Spec.MaxTasks > 0 {
-			for len(inspectPlan.Status.TaskNames) > inspectPlan.Spec.MaxTasks-1 {
-				for _, name := range inspectPlan.Status.TaskNames[0] {
-					err = r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks(inspectPlan.GetNamespace()).Delete(ctx, name, metav1.DeleteOptions{})
-
-					if err == nil || kubeErr.IsNotFound(err) {
-						inspectPlan.Status.TaskNames[0] = inspectPlan.Status.TaskNames[0][1:]
-					} else {
-						klog.Error("Failed to delete inspect task", err)
-					}
-				}
-				if inspectPlan.Status.TaskNames[0] == nil || len(inspectPlan.Status.TaskNames[0]) == 0 {
-					inspectPlan.Status.TaskNames = inspectPlan.Status.TaskNames[1:]
-				} else {
-					klog.Error("Failed to delete inspect task", err)
-				}
-			}
-		}
+		//if inspectPlan.Spec.MaxTasks > 0 {
+		//	for len(inspectPlan.Status.TaskNames) > inspectPlan.Spec.MaxTasks-1 {
+		//		for _, name := range inspectPlan.Status.TaskNames[0] {
+		//			err = r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks(inspectPlan.GetNamespace()).Delete(ctx, name, metav1.DeleteOptions{})
+		//
+		//			if err == nil || kubeErr.IsNotFound(err) {
+		//				inspectPlan.Status.TaskNames[0] = inspectPlan.Status.TaskNames[0][1:]
+		//			} else {
+		//				klog.Error("Failed to delete inspect task", err)
+		//			}
+		//		}
+		//
+		//	}
+		//}
 
 		inspectPlan.Status.LastScheduleTime = metav1.Time{Time: now}
-		inspectPlan.Status.LastTaskName = strings.Join(taskName, ",")
+		inspectPlan.Status.LastTaskName = taskName
 		inspectPlan.Status.TaskNames = append(inspectPlan.Status.TaskNames, taskName)
 		inspectPlan.Status.NextScheduleTime = metav1.Time{Time: schedule.Next(now)}
 		err = r.Status().Update(ctx, inspectPlan)
@@ -174,13 +169,7 @@ func nextScheduledTimeDuration(sched cron.Schedule, now time.Time) *time.Duratio
 	return &nextTime
 }
 
-func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) ([]string, error) {
-
-	rules, err := r.scanRules(inspectPlan, ctx)
-	if err != nil {
-		return nil, err
-	}
-	var taskNames []string
+func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (string, error) {
 	ownerController := true
 	ownerRef := metav1.OwnerReference{
 		APIVersion:         inspectPlan.APIVersion,
@@ -190,36 +179,34 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 		Controller:         &ownerController,
 		BlockOwnerDeletion: &ownerController,
 	}
+	rules, err := r.scanRules(inspectPlan, ctx)
+	if err != nil {
+		return "", err
+	}
 	audits := inspectPlan.Spec.Auditors
 	if len(audits) == 0 {
 		audits = append(audits, kubeeyev1alpha2.AuditorKubeeye)
 	}
 
-	for key, val := range rules {
-		var inspectTask kubeeyev1alpha2.InspectTask
-		inspectTask.Labels = map[string]string{constant.LabelName: inspectPlan.Name}
-		inspectTask.OwnerReferences = []metav1.OwnerReference{ownerRef}
-		inspectTask.Namespace = inspectPlan.Namespace
-		inspectTask.Spec.Auditors = audits
-		inspectTask.Spec.Timeout = inspectPlan.Spec.Timeout
-		marshal, err := json.Marshal(val)
-		if err != nil {
-			klog.Error("Failed to marshal", err)
-			return nil, err
-		}
-		inspectTask.Spec.Rules = map[string][]byte{key: marshal}
-		inspectTask.Name = fmt.Sprintf("%s-%s-%s", inspectPlan.Name, key, strconv.Itoa(int(time.Now().Unix())))
-		err = r.Client.Create(ctx, &inspectTask)
-		if err != nil {
-			klog.Error("create inspectTask failed", err)
-			return nil, err
-		}
-		taskNames = append(taskNames, inspectTask.Name)
+	var inspectTask kubeeyev1alpha2.InspectTask
+	inspectTask.Labels = map[string]string{constant.LabelName: inspectPlan.Name}
+	inspectTask.OwnerReferences = []metav1.OwnerReference{ownerRef}
+	inspectTask.Namespace = inspectPlan.Namespace
+	inspectTask.Spec.Auditors = audits
+	inspectTask.Spec.Timeout = inspectPlan.Spec.Timeout
+
+	inspectTask.Spec.Rules = rules
+	inspectTask.Name = fmt.Sprintf("%s-%s", inspectPlan.Name, strconv.Itoa(int(time.Now().Unix())))
+	err = r.Client.Create(ctx, &inspectTask)
+	if err != nil {
+		klog.Error("create inspectTask failed", err)
+		return "", err
 	}
-	return taskNames, nil
+
+	return inspectTask.Name, nil
 }
 
-func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (map[string]interface{}, error) {
+func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (map[string][]byte, error) {
 	if len(inspectPlan.Spec.Tag) == 0 && len(inspectPlan.Spec.RuleNames) == 0 {
 		return nil, errors.New("Failed to get tags and rule names")
 	}
@@ -239,7 +226,7 @@ func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPl
 		return nil, errors.Errorf("Failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
 	}
 
-	var resultRules = make(map[string]interface{})
+	var resultRules = make(map[string][]byte)
 
 	for _, item := range ruleLists.Items {
 
@@ -247,27 +234,46 @@ func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPl
 			var rules []kubeeyev1alpha2.OpaRule
 			val, result := resultRules[constant.Opa]
 			if result {
-				rules = val.([]kubeeyev1alpha2.OpaRule)
+				json.Unmarshal(val, &result)
+				//rules = val.([]kubeeyev1alpha2.OpaRule)
 			}
-			for _, opa := range *item.Spec.Opas {
+			for _, opa := range item.Spec.Opas {
 				rules = append(rules, opa)
 			}
-			resultRules[constant.Opa] = rules
+			marshal, _ := json.Marshal(rules)
+
+			resultRules[constant.Opa] = marshal
 
 		}
 		if item.Spec.Prometheus != nil {
 			var pro []kubeeyev1alpha2.PrometheusRule
 			val, result := resultRules[constant.Prometheus]
 			if result {
-				pro = val.([]kubeeyev1alpha2.PrometheusRule)
+				json.Unmarshal(val, &pro)
+				//pro = val.([]kubeeyev1alpha2.PrometheusRule)
 			}
-			for index := range *item.Spec.Prometheus {
+			for index := range item.Spec.Prometheus {
 				if "" != item.Spec.PrometheusEndpoint && len(item.Spec.PrometheusEndpoint) > 0 {
-					(*item.Spec.Prometheus)[index].Endpoint = item.Spec.PrometheusEndpoint
+					item.Spec.Prometheus[index].Endpoint = item.Spec.PrometheusEndpoint
 				}
-				pro = append(pro, (*item.Spec.Prometheus)[index])
+				pro = append(pro, item.Spec.Prometheus[index])
 			}
-			resultRules[constant.Prometheus] = pro
+			marshal, _ := json.Marshal(pro)
+			resultRules[constant.Prometheus] = marshal
+		}
+		if item.Spec.FileChange != nil {
+			var fileRule []kubeeyev1alpha2.FileChangeRule
+			val, result := resultRules[constant.FileChange]
+			if result {
+				//rules = val.([]kubeeyev1alpha2.FileChangeRule)
+				json.Unmarshal(val, &fileRule)
+			}
+			for _, fileChange := range item.Spec.FileChange {
+
+				fileRule = append(fileRule, fileChange)
+			}
+			marshal, _ := json.Marshal(fileRule)
+			resultRules[constant.FileChange] = marshal
 		}
 	}
 

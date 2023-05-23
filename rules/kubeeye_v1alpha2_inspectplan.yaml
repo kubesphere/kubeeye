@@ -4,7 +4,7 @@ metadata:
   name: inspectplan
   namespace: kubeeye-system
 spec:
-  schedule: "*/3 * * *  ?"
+  schedule: "*/30 * * *  ?"
   maxTasks: 10
   auditors:
     - kubeeye

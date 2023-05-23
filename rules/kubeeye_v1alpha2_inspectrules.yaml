@@ -1,9 +1,9 @@
 apiVersion: kubeeye.kubesphere.io/v1alpha2
-kind: InspectRules
+kind: InspectRule
 metadata:
   labels:
-    app.kubernetes.io/name: inspectrules
-    app.kubernetes.io/instance: inspectrules-sample
+    app.kubernetes.io/name: inspectrule
+    app.kubernetes.io/instance: inspectrule-sample
     app.kubernetes.io/part-of: kubeeye
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kubeeye
@@ -11,6 +11,11 @@ metadata:
   name: inspectrules-sample
   namespace: kubeeye-system
 spec:
+  fileChange:
+    - name: inspectplan
+      base: /Users/xiaoliu/Desktop/work/kubeeye/rules/kubeeye_v1alpha2_inspectplan.yaml
+    - name: inspecttask
+      base: /Users/xiaoliu/Desktop/work/kubeeye/rules/kubeeye_v1alpha2_inspecttask.yaml
 #  prometheusEndpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
   prometheus:
     - name: harbor_health
@@ -19,81 +24,81 @@ spec:
     - name: harbor_system_info
       rule: harbor_system_info==1
       endpoint: http://172.31.73.216:30258
-  opas:
-    - module: kubeeye_workloads_rego
-      name: imagePullPolicyRule
-      rule: |-
-        package kubeeye_workloads_rego
-
-        deny[msg] {
-            resource := input
-            type := resource.Object.kind
-            resourcename := resource.Object.metadata.name
-            resourcenamespace := resource.Object.metadata.namespace
-            type == "Pod"
-            level := "warning"
-
-            PodimagePullPolicyRule(resource)
-
-            msg := {
-                "Name": sprintf("%v", [resourcename]),
-                "Namespace": sprintf("%v", [resourcenamespace]),
-                "Type": sprintf("%v", [type]),
-                "Level": sprintf("%v", [level]),
-                "Message": "ImagePullPolicyNotAlways"
-            }
-        }
-
-        PodimagePullPolicyRule(resource) {
-            imagePullPolicy := resource.Object.spec.containers[_].imagePullPolicy
-            imagePullPolicy != "Always"
-        }
-
-        deny[msg] {
-            resource := input
-            type := resource.Object.kind
-            resourcename := resource.Object.metadata.name
-            resourcenamespace := resource.Object.metadata.namespace
-            workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
-            workloadsType[type]
-            level := "warning"
-
-            workloadsimagePullPolicyRule(resource)
-
-            msg := {
-                "Name": sprintf("%v", [resourcename]),
-                "Namespace": sprintf("%v", [resourcenamespace]),
-                "Type": sprintf("%v", [type]),
-                "Level": sprintf("%v", [level]),
-                "Message": "ImagePullPolicyNotAlways"
-            }
-        }
-
-        workloadsimagePullPolicyRule(resource) {
-            imagePullPolicy := resource.Object.spec.template.spec.containers[_].imagePullPolicy
-            imagePullPolicy != "Always"
-        }
-
-        deny[msg] {
-            resource := input
-            type := resource.Object.kind
-            resourcename := resource.Object.metadata.name
-            resourcenamespace := resource.Object.metadata.namespace
-            type == "CronJob"
-            level := "warning"
-
-            CronJobimagePullPolicyRule(resource)
-
-            msg := {
-                "Name": sprintf("%v", [resourcename]),
-                "Namespace": sprintf("%v", [resourcenamespace]),
-                "Type": sprintf("%v", [type]),
-                "Level": sprintf("%v", [level]),
-                "Message": "ImagePullPolicyNotAlways"
-            }
-        }
-
-        CronJobimagePullPolicyRule(resource) {
-            imagePullPolicy := resource.Object.spec.jobTemplate.spec.template.spec.containers[_].imagePullPolicy
-            imagePullPolicy != "Always"
-        }
+#  opas:
+#    - module: kubeeye_workloads_rego
+#      name: imagePullPolicyRule
+#      rule: |-
+#        package kubeeye_workloads_rego
+#
+#        deny[msg] {
+#            resource := input
+#            type := resource.Object.kind
+#            resourcename := resource.Object.metadata.name
+#            resourcenamespace := resource.Object.metadata.namespace
+#            type == "Pod"
+#            level := "warning"
+#
+#            PodimagePullPolicyRule(resource)
+#
+#            msg := {
+#                "Name": sprintf("%v", [resourcename]),
+#                "Namespace": sprintf("%v", [resourcenamespace]),
+#                "Type": sprintf("%v", [type]),
+#                "Level": sprintf("%v", [level]),
+#                "Message": "ImagePullPolicyNotAlways"
+#            }
+#        }
+#
+#        PodimagePullPolicyRule(resource) {
+#            imagePullPolicy := resource.Object.spec.containers[_].imagePullPolicy
+#            imagePullPolicy != "Always"
+#        }
+#
+#        deny[msg] {
+#            resource := input
+#            type := resource.Object.kind
+#            resourcename := resource.Object.metadata.name
+#            resourcenamespace := resource.Object.metadata.namespace
+#            workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
+#            workloadsType[type]
+#            level := "warning"
+#
+#            workloadsimagePullPolicyRule(resource)
+#
+#            msg := {
+#                "Name": sprintf("%v", [resourcename]),
+#                "Namespace": sprintf("%v", [resourcenamespace]),
+#                "Type": sprintf("%v", [type]),
+#                "Level": sprintf("%v", [level]),
+#                "Message": "ImagePullPolicyNotAlways"
+#            }
+#        }
+#
+#        workloadsimagePullPolicyRule(resource) {
+#            imagePullPolicy := resource.Object.spec.template.spec.containers[_].imagePullPolicy
+#            imagePullPolicy != "Always"
+#        }
+#
+#        deny[msg] {
+#            resource := input
+#            type := resource.Object.kind
+#            resourcename := resource.Object.metadata.name
+#            resourcenamespace := resource.Object.metadata.namespace
+#            type == "CronJob"
+#            level := "warning"
+#
+#            CronJobimagePullPolicyRule(resource)
+#
+#            msg := {
+#                "Name": sprintf("%v", [resourcename]),
+#                "Namespace": sprintf("%v", [resourcenamespace]),
+#                "Type": sprintf("%v", [type]),
+#                "Level": sprintf("%v", [level]),
+#                "Message": "ImagePullPolicyNotAlways"
+#            }
+#        }
+#
+#        CronJobimagePullPolicyRule(resource) {
+#            imagePullPolicy := resource.Object.spec.jobTemplate.spec.template.spec.containers[_].imagePullPolicy
+#            imagePullPolicy != "Always"
+#        }

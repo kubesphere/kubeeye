@@ -103,7 +103,7 @@ func main() {
 	}
 	au := &inspect.Audit{
 		TaskQueue:   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		TaskResults: make(map[string]map[string]*kubeeyev1alpha2.InspectResult),
+		TaskResults: make(map[string]map[string]*kubeeyev1alpha2.Result),
 		K8sClient:   clients,
 		Cli:         mgr.GetClient(),
 		TaskOnceMap: make(map[types.NamespacedName]*sync.Once),
@@ -130,11 +130,18 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "InspectTask")
 		os.Exit(1)
 	}
+	if err = (&controllers.InspectResultReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "InspectResult")
+		os.Exit(1)
+	}
 	if err = (&controllers.InspectRulesReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "InspectRules")
+		setupLog.Error(err, "unable to create controller", "controller", "InspectRule")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
