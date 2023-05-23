@@ -1,0 +1,12 @@
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectResult
+metadata:
+  labels:
+    app.kubernetes.io/name: inspectresult
+    app.kubernetes.io/instance: inspectresult-sample
+    app.kubernetes.io/part-of: kubeeye
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kubeeye
+  name: inspectresult-sample
+spec:
+  # TODO(user): Add fields here
