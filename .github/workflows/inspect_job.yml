@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - "kubeeye-dev"
-  pull_request:
-    branches:
-      - 'kubeeye-dev'
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -35,6 +32,6 @@ jobs:
         with:
           context: .
           file: Dockerfile_task
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: jw008/kubeeye:dev

@@ -13,7 +13,7 @@ metadata:
 spec:
   fileChange:
     - name: config-sample
-      base: /root/config-sample.yaml
+      base: /host/root/config-sample.yaml
     - name: inspecttask
       base: /Users/xiaoliu/Desktop/work/kubeeye/rules/kubeeye_v1alpha2_inspecttask.yaml
 #  prometheusEndpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
