@@ -7,6 +7,7 @@ COPY apis/ apis/
 COPY clients/ clients/
 COPY cmd/ cmd/
 COPY controllers/ controllers/
+COPY constant/ constant/
 COPY pkg/ pkg/
 COPY plugins/ plugins/
 
@@ -25,6 +26,7 @@ FROM alpine:3.15 as ke-manager
 WORKDIR /
 COPY --from=builder /go/bin/ke .
 COPY --from=builder /go/bin/ke-manager .
+RUN apk add --no-cache tzdata
 RUN addgroup -S kubeeye -g 1000 && adduser -S kubeeye -G kubeeye -u 1000
 USER 1000:1000
 
