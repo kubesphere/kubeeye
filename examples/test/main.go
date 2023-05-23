@@ -1,10 +1,5 @@
 package main
 
-import (
-	"fmt"
-	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-)
-
 func main() {
 
 	//cluster, _ := kube.GetKubeConfigInCluster()
@@ -96,10 +91,5 @@ func main() {
 	//get.Spec.Result.Raw = marshal
 	//_, err = clients.VersionClientSet.KubeeyeV1alpha2().InspectResults("kubeeye-system").Update(context.TODO(), get, metav1.UpdateOptions{})
 	//klog.Error(err)
-	fmt.Println(IsComplete(nil))
-}
-func IsComplete(jobs []kubeeyev1alpha2.JobPhase) (status bool) {
-
-	return status
-
+	//fmt.Println(IsComplete(nil))
 }
