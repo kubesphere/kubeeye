@@ -109,11 +109,11 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			klog.Error("failed to get cluster info. ", err)
 			return ctrl.Result{}, err
 		}
-		JobPhase, err := r.createJobsInspect(ctx, inspectTask)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-		inspectTask.Status.JobPhase = JobPhase
+		//JobPhase, err := r.createJobsInspect(ctx, inspectTask)
+		//if err != nil {
+		//	return ctrl.Result{}, err
+		//}
+		//inspectTask.Status.JobPhase = JobPhase
 		klog.Infof("%s start task ", req.Name)
 	} else {
 		if r.IsComplete(inspectTask) {

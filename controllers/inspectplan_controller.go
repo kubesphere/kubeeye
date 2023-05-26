@@ -234,12 +234,12 @@ func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPl
 			var rules []kubeeyev1alpha2.OpaRule
 			val, result := resultRules[constant.Opa]
 			if result {
-				json.Unmarshal(val, &result)
-				//rules = val.([]kubeeyev1alpha2.OpaRule)
+				_ = json.Unmarshal(val, &result)
 			}
-			for _, opa := range item.Spec.Opas {
-				rules = append(rules, opa)
-			}
+			//for _, opa := range item.Spec.Opas {
+			//	rules = append(rules, opa)
+			//}
+			rules = append(rules, item.Spec.Opas...)
 			marshal, _ := json.Marshal(rules)
 
 			resultRules[constant.Opa] = marshal
@@ -249,8 +249,7 @@ func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPl
 			var pro []kubeeyev1alpha2.PrometheusRule
 			val, result := resultRules[constant.Prometheus]
 			if result {
-				json.Unmarshal(val, &pro)
-				//pro = val.([]kubeeyev1alpha2.PrometheusRule)
+				_ = json.Unmarshal(val, &pro)
 			}
 			for index := range item.Spec.Prometheus {
 				if "" != item.Spec.PrometheusEndpoint && len(item.Spec.PrometheusEndpoint) > 0 {
@@ -265,15 +264,29 @@ func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPl
 			var fileRule []kubeeyev1alpha2.FileChangeRule
 			val, result := resultRules[constant.FileChange]
 			if result {
-				//rules = val.([]kubeeyev1alpha2.FileChangeRule)
-				json.Unmarshal(val, &fileRule)
+				_ = json.Unmarshal(val, &fileRule)
 			}
-			for _, fileChange := range item.Spec.FileChange {
-
-				fileRule = append(fileRule, fileChange)
-			}
+			//for _, fileChange := range item.Spec.FileChange {
+			//	fileRule = append(fileRule, fileChange)
+			//}
+			fileRule = append(fileRule, item.Spec.FileChange...)
 			marshal, _ := json.Marshal(fileRule)
 			resultRules[constant.FileChange] = marshal
+		}
+		if item.Spec.NodeInfoRule != nil {
+			var nodeRule kubeeyev1alpha2.NodeInfoRule
+			val, result := resultRules[constant.NodeInfo]
+			if result {
+				_ = json.Unmarshal(val, &nodeRule)
+			}
+			if item.Spec.NodeInfoRule.SysctlRule != nil {
+				nodeRule.SysctlRule = append(nodeRule.SysctlRule, item.Spec.NodeInfoRule.SysctlRule...)
+			}
+			if item.Spec.NodeInfoRule.SystemdRule != nil {
+				nodeRule.SystemdRule = append(nodeRule.SystemdRule, item.Spec.NodeInfoRule.SystemdRule...)
+			}
+			marshal, _ := json.Marshal(nodeRule)
+			resultRules[constant.NodeInfo] = marshal
 		}
 	}
 

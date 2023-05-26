@@ -31,6 +31,7 @@ type InspectResultSpec struct {
 	FileChangeResult []FileChangeResult    `json:"fileChangeResult,omitempty"`
 	PrometheusResult [][]map[string]string `json:"prometheusResult,omitempty"`
 	OpaResult        KubeeyeOpaResult      `json:"opaResult,omitempty"`
+	NodeInfoResult   NodeInfoResult        `json:"nodeInfoResult,omitempty"`
 }
 
 // InspectResultStatus defines the observed state of InspectResult
@@ -42,6 +43,16 @@ type InspectResultStatus struct {
 type FileChangeResult struct {
 	NodeName string                 `json:"nodeName,omitempty"`
 	Info     []FileChangeResultItem `json:"info,omitempty"`
+}
+
+type NodeInfoResult struct {
+	SysctlResult  []NodeResultItem `json:"name,omitempty"`
+	SystemdResult []NodeResultItem `json:"value,omitempty"`
+}
+
+type NodeResultItem struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 // +genclient

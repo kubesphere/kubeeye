@@ -155,6 +155,9 @@ func JobInspect(ctx context.Context, taskName string, taskNamespace string, resu
 	case constant.FileChange:
 		result, err = FileChangeRuleResult(ctx, task.Spec.Rules[ruleType], task.Namespace, clients, ownerRef)
 		break
+	case constant.NodeInfo:
+		result, err = NodeInfoRuleResult(ctx, task.Spec.Rules[ruleType])
+		break
 	}
 	if err != nil {
 		return err

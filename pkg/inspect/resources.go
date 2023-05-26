@@ -19,11 +19,13 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"github.com/prometheus/client_golang/api"
 	apiprometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/procfs"
 	corev1 "k8s.io/api/core/v1"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -327,6 +329,71 @@ func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
 	return marshal, nil
 }
 
+const (
+	DefaultProcPath = "/proc"
+)
+
+func NodeInfoRuleResult(ctx context.Context, rule []byte) ([]byte, error) {
+	var nodeRule v1alpha2.NodeInfoRule
+	var result v1alpha2.NodeInfoResult
+	err := json.Unmarshal(rule, &nodeRule)
+	if err != nil {
+		klog.Error(err, " Failed to marshal kubeeye result")
+		return nil, err
+	}
+	fs, err := procfs.NewFS(DefaultProcPath)
+	if err != nil {
+
+		return nil, err
+	}
+	if nodeRule.SysctlRule != nil && len(nodeRule.SysctlRule) > 0 {
+		for _, ctlRule := range nodeRule.SysctlRule {
+			val, err := fs.SysctlStrings(ctlRule)
+			var ctl v1alpha2.NodeResultItem
+			ctl.Name = ctlRule
+			if err != nil || len(val) == 0 {
+				ctl.Value = fmt.Sprintf("name:%s to does not exist", ctlRule)
+			} else {
+				ctl.Value = val[0]
+			}
+			result.SysctlResult = append(result.SysctlResult, ctl)
+		}
+	}
+	if nodeRule.SystemdRule != nil && len(nodeRule.SystemdRule) > 0 {
+		conn, err := dbus.NewWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		unitsContext, err := conn.ListUnitsContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range nodeRule.SystemdRule {
+			for _, status := range unitsContext {
+				if status.Name == fmt.Sprintf("%s.service", r) {
+					ctl := v1alpha2.NodeResultItem{
+						Name:  r,
+						Value: status.ActiveState,
+					}
+					result.SystemdResult = append(result.SystemdResult, ctl)
+					break
+				}
+			}
+		}
+	}
+
+	if len(result.SysctlResult) > 0 || len(result.SystemdResult) > 0 {
+		marshal, err := json.Marshal(result)
+		if err != nil {
+			return nil, err
+		}
+		return marshal, nil
+
+	}
+
+	return nil, nil
+}
+
 func FileChangeRuleResult(ctx context.Context, rule []byte, namespace string, clients *kube.KubernetesClient, ownerRef ...v1.OwnerReference) ([]byte, error) {
 
 	var fileRule []v1alpha2.FileChangeRule
@@ -400,7 +467,7 @@ func OpaRuleResult(ctx context.Context, rule []byte, clients *kube.KubernetesCli
 	err := json.Unmarshal(rule, &opaRules)
 	if err != nil {
 		fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
-
+		return nil, err
 	}
 	var RegoRules []string
 	for i := range opaRules {

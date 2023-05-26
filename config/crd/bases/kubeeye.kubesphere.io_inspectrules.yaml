@@ -48,6 +48,17 @@ spec:
                       type: string
                   type: object
                 type: array
+              nodeInfoRule:
+                properties:
+                  sysctlRule:
+                    items:
+                      type: string
+                    type: array
+                  systemdRule:
+                    items:
+                      type: string
+                    type: array
+                type: object
               opas:
                 items:
                   properties:

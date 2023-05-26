@@ -55,6 +55,27 @@ spec:
                       type: string
                   type: object
                 type: array
+              nodeInfoResult:
+                properties:
+                  name:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        value:
+                          type: string
+                      type: object
+                    type: array
+                  value:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        value:
+                          type: string
+                      type: object
+                    type: array
+                type: object
               opaResult:
                 description: kubeeye inspect result
                 properties:

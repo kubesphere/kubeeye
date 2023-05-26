@@ -1,14 +1,6 @@
 package main
 
-import (
-	"context"
-	"encoding/json"
-	"github.com/prometheus/client_golang/api"
-	apiprometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	"github.com/prometheus/common/model"
-	"k8s.io/klog/v2"
-	"time"
-)
+import "fmt"
 
 func main() {
 
@@ -90,31 +82,34 @@ func main() {
 	//}
 	//
 
-	client, err := api.NewClient(api.Config{
-		Address: "http://172.31.73.216:30258",
-	})
-	if err != nil {
-		klog.Error("create prometheus client failed", err)
-	}
-	queryApi := apiprometheusv1.NewAPI(client)
-	query, _, _ := queryApi.Query(context.TODO(), "harbor_health==1", time.Now())
-	marshal, err := json.Marshal(query)
-
-	var queryResults model.Samples
-	err = json.Unmarshal(marshal, &queryResults)
-	if err != nil {
-		klog.Error("unmarshal modal Samples failed", err)
-	}
-
-	var mapresult []map[string]string
-	for i, result := range queryResults {
-		temp := map[string]string{"value": result.Value.String(), "time": result.Timestamp.String()}
-		klog.Info(i, result)
-		for name, value := range result.Metric {
-			klog.Info(name, value)
-			temp[string(name)] = string(value)
-		}
-		mapresult = append(mapresult, temp)
-	}
-	klog.Info(mapresult)
+	config := []string{"net.ipv4.ip_forward",
+		"net.bridge.bridge-nf-call-arptables",
+		"net.bridge.bridge-nf-call-ip6tables",
+		"net.bridge.bridge-nf-call-iptables",
+		"net.ipv4.ip_local_reserved_ports",
+		"vm.max_map_count",
+		"vm.swappiness",
+		"vm.overcommit_memory",
+		"fs.inotify.max_user_instances",
+		"fs.inotify.max_user_watches",
+		"kernel.pid_max",
+		"fs.pipe-max-size",
+		"net.core.netdev_max_backlog",
+		"net.core.rmem_max",
+		"net.core.wmem_max",
+		"net.ipv4.tcp_max_syn_backlog",
+		"net.ipv4.neigh.default.gc_thresh1",
+		"net.ipv4.neigh.default.gc_thresh2",
+		"net.ipv4.neigh.default.gc_thresh3",
+		"net.core.somaxconn",
+		"net.ipv4.conf.all.rp_filter",
+		"net.ipv4.conf.default.rp_filter",
+		"net.ipv4.conf.eth0.arp_accept",
+		"fs.aio-max-nr",
+		"net.ipv4.tcp_retries2",
+		"net.ipv4.tcp_max_tw_buckets",
+		"net.ipv4.tcp_max_orphans",
+		"net.ipv4.udp_rmem_min",
+		"net.ipv4.udp_wmem_min"}
+	fmt.Println(config)
 }

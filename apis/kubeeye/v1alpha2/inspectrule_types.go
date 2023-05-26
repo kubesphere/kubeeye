@@ -31,11 +31,16 @@ type InspectRuleSpec struct {
 	Opas               []OpaRule        `yaml:"opas,omitempty" json:"opas,omitempty"`
 	Prometheus         []PrometheusRule `yaml:"prometheus,omitempty" json:"prometheus,omitempty"`
 	FileChange         []FileChangeRule `json:"fileChange,omitempty" yaml:"fileChange,omitempty"`
+	NodeInfoRule       *NodeInfoRule    `json:"nodeInfoRule,omitempty"`
 }
 type RuleItemBases struct {
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 	Rule string `json:"rule,omitempty" yaml:"rule,omitempty"`
 	Desc string `json:"desc,omitempty" yaml:"desc,omitempty"`
+}
+type NodeInfoRule struct {
+	SysctlRule  []string `json:"sysctlRule,omitempty"`
+	SystemdRule []string `json:"systemdRule,omitempty"`
 }
 
 type OpaRule struct {

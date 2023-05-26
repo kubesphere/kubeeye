@@ -113,6 +113,14 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if inspectRules.Spec.FileChange != nil {
 		total += len(inspectRules.Spec.FileChange)
 	}
+	if inspectRules.Spec.NodeInfoRule != nil {
+		if inspectRules.Spec.NodeInfoRule.SystemdRule != nil {
+			total += len(inspectRules.Spec.NodeInfoRule.SystemdRule)
+		}
+		if inspectRules.Spec.NodeInfoRule.SysctlRule != nil {
+			total += len(inspectRules.Spec.NodeInfoRule.SysctlRule)
+		}
+	}
 
 	copyInspectRules.Status.ImportTime = v1.Time{Time: time.Now()}
 	copyInspectRules.Status.State = kubeeyev1alpha2.ImportSuccess

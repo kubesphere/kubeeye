@@ -15,6 +15,7 @@ const (
 	Prometheus = "prometheus"
 	BaseFile   = "baseFile"
 	Result     = "result"
+	NodeInfo   = "nodeInfo"
 )
 
 const (
