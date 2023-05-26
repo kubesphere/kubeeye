@@ -330,7 +330,7 @@ func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
 }
 
 const (
-	DefaultProcPath = "/proc"
+	DefaultProcPath = "/host/proc"
 )
 
 func NodeInfoRuleResult(ctx context.Context, rule []byte) ([]byte, error) {
