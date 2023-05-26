@@ -29,9 +29,8 @@ RUN go mod tidy && go mod vendor
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETPLATFORM} go build   -o /workspace/inspect ./cmd/inspect-jobs
 
-ARG ARCH="amd64"
-ARG OS="linux"
-FROM quay.io/prometheus/busybox-${OS}-${ARCH}:latest
+
+FROM quay.io/prometheus/busybox-linux-amd64:latest
 #FROM --platform=${TARGETPLATFORM} alpine:3.16
 
 WORKDIR /
