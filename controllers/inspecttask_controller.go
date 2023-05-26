@@ -109,11 +109,11 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			klog.Error("failed to get cluster info. ", err)
 			return ctrl.Result{}, err
 		}
-		//JobPhase, err := r.createJobsInspect(ctx, inspectTask)
-		//if err != nil {
-		//	return ctrl.Result{}, err
-		//}
-		//inspectTask.Status.JobPhase = JobPhase
+		JobPhase, err := r.createJobsInspect(ctx, inspectTask)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		inspectTask.Status.JobPhase = JobPhase
 		klog.Infof("%s start task ", req.Name)
 	} else {
 		if r.IsComplete(inspectTask) {
@@ -155,6 +155,9 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 					if err != nil {
 						return ctrl.Result{}, err
 					}
+					break
+				case constant.NodeInfo:
+					err = inspect.GetNodeInfoResult(ctx, r.Client, configs, inspectTask)
 					break
 				default:
 					klog.Error("Unable to get results")
@@ -232,7 +235,7 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 	var name = fmt.Sprintf("inspect-job-%s", strconv.Itoa(int(time.Now().Unix())))
 	var jobNames []kubeeyev1alpha2.JobPhase
 	for key := range inspectTask.Spec.Rules {
-		if key == constant.Prometheus || key == constant.Opa {
+		if key == constant.Prometheus || key == constant.Opa || key == constant.NodeInfo {
 			jobName, err := r.inspectJobsTemplate(ctx, fmt.Sprintf("%s-%s", name, key), inspectTask, "", key)
 			if err != nil {
 				klog.Errorf("Failed to create Jobs for node name:%s,err:%s", err, err)

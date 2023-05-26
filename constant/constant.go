@@ -13,9 +13,9 @@ const (
 	Opa        = "opa"
 	FileChange = "filechange"
 	Prometheus = "prometheus"
-	BaseFile   = "baseFile"
+	BaseFile   = "basefile"
 	Result     = "result"
-	NodeInfo   = "nodeInfo"
+	NodeInfo   = "nodeinfo"
 )
 
 const (

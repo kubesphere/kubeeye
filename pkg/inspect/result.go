@@ -125,3 +125,33 @@ func GetOpaResult(ctx context.Context, c client.Client, result *corev1.ConfigMap
 	}
 	return nil
 }
+
+func GetNodeInfoResult(ctx context.Context, c client.Client, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+	var nodeInfoResult kubeeyev1alpha2.NodeInfoResult
+	err := json.Unmarshal(result.BinaryData[constant.Result], &nodeInfoResult)
+	if err != nil {
+		return err
+	}
+	var ownerRefBol = true
+	resultRef := metav1.OwnerReference{
+		APIVersion:         task.APIVersion,
+		Kind:               task.Kind,
+		Name:               task.Name,
+		UID:                task.UID,
+		Controller:         &ownerRefBol,
+		BlockOwnerDeletion: &ownerRefBol,
+	}
+
+	var inspectResult kubeeyev1alpha2.InspectResult
+	inspectResult.Name = fmt.Sprintf("%s-%s", task.Name, constant.NodeInfo)
+	inspectResult.Namespace = task.Namespace
+	inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
+
+	inspectResult.Spec.NodeInfoResult = nodeInfoResult
+	err = c.Create(ctx, &inspectResult)
+	if err != nil {
+		klog.Error("Failed to create inspect result", err)
+		return err
+	}
+	return nil
+}
