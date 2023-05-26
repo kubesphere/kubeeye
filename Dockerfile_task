@@ -37,4 +37,4 @@ WORKDIR /
 
 COPY --from=builder /workspace/inspect /usr/local/bin
 
-ENTRYPOINT ["inspecet"]
+ENTRYPOINT ["/usr/local/bin/inspecet"]
