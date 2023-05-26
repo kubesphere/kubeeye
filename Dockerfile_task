@@ -35,6 +35,6 @@ FROM quay.io/prometheus/busybox-linux-amd64:latest
 
 WORKDIR /
 
-COPY --from=builder /workspace/inspect /usr/local/bin
+COPY --from=builder /workspace/inspect /bin/inspect
 
-ENTRYPOINT ["/usr/local/bin/inspecet"]
+ENTRYPOINT ["/bin/inspecet"]
