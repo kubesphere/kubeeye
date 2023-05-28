@@ -48,8 +48,9 @@ type InspectTaskStatus struct {
 }
 
 type JobPhase struct {
-	JobName string `json:"jobName,omitempty"`
-	Phase   Phase  `json:"phase,omitempty"`
+	JobName  string `json:"jobName,omitempty"`
+	NodeName string `json:"nodeName,omitempty"`
+	Phase    Phase  `json:"phase,omitempty"`
 }
 type Result struct {
 	// +kubebuilder:pruning:PreserveUnknownFields

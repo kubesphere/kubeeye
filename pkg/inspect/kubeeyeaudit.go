@@ -79,7 +79,7 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 			}
 			var RegoRules []string
 			for i := range opaRules {
-				RegoRules = append(RegoRules, opaRules[i].Rule)
+				RegoRules = append(RegoRules, *opaRules[i].Rule)
 			}
 
 			//return VailOpaRulesResult(ctx, k8sResources, RegoRules)
@@ -153,10 +153,7 @@ func JobInspect(ctx context.Context, taskName string, taskNamespace string, resu
 		result, err = PrometheusRulesResult(ctx, task.Spec.Rules[ruleType])
 		break
 	case constant.FileChange:
-		result, err = FileChangeRuleResult(ctx, task.Spec.Rules[ruleType], task.Namespace, clients, ownerRef)
-		break
-	case constant.NodeInfo:
-		result, err = NodeInfoRuleResult(ctx, task.Spec.Rules[ruleType])
+		result, err = FileChangeRuleResult(ctx, task, clients, ownerRef)
 		break
 	}
 	if err != nil {

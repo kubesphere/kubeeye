@@ -20,8 +20,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/coreos/go-systemd/v22/dbus"
+	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/utils"
+	"github.com/open-policy-agent/opa/rego"
 	"github.com/prometheus/client_golang/api"
 	apiprometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
@@ -29,18 +32,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	"net/http"
 	"os"
 	"sync"
 	"time"
-
-	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-
-	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/open-policy-agent/opa/rego"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var lock sync.Mutex
@@ -297,7 +295,7 @@ func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
 			continue
 		}
 		queryApi := apiprometheusv1.NewAPI(client)
-		query, _, _ := queryApi.Query(ctx, proRule.Rule, time.Now())
+		query, _, _ := queryApi.Query(ctx, *proRule.Rule, time.Now())
 		marshal, err := json.Marshal(query)
 
 		var queryResults model.Samples
@@ -330,36 +328,103 @@ func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
 }
 
 const (
-	DefaultProcPath = "/host/proc"
+	DefaultProcPath = "/proc"
 )
 
-func NodeInfoRuleResult(ctx context.Context, rule []byte) ([]byte, error) {
-	var nodeRule v1alpha2.NodeInfoRule
-	var result v1alpha2.NodeInfoResult
-	err := json.Unmarshal(rule, &nodeRule)
-	if err != nil {
-		klog.Error(err, " Failed to marshal kubeeye result")
-		return nil, err
-	}
-	fs, err := procfs.NewFS(DefaultProcPath)
-	if err != nil {
+func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clients *kube.KubernetesClient, ownerRef ...v1.OwnerReference) ([]byte, error) {
+	var nodeInfoResult v1alpha2.NodeInfoResult
+	fileBytes, ok := task.Spec.Rules[constant.FileChange]
 
-		return nil, err
-	}
-	if nodeRule.SysctlRule != nil && len(nodeRule.SysctlRule) > 0 {
-		for _, ctlRule := range nodeRule.SysctlRule {
-			val, err := fs.SysctlStrings(ctlRule)
-			var ctl v1alpha2.NodeResultItem
-			ctl.Name = ctlRule
-			if err != nil || len(val) == 0 {
-				ctl.Value = fmt.Sprintf("name:%s to does not exist", ctlRule)
-			} else {
-				ctl.Value = val[0]
+	if ok {
+		var fileRule []v1alpha2.FileChangeRule
+		err := json.Unmarshal(fileBytes, &fileRule)
+		if err != nil {
+			klog.Error(err, " Failed to marshal kubeeye result")
+			return nil, err
+		}
+		var fileChangeResult []v1alpha2.FileChangeResultItem
+		for _, file := range fileRule {
+			resultItem := &v1alpha2.FileChangeResultItem{
+				FileName: file.Name,
+				Path:     file.Path,
 			}
-			result.SysctlResult = append(result.SysctlResult, ctl)
+			baseFile, fileErr := os.ReadFile(file.Path)
+			if fileErr != nil {
+				klog.Error(err, ",Failed to open base file")
+				resultItem.Issues = []string{fmt.Sprintf("%s:The file does not exist", file.Name)}
+				fileChangeResult = append(fileChangeResult, *resultItem)
+				continue
+			}
+			baseFileName := fmt.Sprintf("%s-%s", constant.BaseFilePrefix, file.Name)
+			baseConfig, err := clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Get(ctx, baseFileName, v1.GetOptions{})
+			if err != nil {
+				klog.Error(err, "Failed to open file. cause：file Do not exist")
+				if kubeErr.IsNotFound(err) {
+					var Immutable = true
+					baseConfigMap := &corev1.ConfigMap{
+						ObjectMeta: v1.ObjectMeta{
+							Name:            baseFileName,
+							Namespace:       task.Namespace,
+							OwnerReferences: ownerRef,
+							Labels:          map[string]string{constant.LabelConfigType: constant.BaseFile},
+						},
+						Immutable:  &Immutable,
+						BinaryData: map[string][]byte{constant.FileChange: baseFile},
+					}
+					_, err := clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Create(ctx, baseConfigMap, v1.CreateOptions{})
+					if err != nil {
+						resultItem.Issues = []string{fmt.Sprintf("%s:create configMap failed", file.Name)}
+						fileChangeResult = append(fileChangeResult, *resultItem)
+					}
+					continue
+				}
+			}
+			baseContent := baseConfig.BinaryData[constant.FileChange]
+			//baseContent configmap读取的基准内容  baseFile文件读取需要对比的内容
+			diffString := utils.DiffString(string(baseContent), string(baseFile))
+
+			resultItem.Issues = diffString
+			fileChangeResult = append(fileChangeResult, *resultItem)
 		}
 	}
-	if nodeRule.SystemdRule != nil && len(nodeRule.SystemdRule) > 0 {
+
+	sysctlBytes, ok := task.Spec.Rules[constant.Sysctl]
+	if ok {
+		var sysctl []v1alpha2.SysRule
+		err := json.Unmarshal(sysctlBytes, &sysctl)
+		if err != nil {
+			klog.Error(err, " Failed to marshal kubeeye result")
+			return nil, err
+		}
+		fs, err := procfs.NewFS(DefaultProcPath)
+		if err != nil {
+			return nil, err
+		}
+		for _, sysRule := range sysctl {
+			ctlRule, err := fs.SysctlStrings(sysRule.Name)
+			var ctl v1alpha2.NodeResultItem
+			ctl.Name = sysRule.Name
+			if err != nil || len(ctlRule) == 0 {
+				errVal := fmt.Sprintf("name:%s to does not exist", ctlRule)
+				ctl.Value = &errVal
+			} else {
+				ctl.Value = &ctlRule[0]
+			}
+
+			nodeInfoResult.SysctlResult = append(nodeInfoResult.SysctlResult, ctl)
+		}
+
+	}
+	systemdBytes, ok := task.Spec.Rules[constant.Systemd]
+
+	if ok {
+		var systemd []v1alpha2.SysRule
+		err := json.Unmarshal(systemdBytes, &systemd)
+		if err != nil {
+			klog.Error(err, " Failed to marshal kubeeye result")
+			return nil, err
+		}
+
 		conn, err := dbus.NewWithContext(ctx)
 		if err != nil {
 			return nil, err
@@ -368,91 +433,25 @@ func NodeInfoRuleResult(ctx context.Context, rule []byte) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range nodeRule.SystemdRule {
+		for _, r := range systemd {
+			var ctl v1alpha2.NodeResultItem
+			ctl.Name = r.Name
 			for _, status := range unitsContext {
-				if status.Name == fmt.Sprintf("%s.service", r) {
-					ctl := v1alpha2.NodeResultItem{
-						Name:  r,
-						Value: status.ActiveState,
-					}
-					result.SystemdResult = append(result.SystemdResult, ctl)
+				if status.Name == fmt.Sprintf("%s.service", r.Name) {
+					ctl.Value = &status.ActiveState
+					nodeInfoResult.SystemdResult = append(nodeInfoResult.SystemdResult, ctl)
 					break
 				}
 			}
-		}
-	}
-
-	if len(result.SysctlResult) > 0 || len(result.SystemdResult) > 0 {
-		marshal, err := json.Marshal(result)
-		if err != nil {
-			return nil, err
-		}
-		return marshal, nil
-
-	}
-
-	return nil, nil
-}
-
-func FileChangeRuleResult(ctx context.Context, rule []byte, namespace string, clients *kube.KubernetesClient, ownerRef ...v1.OwnerReference) ([]byte, error) {
-
-	var fileRule []v1alpha2.FileChangeRule
-
-	err := json.Unmarshal(rule, &fileRule)
-	if err != nil {
-		klog.Error(err, " Failed to marshal kubeeye result")
-		return nil, err
-	}
-
-	var fileChangeResult []v1alpha2.FileChangeResultItem
-	for _, file := range fileRule {
-		resultItem := &v1alpha2.FileChangeResultItem{
-			FileName: file.Name,
-			Path:     file.Base,
-		}
-		baseFile, err := os.ReadFile(file.Base)
-		if err != nil {
-			klog.Error(err, ",Failed to open base file")
-			resultItem.Issues = []string{fmt.Sprintf("%s:The file does not exist", file.Name)}
-			fileChangeResult = append(fileChangeResult, *resultItem)
-			continue
-		}
-		baseFileName := fmt.Sprintf("%s-%s", constant.BaseFilePrefix, file.Name)
-		baseConfig, err := clients.ClientSet.CoreV1().ConfigMaps(namespace).Get(ctx, baseFileName, v1.GetOptions{})
-		if err != nil {
-			klog.Error(err, "Failed to open file. cause：file Do not exist")
-			if kubeErr.IsNotFound(err) {
-				var Immutable = true
-				baseConfigMap := &corev1.ConfigMap{
-					ObjectMeta: v1.ObjectMeta{
-						Name:            baseFileName,
-						Namespace:       namespace,
-						OwnerReferences: ownerRef,
-						Labels:          map[string]string{constant.LabelConfigType: constant.BaseFile},
-					},
-					Immutable:  &Immutable,
-					BinaryData: map[string][]byte{constant.FileChange: baseFile},
-				}
-				_, err := clients.ClientSet.CoreV1().ConfigMaps(namespace).Create(ctx, baseConfigMap, v1.CreateOptions{})
-				if err != nil {
-					resultItem.Issues = []string{fmt.Sprintf("%s:create configMap failed", file.Name)}
-					fileChangeResult = append(fileChangeResult, *resultItem)
-				}
-				continue
+			if ctl.Value == nil {
+				errVal := fmt.Sprintf("name:%s to does not exist", r.Name)
+				ctl.Value = &errVal
 			}
+			nodeInfoResult.SystemdResult = append(nodeInfoResult.SystemdResult, ctl)
 		}
-		baseContent := baseConfig.BinaryData[constant.FileChange]
-		//baseContent configmap读取的基准内容  baseFile文件读取需要对比的内容
-		diffString := utils.DiffString(string(baseContent), string(baseFile))
-
-		resultItem.Issues = diffString
-		fileChangeResult = append(fileChangeResult, *resultItem)
 	}
 
-	if fileChangeResult == nil && len(fileChangeResult) == 0 {
-		return nil, nil
-	}
-	marshal, err := json.Marshal(fileChangeResult)
+	marshal, err := json.Marshal(nodeInfoResult)
 	if err != nil {
 		return nil, err
 	}
@@ -471,7 +470,7 @@ func OpaRuleResult(ctx context.Context, rule []byte, clients *kube.KubernetesCli
 	}
 	var RegoRules []string
 	for i := range opaRules {
-		RegoRules = append(RegoRules, opaRules[i].Rule)
+		RegoRules = append(RegoRules, *opaRules[i].Rule)
 	}
 
 	result := VailOpaRulesResult(ctx, k8sResources, RegoRules)

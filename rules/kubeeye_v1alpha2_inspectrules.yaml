@@ -11,17 +11,24 @@ metadata:
   name: inspectrules-sample
   namespace: kubeeye-system
 spec:
-  nodeInfoRule:
-    sysctlRule:
-      - vm.max_map_count
-    systemdRule:
-      - docker
+  sysctl:
+    - name: vm.max_map_count
+      rule: vm.max_map_count == 1
+      nodeName: node1
+#      nodeSelector:
+#        ope: XXX
+  systemd:
+    - name: docker
+      rule: docker == active
+      nodeName: node1
+#      nodeSelector:
+#        ope: XXX
 #  fileChange:
 #    - name: config-sample
-#      base: /host/root/config-sample.yaml
+#      path: /host/root/config-sample.yaml
 #    - name: inspecttask
-#      base: /Users/xiaoliu/Desktop/work/kubeeye/rules/kubeeye_v1alpha2_inspecttask.yaml
-##  prometheusEndpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
+#      path: /Users/xiaoliu/Desktop/work/kubeeye/rules/kubeeye_v1alpha2_inspecttask.yaml
+  prometheusEndpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
 #  prometheus:
 #    - name: harbor_health
 #      rule: harbor_health==1

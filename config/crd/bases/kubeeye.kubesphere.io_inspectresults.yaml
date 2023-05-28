@@ -35,10 +35,10 @@ spec:
           spec:
             description: InspectResultSpec defines the desired state of InspectResult
             properties:
-              fileChangeResult:
-                items:
+              nodeInfoResult:
+                additionalProperties:
                   properties:
-                    info:
+                    fileChangeResult:
                       items:
                         properties:
                           fileName:
@@ -51,30 +51,35 @@ spec:
                             type: string
                         type: object
                       type: array
-                    nodeName:
-                      type: string
+                    nodeInfo:
+                      additionalProperties:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      type: object
+                    sysctlResult:
+                      items:
+                        properties:
+                          assert:
+                            type: boolean
+                          name:
+                            type: string
+                          value:
+                            type: string
+                        type: object
+                      type: array
+                    systemdResult:
+                      items:
+                        properties:
+                          assert:
+                            type: boolean
+                          name:
+                            type: string
+                          value:
+                            type: string
+                        type: object
+                      type: array
                   type: object
-                type: array
-              nodeInfoResult:
-                properties:
-                  name:
-                    items:
-                      properties:
-                        name:
-                          type: string
-                        value:
-                          type: string
-                      type: object
-                    type: array
-                  value:
-                    items:
-                      properties:
-                        name:
-                          type: string
-                        value:
-                          type: string
-                      type: object
-                    type: array
                 type: object
               opaResult:
                 description: kubeeye inspect result

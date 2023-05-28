@@ -85,6 +85,8 @@ spec:
                   properties:
                     jobName:
                       type: string
+                    nodeName:
+                      type: string
                     phase:
                       type: string
                   type: object

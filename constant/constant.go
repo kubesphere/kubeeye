@@ -15,7 +15,8 @@ const (
 	Prometheus = "prometheus"
 	BaseFile   = "basefile"
 	Result     = "result"
-	NodeInfo   = "nodeinfo"
+	Sysctl     = "sysctl"
+	Systemd    = "systemd"
 )
 
 const (

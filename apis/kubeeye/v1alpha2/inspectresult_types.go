@@ -28,10 +28,9 @@ type InspectResultSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	FileChangeResult []FileChangeResult    `json:"fileChangeResult,omitempty"`
-	PrometheusResult [][]map[string]string `json:"prometheusResult,omitempty"`
-	OpaResult        KubeeyeOpaResult      `json:"opaResult,omitempty"`
-	NodeInfoResult   NodeInfoResult        `json:"nodeInfoResult,omitempty"`
+	PrometheusResult [][]map[string]string     `json:"prometheusResult,omitempty"`
+	OpaResult        KubeeyeOpaResult          `json:"opaResult,omitempty"`
+	NodeInfoResult   map[string]NodeInfoResult `json:"nodeInfoResult,omitempty"`
 }
 
 // InspectResultStatus defines the observed state of InspectResult
@@ -40,19 +39,17 @@ type InspectResultStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 }
 
-type FileChangeResult struct {
-	NodeName string                 `json:"nodeName,omitempty"`
-	Info     []FileChangeResultItem `json:"info,omitempty"`
-}
-
 type NodeInfoResult struct {
-	SysctlResult  []NodeResultItem `json:"name,omitempty"`
-	SystemdResult []NodeResultItem `json:"value,omitempty"`
+	NodeInfo         map[string]map[string]string `json:"nodeInfo,omitempty"`
+	FileChangeResult []FileChangeResultItem       `json:"fileChangeResult,omitempty"`
+	SysctlResult     []NodeResultItem             `json:"sysctlResult,omitempty"`
+	SystemdResult    []NodeResultItem             `json:"systemdResult,omitempty"`
 }
 
 type NodeResultItem struct {
-	Name  string `json:"name,omitempty"`
-	Value string `json:"value,omitempty"`
+	Name   string  `json:"name,omitempty"`
+	Assert bool    `json:"assert,omitempty"`
+	Value  *string `json:"value,omitempty"`
 }
 
 // +genclient

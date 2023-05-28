@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+)
 
 func main() {
 
@@ -81,35 +84,45 @@ func main() {
 	//	os.Exit(1)
 	//}
 	//
+	//
+	//config := []string{"net.ipv4.ip_forward",
+	//	"net.bridge.bridge-nf-call-arptables",
+	//	"net.bridge.bridge-nf-call-ip6tables",
+	//	"net.bridge.bridge-nf-call-iptables",
+	//	"net.ipv4.ip_local_reserved_ports",
+	//	"vm.max_map_count",
+	//	"vm.swappiness",
+	//	"vm.overcommit_memory",
+	//	"fs.inotify.max_user_instances",
+	//	"fs.inotify.max_user_watches",
+	//	"kernel.pid_max",
+	//	"fs.pipe-max-size",
+	//	"net.core.netdev_max_backlog",
+	//	"net.core.rmem_max",
+	//	"net.core.wmem_max",
+	//	"net.ipv4.tcp_max_syn_backlog",
+	//	"net.ipv4.neigh.default.gc_thresh1",
+	//	"net.ipv4.neigh.default.gc_thresh2",
+	//	"net.ipv4.neigh.default.gc_thresh3",
+	//	"net.core.somaxconn",
+	//	"net.ipv4.conf.all.rp_filter",
+	//	"net.ipv4.conf.default.rp_filter",
+	//	"net.ipv4.conf.eth0.arp_accept",
+	//	"fs.aio-max-nr",
+	//	"net.ipv4.tcp_retries2",
+	//	"net.ipv4.tcp_max_tw_buckets",
+	//	"net.ipv4.tcp_max_orphans",
+	//	"net.ipv4.udp_rmem_min",
+	//	"net.ipv4.udp_wmem_min"}
+	//fmt.Println(config)
 
-	config := []string{"net.ipv4.ip_forward",
-		"net.bridge.bridge-nf-call-arptables",
-		"net.bridge.bridge-nf-call-ip6tables",
-		"net.bridge.bridge-nf-call-iptables",
-		"net.ipv4.ip_local_reserved_ports",
-		"vm.max_map_count",
-		"vm.swappiness",
-		"vm.overcommit_memory",
-		"fs.inotify.max_user_instances",
-		"fs.inotify.max_user_watches",
-		"kernel.pid_max",
-		"fs.pipe-max-size",
-		"net.core.netdev_max_backlog",
-		"net.core.rmem_max",
-		"net.core.wmem_max",
-		"net.ipv4.tcp_max_syn_backlog",
-		"net.ipv4.neigh.default.gc_thresh1",
-		"net.ipv4.neigh.default.gc_thresh2",
-		"net.ipv4.neigh.default.gc_thresh3",
-		"net.core.somaxconn",
-		"net.ipv4.conf.all.rp_filter",
-		"net.ipv4.conf.default.rp_filter",
-		"net.ipv4.conf.eth0.arp_accept",
-		"fs.aio-max-nr",
-		"net.ipv4.tcp_retries2",
-		"net.ipv4.tcp_max_tw_buckets",
-		"net.ipv4.tcp_max_orphans",
-		"net.ipv4.udp_rmem_min",
-		"net.ipv4.udp_wmem_min"}
-	fmt.Println(config)
+	var nodeInfo kubeeyev1alpha2.NodeInfoResult
+
+	nodeInfo.FileChangeResult = append(nodeInfo.FileChangeResult, kubeeyev1alpha2.FileChangeResultItem{
+		FileName: "222",
+		Path:     "",
+	})
+	nodeInfo.NodeInfo = map[string]map[string]string{"node1": {"cpu": "1"}}
+	fmt.Println(nodeInfo)
+
 }

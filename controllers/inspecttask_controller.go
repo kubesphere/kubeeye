@@ -156,9 +156,6 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 						return ctrl.Result{}, err
 					}
 					break
-				case constant.NodeInfo:
-					err = inspect.GetNodeInfoResult(ctx, r.Client, configs, inspectTask)
-					break
 				default:
 					klog.Error("Unable to get results")
 					break
@@ -170,9 +167,9 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 					continue
 				}
 			}
-			if jobs.Status.Conditions != nil && jobs.Status.Conditions[0].Type == v1.JobFailed {
-				inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
-			}
+			//if jobs.Status.Conditions != nil && jobs.Status.Conditions[0].Type == v1.JobFailed {
+			//	inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
+			//}
 		}
 
 		timeout, err := time.ParseDuration(inspectTask.Spec.Timeout)
@@ -234,37 +231,123 @@ func (r *InspectTaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTask *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
 	var name = fmt.Sprintf("inspect-job-%s", strconv.Itoa(int(time.Now().Unix())))
 	var jobNames []kubeeyev1alpha2.JobPhase
+
 	for key := range inspectTask.Spec.Rules {
-		if key == constant.Prometheus || key == constant.Opa || key == constant.NodeInfo {
-			jobName, err := r.inspectJobsTemplate(ctx, fmt.Sprintf("%s-%s", name, key), inspectTask, "", key)
+		if key == constant.Prometheus || key == constant.Opa {
+			jobName, err := r.inspectJobsTemplate(ctx, fmt.Sprintf("%s-%s", name, key), inspectTask, "", nil, key)
 			if err != nil {
 				klog.Errorf("Failed to create Jobs for node name:%s,err:%s", err, err)
 				return nil, err
 			}
 			jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: jobName, Phase: kubeeyev1alpha2.PhaseRunning})
 		}
-		if key == constant.FileChange {
-			nodes, err := r.K8sClients.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	}
+	nodes, err := r.K8sClients.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err == nil {
+		for _, node := range nodes.Items {
+			jobName, err := r.inspectJobsTemplate(ctx, fmt.Sprintf("%s-%s", name, node.Name), inspectTask, node.Name, nil, constant.FileChange)
 			if err != nil {
-				klog.Error("Failed to get nodes info", err)
+				klog.Errorf("Failed to create Jobs for node name:%s,err:%s", err, err)
 				return nil, err
 			}
-			for _, node := range nodes.Items {
-				jobName, err := r.inspectJobsTemplate(ctx, fmt.Sprintf("%s-%s", name, node.Name), inspectTask, node.Name, constant.FileChange)
-				if err != nil {
-					klog.Errorf("Failed to create Jobs for node name:%s,err:%s", err, err)
-					return nil, err
-				}
-				jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: jobName, Phase: kubeeyev1alpha2.PhaseRunning})
-			}
-
+			jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: jobName, NodeName: node.Name, Phase: kubeeyev1alpha2.PhaseRunning})
 		}
-	}
 
+	}
 	return jobNames, nil
 }
 
-func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName string, inspectTask *kubeeyev1alpha2.InspectTask, nodeName string, taskType string) (string, error) {
+//func (r *InspectTaskReconciler) CreateNodeInspectJob(ctx context.Context, nodes *corev1.NodeList, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase,  error) {
+//	var jobNames []kubeeyev1alpha2.JobPhase
+//	sysctlRule, ok := task.Spec.Rules[constant.Sysctl]
+//	if ok {
+//		var sysctl []kubeeyev1alpha2.SysRule
+//		err := json.Unmarshal(sysctlRule, &sysctl)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		where, notWhere := utils.ArrayFilter[kubeeyev1alpha2.SysRule](sysctl, func(v kubeeyev1alpha2.SysRule) bool {
+//			return v.NodeName != nil
+//		})
+//
+//		var name = fmt.Sprintf("inspect-job-%s", strconv.Itoa(int(time.Now().Unix())))
+//		if notWhere != nil && len(notWhere) > 0 {
+//
+//			for _, node := range nodes.Items {
+//				jobName, err := r.inspectJobsTemplate(ctx, fmt.Sprintf("%s-%s", name, node.Name), task, node.Name, nil, constant.Sysctl)
+//				if err != nil {
+//					klog.Errorf("Failed to create Jobs for node name:%s,err:%s", err, err)
+//					return nil, err
+//				}
+//				jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{
+//					JobName:  jobName,
+//					NodeName: node.Name,
+//					Phase:    kubeeyev1alpha2.PhaseRunning,
+//				})
+//			}
+//
+//		} else {
+//			for _, rule := range where {
+//
+//				jobName, err := r.inspectJobsTemplate(ctx, fmt.Sprintf("%s-%s", name, rule.Name), task, *rule.NodeName, nil, constant.Sysctl)
+//				if err != nil {
+//					klog.Errorf("Failed to create Jobs for node name:%s,err:%s", err, err)
+//					return nil, err
+//				}
+//				jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{
+//					JobName:  jobName,
+//					NodeName: rule.Name,
+//					Phase:    kubeeyev1alpha2.PhaseRunning,
+//				})
+//			}
+//		}
+//	}
+//
+//	systemdRule, ok := task.Spec.Rules[constant.Systemd]
+//	if ok {
+//		var systemd []kubeeyev1alpha2.SysRule
+//		err := json.Unmarshal(systemdRule, &systemd)
+//		if err != nil {
+//			return nil, err
+//		}
+//		where, notWhere := utils.ArrayFilter[kubeeyev1alpha2.SysRule](systemd, func(v kubeeyev1alpha2.SysRule) bool {
+//			return v.NodeName != nil
+//		})
+//
+//		var name = fmt.Sprintf("inspect-job-%s", strconv.Itoa(int(time.Now().Unix())))
+//		if notWhere != nil && len(notWhere) > 0 {
+//			for _, node := range nodes.Items {
+//				jobName, err := r.inspectJobsTemplate(ctx, fmt.Sprintf("%s-%s", name, node.Name), task, node.Name, nil, constant.Systemd)
+//				if err != nil {
+//					klog.Errorf("Failed to create Jobs for node name:%s,err:%s", err, err)
+//					return nil, err
+//				}
+//				jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{
+//					JobName:  jobName,
+//					NodeName: node.Name,
+//					Phase:    kubeeyev1alpha2.PhaseRunning,
+//				})
+//			}
+//		} else {
+//			for _, rule := range where {
+//				jobName, err := r.inspectJobsTemplate(ctx, fmt.Sprintf("%s-%s", name, rule.Name), task, *rule.NodeName, nil, constant.Systemd)
+//				if err != nil {
+//					klog.Errorf("Failed to create Jobs for node name:%s,err:%s", err, err)
+//					return nil, err
+//				}
+//				jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{
+//					JobName:  jobName,
+//					NodeName: rule.Name,
+//					Phase:    kubeeyev1alpha2.PhaseRunning,
+//				})
+//			}
+//		}
+//	}
+//	return jobNames, nil
+//}
+
+func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName string, inspectTask *kubeeyev1alpha2.InspectTask, nodeName string, nodeSelector map[string]string, taskType string) (string, error) {
 	var ownerController = true
 	ownerRef := metav1.OwnerReference{
 		APIVersion:         inspectTask.APIVersion,
@@ -276,6 +359,9 @@ func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName
 	}
 	var resetBack int32 = 5
 	//var autoDelTime int32 = 60
+	var mountPropagation = corev1.MountPropagationHostToContainer
+	var runAsUser int64 = 65534
+	var runAsNonRoot = true
 	inspectJob := v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            jobName,
@@ -287,7 +373,12 @@ func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName
 			BackoffLimit: &resetBack,
 			//TTLSecondsAfterFinished: &autoDelTime,
 			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{Name: "inspect-job-pod", Namespace: inspectTask.Namespace},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "inspect-job-pod",
+					Namespace:   inspectTask.Namespace,
+					Annotations: map[string]string{"container.apparmor.security.beta.kubernetes.io/inspect-task-kubeeye": "unconfined"},
+				},
+
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Name:    "inspect-task-kubeeye",
@@ -295,20 +386,62 @@ func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName
 						Command: []string{"inspect"},
 						Args:    []string{taskType, "--task-name", inspectTask.Name, "--task-namespace", inspectTask.Namespace, "--result-name", jobName},
 						VolumeMounts: []corev1.VolumeMount{{
-							Name:      "root-path",
+							Name:      "proc",
 							ReadOnly:  true,
-							MountPath: "/host",
+							MountPath: "/host/proc",
+						}, {
+							Name:      "sys",
+							ReadOnly:  true,
+							MountPath: "/host/sys",
+						}, {
+							Name:             "root",
+							ReadOnly:         true,
+							MountPath:        "/host/root",
+							MountPropagation: &mountPropagation,
+						}, {
+							Name:      "system-socket",
+							ReadOnly:  true,
+							MountPath: "/var/run/dbus/system_bus_socket",
 						}},
 						ImagePullPolicy: "Always",
 					}},
 					ServiceAccountName: "kubeeye-controller-manager",
 					NodeName:           nodeName,
+					NodeSelector:       nodeSelector,
 					RestartPolicy:      corev1.RestartPolicyNever,
+					HostNetwork:        true,
+					HostPID:            true,
+					SecurityContext: &corev1.PodSecurityContext{
+						RunAsUser:    &runAsUser,
+						RunAsNonRoot: &runAsNonRoot,
+					},
+
 					Volumes: []corev1.Volume{{
-						Name: "root-path",
+						Name: "root",
 						VolumeSource: corev1.VolumeSource{
 							HostPath: &corev1.HostPathVolumeSource{
 								Path: "/",
+							},
+						},
+					}, {
+						Name: "proc",
+						VolumeSource: corev1.VolumeSource{
+							HostPath: &corev1.HostPathVolumeSource{
+								Path: "/proc",
+							},
+						},
+					}, {
+						Name: "sys",
+						VolumeSource: corev1.VolumeSource{
+							HostPath: &corev1.HostPathVolumeSource{
+								Path: "/sys",
+							},
+						},
+					}, {
+						Name: "system-socket",
+						VolumeSource: corev1.VolumeSource{
+							HostPath: &corev1.HostPathVolumeSource{
+								Path: "/run/dbus/system_bus_socket",
 							},
 						},
 					}},
@@ -331,6 +464,5 @@ func (r *InspectTaskReconciler) IsComplete(task *kubeeyev1alpha2.InspectTask) bo
 			return false
 		}
 	}
-
 	return true
 }

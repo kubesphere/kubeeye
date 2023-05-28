@@ -15,6 +15,19 @@ func ArrayFind(s string, sub []string) (int, bool) {
 	return index, b
 }
 
+func ArrayFilter[T any](filterData []T, filter func(v T) bool) ([]T, []T) {
+	var where []T
+	var notWhere []T
+	for _, v := range filterData {
+		if filter(v) {
+			where = append(where, v)
+		} else {
+			notWhere = append(notWhere, v)
+		}
+	}
+	return where, notWhere
+}
+
 func ArrayFinds(maps interface{}, f func(m string) bool) (int, bool, interface{}) {
 
 	switch maps.(type) {

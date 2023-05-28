@@ -31,16 +31,19 @@ type InspectRuleSpec struct {
 	Opas               []OpaRule        `yaml:"opas,omitempty" json:"opas,omitempty"`
 	Prometheus         []PrometheusRule `yaml:"prometheus,omitempty" json:"prometheus,omitempty"`
 	FileChange         []FileChangeRule `json:"fileChange,omitempty" yaml:"fileChange,omitempty"`
-	NodeInfoRule       *NodeInfoRule    `json:"nodeInfoRule,omitempty"`
+	Sysctl             []SysRule        `json:"sysctl,omitempty"`
+	Systemd            []SysRule        `json:"systemd,omitempty"`
 }
 type RuleItemBases struct {
-	Name string `json:"name,omitempty" yaml:"name,omitempty"`
-	Rule string `json:"rule,omitempty" yaml:"rule,omitempty"`
-	Desc string `json:"desc,omitempty" yaml:"desc,omitempty"`
+	Name string  `json:"name,omitempty" yaml:"name,omitempty"`
+	Rule *string `json:"rule,omitempty" yaml:"rule,omitempty"`
+	Desc string  `json:"desc,omitempty" yaml:"desc,omitempty"`
 }
-type NodeInfoRule struct {
-	SysctlRule  []string `json:"sysctlRule,omitempty"`
-	SystemdRule []string `json:"systemdRule,omitempty"`
+
+type SysRule struct {
+	RuleItemBases `json:",inline"`
+	NodeName      *string           `json:"nodeName,omitempty"`
+	NodeSelector  map[string]string `json:"nodeSelector,omitempty"`
 }
 
 type OpaRule struct {
@@ -54,7 +57,9 @@ type PrometheusRule struct {
 
 type FileChangeRule struct {
 	RuleItemBases `json:",inline"`
-	Base          string `json:"base,omitempty"`
+	Path          string            `json:"path,omitempty"`
+	NodeName      *string           `json:"nodeName,omitempty"`
+	NodeSelector  map[string]string `json:"nodeSelector,omitempty"`
 }
 
 type State string

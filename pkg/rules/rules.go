@@ -81,7 +81,8 @@ func RegoToRuleYaml(path string) {
 		opaRule := kubeeyev1alpha2.OpaRule{}
 		var space string
 		opaRule.Name = strings.Replace(string(m["name"]), ".rego", "", -1)
-		opaRule.Rule = string(m["rule"])
+		var rule = string(m["rule"])
+		opaRule.Rule = &rule
 		scanner := bufio.NewScanner(bytes.NewReader(m["rule"]))
 		if scanner.Scan() {
 			space = strings.TrimSpace(strings.Replace(scanner.Text(), "package", "", -1))

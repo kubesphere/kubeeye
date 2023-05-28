@@ -236,12 +236,8 @@ func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPl
 			if result {
 				_ = json.Unmarshal(val, &result)
 			}
-			//for _, opa := range item.Spec.Opas {
-			//	rules = append(rules, opa)
-			//}
 			rules = append(rules, item.Spec.Opas...)
 			marshal, _ := json.Marshal(rules)
-
 			resultRules[constant.Opa] = marshal
 
 		}
@@ -266,28 +262,32 @@ func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPl
 			if result {
 				_ = json.Unmarshal(val, &fileRule)
 			}
-			//for _, fileChange := range item.Spec.FileChange {
-			//	fileRule = append(fileRule, fileChange)
-			//}
 			fileRule = append(fileRule, item.Spec.FileChange...)
 			marshal, _ := json.Marshal(fileRule)
 			resultRules[constant.FileChange] = marshal
 		}
-		if item.Spec.NodeInfoRule != nil {
-			var nodeRule kubeeyev1alpha2.NodeInfoRule
-			val, result := resultRules[constant.NodeInfo]
+
+		if item.Spec.Sysctl != nil {
+			var sysctl []kubeeyev1alpha2.SysRule
+			val, result := resultRules[constant.Sysctl]
 			if result {
-				_ = json.Unmarshal(val, &nodeRule)
+				_ = json.Unmarshal(val, &sysctl)
 			}
-			if item.Spec.NodeInfoRule.SysctlRule != nil {
-				nodeRule.SysctlRule = append(nodeRule.SysctlRule, item.Spec.NodeInfoRule.SysctlRule...)
-			}
-			if item.Spec.NodeInfoRule.SystemdRule != nil {
-				nodeRule.SystemdRule = append(nodeRule.SystemdRule, item.Spec.NodeInfoRule.SystemdRule...)
-			}
-			marshal, _ := json.Marshal(nodeRule)
-			resultRules[constant.NodeInfo] = marshal
+			sysctl = append(sysctl, item.Spec.Sysctl...)
+			marshal, _ := json.Marshal(sysctl)
+			resultRules[constant.Sysctl] = marshal
 		}
+		if item.Spec.Systemd != nil {
+			var systemd []kubeeyev1alpha2.SysRule
+			val, result := resultRules[constant.Systemd]
+			if result {
+				_ = json.Unmarshal(val, &systemd)
+			}
+			systemd = append(systemd, item.Spec.Systemd...)
+			marshal, _ := json.Marshal(systemd)
+			resultRules[constant.Systemd] = marshal
+		}
+
 	}
 
 	return resultRules, nil

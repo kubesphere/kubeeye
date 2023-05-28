@@ -38,27 +38,22 @@ spec:
               fileChange:
                 items:
                   properties:
-                    base:
-                      type: string
                     desc:
                       type: string
                     name:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    path:
                       type: string
                     rule:
                       type: string
                   type: object
                 type: array
-              nodeInfoRule:
-                properties:
-                  sysctlRule:
-                    items:
-                      type: string
-                    type: array
-                  systemdRule:
-                    items:
-                      type: string
-                    type: array
-                type: object
               opas:
                 items:
                   properties:
@@ -89,6 +84,40 @@ spec:
                 description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
                   Important: Run "make" to regenerate code after modifying this file'
                 type: string
+              sysctl:
+                items:
+                  properties:
+                    desc:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    rule:
+                      type: string
+                  type: object
+                type: array
+              systemd:
+                items:
+                  properties:
+                    desc:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    rule:
+                      type: string
+                  type: object
+                type: array
             type: object
           status:
             description: InspectRuleStatus defines the observed state of InspectRule
