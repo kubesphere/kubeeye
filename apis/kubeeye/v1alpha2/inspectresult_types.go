@@ -40,10 +40,10 @@ type InspectResultStatus struct {
 }
 
 type NodeInfoResult struct {
-	NodeInfo         map[string]map[string]string `json:"nodeInfo,omitempty"`
-	FileChangeResult []FileChangeResultItem       `json:"fileChangeResult,omitempty"`
-	SysctlResult     []NodeResultItem             `json:"sysctlResult,omitempty"`
-	SystemdResult    []NodeResultItem             `json:"systemdResult,omitempty"`
+	NodeInfo         map[string]string      `json:"nodeInfo,omitempty"`
+	FileChangeResult []FileChangeResultItem `json:"fileChangeResult,omitempty"`
+	SysctlResult     []NodeResultItem       `json:"sysctlResult,omitempty"`
+	SystemdResult    []NodeResultItem       `json:"systemdResult,omitempty"`
 }
 
 type NodeResultItem struct {

@@ -53,9 +53,7 @@ spec:
                       type: array
                     nodeInfo:
                       additionalProperties:
-                        additionalProperties:
-                          type: string
-                        type: object
+                        type: string
                       type: object
                     sysctlResult:
                       items:
