@@ -334,6 +334,23 @@ const (
 func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clients *kube.KubernetesClient, ownerRef ...v1.OwnerReference) ([]byte, error) {
 	var nodeInfoResult v1alpha2.NodeInfoResult
 	fileBytes, ok := task.Spec.Rules[constant.FileChange]
+	fs, err := procfs.NewFS(DefaultProcPath)
+	if err != nil {
+		return nil, err
+	}
+
+	meminfo, err := fs.Meminfo()
+	if err != nil {
+		return nil, err
+	}
+	totalMemory := *meminfo.MemTotal
+	freeMemory := *meminfo.MemFree + *meminfo.Buffers + *meminfo.Cached
+	usedMemory := totalMemory - freeMemory
+	memoryUsage := float64(usedMemory) / float64(totalMemory)
+	memoryFree := float64(freeMemory) / float64(totalMemory)
+	fmt.Printf("Memory usage: %.2f%%\n", memoryUsage*100)
+	fmt.Printf("Memory free: %.2f%%\n", memoryFree*100)
+	nodeInfoResult.NodeInfo = map[string]string{"memory-usage": fmt.Sprintf("%2.f%%", memoryUsage*100), "memory-idle": fmt.Sprintf("%2.f%%", memoryFree*100)}
 
 	if ok {
 		var fileRule []v1alpha2.FileChangeRule
@@ -396,10 +413,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 			klog.Error(err, " Failed to marshal kubeeye result")
 			return nil, err
 		}
-		fs, err := procfs.NewFS(DefaultProcPath)
-		if err != nil {
-			return nil, err
-		}
+
 		for _, sysRule := range sysctl {
 			ctlRule, err := fs.SysctlStrings(sysRule.Name)
 			var ctl v1alpha2.NodeResultItem
