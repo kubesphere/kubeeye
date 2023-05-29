@@ -43,15 +43,15 @@ func AuditCluster(ctx context.Context, kubeConfigPath string, additionalregorule
 	}
 
 	_ = ValidationResults(ctx, clients, types.NamespacedName{}, nil)
-	//
-	//// Set the output mode, support default output JSON and CSV.
+
+	// Set the output mode, support default output JSON and CSV.
 	//switch output {
 	//case "JSON", "json", "Json":
 	//	if err := JSONOutput(validationResultsChan); err != nil {
 	//		return err
 	//	}
 	//case "CSV", "csv", "Csv":
-	//	if err := CSVOutput(validationResultsChan); err != nil {
+	//	if err := CSVOutput(); err != nil {
 	//		return err
 	//	}
 	//default:

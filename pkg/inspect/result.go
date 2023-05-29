@@ -20,7 +20,7 @@ func GetFileChangeResult(ctx context.Context, c client.Client, jobs *v1.Job, res
 	var inspectResult kubeeyev1alpha2.InspectResult
 	err := c.Get(ctx, types.NamespacedName{
 		Namespace: task.Namespace,
-		Name:      fmt.Sprintf("%s-nodeinfo", task.Name),
+		Name:      fmt.Sprintf("%s-%s", task.Name, constant.FileChange),
 	}, &inspectResult)
 	var nodeInfoResult kubeeyev1alpha2.NodeInfoResult
 	jsonErr := json.Unmarshal(result.BinaryData[constant.Result], &nodeInfoResult)

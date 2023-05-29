@@ -333,7 +333,7 @@ const (
 
 func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clients *kube.KubernetesClient, ownerRef ...v1.OwnerReference) ([]byte, error) {
 	var nodeInfoResult v1alpha2.NodeInfoResult
-	fileBytes, ok := task.Spec.Rules[constant.FileChange]
+
 	fs, err := procfs.NewFS(DefaultProcPath)
 	if err != nil {
 		return nil, err
@@ -350,8 +350,8 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 	memoryFree := float64(freeMemory) / float64(totalMemory)
 	fmt.Printf("Memory usage: %.2f%%\n", memoryUsage*100)
 	fmt.Printf("Memory free: %.2f%%\n", memoryFree*100)
-	nodeInfoResult.NodeInfo = map[string]string{"memory-usage": fmt.Sprintf("%2.f%%", memoryUsage*100), "memory-idle": fmt.Sprintf("%2.f%%", memoryFree*100)}
-
+	nodeInfoResult.NodeInfo = map[string]string{"memory-usage": fmt.Sprintf("%2.f", memoryUsage*100), "memory-idle": fmt.Sprintf("%2.f", memoryFree*100)}
+	fileBytes, ok := task.Spec.Rules[constant.FileChange]
 	if ok {
 		var fileRule []v1alpha2.FileChangeRule
 		err := json.Unmarshal(fileBytes, &fileRule)
@@ -359,7 +359,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 			klog.Error(err, " Failed to marshal kubeeye result")
 			return nil, err
 		}
-		var fileChangeResult []v1alpha2.FileChangeResultItem
+
 		for _, file := range fileRule {
 			resultItem := &v1alpha2.FileChangeResultItem{
 				FileName: file.Name,
@@ -369,7 +369,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 			if fileErr != nil {
 				klog.Error(err, ",Failed to open base file")
 				resultItem.Issues = []string{fmt.Sprintf("%s:The file does not exist", file.Name)}
-				fileChangeResult = append(fileChangeResult, *resultItem)
+				nodeInfoResult.FileChangeResult = append(nodeInfoResult.FileChangeResult, *resultItem)
 				continue
 			}
 			baseFileName := fmt.Sprintf("%s-%s", constant.BaseFilePrefix, file.Name)
@@ -391,7 +391,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 					_, err := clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Create(ctx, baseConfigMap, v1.CreateOptions{})
 					if err != nil {
 						resultItem.Issues = []string{fmt.Sprintf("%s:create configMap failed", file.Name)}
-						fileChangeResult = append(fileChangeResult, *resultItem)
+						nodeInfoResult.FileChangeResult = append(nodeInfoResult.FileChangeResult, *resultItem)
 					}
 					continue
 				}
@@ -401,7 +401,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 			diffString := utils.DiffString(string(baseContent), string(baseFile))
 
 			resultItem.Issues = diffString
-			fileChangeResult = append(fileChangeResult, *resultItem)
+			nodeInfoResult.FileChangeResult = append(nodeInfoResult.FileChangeResult, *resultItem)
 		}
 	}
 
