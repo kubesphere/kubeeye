@@ -38,6 +38,7 @@ func GetFileChangeResult(ctx context.Context, c client.Client, jobs *v1.Job, res
 				Controller:         &ownerRefBol,
 				BlockOwnerDeletion: &ownerRefBol,
 			}
+			inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
 			inspectResult.Name = fmt.Sprintf("%s-%s", task.Name, constant.FileChange)
 			inspectResult.Namespace = task.Namespace
 			inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
@@ -81,7 +82,7 @@ func GetPrometheusResult(ctx context.Context, c client.Client, result *corev1.Co
 	inspectResult.Name = fmt.Sprintf("%s-%s", task.Name, constant.Prometheus)
 	inspectResult.Namespace = task.Namespace
 	inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
-
+	inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
 	inspectResult.Spec.PrometheusResult = prometheus
 	err = c.Create(ctx, &inspectResult)
 	if err != nil {
@@ -111,7 +112,7 @@ func GetOpaResult(ctx context.Context, c client.Client, result *corev1.ConfigMap
 	inspectResult.Name = fmt.Sprintf("%s-%s", task.Name, constant.Opa)
 	inspectResult.Namespace = task.Namespace
 	inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
-
+	inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
 	inspectResult.Spec.OpaResult = opaResult
 	err = c.Create(ctx, &inspectResult)
 	if err != nil {

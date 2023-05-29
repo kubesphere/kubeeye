@@ -25,3 +25,8 @@ const (
 	LabelConfigType = "kubeeye.kubesphere.io/configType"
 	LabelRuleTag    = "kubeeye.kubesphere.io/rule-tag"
 )
+
+const (
+	DefaultProcPath = "/host/proc"
+	PathPrefix      = "/host/root"
+)

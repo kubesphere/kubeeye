@@ -360,8 +360,6 @@ func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName
 	var resetBack int32 = 5
 	//var autoDelTime int32 = 60
 	var mountPropagation = corev1.MountPropagationHostToContainer
-	var runAsUser int64 = 65534
-	var runAsNonRoot = true
 	inspectJob := v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            jobName,
@@ -396,7 +394,7 @@ func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName
 						}, {
 							Name:             "root",
 							ReadOnly:         true,
-							MountPath:        "/host/root",
+							MountPath:        constant.PathPrefix,
 							MountPropagation: &mountPropagation,
 						}, {
 							Name:      "system-socket",
@@ -411,10 +409,6 @@ func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName
 					RestartPolicy:      corev1.RestartPolicyNever,
 					HostNetwork:        true,
 					HostPID:            true,
-					SecurityContext: &corev1.PodSecurityContext{
-						RunAsUser:    &runAsUser,
-						RunAsNonRoot: &runAsNonRoot,
-					},
 
 					Volumes: []corev1.Volume{{
 						Name: "root",

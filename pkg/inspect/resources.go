@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/coreos/go-systemd/v22/dbus"
+	"github.com/kubesphere/event-rule-engine/visitor"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
@@ -328,15 +329,10 @@ func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
 	return marshal, nil
 }
 
-const (
-	DefaultProcPath = "/host/proc"
-	PathPrefix      = "/host/root"
-)
-
 func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clients *kube.KubernetesClient, ownerRef ...v1.OwnerReference) ([]byte, error) {
 	var nodeInfoResult v1alpha2.NodeInfoResult
 
-	fs, err := procfs.NewFS(DefaultProcPath)
+	fs, err := procfs.NewFS(constant.DefaultProcPath)
 	if err != nil {
 		return nil, err
 	}
@@ -350,9 +346,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 	usedMemory := totalMemory - freeMemory
 	memoryUsage := float64(usedMemory) / float64(totalMemory)
 	memoryFree := float64(freeMemory) / float64(totalMemory)
-	fmt.Printf("Memory usage: %.2f%%\n", memoryUsage*100)
-	fmt.Printf("Memory free: %.2f%%\n", memoryFree*100)
-	nodeInfoResult.NodeInfo = map[string]string{"memory-usage": fmt.Sprintf("%2.f", memoryUsage*100), "memory-idle": fmt.Sprintf("%2.f", memoryFree*100)}
+	nodeInfoResult.NodeInfo = map[string]string{"memoryUsage": fmt.Sprintf("%2.f", memoryUsage*100), "memoryIdle": fmt.Sprintf("%2.f", memoryFree*100)}
 	fileBytes, ok := task.Spec.Rules[constant.FileChange]
 	if ok {
 		var fileRule []v1alpha2.FileChangeRule
@@ -367,7 +361,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 
 			resultItem.FileName = file.Name
 			resultItem.Path = file.Path
-			baseFile, fileErr := os.ReadFile(path.Join(PathPrefix, file.Path))
+			baseFile, fileErr := os.ReadFile(path.Join(constant.PathPrefix, file.Path))
 			if fileErr != nil {
 				klog.Errorf("Failed to open base file path:%s,error:%s", baseFile, fileErr)
 				resultItem.Issues = []string{fmt.Sprintf("%s:The file does not exist", file.Name)}
@@ -421,12 +415,30 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 			var ctl v1alpha2.NodeResultItem
 			ctl.Name = sysRule.Name
 			if err != nil || len(ctlRule) == 0 {
-				errVal := fmt.Sprintf("name:%s to does not exist", ctlRule)
+				errVal := fmt.Sprintf("name:%s to does not exist", sysRule.Name)
 				ctl.Value = &errVal
 			} else {
 				ctl.Value = &ctlRule[0]
-			}
 
+				if sysRule.Rule != nil {
+					if _, err := visitor.CheckRule(*sysRule.Rule); err != nil {
+						sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
+						klog.Error(sprintf)
+						ctl.Value = &sprintf
+					} else {
+						err, res := visitor.EventRuleEvaluate(map[string]interface{}{sysRule.Name: ctlRule[0]}, *sysRule.Rule)
+						if err != nil {
+							sprintf := fmt.Sprintf("err:%s", err.Error())
+							klog.Error(sprintf)
+							ctl.Value = &sprintf
+						} else {
+							ctl.Assert = res
+						}
+
+					}
+
+				}
+			}
 			nodeInfoResult.SysctlResult = append(nodeInfoResult.SysctlResult, ctl)
 		}
 
@@ -455,7 +467,25 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 			for _, status := range unitsContext {
 				if status.Name == fmt.Sprintf("%s.service", r.Name) {
 					ctl.Value = &status.ActiveState
-					nodeInfoResult.SystemdResult = append(nodeInfoResult.SystemdResult, ctl)
+
+					if r.Rule != nil {
+						if _, err := visitor.CheckRule(*r.Rule); err != nil {
+							sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
+							klog.Error(sprintf)
+							ctl.Value = &sprintf
+						} else {
+							err, res := visitor.EventRuleEvaluate(map[string]interface{}{r.Name: status.ActiveState}, *r.Rule)
+							if err != nil {
+								sprintf := fmt.Sprintf("err:%s", err.Error())
+								klog.Error(sprintf)
+								ctl.Value = &sprintf
+							} else {
+								ctl.Assert = res
+							}
+
+						}
+
+					}
 					break
 				}
 			}
