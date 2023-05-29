@@ -48,7 +48,7 @@ type NodeInfoResult struct {
 
 type NodeResultItem struct {
 	Name   string  `json:"name,omitempty"`
-	Assert bool    `json:"assert,omitempty"`
+	Assert *bool   `json:"assert,omitempty"`
 	Value  *string `json:"value,omitempty"`
 }
 

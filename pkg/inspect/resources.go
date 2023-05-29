@@ -432,7 +432,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 							klog.Error(sprintf)
 							ctl.Value = &sprintf
 						} else {
-							ctl.Assert = res
+							ctl.Assert = &res
 						}
 
 					}
@@ -480,7 +480,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 								klog.Error(sprintf)
 								ctl.Value = &sprintf
 							} else {
-								ctl.Assert = res
+								ctl.Assert = &res
 							}
 
 						}
