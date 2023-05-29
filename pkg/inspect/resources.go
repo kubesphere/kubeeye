@@ -37,6 +37,7 @@ import (
 	"k8s.io/klog/v2"
 	"net/http"
 	"os"
+	"path"
 	"sync"
 	"time"
 )
@@ -328,7 +329,8 @@ func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
 }
 
 const (
-	DefaultProcPath = "/proc"
+	DefaultProcPath = "/host/proc"
+	PathPrefix      = "/host/root"
 )
 
 func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clients *kube.KubernetesClient, ownerRef ...v1.OwnerReference) ([]byte, error) {
@@ -365,7 +367,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 
 			resultItem.FileName = file.Name
 			resultItem.Path = file.Path
-			baseFile, fileErr := os.ReadFile(file.Path)
+			baseFile, fileErr := os.ReadFile(path.Join(PathPrefix, file.Path))
 			if fileErr != nil {
 				klog.Errorf("Failed to open base file path:%s,error:%s", baseFile, nil)
 				resultItem.Issues = []string{fmt.Sprintf("%s:The file does not exist", file.Name)}
