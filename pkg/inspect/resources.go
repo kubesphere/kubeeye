@@ -361,22 +361,22 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 		}
 
 		for _, file := range fileRule {
-			resultItem := &v1alpha2.FileChangeResultItem{
-				FileName: file.Name,
-				Path:     file.Path,
-			}
+			var resultItem v1alpha2.FileChangeResultItem
+
+			resultItem.FileName = file.Name
+			resultItem.Path = file.Path
 			baseFile, fileErr := os.ReadFile(file.Path)
 			if fileErr != nil {
-				klog.Error(err, ",Failed to open base file")
+				klog.Errorf("Failed to open base file path:%s,error:%s", baseFile, nil)
 				resultItem.Issues = []string{fmt.Sprintf("%s:The file does not exist", file.Name)}
-				nodeInfoResult.FileChangeResult = append(nodeInfoResult.FileChangeResult, *resultItem)
+				nodeInfoResult.FileChangeResult = append(nodeInfoResult.FileChangeResult, resultItem)
 				continue
 			}
 			baseFileName := fmt.Sprintf("%s-%s", constant.BaseFilePrefix, file.Name)
-			baseConfig, err := clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Get(ctx, baseFileName, v1.GetOptions{})
-			if err != nil {
-				klog.Error(err, "Failed to open file. cause：file Do not exist")
-				if kubeErr.IsNotFound(err) {
+			baseConfig, configErr := clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Get(ctx, baseFileName, v1.GetOptions{})
+			if configErr != nil {
+				klog.Errorf("Failed to open file. cause：file Do not exist,err:%s", err)
+				if kubeErr.IsNotFound(configErr) {
 					var Immutable = true
 					baseConfigMap := &corev1.ConfigMap{
 						ObjectMeta: v1.ObjectMeta{
@@ -388,10 +388,10 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 						Immutable:  &Immutable,
 						BinaryData: map[string][]byte{constant.FileChange: baseFile},
 					}
-					_, err := clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Create(ctx, baseConfigMap, v1.CreateOptions{})
-					if err != nil {
+					_, createErr := clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Create(ctx, baseConfigMap, v1.CreateOptions{})
+					if createErr != nil {
 						resultItem.Issues = []string{fmt.Sprintf("%s:create configMap failed", file.Name)}
-						nodeInfoResult.FileChangeResult = append(nodeInfoResult.FileChangeResult, *resultItem)
+						nodeInfoResult.FileChangeResult = append(nodeInfoResult.FileChangeResult, resultItem)
 					}
 					continue
 				}
@@ -401,7 +401,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 			diffString := utils.DiffString(string(baseContent), string(baseFile))
 
 			resultItem.Issues = diffString
-			nodeInfoResult.FileChangeResult = append(nodeInfoResult.FileChangeResult, *resultItem)
+			nodeInfoResult.FileChangeResult = append(nodeInfoResult.FileChangeResult, resultItem)
 		}
 	}
 
