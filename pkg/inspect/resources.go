@@ -352,7 +352,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 	usedMemory := totalMemory - freeMemory
 	memoryUsage := float64(usedMemory) / float64(totalMemory)
 	memoryFree := float64(freeMemory) / float64(totalMemory)
-	nodeInfoResult.NodeInfo = map[string]string{"memoryUsage": fmt.Sprintf("%.2f", memoryUsage*100), "memoryIdle": fmt.Sprintf("%.2f", memoryFree*100)}
+	nodeInfoResult.NodeInfo = map[string]string{"memoryUsage": fmt.Sprintf("%.2f%", memoryUsage*100), "memoryIdle": fmt.Sprintf("%.2f%", memoryFree*100)}
 	avg, err := fs.LoadAvg()
 	if err != nil {
 		klog.Errorf(" failed to get loadavg,err:%s", err)
@@ -362,6 +362,23 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 		nodeInfoResult.NodeInfo["load15"] = fmt.Sprintf("%.2f", avg.Load15)
 	}
 
+	stat, err := fs.Stat()
+	if err != nil {
+		klog.Error(err)
+	} else {
+		totalUsage := 0.0
+		totalIdle := 0.0
+		for _, cpuStat := range stat.CPU {
+			fmt.Println(cpuStat.System)
+			totalUsage += cpuStat.System + cpuStat.User + cpuStat.Nice
+			totalIdle += cpuStat.Idle
+		}
+
+		usage := totalUsage / (totalUsage + totalIdle)
+		idle := totalIdle / (totalUsage + totalIdle)
+		nodeInfoResult.NodeInfo["cpuUsage"] = fmt.Sprintf("%.2f", usage*100)
+		nodeInfoResult.NodeInfo["cpuIdle"] = fmt.Sprintf("%.2f", idle*100)
+	}
 	fileBytes, ok := task.Spec.Rules[constant.FileChange]
 	if ok {
 		var fileRule []v1alpha2.FileChangeRule
