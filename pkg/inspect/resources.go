@@ -39,6 +39,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -347,6 +348,15 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 	memoryUsage := float64(usedMemory) / float64(totalMemory)
 	memoryFree := float64(freeMemory) / float64(totalMemory)
 	nodeInfoResult.NodeInfo = map[string]string{"memoryUsage": fmt.Sprintf("%2.f", memoryUsage*100), "memoryIdle": fmt.Sprintf("%2.f", memoryFree*100)}
+	avg, err := fs.LoadAvg()
+	if err != nil {
+		klog.Errorf(" failed to get loadavg,err:%s", err)
+	} else {
+		nodeInfoResult.NodeInfo["load1"] = strconv.FormatFloat(avg.Load1, 'E', -1, 64)
+		nodeInfoResult.NodeInfo["load5"] = strconv.FormatFloat(avg.Load5, 'E', -1, 64)
+		nodeInfoResult.NodeInfo["load15"] = strconv.FormatFloat(avg.Load15, 'E', -1, 64)
+	}
+
 	fileBytes, ok := task.Spec.Rules[constant.FileChange]
 	if ok {
 		var fileRule []v1alpha2.FileChangeRule
@@ -361,7 +371,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 
 			resultItem.FileName = file.Name
 			resultItem.Path = file.Path
-			baseFile, fileErr := os.ReadFile(path.Join(constant.PathPrefix, file.Path))
+			baseFile, fileErr := os.ReadFile(path.Join(constant.RootPathPrefix, file.Path))
 			if fileErr != nil {
 				klog.Errorf("Failed to open base file path:%s,error:%s", baseFile, fileErr)
 				resultItem.Issues = []string{fmt.Sprintf("%s:The file does not exist", file.Name)}
