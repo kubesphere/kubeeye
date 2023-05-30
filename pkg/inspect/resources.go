@@ -39,6 +39,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"sync"
 	"time"
 )
@@ -428,11 +429,12 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 			ctlRule, err := fs.SysctlStrings(sysRule.Name)
 			var ctl v1alpha2.NodeResultItem
 			ctl.Name = sysRule.Name
-			if err != nil || len(ctlRule) == 0 {
+			if err != nil {
 				errVal := fmt.Sprintf("name:%s to does not exist", sysRule.Name)
 				ctl.Value = &errVal
 			} else {
-				ctl.Value = &ctlRule[0]
+				val := strings.Join(ctlRule, ",")
+				ctl.Value = &val
 
 				if sysRule.Rule != nil {
 					if _, err := visitor.CheckRule(*sysRule.Rule); err != nil {
