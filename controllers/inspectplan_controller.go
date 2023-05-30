@@ -123,20 +123,17 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 		klog.Error("create a new inspect task.", taskName)
 
-		//if inspectPlan.Spec.MaxTasks > 0 {
-		//	for len(inspectPlan.Status.TaskNames) > inspectPlan.Spec.MaxTasks-1 {
-		//		for _, name := range inspectPlan.Status.TaskNames[0] {
-		//			err = r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks(inspectPlan.GetNamespace()).Delete(ctx, name, metav1.DeleteOptions{})
-		//
-		//			if err == nil || kubeErr.IsNotFound(err) {
-		//				inspectPlan.Status.TaskNames[0] = inspectPlan.Status.TaskNames[0][1:]
-		//			} else {
-		//				klog.Error("Failed to delete inspect task", err)
-		//			}
-		//		}
-		//
-		//	}
-		//}
+		if inspectPlan.Spec.MaxTasks > 0 {
+			for len(inspectPlan.Status.TaskNames) > inspectPlan.Spec.MaxTasks-1 {
+				err = r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks(inspectPlan.GetNamespace()).Delete(ctx, inspectPlan.Status.TaskNames[0], metav1.DeleteOptions{})
+				if err == nil || kubeErr.IsNotFound(err) {
+					inspectPlan.Status.TaskNames = inspectPlan.Status.TaskNames[1:]
+				} else {
+					klog.Error("Failed to delete inspect task", err)
+				}
+
+			}
+		}
 
 		inspectPlan.Status.LastScheduleTime = metav1.Time{Time: now}
 		inspectPlan.Status.LastTaskName = taskName
@@ -183,16 +180,16 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 	if err != nil {
 		return "", err
 	}
-	audits := inspectPlan.Spec.Auditors
-	if len(audits) == 0 {
-		audits = append(audits, kubeeyev1alpha2.AuditorKubeeye)
-	}
+	//audits := inspectPlan.Spec.Auditors
+	//if len(audits) == 0 {
+	//	audits = append(audits, kubeeyev1alpha2.AuditorKubeeye)
+	//}
 
 	var inspectTask kubeeyev1alpha2.InspectTask
 	inspectTask.Labels = map[string]string{constant.LabelName: inspectPlan.Name}
 	inspectTask.OwnerReferences = []metav1.OwnerReference{ownerRef}
 	inspectTask.Namespace = inspectPlan.Namespace
-	inspectTask.Spec.Auditors = audits
+	//inspectTask.Spec.Auditors = audits
 	inspectTask.Spec.Timeout = inspectPlan.Spec.Timeout
 
 	inspectTask.Spec.Rules = rules
