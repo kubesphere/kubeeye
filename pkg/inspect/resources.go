@@ -299,7 +299,7 @@ func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
 		queryApi := apiprometheusv1.NewAPI(client)
 		query, _, err := queryApi.Query(ctx, *proRule.Rule, time.Now())
 		if err != nil {
-			klog.Error(err)
+			klog.Errorf("failed to query rule:%s", *proRule.Rule)
 			return nil, err
 		}
 		marshal, err := json.Marshal(query)
