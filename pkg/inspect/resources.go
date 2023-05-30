@@ -369,7 +369,6 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 		totalUsage := 0.0
 		totalIdle := 0.0
 		for _, cpuStat := range stat.CPU {
-			fmt.Println(cpuStat.System)
 			totalUsage += cpuStat.System + cpuStat.User + cpuStat.Nice
 			totalIdle += cpuStat.Idle
 		}
