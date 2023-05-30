@@ -11,6 +11,7 @@ import (
 var taskName string
 var taskNamespace string
 var resultName string
+var KubeConfig string
 var rootCmd = &cobra.Command{
 	Use:   "inspect",
 	Short: "inspect finds various problems on Kubernetes cluster.",
@@ -19,7 +20,7 @@ var rootCmd = &cobra.Command{
 var clients *kube.KubernetesClient
 
 func Execute() {
-	k8sConfig, err := kube.GetKubeConfigInCluster()
+	k8sConfig, err := kube.GetKubeConfig(KubeConfig)
 	if err != nil {
 		klog.Error(fmt.Sprintf("Failed to load cluster clients. err:%s", err))
 		os.Exit(1)
@@ -43,4 +44,5 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&resultName, "result-name", "", "configmap name")
 	rootCmd.PersistentFlags().StringVar(&taskName, "task-name", "", "task name")
 	rootCmd.PersistentFlags().StringVar(&taskNamespace, "task-namespace", "", "task-name")
+	rootCmd.PersistentFlags().StringVar(&KubeConfig, "kube-config", "", "kube-config")
 }

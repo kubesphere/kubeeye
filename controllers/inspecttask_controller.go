@@ -394,7 +394,7 @@ func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName
 						}, {
 							Name:             "root",
 							ReadOnly:         true,
-							MountPath:        constant.PathPrefix,
+							MountPath:        constant.RootPathPrefix,
 							MountPropagation: &mountPropagation,
 						}, {
 							Name:      "system-socket",

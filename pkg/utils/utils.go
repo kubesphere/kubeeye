@@ -91,3 +91,12 @@ func DiffString(base1 string, base2 string) []string {
 	}
 	return isseus
 }
+func FormatBool(b *bool) string {
+	if b == nil {
+		return "false"
+	}
+	if *b {
+		return "true"
+	}
+	return "false"
+}
