@@ -300,6 +300,7 @@ func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
 		query, _, err := queryApi.Query(ctx, *proRule.Rule, time.Now())
 		if err != nil {
 			klog.Error(err)
+			return nil, err
 		}
 		marshal, err := json.Marshal(query)
 
