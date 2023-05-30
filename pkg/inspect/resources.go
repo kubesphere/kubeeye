@@ -430,7 +430,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 			var ctl v1alpha2.NodeResultItem
 			ctl.Name = sysRule.Name
 			if err != nil {
-				errVal := fmt.Sprintf("name:%s,val:%s to does not exist", sysRule.Name, ctlRule)
+				errVal := fmt.Sprintf("name:%s to does not exist", sysRule.Name)
 				ctl.Value = &errVal
 			} else {
 				val := strings.Join(ctlRule, ",")
