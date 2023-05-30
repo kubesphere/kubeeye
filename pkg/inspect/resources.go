@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/coreos/go-systemd/v22/dbus"
-	"github.com/kubesphere/kubeeye/visitor"
+	"github.com/kubesphere/kubeeye/visitor/parser"
 
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
@@ -438,12 +438,12 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 				ctl.Value = &val
 
 				if sysRule.Rule != nil {
-					if _, err := visitor.CheckRule(*sysRule.Rule); err != nil {
+					if _, err := parser.CheckRule(*sysRule.Rule); err != nil {
 						sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
 						klog.Error(sprintf)
 						ctl.Value = &sprintf
 					} else {
-						err, res := visitor.EventRuleEvaluate(map[string]interface{}{sysRule.Name: ctlRule[0]}, *sysRule.Rule)
+						err, res := parser.EventRuleEvaluate(map[string]interface{}{sysRule.Name: ctlRule[0]}, *sysRule.Rule)
 						if err != nil {
 							sprintf := fmt.Sprintf("err:%s", err.Error())
 							klog.Error(sprintf)
@@ -486,12 +486,12 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 					ctl.Value = &status.ActiveState
 
 					if r.Rule != nil {
-						if _, err := visitor.CheckRule(*r.Rule); err != nil {
+						if _, err := parser.CheckRule(*r.Rule); err != nil {
 							sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
 							klog.Error(sprintf)
 							ctl.Value = &sprintf
 						} else {
-							err, res := visitor.EventRuleEvaluate(map[string]interface{}{r.Name: status.ActiveState}, *r.Rule)
+							err, res := parser.EventRuleEvaluate(map[string]interface{}{r.Name: status.ActiveState}, *r.Rule)
 							if err != nil {
 								sprintf := fmt.Sprintf("err:%s", err.Error())
 								klog.Error(sprintf)

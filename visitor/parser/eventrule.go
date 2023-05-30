@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package visitor
+package parser
 
 import (
 	"bytes"
@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 	"github.com/golang/glog"
-	"github.com/kubesphere/kubeeye/visitor/parser"
 	"regexp"
 	"strconv"
 	"strings"
@@ -38,7 +37,7 @@ const (
 )
 
 type Visitor struct {
-	parser.BaseEventRuleVisitor
+	BaseEventRuleVisitor
 	valueStack []bool
 	m          map[string]interface{}
 }
@@ -72,11 +71,11 @@ func (v *Visitor) visitRule(node antlr.RuleNode) interface{} {
 	return nil
 }
 
-func (v *Visitor) VisitStart(ctx *parser.StartContext) interface{} {
+func (v *Visitor) VisitStart(ctx *StartContext) interface{} {
 	return v.visitRule(ctx.Expression())
 }
 
-func (v *Visitor) VisitAndOr(ctx *parser.AndOrContext) interface{} {
+func (v *Visitor) VisitAndOr(ctx *AndOrContext) interface{} {
 
 	//push expression result to stack
 	v.visitRule(ctx.Expression(0))
@@ -87,9 +86,9 @@ func (v *Visitor) VisitAndOr(ctx *parser.AndOrContext) interface{} {
 	right := v.popValue()
 	left := v.popValue()
 	switch t.GetTokenType() {
-	case parser.EventRuleParserAND:
+	case EventRuleParserAND:
 		v.pushValue(left && right)
-	case parser.EventRuleParserOR:
+	case EventRuleParserOR:
 		v.pushValue(left || right)
 	default:
 		panic("should not happen")
@@ -98,7 +97,7 @@ func (v *Visitor) VisitAndOr(ctx *parser.AndOrContext) interface{} {
 	return nil
 }
 
-func (v *Visitor) VisitNot(ctx *parser.NotContext) interface{} {
+func (v *Visitor) VisitNot(ctx *NotContext) interface{} {
 
 	v.visitRule(ctx.Expression())
 
@@ -108,7 +107,7 @@ func (v *Visitor) VisitNot(ctx *parser.NotContext) interface{} {
 	return nil
 }
 
-func (v *Visitor) VisitCompare(ctx *parser.CompareContext) interface{} {
+func (v *Visitor) VisitCompare(ctx *CompareContext) interface{} {
 
 	varName := ctx.VAR().GetText()
 	if !strings.Contains(varName, "[") {
@@ -128,7 +127,7 @@ func (v *Visitor) VisitCompare(ctx *parser.CompareContext) interface{} {
 	return nil
 }
 
-func compare(name string, value interface{}, ctx *parser.CompareContext) bool {
+func compare(name string, value interface{}, ctx *CompareContext) bool {
 
 	if value == nil {
 		return false
@@ -141,17 +140,17 @@ func compare(name string, value interface{}, ctx *parser.CompareContext) bool {
 		strValue = strings.TrimRight(strValue, `"`)
 
 		switch ctx.GetOp().GetTokenType() {
-		case parser.EventRuleParserEQU:
+		case EventRuleParserEQU:
 			result = fmt.Sprint(value) == strValue
-		case parser.EventRuleParserNEQ:
+		case EventRuleParserNEQ:
 			result = fmt.Sprint(value) != strValue
-		case parser.EventRuleParserGT:
+		case EventRuleParserGT:
 			result = fmt.Sprint(value) > strValue
-		case parser.EventRuleParserLT:
+		case EventRuleParserLT:
 			result = fmt.Sprint(value) < strValue
-		case parser.EventRuleParserGTE:
+		case EventRuleParserGTE:
 			result = fmt.Sprint(value) >= strValue
-		case parser.EventRuleParserLTE:
+		case EventRuleParserLTE:
 			result = fmt.Sprint(value) <= strValue
 		}
 
@@ -168,17 +167,17 @@ func compare(name string, value interface{}, ctx *parser.CompareContext) bool {
 		}
 
 		switch ctx.GetOp().GetTokenType() {
-		case parser.EventRuleParserEQU:
+		case EventRuleParserEQU:
 			result = num == numValue
-		case parser.EventRuleParserNEQ:
+		case EventRuleParserNEQ:
 			result = num != numValue
-		case parser.EventRuleParserGT:
+		case EventRuleParserGT:
 			result = num > numValue
-		case parser.EventRuleParserLT:
+		case EventRuleParserLT:
 			result = num < numValue
-		case parser.EventRuleParserGTE:
+		case EventRuleParserGTE:
 			result = num >= numValue
-		case parser.EventRuleParserLTE:
+		case EventRuleParserLTE:
 			result = num <= numValue
 		}
 
@@ -188,7 +187,7 @@ func compare(name string, value interface{}, ctx *parser.CompareContext) bool {
 	return result
 }
 
-func (v *Visitor) VisitBoolCompare(ctx *parser.BoolCompareContext) interface{} {
+func (v *Visitor) VisitBoolCompare(ctx *BoolCompareContext) interface{} {
 
 	varName := ctx.VAR().GetText()
 	if !strings.Contains(varName, "[") {
@@ -203,7 +202,7 @@ func (v *Visitor) VisitBoolCompare(ctx *parser.BoolCompareContext) interface{} {
 	return nil
 }
 
-func boolCompare(name string, value interface{}, ctx *parser.BoolCompareContext) bool {
+func boolCompare(name string, value interface{}, ctx *BoolCompareContext) bool {
 
 	if value == nil {
 		return false
@@ -220,7 +219,7 @@ func boolCompare(name string, value interface{}, ctx *parser.BoolCompareContext)
 	}
 
 	result := boolValue == bv
-	if ctx.GetOp().GetTokenType() == parser.EventRuleLexerNEQ {
+	if ctx.GetOp().GetTokenType() == EventRuleLexerNEQ {
 		result = !result
 	}
 
@@ -228,7 +227,7 @@ func boolCompare(name string, value interface{}, ctx *parser.BoolCompareContext)
 	return result
 }
 
-func (v *Visitor) VisitContainsOrNot(ctx *parser.ContainsOrNotContext) interface{} {
+func (v *Visitor) VisitContainsOrNot(ctx *ContainsOrNotContext) interface{} {
 
 	varName := ctx.VAR().GetText()
 	if !strings.Contains(varName, "[") {
@@ -243,7 +242,7 @@ func (v *Visitor) VisitContainsOrNot(ctx *parser.ContainsOrNotContext) interface
 	return nil
 }
 
-func containsOrNot(name string, value interface{}, ctx *parser.ContainsOrNotContext) bool {
+func containsOrNot(name string, value interface{}, ctx *ContainsOrNotContext) bool {
 
 	if value == nil {
 		return false
@@ -262,7 +261,7 @@ func containsOrNot(name string, value interface{}, ctx *parser.ContainsOrNotCont
 	}
 
 	result := strings.Contains(fmt.Sprint(value), strValue)
-	if ctx.GetOp().GetTokenType() == parser.EventRuleParserNOTCONTAINS {
+	if ctx.GetOp().GetTokenType() == EventRuleParserNOTCONTAINS {
 		result = !result
 	}
 
@@ -270,7 +269,7 @@ func containsOrNot(name string, value interface{}, ctx *parser.ContainsOrNotCont
 	return result
 }
 
-func (v *Visitor) VisitInOrNot(ctx *parser.InOrNotContext) interface{} {
+func (v *Visitor) VisitInOrNot(ctx *InOrNotContext) interface{} {
 
 	varName := ctx.VAR().GetText()
 	if !strings.Contains(varName, "[") {
@@ -284,7 +283,7 @@ func (v *Visitor) VisitInOrNot(ctx *parser.InOrNotContext) interface{} {
 	return nil
 }
 
-func inOrNot(name string, value interface{}, ctx *parser.InOrNotContext) bool {
+func inOrNot(name string, value interface{}, ctx *InOrNotContext) bool {
 
 	if value == nil {
 		return false
@@ -311,7 +310,7 @@ func inOrNot(name string, value interface{}, ctx *parser.InOrNotContext) bool {
 		}
 	}
 
-	if ctx.GetOp().GetTokenType() == parser.EventRuleParserNOTIN {
+	if ctx.GetOp().GetTokenType() == EventRuleParserNOTIN {
 		result = !result
 	}
 
@@ -319,7 +318,7 @@ func inOrNot(name string, value interface{}, ctx *parser.InOrNotContext) bool {
 	return result
 }
 
-func (v *Visitor) VisitRegexOrNot(ctx *parser.RegexOrNotContext) interface{} {
+func (v *Visitor) VisitRegexOrNot(ctx *RegexOrNotContext) interface{} {
 
 	varName := ctx.VAR().GetText()
 	if !strings.Contains(varName, "[") {
@@ -333,7 +332,7 @@ func (v *Visitor) VisitRegexOrNot(ctx *parser.RegexOrNotContext) interface{} {
 	return nil
 }
 
-func regexOrNot(name string, value interface{}, ctx *parser.RegexOrNotContext) bool {
+func regexOrNot(name string, value interface{}, ctx *RegexOrNotContext) bool {
 
 	if value == nil {
 		return false
@@ -344,7 +343,7 @@ func regexOrNot(name string, value interface{}, ctx *parser.RegexOrNotContext) b
 	strValue = strings.TrimRight(strValue, `"`)
 
 	pattern := strValue
-	if ctx.GetOp().GetTokenType() == parser.EventRuleLexerLIKE || ctx.GetOp().GetTokenType() == parser.EventRuleLexerNOTLIKE {
+	if ctx.GetOp().GetTokenType() == EventRuleLexerLIKE || ctx.GetOp().GetTokenType() == EventRuleLexerNOTLIKE {
 
 		pattern = strings.ReplaceAll(pattern, "?", ".")
 
@@ -359,7 +358,7 @@ func regexOrNot(name string, value interface{}, ctx *parser.RegexOrNotContext) b
 	if err != nil {
 		panic(err)
 	}
-	if ctx.GetOp().GetTokenType() == parser.EventRuleLexerNOTLIKE || ctx.GetOp().GetTokenType() == parser.EventRuleLexerNOTREGEX {
+	if ctx.GetOp().GetTokenType() == EventRuleLexerNOTLIKE || ctx.GetOp().GetTokenType() == EventRuleLexerNOTREGEX {
 		result = !result
 	}
 
@@ -367,11 +366,11 @@ func regexOrNot(name string, value interface{}, ctx *parser.RegexOrNotContext) b
 	return result
 }
 
-func (v *Visitor) VisitVariable(ctx *parser.VariableContext) interface{} {
+func (v *Visitor) VisitVariable(ctx *VariableContext) interface{} {
 	return visitVariable(ctx.VAR().GetText(), v, true)
 }
 
-func (v *Visitor) VisitNotVariable(ctx *parser.NotVariableContext) interface{} {
+func (v *Visitor) VisitNotVariable(ctx *NotVariableContext) interface{} {
 	return visitVariable(ctx.VAR().GetText(), v, false)
 }
 
@@ -402,12 +401,12 @@ func variable(varName string, v *Visitor, flag bool) bool {
 
 }
 
-func (v *Visitor) VisitParenthesis(ctx *parser.ParenthesisContext) interface{} {
+func (v *Visitor) VisitParenthesis(ctx *ParenthesisContext) interface{} {
 	v.visitRule(ctx.Expression())
 	return nil
 }
 
-func (v *Visitor) VisitExistsOrNot(ctx *parser.ExistsOrNotContext) interface{} {
+func (v *Visitor) VisitExistsOrNot(ctx *ExistsOrNotContext) interface{} {
 	varName := ctx.VAR().GetText()
 	if !strings.Contains(varName, "[") {
 		v.pushValue(existsOrNot(varName, v.m[varName], ctx.GetOp().GetTokenType(), v, true))
@@ -435,7 +434,7 @@ func existsOrNot(name string, value interface{}, tokenType int, v *Visitor, flag
 		}
 	}
 
-	if tokenType == parser.EventRuleParserNOTEXISTS {
+	if tokenType == EventRuleParserNOTEXISTS {
 		result = !result
 	}
 
@@ -466,10 +465,10 @@ func EventRuleEvaluate(m map[string]interface{}, expression string) (error, bool
 
 		is := antlr.NewInputStream(expression)
 		// Create the Lexer
-		lexer := parser.NewEventRuleLexer(is)
+		lexer := NewEventRuleLexer(is)
 		tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 		// Create the Parser
-		p := parser.NewEventRuleParser(tokens)
+		p := NewEventRuleParser(tokens)
 		v := NewVisitor(m)
 		//Start is rule name of EventRule.g4
 		p.Start().Accept(v)
@@ -486,8 +485,8 @@ func EventRuleEvaluate(m map[string]interface{}, expression string) (error, bool
 
 func arrayOperator(v *Visitor, varName string, tokenType int, match func(value interface{}) bool) bool {
 	if strings.HasSuffix(varName, "]") &&
-		tokenType != parser.EventRuleParserNOTCONTAINS &&
-		tokenType != parser.EventRuleParserCONTAINS {
+		tokenType != EventRuleParserNOTCONTAINS &&
+		tokenType != EventRuleParserCONTAINS {
 		panic("array only support contains or not contains method")
 	}
 
