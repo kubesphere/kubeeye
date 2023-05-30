@@ -39,7 +39,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -352,9 +351,9 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 	if err != nil {
 		klog.Errorf(" failed to get loadavg,err:%s", err)
 	} else {
-		nodeInfoResult.NodeInfo["load1"] = strconv.FormatFloat(avg.Load1, 'E', -1, 64)
-		nodeInfoResult.NodeInfo["load5"] = strconv.FormatFloat(avg.Load5, 'E', -1, 64)
-		nodeInfoResult.NodeInfo["load15"] = strconv.FormatFloat(avg.Load15, 'E', -1, 64)
+		nodeInfoResult.NodeInfo["load1"] = fmt.Sprintf("%.2f", avg.Load1)
+		nodeInfoResult.NodeInfo["load5"] = fmt.Sprintf("%.2f", avg.Load5)
+		nodeInfoResult.NodeInfo["load15"] = fmt.Sprintf("%.2f", avg.Load15)
 	}
 
 	fileBytes, ok := task.Spec.Rules[constant.FileChange]
