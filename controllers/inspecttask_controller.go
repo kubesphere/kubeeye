@@ -407,8 +407,8 @@ func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName
 					NodeName:           nodeName,
 					NodeSelector:       nodeSelector,
 					RestartPolicy:      corev1.RestartPolicyNever,
-					HostNetwork:        true,
-					HostPID:            true,
+					//HostNetwork:        true,
+					//HostPID:            true,
 
 					Volumes: []corev1.Volume{{
 						Name: "root",
