@@ -428,6 +428,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 
 		for _, sysRule := range sysctl {
 			ctlRule, err := fs.SysctlStrings(sysRule.Name)
+			klog.Infof("name:%s,value:%s", sysRule.Name, ctlRule)
 			var ctl v1alpha2.NodeResultItem
 			ctl.Name = sysRule.Name
 			if err != nil {

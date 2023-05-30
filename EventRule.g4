@@ -21,7 +21,7 @@ NOTREGEX: 'not regex';
 EXISTS: 'exists';
 NOTEXISTS: 'not exists';
 COMMA: ',';
-NUMBER: [-]?[0-9]+('.'[0-9]+)?;
+NUMBER: [ -]?[0-9]+('.'[0-9]+)?;
 BOOLEAN: 'True'|'TRUE'|'true'|'False'|'FALSE'|'false';
 STRING: '"' (ESC|.)*? '"';
 //VAR: [a-zA-Z0-9_.-]+;
