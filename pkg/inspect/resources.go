@@ -352,7 +352,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 	usedMemory := totalMemory - freeMemory
 	memoryUsage := float64(usedMemory) / float64(totalMemory)
 	memoryFree := float64(freeMemory) / float64(totalMemory)
-	nodeInfoResult.NodeInfo = map[string]string{"memoryUsage": fmt.Sprintf("%.2f%", memoryUsage*100), "memoryIdle": fmt.Sprintf("%.2f%", memoryFree*100)}
+	nodeInfoResult.NodeInfo = map[string]string{"memoryUsage": fmt.Sprintf("%.2f", memoryUsage*100), "memoryIdle": fmt.Sprintf("%.2f", memoryFree*100)}
 	avg, err := fs.LoadAvg()
 	if err != nil {
 		klog.Errorf(" failed to get loadavg,err:%s", err)
