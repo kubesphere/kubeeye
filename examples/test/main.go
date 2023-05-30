@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/prometheus/procfs"
 )
 
 func main() {
@@ -115,14 +115,119 @@ func main() {
 	//	"net.ipv4.udp_rmem_min",
 	//	"net.ipv4.udp_wmem_min"}
 	//fmt.Println(config)
+	// 获取CPU使用率和空闲率
+	//const cpuData = os.cpus();
+	//const totalUsage = cpuData.reduce((acc, cur) => acc + cur.times.user + cur.times.sys + cur.times.nice, 0);
+	//const totalIdle = cpuData.reduce((acc, cur) => acc + cur.times.idle, 0);
+	//const usagePercentage = Math.round(totalUsage / (totalUsage + totalIdle) * 100);
+	//const idlePercentage = Math.round(totalIdle / (totalUsage + totalIdle) * 100);
+	fs, err := procfs.NewFS("/proc")
+	if err != nil {
 
-	var nodeInfo kubeeyev1alpha2.NodeInfoResult
+	}
+	stat, err := fs.Stat()
+	if err != nil {
+	}
+	totalUsage := 0.0
+	totalIdle := 0.0
+	for _, cpuStat := range stat.CPU {
+		fmt.Println(cpuStat.System)
+		totalUsage += cpuStat.System + cpuStat.User + cpuStat.Nice
+		totalIdle += cpuStat.Idle
+	}
 
-	nodeInfo.FileChangeResult = append(nodeInfo.FileChangeResult, kubeeyev1alpha2.FileChangeResultItem{
-		FileName: "222",
-		Path:     "",
-	})
-	nodeInfo.NodeInfo = map[string]map[string]string{"node1": {"cpu": "1"}}
-	fmt.Println(nodeInfo)
+	fmt.Println(totalUsage, totalIdle)
 
+	//_ = inspect.CSVOutput(clients)
+
+	//if _, err := visitor.CheckRule("etcd = \"active\""); err != nil {
+	//	sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
+	//	klog.Error(sprintf)
+	//} else {
+	//	err, res := visitor.EventRuleEvaluate(map[string]interface{}{"etcd": "a"}, "etcd = \"active\"")
+	//	if err != nil {
+	//		sprintf := fmt.Sprintf("err:%s", err.Error())
+	//		klog.Error(sprintf)
+	//
+	//	} else {
+	//		fmt.Println(res)
+	//	}
+	//
+	//}
+
+	//f := excelize.NewFile()
+	//defer func() {
+	//	if err := f.Close(); err != nil {
+	//		fmt.Println(err)
+	//	}
+	//}()
+	//// 创建一个工作表
+	//index, err := f.NewSheet("Sheet2")
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return
+	//}
+	//
+	//// 设置单元格的值
+	//f.SetCellValue("Sheet2", "A2", "Hello world.")
+	//f.SetSheetRow("Sheet1", "B2", &[]interface{}{1, 2, 3, 4, 5, 6, 7, 8, 9})
+	//// 设置工作簿的默认工作表
+	//f.SetActiveSheet(index)
+	//// 根据指定路径保存文件
+	//if err := f.SaveAs("Book1.xlsx"); err != nil {
+	//	fmt.Println(err)
+	//}
+	//file, err := os.Open(path.Join("/proc", "1/mounts"))
+	//scanner := bufio.NewScanner(file)
+	//defer file.Close()
+	//for scanner.Scan() {
+	//
+	//	fields := strings.Fields(scanner.Text())
+	//	fmt.Println(fields)
+	//}
+	//buf := new(unix.Statfs_t)
+	//err = unix.Statfs(path.Join(constant.RootPathPrefix, "/"), buf)
+	//if err != nil {
+	//
+	//}
+	//
+	//size := float64(buf.Blocks) * float64(buf.Bsize)
+	//free := float64(buf.Bfree) * float64(buf.Bsize)
+	//avail := float64(buf.Bavail) * float64(buf.Bsize)
+	//files := float64(buf.Files)
+	//filesFree := float64(buf.Ffree)
+	//
+	//fmt.Println(size)
+	//fmt.Println(free)
+	//fmt.Println(avail)
+	//fmt.Println(files)
+	//fmt.Println(filesFree)
+
+	//client, err := api.NewClient(api.Config{
+	//	Address: "http://172.31.73.216:30258",
+	//})
+	//if err != nil {
+	//	klog.Error("create prometheus client failed", err)
+	//
+	//}
+	//queryApi := apiprometheusv1.NewAPI(client)
+	//query, _, _ := queryApi.Query(context.TODO(), "node:load15:ratio<1", time.Now())
+	//marshal, err := json.Marshal(query)
+	//
+	//var queryResults model.Samples
+	//err = json.Unmarshal(marshal, &queryResults)
+	//if err != nil {
+	//	klog.Error("unmarshal modal Samples failed", err)
+	//
+	//}
+	//var queryResultsMap []map[string]string
+	//for i, result := range queryResults {
+	//	temp := map[string]string{"value": result.Value.String(), "time": result.Timestamp.String()}
+	//	klog.Info(i, result)
+	//	for name, value := range result.Metric {
+	//		klog.Infof("%s---%s", name, value)
+	//		temp[string(name)] = string(value)
+	//	}
+	//	queryResultsMap = append(queryResultsMap, temp)
+	//}
 }

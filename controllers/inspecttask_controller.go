@@ -52,7 +52,7 @@ type InspectTaskReconciler struct {
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks/finalizers,verbs=update
 //+kubebuilder:rbac:groups="",resources="*",verbs=get;list
 //+kubebuilder:rbac:groups="apps",resources="*",verbs=get;list
-//+kubebuilder:rbac:groups="batch",resources="*",verbs=get;list
+//+kubebuilder:rbac:groups="batch",resources="*",verbs=get;list;create
 //+kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources="*",verbs=get;list
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to

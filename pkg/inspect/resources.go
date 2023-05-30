@@ -297,7 +297,10 @@ func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
 			continue
 		}
 		queryApi := apiprometheusv1.NewAPI(client)
-		query, _, _ := queryApi.Query(ctx, *proRule.Rule, time.Now())
+		query, _, err := queryApi.Query(ctx, *proRule.Rule, time.Now())
+		if err != nil {
+			klog.Error(err)
+		}
 		marshal, err := json.Marshal(query)
 
 		var queryResults model.Samples
@@ -346,7 +349,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 	usedMemory := totalMemory - freeMemory
 	memoryUsage := float64(usedMemory) / float64(totalMemory)
 	memoryFree := float64(freeMemory) / float64(totalMemory)
-	nodeInfoResult.NodeInfo = map[string]string{"memoryUsage": fmt.Sprintf("%2.f", memoryUsage*100), "memoryIdle": fmt.Sprintf("%2.f", memoryFree*100)}
+	nodeInfoResult.NodeInfo = map[string]string{"memoryUsage": fmt.Sprintf("%.2f", memoryUsage*100), "memoryIdle": fmt.Sprintf("%.2f", memoryFree*100)}
 	avg, err := fs.LoadAvg()
 	if err != nil {
 		klog.Errorf(" failed to get loadavg,err:%s", err)
@@ -375,6 +378,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 				klog.Errorf("Failed to open base file path:%s,error:%s", baseFile, fileErr)
 				resultItem.Issues = []string{fmt.Sprintf("%s:The file does not exist", file.Name)}
 				nodeInfoResult.FileChangeResult = append(nodeInfoResult.FileChangeResult, resultItem)
+
 				continue
 			}
 			baseFileName := fmt.Sprintf("%s-%s", constant.BaseFilePrefix, file.Name)
