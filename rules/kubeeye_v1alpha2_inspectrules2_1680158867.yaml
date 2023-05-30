@@ -1,5 +1,5 @@
 apiVersion: kubeeye.kubesphere.io/v1alpha2
-kind: InspectRules
+kind: InspectRule
 metadata:
   creationTimestamp: null
   labels:

@@ -15,8 +15,15 @@ spec:
     - name: vm.max_map_count
       rule: vm.max_map_count = 1
 #      nodeName: node1
+    - name: net.ipv4.ip_forward
+      rule: net.ipv4.ip_forward = 0
+    - name: net.bridge.bridge-nf-call-arptables
+      rule: net.bridge.bridge-nf-call-arptables = 1
+    - name: net.bridge.bridge-nf-call-ip6tables
+      rule: net.bridge.bridge-nf-call-ip6tables = 1
     - name: net.ipv4.port
       rule: net.ipv4.port = 1
+    - name: net.ipv4.ip_local_reserved_ports
 #      nodeName: node1
 #      nodeSelector:
 #        ope: XXX
@@ -36,8 +43,6 @@ spec:
   prometheus:
     - name: harbor_health
       rule: harbor_health==1
-    - name: net.ipv4.ip_local_reserved_ports
-      rule: net.ipv4.ip_local_reserved_ports = "30000-32767"
     - name: harbor_system_info
       rule: node_filesystem_avail_bytes/node_filesystem_size_bytes{mountpoint=~"/var/lib/docker|/kube|/home|/var|/"}>0.25
   opas:

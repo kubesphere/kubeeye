@@ -1,10 +1,5 @@
 package main
 
-import (
-	"fmt"
-	"github.com/prometheus/procfs"
-)
-
 func main() {
 
 	//cluster, _ := kube.GetKubeConfigInCluster()
@@ -121,23 +116,34 @@ func main() {
 	//const totalIdle = cpuData.reduce((acc, cur) => acc + cur.times.idle, 0);
 	//const usagePercentage = Math.round(totalUsage / (totalUsage + totalIdle) * 100);
 	//const idlePercentage = Math.round(totalIdle / (totalUsage + totalIdle) * 100);
-	fs, err := procfs.NewFS("/proc")
-	if err != nil {
+	//fs, err := procfs.NewFS("/proc")
+	//if err != nil {
+	//
+	//}
+	//stat, err := fs.Stat()
+	//if err != nil {
+	//}
+	//totalUsage := 0.0
+	//totalIdle := 0.0
+	//for _, cpuStat := range stat.CPU {
+	//	fmt.Println(cpuStat.System)
+	//	totalUsage += cpuStat.System + cpuStat.User + cpuStat.Nice
+	//	totalIdle += cpuStat.Idle
+	//}
+	//
+	//fmt.Println(totalUsage, totalIdle)
+	//fmt.Println(totalUsage / (totalUsage + totalIdle))
+	//fmt.Println(totalIdle / (totalUsage + totalIdle))
 
-	}
-	stat, err := fs.Stat()
-	if err != nil {
-	}
-	totalUsage := 0.0
-	totalIdle := 0.0
-	for _, cpuStat := range stat.CPU {
-		fmt.Println(cpuStat.System)
-		totalUsage += cpuStat.System + cpuStat.User + cpuStat.Nice
-		totalIdle += cpuStat.Idle
-	}
-
-	fmt.Println(totalUsage, totalIdle)
-
+	//for _, s := range config {
+	//	strings, err := fs.SysctlStrings(s)
+	//	if err != nil {
+	//		klog.Error(err)
+	//		continue
+	//	}
+	//	fmt.Println(strings)
+	//
+	//}
 	//_ = inspect.CSVOutput(clients)
 
 	//if _, err := visitor.CheckRule("etcd = \"active\""); err != nil {
@@ -211,7 +217,7 @@ func main() {
 	//
 	//}
 	//queryApi := apiprometheusv1.NewAPI(client)
-	//query, _, _ := queryApi.Query(context.TODO(), "node:load15:ratio<1", time.Now())
+	//query, _, _ := queryApi.Query(context.TODO(), "node_filesystem_avail_bytes/node_filesystem_size_bytes{mountpoint=~\"/var/lib/docker|/kube|/home|/var|/\"}>0.25", time.Now())
 	//marshal, err := json.Marshal(query)
 	//
 	//var queryResults model.Samples
@@ -230,4 +236,5 @@ func main() {
 	//	}
 	//	queryResultsMap = append(queryResultsMap, temp)
 	//}
+
 }
