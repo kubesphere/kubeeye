@@ -78,7 +78,6 @@ func SliceRemove(s string, o interface{}) interface{} {
 func DiffString(base1 string, base2 string) []string {
 	dmp := diffmatchpatch.New()
 	diffs := dmp.DiffMain(base1, base2, false)
-	fmt.Println(dmp.DiffPrettyText(diffs))
 	scan := bufio.NewScanner(strings.NewReader(dmp.DiffPrettyText(diffs)))
 	lineNum := 1
 	var isseus []string

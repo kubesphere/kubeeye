@@ -23,7 +23,6 @@ spec:
       rule: net.bridge.bridge-nf-call-ip6tables = 1
     - name: net.ipv4.port
       rule: net.ipv4.port = 1
-    - name: net.ipv4.ip_local_reserved_ports
 #      nodeName: node1
 #      nodeSelector:
 #        ope: XXX

@@ -13,7 +13,7 @@ var taskNamespace string
 var resultName string
 var KubeConfig string
 var rootCmd = &cobra.Command{
-	Use:   "inspect",
+	Use:   "ke",
 	Short: "inspect finds various problems on Kubernetes cluster.",
 }
 
@@ -43,6 +43,6 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&resultName, "result-name", "", "configmap name")
 	rootCmd.PersistentFlags().StringVar(&taskName, "task-name", "", "task name")
-	rootCmd.PersistentFlags().StringVar(&taskNamespace, "task-namespace", "", "task-name")
+	rootCmd.PersistentFlags().StringVar(&taskNamespace, "task-namespace", "", "task-namespace")
 	rootCmd.PersistentFlags().StringVar(&KubeConfig, "kube-config", "", "kube-config")
 }

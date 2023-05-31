@@ -98,16 +98,14 @@ func CSVOutput(clients *kube.KubernetesClient, outPath *string, taskName string,
 			_ = f.SetSheetRow("opa", fmt.Sprintf("A%d", row), &[]string{"NameSpace", "Kind", "Name", "Level", "Message", "Reason"})
 			row++
 			for _, result := range item.Spec.OpaResult.ResourceResults {
-				value := []string{result.NameSpace, result.ResourceType, result.Name}
 
 				if result.ResultItems != nil {
 					for _, resultItem := range result.ResultItems {
-						value = append(value, resultItem.Level, resultItem.Message, resultItem.Reason)
-						_ = f.SetSheetRow("opa", fmt.Sprintf("A%d", row), &value)
+						_ = f.SetSheetRow("opa", fmt.Sprintf("A%d", row), &[]string{result.NameSpace, result.ResourceType, result.Name, resultItem.Level, resultItem.Message, resultItem.Reason})
 						row++
 					}
 				} else {
-					_ = f.SetSheetRow("opa", fmt.Sprintf("A%d", row), &value)
+					_ = f.SetSheetRow("opa", fmt.Sprintf("A%d", row), &[]string{result.NameSpace, result.ResourceType, result.Name})
 					row++
 				}
 
