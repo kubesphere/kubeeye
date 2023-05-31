@@ -29,6 +29,7 @@ import (
 	"github.com/prometheus/client_golang/api"
 	apiprometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/procfs"
 	corev1 "k8s.io/api/core/v1"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -336,46 +337,46 @@ func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
 func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clients *kube.KubernetesClient, ownerRef ...v1.OwnerReference) ([]byte, error) {
 	var nodeInfoResult v1alpha2.NodeInfoResult
 
-	//fs, err := procfs.NewFS(constant.DefaultProcPath)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//meminfo, err := fs.Meminfo()
-	//if err != nil {
-	//	return nil, err
-	//}
-	//totalMemory := *meminfo.MemTotal
-	//freeMemory := *meminfo.MemFree + *meminfo.Buffers + *meminfo.Cached
-	//usedMemory := totalMemory - freeMemory
-	//memoryUsage := float64(usedMemory) / float64(totalMemory)
-	//memoryFree := float64(freeMemory) / float64(totalMemory)
-	//nodeInfoResult.NodeInfo = map[string]string{"memoryUsage": fmt.Sprintf("%.2f", memoryUsage*100), "memoryIdle": fmt.Sprintf("%.2f", memoryFree*100)}
-	//avg, err := fs.LoadAvg()
-	//if err != nil {
-	//	klog.Errorf(" failed to get loadavg,err:%s", err)
-	//} else {
-	//	nodeInfoResult.NodeInfo["load1"] = fmt.Sprintf("%.2f", avg.Load1)
-	//	nodeInfoResult.NodeInfo["load5"] = fmt.Sprintf("%.2f", avg.Load5)
-	//	nodeInfoResult.NodeInfo["load15"] = fmt.Sprintf("%.2f", avg.Load15)
-	//}
-	//
-	//stat, err := fs.Stat()
-	//if err != nil {
-	//	klog.Error(err)
-	//} else {
-	//	totalUsage := 0.0
-	//	totalIdle := 0.0
-	//	for _, cpuStat := range stat.CPU {
-	//		totalUsage += cpuStat.System + cpuStat.User + cpuStat.Nice
-	//		totalIdle += cpuStat.Idle
-	//	}
-	//
-	//	usage := totalUsage / (totalUsage + totalIdle)
-	//	idle := totalIdle / (totalUsage + totalIdle)
-	//	nodeInfoResult.NodeInfo["cpuUsage"] = fmt.Sprintf("%.2f", usage*100)
-	//	nodeInfoResult.NodeInfo["cpuIdle"] = fmt.Sprintf("%.2f", idle*100)
-	//}
+	fs, err := procfs.NewFS(constant.DefaultProcPath)
+	if err != nil {
+		return nil, err
+	}
+
+	meminfo, err := fs.Meminfo()
+	if err != nil {
+		return nil, err
+	}
+	totalMemory := *meminfo.MemTotal
+	freeMemory := *meminfo.MemFree + *meminfo.Buffers + *meminfo.Cached
+	usedMemory := totalMemory - freeMemory
+	memoryUsage := float64(usedMemory) / float64(totalMemory)
+	memoryFree := float64(freeMemory) / float64(totalMemory)
+	nodeInfoResult.NodeInfo = map[string]string{"memoryUsage": fmt.Sprintf("%.2f", memoryUsage*100), "memoryIdle": fmt.Sprintf("%.2f", memoryFree*100)}
+	avg, err := fs.LoadAvg()
+	if err != nil {
+		klog.Errorf(" failed to get loadavg,err:%s", err)
+	} else {
+		nodeInfoResult.NodeInfo["load1"] = fmt.Sprintf("%.2f", avg.Load1)
+		nodeInfoResult.NodeInfo["load5"] = fmt.Sprintf("%.2f", avg.Load5)
+		nodeInfoResult.NodeInfo["load15"] = fmt.Sprintf("%.2f", avg.Load15)
+	}
+
+	stat, err := fs.Stat()
+	if err != nil {
+		klog.Error(err)
+	} else {
+		totalUsage := 0.0
+		totalIdle := 0.0
+		for _, cpuStat := range stat.CPU {
+			totalUsage += cpuStat.System + cpuStat.User + cpuStat.Nice
+			totalIdle += cpuStat.Idle
+		}
+
+		usage := totalUsage / (totalUsage + totalIdle)
+		idle := totalIdle / (totalUsage + totalIdle)
+		nodeInfoResult.NodeInfo["cpuUsage"] = fmt.Sprintf("%.2f", usage*100)
+		nodeInfoResult.NodeInfo["cpuIdle"] = fmt.Sprintf("%.2f", idle*100)
+	}
 	fileBytes, ok := task.Spec.Rules[constant.FileChange]
 	if ok {
 		var fileRule []v1alpha2.FileChangeRule
@@ -436,50 +437,50 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 		}
 	}
 
-	//sysctlBytes, ok := task.Spec.Rules[constant.Sysctl]
-	//if ok {
-	//	var sysctl []v1alpha2.SysRule
-	//	err := json.Unmarshal(sysctlBytes, &sysctl)
-	//	if err != nil {
-	//		klog.Error(err, " Failed to marshal kubeeye result")
-	//		return nil, err
-	//	}
-	//
-	//	for _, sysRule := range sysctl {
-	//		ctlRule, err := fs.SysctlStrings(sysRule.Name)
-	//		klog.Infof("name:%s,value:%s", sysRule.Name, ctlRule)
-	//		var ctl v1alpha2.NodeResultItem
-	//		ctl.Name = sysRule.Name
-	//		if err != nil {
-	//			errVal := fmt.Sprintf("name:%s to does not exist", sysRule.Name)
-	//			ctl.Value = &errVal
-	//		} else {
-	//			val := strings.Join(ctlRule, ",")
-	//			ctl.Value = &val
-	//
-	//			if sysRule.Rule != nil {
-	//				if _, err := parser.CheckRule(*sysRule.Rule); err != nil {
-	//					sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
-	//					klog.Error(sprintf)
-	//					ctl.Value = &sprintf
-	//				} else {
-	//					err, res := parser.EventRuleEvaluate(map[string]interface{}{sysRule.Name: ctlRule[0]}, *sysRule.Rule)
-	//					if err != nil {
-	//						sprintf := fmt.Sprintf("err:%s", err.Error())
-	//						klog.Error(sprintf)
-	//						ctl.Value = &sprintf
-	//					} else {
-	//						ctl.Assert = &res
-	//					}
-	//
-	//				}
-	//
-	//			}
-	//		}
-	//		nodeInfoResult.SysctlResult = append(nodeInfoResult.SysctlResult, ctl)
-	//	}
-	//
-	//}
+	sysctlBytes, ok := task.Spec.Rules[constant.Sysctl]
+	if ok {
+		var sysctl []v1alpha2.SysRule
+		err := json.Unmarshal(sysctlBytes, &sysctl)
+		if err != nil {
+			klog.Error(err, " Failed to marshal kubeeye result")
+			return nil, err
+		}
+
+		for _, sysRule := range sysctl {
+			ctlRule, err := fs.SysctlStrings(sysRule.Name)
+			klog.Infof("name:%s,value:%s", sysRule.Name, ctlRule)
+			var ctl v1alpha2.NodeResultItem
+			ctl.Name = sysRule.Name
+			if err != nil {
+				errVal := fmt.Sprintf("name:%s to does not exist", sysRule.Name)
+				ctl.Value = &errVal
+			} else {
+				val := strings.Join(ctlRule, ",")
+				ctl.Value = &val
+
+				if sysRule.Rule != nil {
+					if _, err := parser.CheckRule(*sysRule.Rule); err != nil {
+						sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
+						klog.Error(sprintf)
+						ctl.Value = &sprintf
+					} else {
+						err, res := parser.EventRuleEvaluate(map[string]interface{}{sysRule.Name: ctlRule[0]}, *sysRule.Rule)
+						if err != nil {
+							sprintf := fmt.Sprintf("err:%s", err.Error())
+							klog.Error(sprintf)
+							ctl.Value = &sprintf
+						} else {
+							ctl.Assert = &res
+						}
+
+					}
+
+				}
+			}
+			nodeInfoResult.SysctlResult = append(nodeInfoResult.SysctlResult, ctl)
+		}
+
+	}
 	systemdBytes, ok := task.Spec.Rules[constant.Systemd]
 
 	if ok {
