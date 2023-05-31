@@ -391,7 +391,7 @@ func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clien
 
 			resultItem.FileName = file.Name
 			resultItem.Path = file.Path
-			baseFile, fileErr := os.ReadFile(path.Join(file.Path))
+			baseFile, fileErr := os.ReadFile(path.Join(constant.RootPathPrefix, file.Path))
 			if fileErr != nil {
 				klog.Errorf("Failed to open base file path:%s,error:%s", baseFile, fileErr)
 				resultItem.Issues = []string{fmt.Sprintf("%s:The file does not exist", file.Name)}
