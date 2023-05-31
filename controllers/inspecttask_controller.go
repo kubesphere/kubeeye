@@ -358,7 +358,7 @@ func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName
 		BlockOwnerDeletion: &ownerController,
 	}
 	var resetBack int32 = 5
-	//var autoDelTime int32 = 60
+	var autoDelTime int32 = 60
 	var mountPropagation = corev1.MountPropagationHostToContainer
 	inspectJob := v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -368,8 +368,8 @@ func (r *InspectTaskReconciler) inspectJobsTemplate(ctx context.Context, jobName
 			Labels:          map[string]string{constant.LabelResultName: taskType},
 		},
 		Spec: v1.JobSpec{
-			BackoffLimit: &resetBack,
-			//TTLSecondsAfterFinished: &autoDelTime,
+			BackoffLimit:            &resetBack,
+			TTLSecondsAfterFinished: &autoDelTime,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "inspect-job-pod",
