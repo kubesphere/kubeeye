@@ -15,16 +15,9 @@ package main
 
 import (
 	"flag"
-	"os"
-	"sync"
-
-	"k8s.io/apimachinery/pkg/types"
-
-	"k8s.io/client-go/util/workqueue"
-
-	"github.com/kubesphere/kubeeye/pkg/inspect"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"go.uber.org/zap/zapcore"
+	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -101,17 +94,8 @@ func main() {
 		setupLog.Error(err, "Failed to load cluster clients")
 		os.Exit(1)
 	}
-	au := &inspect.Audit{
-		TaskQueue:   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		TaskResults: make(map[string]map[string]*kubeeyev1alpha2.Result),
-		K8sClient:   clients,
-		Cli:         mgr.GetClient(),
-		TaskOnceMap: make(map[types.NamespacedName]*sync.Once),
-	}
 
 	setupLog.Info("starting inspect")
-	go au.PluginsResultsReceiver(pluginsResultsReceiverAddr)
-	go au.StartAudit(ctx)
 
 	if err = (&controllers.InspectPlanReconciler{
 		Client:    mgr.GetClient(),
@@ -124,7 +108,6 @@ func main() {
 	if err = (&controllers.InspectTaskReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
-		Audit:      au,
 		K8sClients: clients,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "InspectTask")

@@ -1,5 +1,10 @@
 package main
 
+import (
+	"fmt"
+	"regexp"
+)
+
 func main() {
 
 	//cluster, _ := kube.GetKubeConfigInCluster()
@@ -150,7 +155,7 @@ func main() {
 	//	sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
 	//	klog.Error(sprintf)
 	//} else {
-	//	err, res := visitor.EventRuleEvaluate(map[string]interface{}{"etcd": "a"}, "etcd = \"active\"")
+	//	err, res := visitor.EventRuleEvaluate(map[string]options{}{"etcd": "a"}, "etcd = \"active\"")
 	//	if err != nil {
 	//		sprintf := fmt.Sprintf("err:%s", err.Error())
 	//		klog.Error(sprintf)
@@ -176,7 +181,7 @@ func main() {
 	//
 	//// 设置单元格的值
 	//f.SetCellValue("Sheet2", "A2", "Hello world.")
-	//f.SetSheetRow("Sheet1", "B2", &[]interface{}{1, 2, 3, 4, 5, 6, 7, 8, 9})
+	//f.SetSheetRow("Sheet1", "B2", &[]options{}{1, 2, 3, 4, 5, 6, 7, 8, 9})
 	//// 设置工作簿的默认工作表
 	//f.SetActiveSheet(index)
 	//// 根据指定路径保存文件
@@ -236,5 +241,8 @@ func main() {
 	//	}
 	//	queryResultsMap = append(queryResultsMap, temp)
 	//}
-
+	str := "net.bridge.bridge-nf-call-arptables - 1"
+	re := regexp.MustCompile(`-`)
+	replaced := re.ReplaceAllString(str, "_")
+	fmt.Println(replaced)
 }

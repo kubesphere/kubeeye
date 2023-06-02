@@ -50,6 +50,7 @@ type InspectTaskStatus struct {
 type JobPhase struct {
 	JobName  string `json:"jobName,omitempty"`
 	NodeName string `json:"nodeName,omitempty"`
+	RunRule  []byte `json:"runRule,omitempty"`
 	Phase    Phase  `json:"phase,omitempty"`
 }
 type Result struct {

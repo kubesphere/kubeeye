@@ -35,7 +35,7 @@ type InspectResultLister interface {
 	InspectResultListerExpansion
 }
 
-// inspectResultLister implements the InspectResultLister interface.
+// inspectResultLister implements the InspectResultLister options.
 type inspectResultLister struct {
 	indexer cache.Indexer
 }
@@ -71,7 +71,7 @@ type InspectResultNamespaceLister interface {
 }
 
 // inspectResultNamespaceLister implements the InspectResultNamespaceLister
-// interface.
+// options.
 type inspectResultNamespaceLister struct {
 	indexer   cache.Indexer
 	namespace string

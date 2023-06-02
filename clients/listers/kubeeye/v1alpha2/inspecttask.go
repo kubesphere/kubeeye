@@ -35,7 +35,7 @@ type InspectTaskLister interface {
 	InspectTaskListerExpansion
 }
 
-// inspectTaskLister implements the InspectTaskLister interface.
+// inspectTaskLister implements the InspectTaskLister options.
 type inspectTaskLister struct {
 	indexer cache.Indexer
 }
@@ -71,7 +71,7 @@ type InspectTaskNamespaceLister interface {
 }
 
 // inspectTaskNamespaceLister implements the InspectTaskNamespaceLister
-// interface.
+// options.
 type inspectTaskNamespaceLister struct {
 	indexer   cache.Indexer
 	namespace string

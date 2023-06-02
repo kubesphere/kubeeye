@@ -9,9 +9,9 @@ import (
 	"os"
 )
 
-var prometheusCmd = &cobra.Command{
-	Use:   constant.Prometheus,
-	Short: "inspect on prometheus resources on Kubernetes cluster.",
+var systemdCmd = &cobra.Command{
+	Use:   constant.Systemd,
+	Short: "inspect finds various problems on Kubernetes cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(taskName) == 0 || len(taskNamespace) == 0 || len(resultName) == 0 {
@@ -19,9 +19,9 @@ var prometheusCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err := inspect.JobInspect(cmd.Context(), taskName, taskNamespace, resultName, clients, constant.Prometheus)
+		err := inspect.JobInspect(cmd.Context(), taskName, taskNamespace, resultName, clients, constant.Systemd)
 		if err != nil {
-			klog.Errorf("kubeeye inspect failed with error: %s", err)
+			klog.Errorf("kubeeye inspect failed with error: %s,%v", err, err)
 			os.Exit(1)
 		}
 		fmt.Println(args, taskName, taskNamespace)
@@ -29,5 +29,5 @@ var prometheusCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(prometheusCmd)
+	rootCmd.AddCommand(systemdCmd)
 }

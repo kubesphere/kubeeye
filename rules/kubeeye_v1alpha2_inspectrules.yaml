@@ -13,16 +13,16 @@ metadata:
 spec:
   sysctl:
     - name: vm.max_map_count
-      rule: vm.max_map_count = 1
+      rule: vm.max_map_count == 1
 #      nodeName: node1
     - name: net.ipv4.ip_forward
       rule: net.ipv4.ip_forward = 0
     - name: net.bridge.bridge-nf-call-arptables
-      rule: net.bridge.bridge-nf-call-arptables = 1
+      rule: net.bridge.bridge-nf-call-arptables == 1
     - name: net.bridge.bridge-nf-call-ip6tables
-      rule: net.bridge.bridge-nf-call-ip6tables = 1
+      rule: net.bridge.bridge-nf-call-ip6tables == 1
     - name: net.ipv4.port
-      rule: net.ipv4.port = 1
+      rule: net.ipv4.port == 1
 #      nodeName: node1
 #      nodeSelector:
 #        ope: XXX
@@ -36,6 +36,7 @@ spec:
   fileChange:
     - name: config-sample
       path: /root/config-sample.yaml
+      nodeName: master
     - name: inspecttask
       path: /Users/xiaoliu/Desktop/work/kubeeye/rules/kubeeye_v1alpha2_inspecttask.yaml
   prometheusEndpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090

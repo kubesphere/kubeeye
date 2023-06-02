@@ -30,7 +30,7 @@ import (
 )
 
 // InspectTasksGetter has a method to return a InspectTaskInterface.
-// A group's client should implement this interface.
+// A group's client should implement this options.
 type InspectTasksGetter interface {
 	InspectTasks(namespace string) InspectTaskInterface
 }

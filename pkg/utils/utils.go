@@ -9,7 +9,7 @@ import (
 
 func ArrayFind(s string, sub []string) (int, bool) {
 
-	index, b, _ := ArrayFinds(sub, func(m string) bool {
+	index, b, _ := ArrayFinds[string](sub, func(m string) bool {
 		return s == m
 	})
 	return index, b
@@ -28,28 +28,15 @@ func ArrayFilter[T any](filterData []T, filter func(v T) bool) ([]T, []T) {
 	return where, notWhere
 }
 
-func ArrayFinds(maps interface{}, f func(m string) bool) (int, bool, interface{}) {
+func ArrayFinds[T any](maps []T, f func(m T) bool) (int, bool, T) {
+	var val T
+	for i, t := range maps {
 
-	switch maps.(type) {
-	case []string:
-		s := maps.([]string)
-		for i := range s {
-			if b := f(s[i]); b {
-				return i, b, s[i]
-			}
-
+		if f(t) {
+			return i, true, t
 		}
-	case map[string]interface{}:
-		m := maps.(map[string]interface{})
-		for key, val := range m {
-			if b := f(key); b {
-				return 0, b, val
-			}
-		}
-	default:
-		fmt.Printf("%T\n", maps)
 	}
-	return -1, false, nil
+	return -1, false, val
 }
 
 func ArrayDeduplication(sub []string) []string {

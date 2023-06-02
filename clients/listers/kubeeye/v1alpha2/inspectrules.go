@@ -35,7 +35,7 @@ type InspectRulesLister interface {
 	InspectRulesListerExpansion
 }
 
-// inspectRulesLister implements the InspectRulesLister interface.
+// inspectRulesLister implements the InspectRulesLister options.
 type inspectRulesLister struct {
 	indexer cache.Indexer
 }
@@ -71,7 +71,7 @@ type InspectRulesNamespaceLister interface {
 }
 
 // inspectRulesNamespaceLister implements the InspectRulesNamespaceLister
-// interface.
+// options.
 type inspectRulesNamespaceLister struct {
 	indexer   cache.Indexer
 	namespace string

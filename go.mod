@@ -3,11 +3,11 @@ module github.com/kubesphere/kubeeye
 go 1.19
 
 require (
-	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210826220005-b48c857c3a0e
 	github.com/aquasecurity/kube-bench v0.6.7
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/glog v1.0.0
+	github.com/kubesphere/event-rule-engine v0.0.0-20230602020803-264637fbea22
 	github.com/lithammer/dedent v1.1.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.18.1
@@ -42,6 +42,7 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/agnivade/levenshtein v1.0.1 // indirect
+	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210826220005-b48c857c3a0e // indirect
 	github.com/aws/aws-sdk-go v1.44.51 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect

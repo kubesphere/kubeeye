@@ -145,16 +145,10 @@ func JobInspect(ctx context.Context, taskName string, taskNamespace string, resu
 		BlockOwnerDeletion: &ownerRefBol,
 	}
 	var result []byte
-	switch ruleType {
-	case constant.Opa:
-		result, err = OpaRuleResult(ctx, task.Spec.Rules[ruleType], clients)
-		break
-	case constant.Prometheus:
-		result, err = PrometheusRulesResult(ctx, task.Spec.Rules[ruleType])
-		break
-	case constant.FileChange:
-		result, err = FileChangeRuleResult(ctx, task, clients, ownerRef)
-		break
+
+	inspectInterface, status := RuleOperatorMap[ruleType]
+	if status {
+		result, err = inspectInterface.RunInspect(ctx, task, clients, resultName, ownerRef)
 	}
 	if err != nil {
 		return err
