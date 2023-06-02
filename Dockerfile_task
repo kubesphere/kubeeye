@@ -17,7 +17,6 @@ COPY controllers/ controllers/
 COPY pkg/ pkg/
 COPY constant/ constant/
 COPY plugins/ plugins/
-COPY visitor/ visitor/
 
 
 
