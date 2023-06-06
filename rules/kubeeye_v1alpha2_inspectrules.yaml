@@ -32,7 +32,7 @@ spec:
 #      nodeName: node1
     - name: etcd
       rule: etcd = "active"
-#      nodeName: node1
+      nodeName: master
   fileChange:
     - name: config-sample
       path: /root/config-sample.yaml

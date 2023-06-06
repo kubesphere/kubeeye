@@ -246,9 +246,9 @@ func (o *sysctlInspect) GetResult(ctx context.Context, c client.Client, jobs *v1
 	infoResult, ok := inspectResult.Spec.NodeInfoResult[runNodeName]
 	if ok {
 		infoResult.NodeInfo = mergeMap(infoResult.NodeInfo, nodeInfoResult.NodeInfo)
-		//infoResult.FileChangeResult = append(infoResult.FileChangeResult, nodeInfoResult.FileChangeResult...)
+		infoResult.FileChangeResult = append(infoResult.FileChangeResult, nodeInfoResult.FileChangeResult...)
 		infoResult.SysctlResult = append(infoResult.SysctlResult, nodeInfoResult.SysctlResult...)
-		//infoResult.SystemdResult = append(infoResult.SystemdResult, nodeInfoResult.SystemdResult...)
+		infoResult.SystemdResult = append(infoResult.SystemdResult, nodeInfoResult.SystemdResult...)
 	} else {
 		infoResult = nodeInfoResult
 	}

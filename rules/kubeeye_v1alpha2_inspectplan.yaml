@@ -4,8 +4,6 @@ metadata:
   name: inspectplan
   namespace: kubeeye-system
 spec:
-  schedule: "*/10 * * *  ?"
+  schedule: "*/30 * * *  ?"
   maxTasks: 10
-  auditors:
-    - kubeeye
   tag: kubeeye_workloads_rego
