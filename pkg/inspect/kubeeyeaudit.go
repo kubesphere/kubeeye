@@ -8,8 +8,8 @@ import (
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/rules"
+	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
@@ -145,7 +145,6 @@ func JobInspect(ctx context.Context, taskName string, taskNamespace string, resu
 		BlockOwnerDeletion: &ownerRefBol,
 	}
 	var result []byte
-
 	inspectInterface, status := RuleOperatorMap[ruleType]
 	if status {
 		result, err = inspectInterface.RunInspect(ctx, task, clients, resultName, ownerRef)
@@ -154,19 +153,8 @@ func JobInspect(ctx context.Context, taskName string, taskNamespace string, resu
 		return err
 	}
 
-	if result == nil {
-		klog.Info("There are no new issues")
-		return nil
-	}
-	resultConfigMap := &corev1.ConfigMap{
-		ObjectMeta: v1.ObjectMeta{
-			Name:            resultName,
-			Namespace:       task.Namespace,
-			OwnerReferences: []v1.OwnerReference{ownerRef},
-			Labels:          map[string]string{constant.LabelName: task.Name, constant.LabelConfigType: constant.Result},
-		},
-		BinaryData: map[string][]byte{constant.Result: result},
-	}
+	resultLabels := map[string]string{constant.LabelName: task.Name, constant.LabelConfigType: constant.Result}
+	resultConfigMap := template.BinaryResultConfigMapTemplate(resultName, task.Namespace, result, true, resultLabels, ownerRef)
 	_, err = clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Create(ctx, resultConfigMap, v1.CreateOptions{})
 	if err != nil {
 		return errors.New(fmt.Sprintf("create configMap failed. err:%s", err))

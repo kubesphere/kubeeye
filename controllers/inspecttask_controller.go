@@ -154,12 +154,14 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 		if inspectTask.Status.StartTimestamp.Add(timeout).Before(time.Now()) {
 			for i, job := range inspectTask.Status.JobPhase {
-				inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
-				var DeletePro = metav1.DeletePropagationBackground
-				err := r.K8sClients.ClientSet.BatchV1().Jobs(inspectTask.Namespace).Delete(ctx, job.JobName, metav1.DeleteOptions{PropagationPolicy: &DeletePro})
-				if err != nil {
-					klog.Errorf("failed to delete jobs for jobName:%s", job.JobName)
-					continue
+				if job.Phase == kubeeyev1alpha2.PhaseRunning {
+					inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
+					var DeletePro = metav1.DeletePropagationBackground
+					err := r.K8sClients.ClientSet.BatchV1().Jobs(inspectTask.Namespace).Delete(ctx, job.JobName, metav1.DeleteOptions{PropagationPolicy: &DeletePro})
+					if err != nil {
+						klog.Errorf("failed to delete jobs for jobName:%s", job.JobName)
+						continue
+					}
 				}
 			}
 		}

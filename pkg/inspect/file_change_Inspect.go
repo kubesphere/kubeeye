@@ -147,28 +147,22 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 		baseConfig, configErr := clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Get(ctx, baseFileName, metav1.GetOptions{})
 		if configErr != nil {
 			klog.Errorf("Failed to open file. cause：file Do not exist,err:%s", err)
+
 			if kubeErr.IsNotFound(configErr) {
-				var Immutable = true
-				baseConfigMap := &corev1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            baseFileName,
-						Namespace:       task.Namespace,
-						OwnerReferences: ownerRef,
-						Labels:          map[string]string{constant.LabelConfigType: constant.BaseFile},
-					},
-					Immutable:  &Immutable,
-					BinaryData: map[string][]byte{constant.FileChange: baseFile},
-				}
-				_, createErr := clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Create(ctx, baseConfigMap, metav1.CreateOptions{})
+
+				mapTemplate := template.BinaryFileConfigMapTemplate(baseFileName, task.Namespace, baseFile, true)
+				_, createErr := clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Create(ctx, mapTemplate, metav1.CreateOptions{})
 				if createErr != nil {
 					resultItem.Issues = []string{fmt.Sprintf("%s:create configMap failed", file.Name)}
-					fileResults = append(fileResults, resultItem)
+				} else {
+					resultItem.Issues = []string{fmt.Sprintf("success  initial base config file. name:%s", file.Name)}
 				}
+				fileResults = append(fileResults, resultItem)
 				continue
 			}
 		}
 		baseContent := baseConfig.BinaryData[constant.FileChange]
-		//baseContent configmap读取的基准内容  baseFile文件读取需要对比的内容
+
 		diffString := utils.DiffString(string(baseContent), string(baseFile))
 
 		for i := range diffString {
@@ -193,6 +187,7 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 }
 
 func (o *fileChangeInspect) GetResult(ctx context.Context, c client.Client, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+	runNodeName := findJobRunNode(ctx, jobs, c)
 	var inspectResult kubeeyev1alpha2.InspectResult
 	err := c.Get(ctx, types.NamespacedName{
 		Namespace: task.Namespace,
@@ -219,7 +214,7 @@ func (o *fileChangeInspect) GetResult(ctx context.Context, c client.Client, jobs
 			inspectResult.Name = fmt.Sprintf("%s-nodeinfo", task.Name)
 			inspectResult.Namespace = task.Namespace
 			inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
-			inspectResult.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{jobs.Spec.Template.Spec.NodeName: {FileChangeResult: fileChangeResult}}
+			inspectResult.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {FileChangeResult: fileChangeResult}}
 			err = c.Create(ctx, &inspectResult)
 			if err != nil {
 				klog.Error("Failed to create inspect result", err)
@@ -229,14 +224,14 @@ func (o *fileChangeInspect) GetResult(ctx context.Context, c client.Client, jobs
 		}
 
 	}
-	infoResult, ok := inspectResult.Spec.NodeInfoResult[jobs.Spec.Template.Spec.NodeName]
+	infoResult, ok := inspectResult.Spec.NodeInfoResult[runNodeName]
 	if ok {
 		infoResult.FileChangeResult = append(infoResult.FileChangeResult, fileChangeResult...)
 	} else {
 		infoResult.FileChangeResult = fileChangeResult
 	}
 
-	inspectResult.Spec.NodeInfoResult[jobs.Spec.Template.Spec.NodeName] = infoResult
+	inspectResult.Spec.NodeInfoResult[runNodeName] = infoResult
 	err = c.Update(ctx, &inspectResult)
 	if err != nil {
 		klog.Error("Failed to update inspect result", err)
@@ -260,9 +255,30 @@ func mergeNodeRule(rule []kubeeyev1alpha2.FileChangeRule, types mergeType) (map[
 		for _, changeRule := range rule {
 			formatLabels := labels.FormatLabels(changeRule.NodeSelector)
 			mergeNodeMap[formatLabels] = append(mergeNodeMap[formatLabels], changeRule)
+			exists = true
 		}
 		break
 	}
 
 	return mergeNodeMap, exists
+}
+
+func findJobRunNode(ctx context.Context, job *v1.Job, c client.Client) string {
+	var pods corev1.PodList
+
+	err := c.List(ctx, &pods, &client.ListOptions{
+		LabelSelector: labels.SelectorFromValidatedSet(map[string]string{"job-name": job.Name}),
+		Namespace:     job.Namespace,
+	})
+	if err != nil {
+		klog.Error(err)
+		return ""
+	}
+	for _, item := range pods.Items {
+		if item.Status.Phase == corev1.PodSucceeded {
+			return item.Spec.NodeName
+		}
+	}
+
+	return ""
 }

@@ -207,6 +207,7 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.In
 }
 
 func (o *sysctlInspect) GetResult(ctx context.Context, c client.Client, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+	runNodeName := findJobRunNode(ctx, jobs, c)
 	var inspectResult kubeeyev1alpha2.InspectResult
 	err := c.Get(ctx, types.NamespacedName{
 		Namespace: task.Namespace,
@@ -232,7 +233,7 @@ func (o *sysctlInspect) GetResult(ctx context.Context, c client.Client, jobs *v1
 			inspectResult.Name = fmt.Sprintf("%s-nodeinfo", task.Name)
 			inspectResult.Namespace = task.Namespace
 			inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
-			inspectResult.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{jobs.Spec.Template.Spec.NodeName: nodeInfoResult}
+			inspectResult.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: nodeInfoResult}
 			err = c.Create(ctx, &inspectResult)
 			if err != nil {
 				klog.Error("Failed to create inspect result", err)
@@ -242,17 +243,17 @@ func (o *sysctlInspect) GetResult(ctx context.Context, c client.Client, jobs *v1
 		}
 
 	}
-	infoResult, ok := inspectResult.Spec.NodeInfoResult[jobs.Spec.Template.Spec.NodeName]
+	infoResult, ok := inspectResult.Spec.NodeInfoResult[runNodeName]
 	if ok {
 		infoResult.NodeInfo = mergeMap(infoResult.NodeInfo, nodeInfoResult.NodeInfo)
-		infoResult.FileChangeResult = append(infoResult.FileChangeResult, nodeInfoResult.FileChangeResult...)
+		//infoResult.FileChangeResult = append(infoResult.FileChangeResult, nodeInfoResult.FileChangeResult...)
 		infoResult.SysctlResult = append(infoResult.SysctlResult, nodeInfoResult.SysctlResult...)
-		infoResult.SystemdResult = append(infoResult.SystemdResult, nodeInfoResult.SystemdResult...)
+		//infoResult.SystemdResult = append(infoResult.SystemdResult, nodeInfoResult.SystemdResult...)
 	} else {
 		infoResult = nodeInfoResult
 	}
 
-	inspectResult.Spec.NodeInfoResult[jobs.Spec.Template.Spec.NodeName] = infoResult
+	inspectResult.Spec.NodeInfoResult[runNodeName] = infoResult
 	err = c.Update(ctx, &inspectResult)
 	if err != nil {
 		klog.Error("Failed to update inspect result", err)

@@ -69,8 +69,6 @@ func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTas
 					NodeName:           nodeName,
 					NodeSelector:       nodeSelector,
 					RestartPolicy:      corev1.RestartPolicyNever,
-					//HostNetwork:        true,
-					//HostPID:            true,
 
 					Volumes: []corev1.Volume{{
 						Name: "root",

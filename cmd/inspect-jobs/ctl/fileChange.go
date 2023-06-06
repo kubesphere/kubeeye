@@ -21,7 +21,7 @@ var fileChangeCmd = &cobra.Command{
 
 		err := inspect.JobInspect(cmd.Context(), taskName, taskNamespace, resultName, clients, constant.FileChange)
 		if err != nil {
-			klog.Errorf("kubeeye inspect failed with error: %s,%v", err, err)
+			klog.Errorf("kubeeye inspect failed with error: %s", err)
 			os.Exit(1)
 		}
 		fmt.Println(args, taskName, taskNamespace)

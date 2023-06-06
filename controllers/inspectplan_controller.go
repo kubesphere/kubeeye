@@ -25,6 +25,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
 	"strconv"
 	"time"
@@ -180,18 +181,12 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 	if err != nil {
 		return "", err
 	}
-	//audits := inspectPlan.Spec.Auditors
-	//if len(audits) == 0 {
-	//	audits = append(audits, kubeeyev1alpha2.AuditorKubeeye)
-	//}
 
 	var inspectTask kubeeyev1alpha2.InspectTask
 	inspectTask.Labels = map[string]string{constant.LabelName: inspectPlan.Name}
 	inspectTask.OwnerReferences = []metav1.OwnerReference{ownerRef}
 	inspectTask.Namespace = inspectPlan.Namespace
-	//inspectTask.Spec.Auditors = audits
 	inspectTask.Spec.Timeout = inspectPlan.Spec.Timeout
-
 	inspectTask.Spec.Rules = rules
 	inspectTask.Name = fmt.Sprintf("%s-%s", inspectPlan.Name, strconv.Itoa(int(time.Now().Unix())))
 	err = r.Client.Create(ctx, &inspectTask)
@@ -208,8 +203,9 @@ func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPl
 		return nil, errors.New("Failed to get tags and rule names")
 	}
 
-	selector := metav1.FormatLabelSelector(metav1.SetAsLabelSelector(map[string]string{constant.LabelRuleTag: inspectPlan.Spec.Tag}))
-	ruleLists, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules(v1.NamespaceAll).List(ctx, metav1.ListOptions{LabelSelector: selector})
+	ruleLists, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules(v1.NamespaceAll).List(ctx, metav1.ListOptions{
+		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelRuleTag: inspectPlan.Spec.Tag}),
+	})
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			klog.Error("failed get to inspectrules not found.", err)

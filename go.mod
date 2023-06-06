@@ -7,7 +7,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/glog v1.0.0
-	github.com/kubesphere/event-rule-engine v0.0.0-20230602020803-264637fbea22
+	github.com/kubesphere/event-rule-engine v0.0.0-20230602101348-c91b9b139a2c
 	github.com/lithammer/dedent v1.1.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.18.1
