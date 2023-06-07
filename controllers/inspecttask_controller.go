@@ -45,7 +45,7 @@ type InspectTaskReconciler struct {
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources="*",verbs=get;list
+//+kubebuilder:rbac:groups="",resources="*",verbs=get;list;watch
 //+kubebuilder:rbac:groups="apps",resources="*",verbs=get;list
 //+kubebuilder:rbac:groups="batch",resources="*",verbs=get;list;create
 //+kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources="*",verbs=get;list
