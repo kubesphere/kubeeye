@@ -110,41 +110,51 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 		inspectTask.Status.JobPhase = JobPhase
 		klog.Infof("%s start task ", req.Name)
+		err = r.Status().Update(ctx, inspectTask)
+		if err != nil {
+			klog.Error("failed to update inspect task. ", err)
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
 	} else {
-		if r.IsComplete(inspectTask) {
+		_, complete := r.IsComplete(inspectTask.Status.JobPhase)
+		if complete {
 			klog.Infof("all job finished for taskName:%s", inspectTask.Name)
 			return ctrl.Result{}, nil
 		}
-
+		updateStatus := false
 		for i, job := range inspectTask.Status.JobPhase {
 			if job.Phase != kubeeyev1alpha2.PhaseRunning {
 				continue
 			}
 
-			jobs, err := r.K8sClients.ClientSet.BatchV1().Jobs(inspectTask.Namespace).Get(ctx, job.JobName, metav1.GetOptions{})
+			jobInfo, err := r.K8sClients.ClientSet.BatchV1().Jobs(inspectTask.Namespace).Get(ctx, job.JobName, metav1.GetOptions{})
 			if err != nil {
 				klog.Error(err)
+				inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
+				updateStatus = true
 				continue
 			}
-			if jobs.Status.CompletionTime != nil && !jobs.Status.CompletionTime.IsZero() && jobs.Status.Active == 0 {
+			if jobInfo.Status.CompletionTime != nil && !jobInfo.Status.CompletionTime.IsZero() && jobInfo.Status.Active == 0 {
+				updateStatus = true
 				configs, err := r.K8sClients.ClientSet.CoreV1().ConfigMaps(inspectTask.Namespace).Get(ctx, job.JobName, metav1.GetOptions{})
 				if err != nil {
 					klog.Error(err)
+					inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
 					continue
 				}
-				inspectInterface, status := inspect.RuleOperatorMap[jobs.Labels[constant.LabelResultName]]
+				inspectInterface, status := inspect.RuleOperatorMap[jobInfo.Labels[constant.LabelResultName]]
 				if status {
-					err = inspectInterface.GetResult(ctx, r.Client, jobs, configs, inspectTask)
+					klog.Infof("starting get %s result data", job.JobName)
+					err = inspectInterface.GetResult(ctx, r.Client, jobInfo, configs, inspectTask)
 					if err != nil {
-						return ctrl.Result{}, err
+						klog.Error(err)
+						inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
+						continue
 					}
 				}
 				inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseSucceeded
-				err = r.K8sClients.ClientSet.CoreV1().ConfigMaps(inspectTask.Namespace).Delete(ctx, job.JobName, metav1.DeleteOptions{})
-				if err != nil {
-					klog.Errorf("failed to delete result for configMap:%s", job.JobName)
-					continue
-				}
+				_ = r.K8sClients.ClientSet.CoreV1().ConfigMaps(inspectTask.Namespace).Delete(ctx, job.JobName, metav1.DeleteOptions{})
 			}
 		}
 
@@ -159,21 +169,22 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 					var DeletePro = metav1.DeletePropagationBackground
 					err := r.K8sClients.ClientSet.BatchV1().Jobs(inspectTask.Namespace).Delete(ctx, job.JobName, metav1.DeleteOptions{PropagationPolicy: &DeletePro})
 					if err != nil {
-						klog.Errorf("failed to delete jobs for jobName:%s", job.JobName)
+						klog.Errorf("failed to delete jobs for jobName:%s,%s", job.JobName, err)
 						continue
 					}
 				}
 			}
 		}
-
+		if updateStatus {
+			err = r.Status().Update(ctx, inspectTask)
+			if err != nil && !kubeErr.IsNotFound(err) {
+				klog.Error("failed to update inspect task. ", err)
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
+		}
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
-
-	err = r.Status().Update(ctx, inspectTask)
-	if err != nil && !kubeErr.IsNotFound(err) {
-		klog.Error("failed to update inspect task. ", err)
-		return ctrl.Result{RequeueAfter: 60 * time.Second}, err
-	}
-	return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 }
 
 func (r *InspectTaskReconciler) getClusterInfo(ctx context.Context) (kubeeyev1alpha2.ClusterInfo, error) {
@@ -226,11 +237,12 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 	return jobNames, nil
 }
 
-func (r *InspectTaskReconciler) IsComplete(task *kubeeyev1alpha2.InspectTask) bool {
-	for _, job := range task.Status.JobPhase {
+func (r *InspectTaskReconciler) IsComplete(JobPhase []kubeeyev1alpha2.JobPhase) ([]kubeeyev1alpha2.JobPhase, bool) {
+	var Jobs []kubeeyev1alpha2.JobPhase
+	for _, job := range JobPhase {
 		if job.Phase == kubeeyev1alpha2.PhaseRunning {
-			return false
+			Jobs = append(Jobs, job)
 		}
 	}
-	return true
+	return Jobs, len(Jobs) == 0
 }
