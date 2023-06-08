@@ -100,6 +100,8 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 func (o *prometheusInspect) GetResult(ctx context.Context, c client.Client, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
 	var prometheus [][]map[string]string
 	err := json.Unmarshal(result.BinaryData[constant.Result], &prometheus)
+	klog.Info(prometheus)
+	klog.Info(result.BinaryData[constant.Result])
 	if err != nil {
 		return err
 	}

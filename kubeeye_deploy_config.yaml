@@ -537,6 +537,7 @@ rules:
   verbs:
   - get
   - list
+  - watch
 - apiGroups:
   - apps
   resources:
@@ -550,6 +551,7 @@ rules:
   - '*'
   verbs:
   - create
+  - delete
   - get
   - list
 - apiGroups:
