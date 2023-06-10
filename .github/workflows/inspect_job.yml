@@ -3,7 +3,7 @@ name: InspectJob
 on:
   push:
     branches:
-      - "kubeeye-dev2"
+      - "kubeeye-dev"
 jobs:
   docker:
     runs-on: ubuntu-latest
