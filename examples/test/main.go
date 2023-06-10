@@ -14,7 +14,7 @@ func main() {
 	//list, err := clients.ClientSet.CoreV1().ServiceAccounts("kubeeye-system").List(context.Background(), metav1.ListOptions{})
 	//klog.Info(list)
 	//var resetNum int32 = 5
-	//var Parallelism int32 = 3
+	//var Parallelism int32 = 31
 	//job := v1.Job{
 	//	ObjectMeta: metav1.ObjectMeta{
 	//		Name: "test",
