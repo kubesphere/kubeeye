@@ -1,4 +1,4 @@
-name: InspectJob
+name: InspectJob2
 
 on:
   push:
