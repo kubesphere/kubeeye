@@ -3,7 +3,7 @@ name: InspectJob2
 on:
   push:
     branches:
-      - "kubeeye-dev2"
+      - "kubeeye-new"
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v3
         
       - name: Switch to main branch
-        run: git checkout kubeeye-dev
+        run: git checkout kubeeye-new
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v2
