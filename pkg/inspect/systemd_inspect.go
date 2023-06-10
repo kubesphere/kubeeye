@@ -15,7 +15,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,79 +27,29 @@ func init() {
 	RuleOperatorMap[constant.Systemd] = &systemdInspect{}
 }
 
-func (o *systemdInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
+func (o *systemdInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
 	var jobNames []kubeeyev1alpha2.JobPhase
-	jobName := fmt.Sprintf("%s-%s", task.Name, constant.Systemd)
 
-	var sysRules []kubeeyev1alpha2.SysRule
+	var systemdRules []kubeeyev1alpha2.SysRule
+	_ = json.Unmarshal(jobRule.RunRule, &systemdRules)
 
-	_ = json.Unmarshal(task.Spec.Rules[constant.Systemd], &sysRules)
-
-	nodeData, filterData := utils.ArrayFilter(sysRules, func(v kubeeyev1alpha2.SysRule) bool {
-		return v.NodeName != nil
-	})
-
-	nodeNameRule, nodeNameStatus := mergeSysRule(nodeData, nodeName)
-	if nodeNameStatus {
-		for key, v := range nodeNameRule {
-			job, err := template.InspectJobsTemplate(fmt.Sprintf("%s-%s", jobName, v[0].Name), task, key, nil, constant.Systemd)
-			if err != nil {
-				klog.Errorf("Failed to create Jobs template for name:%s,err:%s", err, err)
-				return nil, err
-			}
-			createJob, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
-			if err != nil {
-				klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
-				return nil, err
-			}
-			marshal, _ := json.Marshal(v)
-			jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: createJob.Name, NodeName: key, RunRule: marshal, Phase: kubeeyev1alpha2.PhaseRunning})
+	if systemdRules != nil && len(systemdRules) > 0 {
+		var jobTemplate *v1.Job
+		if systemdRules[0].NodeName != nil {
+			jobTemplate = template.InspectJobsTemplate(jobRule.JobName, task, *systemdRules[0].NodeName, nil, constant.Systemd)
+		} else if systemdRules[0].NodeSelector != nil {
+			jobTemplate = template.InspectJobsTemplate(jobRule.JobName, task, "", systemdRules[0].NodeSelector, constant.Systemd)
+		} else {
+			jobTemplate = template.InspectJobsTemplate(jobRule.JobName, task, "", nil, constant.Systemd)
 		}
 
-	}
-
-	nodeSelectorData, residueData := utils.ArrayFilter(filterData, func(v kubeeyev1alpha2.SysRule) bool {
-		return v.NodeSelector != nil
-	})
-	nodeSelectorRule, nodeSelectorStatus := mergeSysRule(nodeSelectorData, nodeSelector)
-	if nodeSelectorStatus {
-		for k, v := range nodeSelectorRule {
-			labelsMap, _ := labels.ConvertSelectorToLabelsMap(k)
-			job, err := template.InspectJobsTemplate(fmt.Sprintf("%s-%s", jobName, k), task, "", labelsMap, constant.Systemd)
-			if err != nil {
-				klog.Errorf("Failed to create Jobs template for name:%s,err:%s", err, err)
-				return nil, err
-			}
-			createJob, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
-			if err != nil {
-				klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
-				return nil, err
-			}
-			marshal, _ := json.Marshal(v)
-			jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: createJob.Name, NodeName: k, RunRule: marshal, Phase: kubeeyev1alpha2.PhaseRunning})
-		}
-	}
-
-	if len(residueData) > 0 {
-		nodeAll, err := clients.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+		_, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, jobTemplate, metav1.CreateOptions{})
 		if err != nil {
+			klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
 			return nil, err
 		}
-		for _, nodeItem := range nodeAll.Items {
-			job, err := template.InspectJobsTemplate(fmt.Sprintf("%s-%s", jobName, nodeItem.Name), task, nodeItem.Name, nil, constant.Systemd)
-			if err != nil {
-				klog.Errorf("Failed to create Jobs template for name:%s,err:%s", err, err)
-				return nil, err
-			}
-			createJob, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
-			if err != nil {
-				klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
-				return nil, err
-			}
-			marshal, _ := json.Marshal(filterData)
+		jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: jobRule.JobName, Phase: kubeeyev1alpha2.PhaseRunning})
 
-			jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: createJob.Name, RunRule: marshal, Phase: kubeeyev1alpha2.PhaseRunning})
-		}
 	}
 
 	return jobNames, nil
@@ -110,7 +59,7 @@ func (o *systemdInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.I
 
 	var nodeResult []kubeeyev1alpha2.NodeResultItem
 
-	_, exist, phase := utils.ArrayFinds(task.Status.JobPhase, func(m kubeeyev1alpha2.JobPhase) bool {
+	_, exist, phase := utils.ArrayFinds(task.Spec.Rules, func(m kubeeyev1alpha2.JobRule) bool {
 		return m.JobName == currentJobName
 	})
 

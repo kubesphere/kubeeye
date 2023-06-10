@@ -18,10 +18,10 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -177,7 +177,8 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 		Controller:         &ownerController,
 		BlockOwnerDeletion: &ownerController,
 	}
-	rules, err := r.scanRules(inspectPlan, ctx)
+	taskName := fmt.Sprintf("%s-%s", inspectPlan.Name, strconv.Itoa(int(time.Now().Unix())))
+	scanRule, err := r.scanRules(ctx, taskName, inspectPlan)
 	if err != nil {
 		return "", err
 	}
@@ -187,8 +188,8 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 	inspectTask.OwnerReferences = []metav1.OwnerReference{ownerRef}
 	inspectTask.Namespace = inspectPlan.Namespace
 	inspectTask.Spec.Timeout = inspectPlan.Spec.Timeout
-	inspectTask.Spec.Rules = rules
-	inspectTask.Name = fmt.Sprintf("%s-%s", inspectPlan.Name, strconv.Itoa(int(time.Now().Unix())))
+	inspectTask.Spec.Rules = scanRule
+	inspectTask.Name = taskName
 	err = r.Client.Create(ctx, &inspectTask)
 	if err != nil {
 		klog.Error("create inspectTask failed", err)
@@ -198,7 +199,7 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 	return inspectTask.Name, nil
 }
 
-func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (map[string][]byte, error) {
+func (r *InspectPlanReconciler) scanRules(ctx context.Context, taskName string, inspectPlan *kubeeyev1alpha2.InspectPlan) ([]kubeeyev1alpha2.JobRule, error) {
 	if len(inspectPlan.Spec.Tag) == 0 && len(inspectPlan.Spec.RuleNames) == 0 {
 		return nil, errors.New("Failed to get tags and rule names")
 	}
@@ -216,72 +217,26 @@ func (r *InspectPlanReconciler) scanRules(inspectPlan *kubeeyev1alpha2.InspectPl
 	}
 	if ruleLists.Items == nil || len(ruleLists.Items) == 0 {
 		klog.Errorf("Failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
-		return nil, errors.Errorf("Failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
+		return nil, fmt.Errorf("Failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
 	}
+	nodeAll, err := r.K8sClient.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	ruleSpec := rules.MergeRule(ruleLists.Items)
 
-	var resultRules = make(map[string][]byte)
+	var executeRule []kubeeyev1alpha2.JobRule
 
-	for _, item := range ruleLists.Items {
-
-		if item.Spec.Opas != nil {
-			var rules []kubeeyev1alpha2.OpaRule
-			val, result := resultRules[constant.Opa]
-			if result {
-				_ = json.Unmarshal(val, &result)
-			}
-			rules = append(rules, item.Spec.Opas...)
-			marshal, _ := json.Marshal(rules)
-			resultRules[constant.Opa] = marshal
-
-		}
-		if item.Spec.Prometheus != nil {
-			var pro []kubeeyev1alpha2.PrometheusRule
-			val, result := resultRules[constant.Prometheus]
-			if result {
-				_ = json.Unmarshal(val, &pro)
-			}
-			for index := range item.Spec.Prometheus {
-				if "" != item.Spec.PrometheusEndpoint && len(item.Spec.PrometheusEndpoint) > 0 {
-					item.Spec.Prometheus[index].Endpoint = item.Spec.PrometheusEndpoint
-				}
-				pro = append(pro, item.Spec.Prometheus[index])
-			}
-			marshal, _ := json.Marshal(pro)
-			resultRules[constant.Prometheus] = marshal
-		}
-		if item.Spec.FileChange != nil {
-			var fileRule []kubeeyev1alpha2.FileChangeRule
-			val, result := resultRules[constant.FileChange]
-			if result {
-				_ = json.Unmarshal(val, &fileRule)
-			}
-			fileRule = append(fileRule, item.Spec.FileChange...)
-			marshal, _ := json.Marshal(fileRule)
-			resultRules[constant.FileChange] = marshal
-		}
-
-		if item.Spec.Sysctl != nil {
-			var sysctl []kubeeyev1alpha2.SysRule
-			val, result := resultRules[constant.Sysctl]
-			if result {
-				_ = json.Unmarshal(val, &sysctl)
-			}
-			sysctl = append(sysctl, item.Spec.Sysctl...)
-			marshal, _ := json.Marshal(sysctl)
-			resultRules[constant.Sysctl] = marshal
-		}
-		if item.Spec.Systemd != nil {
-			var systemd []kubeeyev1alpha2.SysRule
-			val, result := resultRules[constant.Systemd]
-			if result {
-				_ = json.Unmarshal(val, &systemd)
-			}
-			systemd = append(systemd, item.Spec.Systemd...)
-			marshal, _ := json.Marshal(systemd)
-			resultRules[constant.Systemd] = marshal
-		}
-
+	opa := rules.AllocationOpa(ruleSpec.Opas, taskName)
+	if opa != nil {
+		executeRule = append(executeRule, *opa)
 	}
-
-	return resultRules, nil
+	prometheus := rules.AllocationPrometheus(ruleSpec.Prometheus, taskName)
+	if prometheus != nil {
+		executeRule = append(executeRule, *prometheus)
+	}
+	if err == nil {
+		change := rules.AllocationFileChange(ruleSpec.FileChange, taskName, *nodeAll)
+		if change != nil && len(change) > 0 {
+			executeRule = append(executeRule, change...)
+		}
+	}
+	return executeRule, nil
 }

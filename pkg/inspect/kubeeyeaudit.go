@@ -42,7 +42,7 @@ func AuditCluster(ctx context.Context, kubeConfigPath string, additionalregorule
 		return err
 	}
 
-	_ = ValidationResults(ctx, clients, types.NamespacedName{}, nil)
+	_ = ValidationResults(ctx, clients, types.NamespacedName{})
 
 	// Set the output mode, support default output JSON and CSV.
 	//switch output {
@@ -62,7 +62,7 @@ func AuditCluster(ctx context.Context, kubeConfigPath string, additionalregorule
 	return nil
 }
 
-func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, taskName types.NamespacedName, auditResult *kubeeyev1alpha2.Result) interface{} {
+func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesClient, taskName types.NamespacedName) interface{} {
 	// get kubernetes resources and put into the channel.
 	klog.Info("starting get kubernetes resources")
 	//k8sResources := kube.GetK8SResources(ctx, kubernetesClient)

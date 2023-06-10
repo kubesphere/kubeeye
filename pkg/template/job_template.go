@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTask, nodeName string, nodeSelector map[string]string, taskType string) (*v1.Job, error) {
+func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTask, nodeName string, nodeSelector map[string]string, taskType string) *v1.Job {
 
 	var ownerController = true
 	ownerRef := metav1.OwnerReference{
@@ -69,7 +69,6 @@ func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTas
 					NodeName:           nodeName,
 					NodeSelector:       nodeSelector,
 					RestartPolicy:      corev1.RestartPolicyNever,
-
 					Volumes: []corev1.Volume{{
 						Name: "root",
 						VolumeSource: corev1.VolumeSource{
@@ -104,5 +103,5 @@ func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTas
 		},
 	}
 
-	return inspectJob, nil
+	return inspectJob
 }

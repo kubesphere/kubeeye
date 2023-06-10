@@ -11,7 +11,7 @@ import (
 )
 
 type InspectInterface interface {
-	CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error)
+	CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error)
 	RunInspect(ctx context.Context, task *kubeeyev1alpha2.InspectTask, clients *kube.KubernetesClient, currentJobName string, ownerRef ...v1.OwnerReference) ([]byte, error)
 	GetResult(ctx context.Context, c client.Client, jobs *v12.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error
 }

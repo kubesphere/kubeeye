@@ -19,13 +19,9 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/coreos/go-systemd/v22/dbus"
-	"github.com/kubesphere/event-rule-engine/visitor"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/open-policy-agent/opa/rego"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
@@ -325,70 +321,70 @@ func VailOpaRulesResult(ctx context.Context, k8sResources kube.K8SResource, Rego
 //	return marshal, nil
 //}
 
-func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clients *kube.KubernetesClient, ownerRef ...v1.OwnerReference) ([]byte, error) {
-	var nodeInfoResult v1alpha2.NodeInfoResult
-
-	systemdBytes, ok := task.Spec.Rules[constant.Systemd]
-
-	if ok {
-		var systemd []v1alpha2.SysRule
-		err := json.Unmarshal(systemdBytes, &systemd)
-		if err != nil {
-			klog.Error(err, " Failed to marshal kubeeye result")
-			return nil, err
-		}
-
-		conn, err := dbus.NewWithContext(ctx)
-		if err != nil {
-			return nil, err
-		}
-		unitsContext, err := conn.ListUnitsContext(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, r := range systemd {
-			var ctl v1alpha2.NodeResultItem
-			ctl.Name = r.Name
-			for _, status := range unitsContext {
-				if status.Name == fmt.Sprintf("%s.service", r.Name) {
-					ctl.Value = &status.ActiveState
-
-					if r.Rule != nil {
-
-						if _, err := visitor.CheckRule(*r.Rule); err != nil {
-							sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
-							klog.Error(sprintf)
-							ctl.Value = &sprintf
-						} else {
-							err, res := visitor.EventRuleEvaluate(map[string]interface{}{r.Name: status.ActiveState}, *r.Rule)
-							if err != nil {
-								sprintf := fmt.Sprintf("err:%s", err.Error())
-								klog.Error(sprintf)
-								ctl.Value = &sprintf
-							} else {
-								ctl.Assert = &res
-							}
-
-						}
-
-					}
-					break
-				}
-			}
-			if ctl.Value == nil {
-				errVal := fmt.Sprintf("name:%s to does not exist", r.Name)
-				ctl.Value = &errVal
-			}
-			nodeInfoResult.SystemdResult = append(nodeInfoResult.SystemdResult, ctl)
-		}
-	}
-
-	marshal, err := json.Marshal(nodeInfoResult)
-	if err != nil {
-		return nil, err
-	}
-	return marshal, nil
-}
+//func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clients *kube.KubernetesClient, ownerRef ...v1.OwnerReference) ([]byte, error) {
+//	var nodeInfoResult v1alpha2.NodeInfoResult
+//
+//	systemdBytes, ok := task.Spec.Rules[constant.Systemd]
+//
+//	if ok {
+//		var systemd []v1alpha2.SysRule
+//		err := json.Unmarshal(systemdBytes, &systemd)
+//		if err != nil {
+//			klog.Error(err, " Failed to marshal kubeeye result")
+//			return nil, err
+//		}
+//
+//		conn, err := dbus.NewWithContext(ctx)
+//		if err != nil {
+//			return nil, err
+//		}
+//		unitsContext, err := conn.ListUnitsContext(ctx)
+//		if err != nil {
+//			return nil, err
+//		}
+//		for _, r := range systemd {
+//			var ctl v1alpha2.NodeResultItem
+//			ctl.Name = r.Name
+//			for _, status := range unitsContext {
+//				if status.Name == fmt.Sprintf("%s.service", r.Name) {
+//					ctl.Value = &status.ActiveState
+//
+//					if r.Rule != nil {
+//
+//						if _, err := visitor.CheckRule(*r.Rule); err != nil {
+//							sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
+//							klog.Error(sprintf)
+//							ctl.Value = &sprintf
+//						} else {
+//							err, res := visitor.EventRuleEvaluate(map[string]interface{}{r.Name: status.ActiveState}, *r.Rule)
+//							if err != nil {
+//								sprintf := fmt.Sprintf("err:%s", err.Error())
+//								klog.Error(sprintf)
+//								ctl.Value = &sprintf
+//							} else {
+//								ctl.Assert = &res
+//							}
+//
+//						}
+//
+//					}
+//					break
+//				}
+//			}
+//			if ctl.Value == nil {
+//				errVal := fmt.Sprintf("name:%s to does not exist", r.Name)
+//				ctl.Value = &errVal
+//			}
+//			nodeInfoResult.SystemdResult = append(nodeInfoResult.SystemdResult, ctl)
+//		}
+//	}
+//
+//	marshal, err := json.Marshal(nodeInfoResult)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return marshal, nil
+//}
 
 //func OpaRuleResult(ctx context.Context, rule []byte, clients *kube.KubernetesClient) ([]byte, error) {
 //	k8sResources := kube.GetK8SResources(ctx, clients)

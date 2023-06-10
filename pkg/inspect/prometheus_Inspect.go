@@ -8,6 +8,7 @@ import (
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/template"
+	"github.com/kubesphere/kubeeye/pkg/utils"
 	"github.com/prometheus/client_golang/api"
 	apiprometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
@@ -26,26 +27,33 @@ func init() {
 	RuleOperatorMap[constant.Prometheus] = &prometheusInspect{}
 }
 
-func (o *prometheusInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
+func (o *prometheusInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
 	var jobNames []kubeeyev1alpha2.JobPhase
-	jobName := fmt.Sprintf("%s-%s", task.Name, constant.Prometheus)
-	job, err := template.InspectJobsTemplate(jobName, task, "", nil, constant.Prometheus)
-	if err != nil {
-		klog.Errorf("Failed to create Jobs template for name:%s,err:%s", err, err)
-		return nil, err
-	}
-	createJob, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
+
+	job := template.InspectJobsTemplate(jobRule.JobName, task, "", nil, constant.Prometheus)
+
+	_, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
 		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
 		return nil, err
 	}
-	jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: createJob.Name, Phase: kubeeyev1alpha2.PhaseRunning})
-	return jobNames, err
+	jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: jobRule.JobName, Phase: kubeeyev1alpha2.PhaseRunning})
+
+	return jobNames, nil
 }
 
 func (o *prometheusInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.InspectTask, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
+
+	_, exist, phase := utils.ArrayFinds(task.Spec.Rules, func(m kubeeyev1alpha2.JobRule) bool {
+		return m.JobName == currentJobName
+	})
+
+	if !exist {
+		return nil, nil
+	}
+
 	var proRules []kubeeyev1alpha2.PrometheusRule
-	err := json.Unmarshal(task.Spec.Rules[constant.Prometheus], &proRules)
+	err := json.Unmarshal(phase.RunRule, &proRules)
 	if err != nil {
 		klog.Error(err, " Failed to marshal kubeeye result")
 		return nil, err

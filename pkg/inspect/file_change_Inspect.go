@@ -22,13 +22,6 @@ import (
 	"strings"
 )
 
-type mergeType string
-
-const (
-	nodeName     mergeType = "nodeName"
-	nodeSelector mergeType = "nodeSelector"
-)
-
 type fileChangeInspect struct {
 }
 
@@ -36,79 +29,29 @@ func init() {
 	RuleOperatorMap[constant.FileChange] = &fileChangeInspect{}
 }
 
-func (o *fileChangeInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
+func (o *fileChangeInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
 	var jobNames []kubeeyev1alpha2.JobPhase
-	jobName := fmt.Sprintf("%s-%s", task.Name, constant.FileChange)
 
-	var fileChangeRules []kubeeyev1alpha2.FileChangeRule
+	var fileRule []kubeeyev1alpha2.FileChangeRule
+	_ = json.Unmarshal(jobRule.RunRule, &fileRule)
 
-	_ = json.Unmarshal(task.Spec.Rules[constant.FileChange], &fileChangeRules)
-
-	nodeData, filterData := utils.ArrayFilter(fileChangeRules, func(v kubeeyev1alpha2.FileChangeRule) bool {
-		return v.NodeName != nil
-	})
-
-	nodeNameRule, nodeNameStatus := mergeNodeRule(nodeData, nodeName)
-	if nodeNameStatus {
-		for key, v := range nodeNameRule {
-			job, err := template.InspectJobsTemplate(fmt.Sprintf("%s-%s", jobName, v[0].Name), task, key, nil, constant.FileChange)
-			if err != nil {
-				klog.Errorf("Failed to create Jobs template for name:%s,err:%s", err, err)
-				return nil, err
-			}
-			createJob, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
-			if err != nil {
-				klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
-				return nil, err
-			}
-			marshal, _ := json.Marshal(v)
-			jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: createJob.Name, RunRule: marshal, Phase: kubeeyev1alpha2.PhaseRunning})
+	if fileRule != nil && len(fileRule) > 0 {
+		var jobTemplate *v1.Job
+		if fileRule[0].NodeName != nil {
+			jobTemplate = template.InspectJobsTemplate(jobRule.JobName, task, *fileRule[0].NodeName, nil, constant.FileChange)
+		} else if fileRule[0].NodeSelector != nil {
+			jobTemplate = template.InspectJobsTemplate(jobRule.JobName, task, "", fileRule[0].NodeSelector, constant.FileChange)
+		} else {
+			jobTemplate = template.InspectJobsTemplate(jobRule.JobName, task, "", nil, constant.FileChange)
 		}
 
-	}
-
-	nodeSelectorData, residueData := utils.ArrayFilter(filterData, func(v kubeeyev1alpha2.FileChangeRule) bool {
-		return v.NodeSelector != nil
-	})
-	nodeSelectorRule, nodeSelectorStatus := mergeNodeRule(nodeSelectorData, nodeSelector)
-	if nodeSelectorStatus {
-		for k, v := range nodeSelectorRule {
-			labelsMap, _ := labels.ConvertSelectorToLabelsMap(k)
-			job, err := template.InspectJobsTemplate(fmt.Sprintf("%s-%s", jobName, k), task, "", labelsMap, constant.FileChange)
-			if err != nil {
-				klog.Errorf("Failed to create Jobs template for name:%s,err:%s", err, err)
-				return nil, err
-			}
-			createJob, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
-			if err != nil {
-				klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
-				return nil, err
-			}
-			marshal, _ := json.Marshal(v)
-			jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: createJob.Name, RunRule: marshal, Phase: kubeeyev1alpha2.PhaseRunning})
-		}
-	}
-
-	if len(residueData) > 0 {
-		nodeAll, err := clients.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+		_, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, jobTemplate, metav1.CreateOptions{})
 		if err != nil {
+			klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
 			return nil, err
 		}
-		for _, nodeItem := range nodeAll.Items {
-			job, err := template.InspectJobsTemplate(fmt.Sprintf("%s-%s", jobName, nodeItem.Name), task, nodeItem.Name, nil, constant.FileChange)
-			if err != nil {
-				klog.Errorf("Failed to create Jobs template for name:%s,err:%s", err, err)
-				return nil, err
-			}
-			createJob, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
-			if err != nil {
-				klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
-				return nil, err
-			}
-			marshal, _ := json.Marshal(filterData)
+		jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: jobRule.JobName, Phase: kubeeyev1alpha2.PhaseRunning})
 
-			jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: createJob.Name, RunRule: marshal, Phase: kubeeyev1alpha2.PhaseRunning})
-		}
 	}
 
 	return jobNames, nil
@@ -117,7 +60,7 @@ func (o *fileChangeInspect) CreateJobTask(ctx context.Context, clients *kube.Kub
 func (o *fileChangeInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.InspectTask, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
 
 	var fileResults []kubeeyev1alpha2.FileChangeResultItem
-	_, exist, phase := utils.ArrayFinds(task.Status.JobPhase, func(m kubeeyev1alpha2.JobPhase) bool {
+	_, exist, phase := utils.ArrayFinds(task.Spec.Rules, func(m kubeeyev1alpha2.JobRule) bool {
 		return m.JobName == currentJobName
 	})
 	if !exist {
@@ -239,28 +182,6 @@ func (o *fileChangeInspect) GetResult(ctx context.Context, c client.Client, jobs
 	}
 	return nil
 
-}
-
-func mergeNodeRule(rule []kubeeyev1alpha2.FileChangeRule, types mergeType) (map[string][]kubeeyev1alpha2.FileChangeRule, bool) {
-	var mergeNodeMap = make(map[string][]kubeeyev1alpha2.FileChangeRule)
-	exists := false
-	switch types {
-	case nodeName:
-		for _, changeRule := range rule {
-			mergeNodeMap[*changeRule.NodeName] = append(mergeNodeMap[*changeRule.NodeName], changeRule)
-			exists = true
-		}
-		break
-	case nodeSelector:
-		for _, changeRule := range rule {
-			formatLabels := labels.FormatLabels(changeRule.NodeSelector)
-			mergeNodeMap[formatLabels] = append(mergeNodeMap[formatLabels], changeRule)
-			exists = true
-		}
-		break
-	}
-
-	return mergeNodeMap, exists
 }
 
 func findJobRunNode(ctx context.Context, job *v1.Job, c client.Client) string {

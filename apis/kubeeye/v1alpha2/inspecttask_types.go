@@ -18,7 +18,6 @@ package v1alpha2
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -29,35 +28,29 @@ type InspectTaskSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// +kubebuilder:validation:MinItems=1
-	Auditors []Auditor         `json:"auditors,omitempty"` // like "kubeeye,kubebench"
-	Timeout  string            `json:"timeout,omitempty"`
-	Rules    map[string][]byte `json:"rules,omitempty"`
+	Timeout string    `json:"timeout,omitempty"`
+	Rules   []JobRule `json:"rules"`
 }
 
 // InspectTaskStatus defines the observed state of InspectTask
 type InspectTaskStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	ClusterInfo       `json:"clusterInfo,omitempty"`
-	InspectResults    []Result     `json:"inspectResults,omitempty"`
-	JobPhase          []JobPhase   `json:"phase,omitempty"`
-	CompleteItemCount int          `json:"completeItemCount,omitempty"`
-	StartTimestamp    *metav1.Time `json:"startTimestamp,omitempty"`
-	EndTimestamp      *metav1.Time `json:"endTimestamp,omitempty"`
+	ClusterInfo    `json:"clusterInfo,omitempty"`
+	JobPhase       []JobPhase   `json:"phase,omitempty"`
+	StartTimestamp *metav1.Time `json:"startTimestamp,omitempty"`
+	EndTimestamp   *metav1.Time `json:"endTimestamp,omitempty"`
 }
 
 type JobPhase struct {
-	JobName  string `json:"jobName,omitempty"`
-	NodeName string `json:"nodeName,omitempty"`
-	RunRule  []byte `json:"runRule,omitempty"`
-	Phase    Phase  `json:"phase,omitempty"`
+	JobName string `json:"jobName,omitempty"`
+	Phase   Phase  `json:"phase,omitempty"`
 }
-type Result struct {
-	// +kubebuilder:pruning:PreserveUnknownFields
-	Result runtime.RawExtension `json:"result,omitempty"`
-	Name   string               `json:"pluginName,omitempty"`
-	Phase  Phase                `json:"phase,omitempty"`
+
+type JobRule struct {
+	JobName  string `json:"jobName,omitempty"`
+	RuleType string `json:"ruleType,omitempty"`
+	RunRule  []byte `json:"runRule,omitempty"`
 }
 
 type Phase string

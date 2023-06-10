@@ -411,18 +411,22 @@ spec:
           spec:
             description: InspectTaskSpec defines the desired state of InspectTask
             properties:
-              auditors:
-                items:
-                  type: string
-                minItems: 1
-                type: array
               rules:
-                additionalProperties:
-                  format: byte
-                  type: string
-                type: object
+                items:
+                  properties:
+                    jobName:
+                      type: string
+                    ruleType:
+                      type: string
+                    runRule:
+                      format: byte
+                      type: string
+                  type: object
+                type: array
               timeout:
                 type: string
+            required:
+            - rules
             type: object
           status:
             description: InspectTaskStatus defines the observed state of InspectTask
@@ -439,34 +443,15 @@ spec:
                   version:
                     type: string
                 type: object
-              completeItemCount:
-                type: integer
               endTimestamp:
                 format: date-time
                 type: string
-              inspectResults:
-                items:
-                  properties:
-                    phase:
-                      type: string
-                    pluginName:
-                      type: string
-                    result:
-                      type: object
-                      x-kubernetes-preserve-unknown-fields: true
-                  type: object
-                type: array
               phase:
                 items:
                   properties:
                     jobName:
                       type: string
-                    nodeName:
-                      type: string
                     phase:
-                      type: string
-                    runRule:
-                      format: byte
                       type: string
                   type: object
                 type: array

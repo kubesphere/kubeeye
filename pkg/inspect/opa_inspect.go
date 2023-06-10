@@ -8,6 +8,7 @@ import (
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/template"
+	"github.com/kubesphere/kubeeye/pkg/utils"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,21 +23,20 @@ func init() {
 	RuleOperatorMap[constant.Opa] = &opaInspect{}
 }
 
-func (o *opaInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
+func (o *opaInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
+
 	var jobNames []kubeeyev1alpha2.JobPhase
-	jobName := fmt.Sprintf("%s-%s", task.Name, constant.Opa)
-	job, err := template.InspectJobsTemplate(jobName, task, "", nil, constant.Opa)
-	if err != nil {
-		klog.Errorf("Failed to create Jobs template for name:%s,err:%s", err, err)
-		return nil, err
-	}
-	createJob, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
+
+	job := template.InspectJobsTemplate(jobRule.JobName, task, "", nil, constant.Opa)
+
+	_, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
 		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
 		return nil, err
 	}
-	jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: createJob.Name, Phase: kubeeyev1alpha2.PhaseRunning})
-	return jobNames, err
+	jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: jobRule.JobName, Phase: kubeeyev1alpha2.PhaseRunning})
+
+	return jobNames, nil
 }
 
 func (o *opaInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.InspectTask, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
@@ -44,24 +44,32 @@ func (o *opaInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.Inspe
 	k8sResources := kube.GetK8SResources(ctx, clients)
 	klog.Info("getting  Rego rules")
 
-	var opaRules []kubeeyev1alpha2.OpaRule
-	err := json.Unmarshal(task.Spec.Rules[constant.Opa], &opaRules)
-	if err != nil {
-		fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
-		return nil, err
-	}
-	var RegoRules []string
-	for i := range opaRules {
-		RegoRules = append(RegoRules, *opaRules[i].Rule)
-	}
+	_, exist, phase := utils.ArrayFinds(task.Spec.Rules, func(m kubeeyev1alpha2.JobRule) bool {
+		return m.JobName == currentJobName
+	})
 
-	result := VailOpaRulesResult(ctx, k8sResources, RegoRules)
-	marshal, err := json.Marshal(result)
-	if err != nil {
-		return nil, err
-	}
+	if exist {
 
-	return marshal, nil
+		var opaRules []kubeeyev1alpha2.OpaRule
+		err := json.Unmarshal(phase.RunRule, &opaRules)
+		if err != nil {
+			fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
+			return nil, err
+		}
+		var RegoRules []string
+		for i := range opaRules {
+			RegoRules = append(RegoRules, *opaRules[i].Rule)
+		}
+
+		result := VailOpaRulesResult(ctx, k8sResources, RegoRules)
+		marshal, err := json.Marshal(result)
+		if err != nil {
+			return nil, err
+		}
+
+		return marshal, nil
+	}
+	return nil, nil
 }
 
 func (o *opaInspect) GetResult(ctx context.Context, c client.Client, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {

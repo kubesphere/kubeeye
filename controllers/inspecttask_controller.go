@@ -219,10 +219,10 @@ func (r *InspectTaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTask *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
 	var jobNames []kubeeyev1alpha2.JobPhase
-	for key := range inspectTask.Spec.Rules {
-		inspectInterface, status := inspect.RuleOperatorMap[key]
+	for key, v := range inspectTask.Spec.Rules {
+		inspectInterface, status := inspect.RuleOperatorMap[v.RuleType]
 		if status {
-			task, err := inspectInterface.CreateJobTask(ctx, r.K8sClients, inspectTask)
+			task, err := inspectInterface.CreateJobTask(ctx, r.K8sClients, &v, inspectTask)
 			if err != nil {
 				klog.Error("create job error")
 				continue

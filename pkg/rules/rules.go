@@ -5,16 +5,20 @@ import (
 	"bytes"
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"github.com/ghodss/yaml"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/clients/clientset/versioned"
 	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/utils"
 	"io/ioutil"
+	corev1 "k8s.io/api/core/v1"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"path/filepath"
+	"k8s.io/klog/v2"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,39 +27,6 @@ import (
 
 //go:embed ruleFiles
 var defaultRegoRules embed.FS
-
-// GetAdditionalRegoRulesfiles get Additional rego ruleFiles , put it into pointer of RegoRulesList
-func GetAdditionalRegoRulesfiles(path string) []string {
-	var regoRules []string
-	if path == "" {
-		return nil
-	}
-	pathabs, err := filepath.Abs(path)
-	if err != nil {
-		fmt.Printf("Failed to get the files of additional rego rule.\n")
-	}
-	if strings.HasSuffix(pathabs, "/") == false {
-		pathabs += "/"
-	}
-	files, err := ioutil.ReadDir(pathabs)
-	if err != nil {
-		fmt.Printf("Failed to get the dir of additional rego rule files.\n")
-	}
-
-	for _, file := range files {
-		if strings.HasSuffix(file.Name(), ".rego") == false {
-			continue
-		}
-
-		getregoRule, err := ioutil.ReadFile(pathabs + file.Name())
-		if err != nil {
-			fmt.Printf("Failed to read the files of additional rego ruleFiles.\n")
-		}
-		regoRule := string(getregoRule)
-		regoRules = append(regoRules, regoRule)
-	}
-	return regoRules
-}
 
 func GetDefaultRegofile(path string) []map[string][]byte {
 	var regoRules []map[string][]byte
@@ -135,7 +106,7 @@ func RegoToRuleYaml(path string) {
 
 func GetRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) map[string][]byte {
 
-	inspectTask, err := client.KubeeyeV1alpha2().InspectTasks(task.Namespace).Get(ctx, task.Name, metav1.GetOptions{})
+	_, err := client.KubeeyeV1alpha2().InspectTasks(task.Namespace).Get(ctx, task.Name, metav1.GetOptions{})
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			fmt.Printf("rego ruleFiles not found .\n")
@@ -144,18 +115,7 @@ func GetRules(ctx context.Context, task types.NamespacedName, client versioned.I
 		fmt.Printf("Failed to Get rego ruleFiles.\n")
 		return nil
 	}
-	//for key, rule := range inspectTask.Spec.Rules {
-	//	switch key {
-	//	case constant.Opa:
-	//		ruleType = constant.Opa
-	//		break
-	//	case constant.Prometheus:
-	//		ruleType = constant.Prometheus
-	//		break
-	//	}
-	//	rules = append(rules, rule...)
-	//}
-	return inspectTask.Spec.Rules
+	return nil
 }
 
 // MergeRegoRules fun-out merge rego ruleFiles
@@ -180,4 +140,125 @@ func MergeRegoRules(ctx context.Context, channels ...[]string) <-chan string {
 		defer close(res)
 	}()
 	return res
+}
+
+func MergeRule(rules []kubeeyev1alpha2.InspectRule) (ruleSpec kubeeyev1alpha2.InspectRuleSpec) {
+	for _, rule := range rules {
+		if rule.Spec.Opas != nil && len(rule.Spec.Opas) > 0 {
+			ruleSpec.Opas = append(ruleSpec.Opas, rule.Spec.Opas...)
+		}
+		if rule.Spec.Prometheus != nil {
+			for index := range rule.Spec.Prometheus {
+				if "" != rule.Spec.PrometheusEndpoint && len(rule.Spec.PrometheusEndpoint) > 0 {
+					rule.Spec.Prometheus[index].Endpoint = rule.Spec.PrometheusEndpoint
+				}
+				ruleSpec.Prometheus = append(ruleSpec.Prometheus, rule.Spec.Prometheus[index])
+			}
+		}
+		if rule.Spec.FileChange != nil && len(rule.Spec.FileChange) > 0 {
+			ruleSpec.FileChange = append(ruleSpec.FileChange, rule.Spec.FileChange...)
+		}
+		if rule.Spec.Sysctl != nil && len(rule.Spec.Sysctl) > 0 {
+			ruleSpec.Sysctl = append(ruleSpec.Sysctl, rule.Spec.Sysctl...)
+		}
+		if rule.Spec.Systemd != nil && len(rule.Spec.Systemd) > 0 {
+			ruleSpec.Systemd = append(ruleSpec.Systemd, rule.Spec.Systemd...)
+		}
+	}
+	return ruleSpec
+}
+
+func AllocationOpa(rule []kubeeyev1alpha2.OpaRule, taskName string) *kubeeyev1alpha2.JobRule {
+	if rule == nil {
+		return nil
+	}
+
+	jobRule := &kubeeyev1alpha2.JobRule{
+		JobName:  fmt.Sprintf("%s-%s", taskName, constant.Opa),
+		RuleType: constant.Opa,
+	}
+
+	opa, err := json.Marshal(rule)
+	if err != nil {
+		klog.Errorf("Failed to marshal  opa rule. err:%s", err)
+		return nil
+	}
+	jobRule.RunRule = opa
+	return jobRule
+}
+
+func AllocationPrometheus(rule []kubeeyev1alpha2.PrometheusRule, taskName string) *kubeeyev1alpha2.JobRule {
+	if rule == nil {
+		return nil
+	}
+
+	jobRule := &kubeeyev1alpha2.JobRule{
+		JobName:  fmt.Sprintf("%s-%s", taskName, constant.Prometheus),
+		RuleType: constant.Prometheus,
+	}
+
+	prometheus, err := json.Marshal(rule)
+	if err != nil {
+		klog.Errorf("Failed to marshal  prometheus rule. err:%s", err)
+		return nil
+	}
+	jobRule.RunRule = prometheus
+	return jobRule
+}
+func AllocationFileChange(rule []kubeeyev1alpha2.FileChangeRule, taskName string, allNode corev1.NodeList) []kubeeyev1alpha2.JobRule {
+	if rule == nil {
+		return nil
+	}
+	nodeData, filterData := utils.ArrayFilter(rule, func(v kubeeyev1alpha2.FileChangeRule) bool {
+		return v.NodeName != nil || v.NodeSelector != nil
+	})
+	var jobRules []kubeeyev1alpha2.JobRule
+	nodeNameMergeMap := mergeNodeRule(nodeData)
+
+	for k, v := range nodeNameMergeMap {
+		jobRule := kubeeyev1alpha2.JobRule{
+			JobName:  fmt.Sprintf("%s-%s-%s-%s", taskName, constant.FileChange, k, v[0].Name),
+			RuleType: constant.FileChange,
+		}
+		fileChange, err := json.Marshal(v)
+		if err != nil {
+			klog.Errorf("Failed to marshal  fileChange rule. err:%s", err)
+			return nil
+		}
+		jobRule.RunRule = fileChange
+		jobRules = append(jobRules, jobRule)
+	}
+
+	if filterData != nil && len(filterData) > 0 {
+		for _, item := range allNode.Items {
+			jobRule := kubeeyev1alpha2.JobRule{
+				JobName:  fmt.Sprintf("%s-%s-%s-%s", taskName, constant.FileChange, item.Name, filterData[0].Name),
+				RuleType: constant.FileChange,
+			}
+			fileChange, err := json.Marshal(filterData)
+			if err != nil {
+				klog.Errorf("Failed to marshal  fileChange rule. err:%s", err)
+				return nil
+			}
+			jobRule.RunRule = fileChange
+			jobRules = append(jobRules, jobRule)
+		}
+	}
+
+	return jobRules
+}
+
+func mergeNodeRule(rule []kubeeyev1alpha2.FileChangeRule) map[string][]kubeeyev1alpha2.FileChangeRule {
+	var mergeMap = make(map[string][]kubeeyev1alpha2.FileChangeRule)
+
+	for _, changeRule := range rule {
+		if changeRule.NodeName != nil {
+			mergeMap[*changeRule.NodeName] = append(mergeMap[*changeRule.NodeName], changeRule)
+		} else if changeRule.NodeSelector != nil {
+			formatLabels := labels.FormatLabels(changeRule.NodeSelector)
+			mergeMap[formatLabels] = append(mergeMap[formatLabels], changeRule)
+		}
+	}
+
+	return mergeMap
 }
