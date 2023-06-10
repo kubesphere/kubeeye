@@ -275,7 +275,7 @@ func AllocationSys(rule []kubeeyev1alpha2.SysRule, taskName string, allNode core
 	if filterData != nil && len(filterData) > 0 {
 		for _, item := range allNode.Items {
 			jobRule := kubeeyev1alpha2.JobRule{
-				JobName:  fmt.Sprintf("%s-%s-%s-%s", taskName, ctlOrTem, item.Name, filterData[0].Name),
+				JobName:  fmt.Sprintf("%s-%s-%s", taskName, ctlOrTem, item.Name),
 				RuleType: ctlOrTem,
 			}
 			fileChange, err := json.Marshal(filterData)
