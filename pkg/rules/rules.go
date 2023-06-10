@@ -248,6 +248,64 @@ func AllocationFileChange(rule []kubeeyev1alpha2.FileChangeRule, taskName string
 	return jobRules
 }
 
+func AllocationSys(rule []kubeeyev1alpha2.SysRule, taskName string, allNode corev1.NodeList, ctlOrTem string) []kubeeyev1alpha2.JobRule {
+	if rule == nil {
+		return nil
+	}
+	nodeData, filterData := utils.ArrayFilter(rule, func(v kubeeyev1alpha2.SysRule) bool {
+		return v.NodeName != nil || v.NodeSelector != nil
+	})
+	var jobRules []kubeeyev1alpha2.JobRule
+	nodeNameMergeMap := mergeSysRule(nodeData)
+
+	for k, v := range nodeNameMergeMap {
+		jobRule := kubeeyev1alpha2.JobRule{
+			JobName:  fmt.Sprintf("%s-%s-%s-%s", taskName, ctlOrTem, k, v[0].Name),
+			RuleType: ctlOrTem,
+		}
+		fileChange, err := json.Marshal(v)
+		if err != nil {
+			klog.Errorf("Failed to marshal  fileChange rule. err:%s", err)
+			return nil
+		}
+		jobRule.RunRule = fileChange
+		jobRules = append(jobRules, jobRule)
+	}
+
+	if filterData != nil && len(filterData) > 0 {
+		for _, item := range allNode.Items {
+			jobRule := kubeeyev1alpha2.JobRule{
+				JobName:  fmt.Sprintf("%s-%s-%s-%s", taskName, ctlOrTem, item.Name, filterData[0].Name),
+				RuleType: ctlOrTem,
+			}
+			fileChange, err := json.Marshal(filterData)
+			if err != nil {
+				klog.Errorf("Failed to marshal  fileChange rule. err:%s", err)
+				return nil
+			}
+			jobRule.RunRule = fileChange
+			jobRules = append(jobRules, jobRule)
+		}
+	}
+
+	return jobRules
+}
+
+func mergeSysRule(rule []kubeeyev1alpha2.SysRule) map[string][]kubeeyev1alpha2.SysRule {
+	var mergeMap = make(map[string][]kubeeyev1alpha2.SysRule)
+
+	for _, changeRule := range rule {
+		if changeRule.NodeName != nil {
+			mergeMap[*changeRule.NodeName] = append(mergeMap[*changeRule.NodeName], changeRule)
+		} else if changeRule.NodeSelector != nil {
+			formatLabels := labels.FormatLabels(changeRule.NodeSelector)
+			mergeMap[formatLabels] = append(mergeMap[formatLabels], changeRule)
+		}
+	}
+
+	return mergeMap
+}
+
 func mergeNodeRule(rule []kubeeyev1alpha2.FileChangeRule) map[string][]kubeeyev1alpha2.FileChangeRule {
 	var mergeMap = make(map[string][]kubeeyev1alpha2.FileChangeRule)
 

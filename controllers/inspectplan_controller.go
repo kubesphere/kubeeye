@@ -237,6 +237,14 @@ func (r *InspectPlanReconciler) scanRules(ctx context.Context, taskName string, 
 		if change != nil && len(change) > 0 {
 			executeRule = append(executeRule, change...)
 		}
+		sysctl := rules.AllocationSys(ruleSpec.Sysctl, taskName, *nodeAll, constant.Sysctl)
+		if sysctl != nil && len(sysctl) > 0 {
+			executeRule = append(executeRule, sysctl...)
+		}
+		systemd := rules.AllocationSys(ruleSpec.Systemd, taskName, *nodeAll, constant.Systemd)
+		if systemd != nil && len(systemd) > 0 {
+			executeRule = append(executeRule, systemd...)
+		}
 	}
 	return executeRule, nil
 }
