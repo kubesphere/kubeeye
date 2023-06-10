@@ -36,7 +36,7 @@ jobs:
           push: true
           tags: jw008/kubeeye:dev
           
-      - name: Build and push
+      - name: BuildController and push
         uses: docker/build-push-action@v4
         with:
           context: .
