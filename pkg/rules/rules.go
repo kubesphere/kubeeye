@@ -235,6 +235,9 @@ func AllocationFileChange(rule []kubeeyev1alpha2.FileChangeRule, taskName string
 				JobName:  fmt.Sprintf("%s-%s-%s-%s", taskName, constant.FileChange, item.Name, filterData[0].Name),
 				RuleType: constant.FileChange,
 			}
+			for i := range filterData {
+				filterData[i].NodeName = &item.Name
+			}
 			fileChange, err := json.Marshal(filterData)
 			if err != nil {
 				klog.Errorf("Failed to marshal  fileChange rule. err:%s", err)
@@ -278,12 +281,16 @@ func AllocationSys(rule []kubeeyev1alpha2.SysRule, taskName string, allNode core
 				JobName:  fmt.Sprintf("%s-%s-%s", taskName, ctlOrTem, item.Name),
 				RuleType: ctlOrTem,
 			}
-			fileChange, err := json.Marshal(filterData)
+
+			for i := range filterData {
+				filterData[i].NodeName = &item.Name
+			}
+			sysMarshal, err := json.Marshal(filterData)
 			if err != nil {
 				klog.Errorf("Failed to marshal  fileChange rule. err:%s", err)
 				return nil
 			}
-			jobRule.RunRule = fileChange
+			jobRule.RunRule = sysMarshal
 			jobRules = append(jobRules, jobRule)
 		}
 	}
