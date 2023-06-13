@@ -99,7 +99,8 @@ func (o *systemdInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.I
 								klog.Error(sprintf)
 								ctl.Value = &sprintf
 							} else {
-								ctl.Assert = &res
+								visitorRes := !res
+								ctl.Assert = &visitorRes
 							}
 						}
 					}
