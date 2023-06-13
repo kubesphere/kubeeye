@@ -5,6 +5,7 @@ import (
 	"github.com/kubesphere/kubeeye/constant"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -22,6 +23,7 @@ func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTas
 	var resetBack int32 = 5
 	var autoDelTime int32 = 60
 	var mountPropagation = corev1.MountPropagationHostToContainer
+	var RunAsNonRoot = true
 	inspectJob := &v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            jobName,
@@ -64,6 +66,14 @@ func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTas
 							MountPath: "/var/run/dbus/system_bus_socket",
 						}},
 						ImagePullPolicy: "Always",
+						Resources: corev1.ResourceRequirements{
+							Limits:   map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: resource.MustParse("1000m"), corev1.ResourceMemory: resource.MustParse("256Mi")},
+							Requests: map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: resource.MustParse("500m"), corev1.ResourceMemory: resource.MustParse("256Mi")},
+						},
+						SecurityContext: &corev1.SecurityContext{
+							RunAsNonRoot:           &RunAsNonRoot,
+							ReadOnlyRootFilesystem: &RunAsNonRoot,
+						},
 					}},
 					ServiceAccountName: "kubeeye-controller-manager",
 					NodeName:           nodeName,

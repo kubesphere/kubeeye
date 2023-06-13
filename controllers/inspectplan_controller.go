@@ -23,7 +23,6 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/kubesphere/kubeeye/pkg/utils"
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
@@ -178,7 +177,7 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 		BlockOwnerDeletion: &ownerController,
 	}
 	taskName := fmt.Sprintf("%s-%s", inspectPlan.Name, strconv.Itoa(int(time.Now().Unix())))
-	scanRule, err := r.scanRules(ctx, taskName, inspectPlan)
+	scanRule, ruleTotal, err := r.scanRules(ctx, taskName, inspectPlan)
 	if err != nil {
 		return "", err
 	}
@@ -189,6 +188,7 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 	inspectTask.Namespace = inspectPlan.Namespace
 	inspectTask.Spec.Timeout = inspectPlan.Spec.Timeout
 	inspectTask.Spec.Rules = scanRule
+	inspectTask.Spec.InspectRuleTotal = ruleTotal
 	inspectTask.Name = taskName
 	err = r.Client.Create(ctx, &inspectTask)
 	if err != nil {
@@ -199,9 +199,9 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 	return inspectTask.Name, nil
 }
 
-func (r *InspectPlanReconciler) scanRules(ctx context.Context, taskName string, inspectPlan *kubeeyev1alpha2.InspectPlan) ([]kubeeyev1alpha2.JobRule, error) {
+func (r *InspectPlanReconciler) scanRules(ctx context.Context, taskName string, inspectPlan *kubeeyev1alpha2.InspectPlan) ([]kubeeyev1alpha2.JobRule, map[string]int, error) {
 	if len(inspectPlan.Spec.Tag) == 0 && len(inspectPlan.Spec.RuleNames) == 0 {
-		return nil, errors.New("Failed to get tags and rule names")
+		return nil, nil, fmt.Errorf("failed to get tags and rule names")
 	}
 
 	ruleLists, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules(v1.NamespaceAll).List(ctx, metav1.ListOptions{
@@ -210,41 +210,48 @@ func (r *InspectPlanReconciler) scanRules(ctx context.Context, taskName string, 
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			klog.Error("failed get to inspectrules not found.", err)
-			return nil, err
+			return nil, nil, err
 		}
 		klog.Error("failed get to inspectrules.", err)
-		return nil, err
+		return nil, nil, err
 	}
 	if ruleLists.Items == nil || len(ruleLists.Items) == 0 {
-		klog.Errorf("Failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
-		return nil, fmt.Errorf("Failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
+		klog.Errorf("failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
+		return nil, nil, fmt.Errorf("failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
 	}
 	nodeAll, err := r.K8sClient.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	ruleSpec := rules.MergeRule(ruleLists.Items)
+
+	var inspectRuleTotal = make(map[string]int)
 
 	var executeRule []kubeeyev1alpha2.JobRule
 
 	opa := rules.AllocationOpa(ruleSpec.Opas, taskName)
 	if opa != nil {
 		executeRule = append(executeRule, *opa)
+		inspectRuleTotal[constant.Opa] = len(ruleSpec.Opas)
 	}
 	prometheus := rules.AllocationPrometheus(ruleSpec.Prometheus, taskName)
 	if prometheus != nil {
 		executeRule = append(executeRule, *prometheus)
+		inspectRuleTotal[constant.Prometheus] = len(ruleSpec.Prometheus)
 	}
 	if err == nil {
 		change := rules.AllocationFileChange(ruleSpec.FileChange, taskName, *nodeAll)
 		if change != nil && len(change) > 0 {
 			executeRule = append(executeRule, change...)
+			inspectRuleTotal[constant.FileChange] = len(ruleSpec.FileChange)
 		}
 		sysctl := rules.AllocationSys(ruleSpec.Sysctl, taskName, *nodeAll, constant.Sysctl)
 		if sysctl != nil && len(sysctl) > 0 {
 			executeRule = append(executeRule, sysctl...)
+			inspectRuleTotal[constant.Sysctl] = len(ruleSpec.Sysctl)
 		}
 		systemd := rules.AllocationSys(ruleSpec.Systemd, taskName, *nodeAll, constant.Systemd)
 		if systemd != nil && len(systemd) > 0 {
 			executeRule = append(executeRule, systemd...)
+			inspectRuleTotal[constant.Systemd] = len(ruleSpec.Systemd)
 		}
 	}
-	return executeRule, nil
+	return executeRule, inspectRuleTotal, nil
 }

@@ -28,8 +28,9 @@ type InspectTaskSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Timeout string    `json:"timeout,omitempty"`
-	Rules   []JobRule `json:"rules"`
+	Timeout          string         `json:"timeout,omitempty"`
+	InspectRuleTotal map[string]int `json:"inspectRuleTotal,omitempty"`
+	Rules            []JobRule      `json:"rules"`
 }
 
 // InspectTaskStatus defines the observed state of InspectTask

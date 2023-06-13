@@ -35,6 +35,10 @@ spec:
           spec:
             description: InspectTaskSpec defines the desired state of InspectTask
             properties:
+              inspectRuleTotal:
+                additionalProperties:
+                  type: integer
+                type: object
               rules:
                 items:
                   properties:

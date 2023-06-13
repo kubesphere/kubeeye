@@ -13,8 +13,6 @@ metadata:
 spec:
   sysctl:
     - name: vm.max_map_count
-      rule: vm.max_map_count == 1
-#      nodeName: node1
     - name: net.ipv4.ip_forward
       rule: net.ipv4.ip_forward = 0
     - name: net.bridge.bridge-nf-call-arptables

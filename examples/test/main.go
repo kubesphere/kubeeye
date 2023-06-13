@@ -1,15 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"regexp"
+	"github.com/kubesphere/kubeeye/pkg/inspect"
+	"github.com/kubesphere/kubeeye/pkg/kube"
 )
 
 func main() {
 
-	//cluster, _ := kube.GetKubeConfigInCluster()
-	//var kc kube.KubernetesClient
-	//clients, _ := kc.K8SClients(cluster)
+	cluster, _ := kube.GetKubeConfigInCluster()
+	var kc kube.KubernetesClient
+	clients, _ := kc.K8SClients(cluster)
 
 	//list, err := clients.ClientSet.CoreV1().ServiceAccounts("kubeeye-system").List(context.Background(), metav1.ListOptions{})
 	//klog.Info(list)
@@ -241,8 +241,31 @@ func main() {
 	//	}
 	//	queryResultsMap = append(queryResultsMap, temp)
 	//}
-	str := "net.bridge.bridge-nf-call-arptables - 1"
-	re := regexp.MustCompile(`-`)
-	replaced := re.ReplaceAllString(str, "_")
-	fmt.Println(replaced)
+	//str := "net.bridge.bridge-nf-call-arptables - 1"
+	//re := regexp.MustCompile(`-`)
+	//replaced := re.ReplaceAllString(str, "_")
+	//fmt.Println(replaced)
+
+	//data := map[string]interface{}{"title": "title", "rule": [][]string{{"opa", "2", "3"}, {"prometheus", "2", "3"}, {"filechange", "2", "3"}}}
+	//
+	//dir, _ := os.Getwd()
+	//fmt.Println(dir)
+	//filePath := path.Join(dir, "pkg", "template", "result.html")
+	//fmt.Println(filePath)
+	//files, err := template.ParseFiles(filePath)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//err = files.Execute(os.Stdout, data)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//create, err := os.Create("index.html")
+	//defer create.Close()
+	//err = files.Execute(create, data)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+
+	_ = inspect.HtmlOutput(clients, nil, "inspectplan-1686635420", "kubeeye-system")
 }

@@ -2,7 +2,6 @@ package inspect
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
@@ -10,54 +9,9 @@ import (
 	"github.com/xuri/excelize/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-	"os"
 	path "path"
 	"strings"
-	"text/tabwriter"
-
-	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 )
-
-func defaultOutput(receiver <-chan []v1alpha2.ResourceResult) error {
-	w := tabwriter.NewWriter(os.Stdout, 10, 4, 3, ' ', 0)
-	_, err := fmt.Fprintln(w, "\nNAMESPACE\tKIND\tNAME\tLEVEL\tMESSAGE\tREASON")
-	if err != nil {
-		return err
-	}
-	for r := range receiver {
-		for _, results := range r {
-			for _, items := range results.ResultItems {
-				s := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%-8v", results.NameSpace, results.ResourceType,
-					results.Name, items.Level, items.Message, items.Reason)
-				_, err := fmt.Fprintln(w, s)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-	if err := w.Flush(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func JSONOutput(receiver <-chan []v1alpha2.ResourceResult) error {
-	var output []v1alpha2.ResourceResult
-	for r := range receiver {
-		for _, results := range r {
-			output = append(output, results)
-		}
-	}
-
-	// output json
-	jsonOutput, err := json.MarshalIndent(output, "", "    ")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(jsonOutput))
-	return nil
-}
 
 func CSVOutput(clients *kube.KubernetesClient, outPath *string, taskName string, namespace string) error {
 	filename := "kubeEyeAuditResult.xlsx"
@@ -183,8 +137,7 @@ func CSVOutput(clients *kube.KubernetesClient, outPath *string, taskName string,
 			}
 		}
 	}
-	f.SetActiveSheet(1)
-	err = f.DeleteSheet("Sheet1")
+
 	if err != nil {
 		fmt.Println(err)
 	}

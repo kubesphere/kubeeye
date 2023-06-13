@@ -30,11 +30,10 @@ RUN go mod tidy && go mod vendor
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETPLATFORM} go build   -o /workspace/inspect ./cmd/inspect-jobs
 
 
-FROM quay.io/prometheus/busybox-linux-amd64:latest
-#FROM --platform=${TARGETPLATFORM} alpine:3.16
+FROM --platform=${TARGETPLATFORM} alpine:3.16
 
 WORKDIR /
 
 COPY --from=builder /workspace/inspect /bin/inspect
-
+USER 1000:1000
 ENTRYPOINT ["/bin/inspecet"]
