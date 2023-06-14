@@ -2,6 +2,7 @@ package inspect
 
 import (
 	"context"
+	"fmt"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
@@ -46,18 +47,18 @@ func HtmlOutput(clients *kube.KubernetesClient, outPath *string, taskName string
 		}
 	}
 	task, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks(namespace).Get(context.TODO(), taskName, metav1.GetOptions{})
+	year, month, day := task.CreationTimestamp.Date()
 	var ruleNumber [][]interface{}
 	if err == nil {
 		for key, val := range task.Spec.InspectRuleTotal {
 			var issues = len(resultCollection[key])
-
 			if issues > 0 {
 				issues -= 1
 			}
 			ruleNumber = append(ruleNumber, []interface{}{key, val, issues})
 		}
 	}
-	data := map[string]interface{}{"overview": ruleNumber, "details": resultCollection}
+	data := map[string]interface{}{"title": fmt.Sprintf("%d-%d-%d", year, month, day), "overview": ruleNumber, "details": resultCollection}
 	err = renderView(data)
 	if err != nil {
 		klog.Error(err)

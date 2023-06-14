@@ -135,8 +135,8 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.In
 							klog.Error(sprintf)
 							ctl.Value = &sprintf
 						} else {
-							visitorRes := !res
-							ctl.Assert = &visitorRes
+
+							ctl.Assert = &res
 						}
 
 					}
