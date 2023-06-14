@@ -8,17 +8,24 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"html/template"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 	"os"
 	"path"
 	"strings"
 )
+
+type renderNode struct {
+	Text     string
+	Issues   *bool
+	Children []renderNode
+}
 
 func HtmlOutput(clients *kube.KubernetesClient, outPath *string, taskName string, namespace string) error {
 
 	results, _ := clients.VersionClientSet.KubeeyeV1alpha2().InspectResults(namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: metav1.FormatLabelSelector(metav1.SetAsLabelSelector(map[string]string{constant.LabelName: taskName})),
 	})
-	var resultCollection = make(map[string][][]string, 5)
+	var resultCollection = make(map[string][]renderNode, 5)
 
 	for _, item := range results.Items {
 		if item.Spec.OpaResult.ResourceResults != nil {
@@ -53,41 +60,48 @@ func HtmlOutput(clients *kube.KubernetesClient, outPath *string, taskName string
 	data := map[string]interface{}{"overview": ruleNumber, "details": resultCollection}
 	err = renderView(data)
 	if err != nil {
+		klog.Error(err)
 		return err
 	}
 	return nil
 }
 
-func GetOpaList(result []v1alpha2.ResourceResult) [][]string {
-	OpsList := [][]string{
-		{"NameSpace", "Kind", "Name", "Level", "Message", "Reason"},
-	}
+func GetOpaList(result []v1alpha2.ResourceResult) (opaList []renderNode) {
+	opaList = append(opaList, renderNode{Children: []renderNode{
+		{Text: "NameSpace"}, {Text: "Kind"}, {Text: "Name"}, {Text: "Level"}, {Text: "Message"}, {Text: "Reason"},
+	}})
 	for _, resourceResult := range result {
 
 		for _, item := range resourceResult.ResultItems {
-			items := []string{resourceResult.NameSpace, resourceResult.ResourceType, resourceResult.Name}
-			items = append(items, item.Level, item.Message, item.Reason)
-			OpsList = append(OpsList, items)
+			items := []renderNode{
+				{Text: resourceResult.NameSpace},
+				{Text: resourceResult.ResourceType},
+				{Text: resourceResult.Name},
+				{Text: item.Level},
+				{Text: item.Message},
+				{Text: item.Reason},
+			}
+			opaList = append(opaList, renderNode{Children: items})
 		}
 	}
 
-	return OpsList
+	return opaList
 }
 
-func getPrometheus(pro [][]map[string]string) [][]string {
-	var prometheus [][]string
+func getPrometheus(pro [][]map[string]string) []renderNode {
+	var prometheus []renderNode
 	for _, p := range pro {
-		var header []string
+		header := renderNode{}
 		for _, val := range p {
-			if len(header) == 0 {
+			if len(header.Children) == 0 {
 				for k := range val {
-					header = append(header, k)
+					header.Children = append(header.Children, renderNode{Text: k})
 				}
 				prometheus = append(prometheus, header)
 			}
-			var value []string
-			for i := range header {
-				value = append(value, val[header[i]])
+			value := renderNode{}
+			for i := range header.Children {
+				value.Children = append(value.Children, renderNode{Text: val[header.Children[i].Text]})
 			}
 			prometheus = append(prometheus, value)
 		}
@@ -95,15 +109,23 @@ func getPrometheus(pro [][]map[string]string) [][]string {
 	return prometheus
 }
 
-func getFileChange(infoResult map[string]v1alpha2.NodeInfoResult) [][]string {
-	villeinage := [][]string{{"nodeName", "type", "name", "value"}}
-
+func getFileChange(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
+	var villeinage []renderNode
+	header := renderNode{Children: []renderNode{{Text: "nodeName"}, {Text: "type"}, {Text: "name"}, {Text: "value"}}}
+	villeinage = append(villeinage, header)
 	for k, v := range infoResult {
 		for _, item := range v.FileChangeResult {
 
 			if item.Issues != nil && len(item.Issues) > 0 {
-
-				villeinage = append(villeinage, []string{k, constant.FileChange, item.FileName, strings.Join(item.Issues, ",")})
+				val := renderNode{
+					Children: []renderNode{
+						{Text: k},
+						{Text: constant.FileChange},
+						{Text: item.FileName},
+						{Text: strings.Join(item.Issues, ",")},
+					},
+				}
+				villeinage = append(villeinage, val)
 			}
 
 		}
@@ -112,13 +134,22 @@ func getFileChange(infoResult map[string]v1alpha2.NodeInfoResult) [][]string {
 	return villeinage
 }
 
-func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) [][]string {
-	villeinage := [][]string{{"nodeName", "type", "name", "value", "assert"}}
-
+func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
+	var villeinage []renderNode
+	header := renderNode{Children: []renderNode{{Text: "nodeName"}, {Text: "type"}, {Text: "name"}, {Text: "value"}, {Text: "assert"}}}
+	villeinage = append(villeinage, header)
 	for k, v := range infoResult {
 		for _, item := range v.SysctlResult {
-
-			villeinage = append(villeinage, []string{k, constant.Sysctl, item.Name, *item.Value, utils.FormatBool(item.Assert)})
+			val := renderNode{
+				Issues: item.Assert,
+				Children: []renderNode{
+					{Text: k},
+					{Text: constant.Sysctl},
+					{Text: item.Name},
+					{Text: *item.Value},
+					{Text: utils.FormatBool(item.Assert)},
+				}}
+			villeinage = append(villeinage, val)
 
 		}
 
@@ -126,14 +157,22 @@ func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) [][]string {
 	return villeinage
 }
 
-func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) [][]string {
-	villeinage := [][]string{{"nodeName", "type", "name", "value", "assert"}}
-
+func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
+	var villeinage []renderNode
+	header := renderNode{Children: []renderNode{{Text: "nodeName"}, {Text: "type"}, {Text: "name"}, {Text: "value"}, {Text: "assert"}}}
+	villeinage = append(villeinage, header)
 	for k, v := range infoResult {
 		for _, item := range v.SystemdResult {
-
-			villeinage = append(villeinage, []string{k, constant.Systemd, item.Name, *item.Value, utils.FormatBool(item.Assert)})
-
+			val := renderNode{
+				Issues: item.Assert,
+				Children: []renderNode{
+					{Text: k},
+					{Text: constant.Systemd},
+					{Text: item.Name},
+					{Text: *item.Value},
+					{Text: utils.FormatBool(item.Assert)},
+				}}
+			villeinage = append(villeinage, val)
 		}
 
 	}

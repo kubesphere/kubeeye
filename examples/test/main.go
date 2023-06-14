@@ -267,5 +267,7 @@ func main() {
 	//	fmt.Println(err)
 	//}
 
-	_ = inspect.HtmlOutput(clients, nil, "inspectplan-1686635420", "kubeeye-system")
+	_ = inspect.HtmlOutput(clients, nil, "inspectplan-1686638211", "kubeeye-system")
+
+	//inspect.RenderHeader([]string{"1", "2", "3"})
 }
