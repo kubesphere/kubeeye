@@ -87,7 +87,6 @@ func (o *systemdInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.I
 					ctl.Value = &status.ActiveState
 
 					if r.Rule != nil {
-
 						if _, err := visitor.CheckRule(*r.Rule); err != nil {
 							sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
 							klog.Error(sprintf)
@@ -96,8 +95,8 @@ func (o *systemdInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.I
 							err, res := visitor.EventRuleEvaluate(map[string]interface{}{r.Name: status.ActiveState}, *r.Rule)
 							if err != nil {
 								sprintf := fmt.Sprintf("err:%s", err.Error())
-								klog.Error(sprintf)
 								ctl.Value = &sprintf
+
 							} else {
 								ctl.Assert = &res
 							}
@@ -108,6 +107,8 @@ func (o *systemdInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.I
 			}
 			if ctl.Value == nil {
 				errVal := fmt.Sprintf("name:%s to does not exist", r.Name)
+				notExist := true
+				ctl.Assert = &notExist
 				ctl.Value = &errVal
 			}
 			nodeResult = append(nodeResult, ctl)

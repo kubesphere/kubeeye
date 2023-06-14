@@ -77,9 +77,9 @@ func DiffString(base1 string, base2 string) []string {
 	}
 	return isseus
 }
-func FormatBool(b *bool) string {
+func FormatBoolString(b *bool) string {
 	if b == nil {
-		return "false"
+		return ""
 	}
 	if *b {
 		return "true"

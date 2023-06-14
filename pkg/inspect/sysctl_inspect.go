@@ -74,7 +74,7 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.In
 	usedMemory := totalMemory - freeMemory
 	memoryUsage := float64(usedMemory) / float64(totalMemory)
 	memoryFree := float64(freeMemory) / float64(totalMemory)
-	nodeInfoResult.NodeInfo = map[string]string{"memoryUsage": fmt.Sprintf("%.2f", memoryUsage*100), "memoryIdle": fmt.Sprintf("%.2f", memoryFree*100)}
+	nodeInfoResult.NodeInfo = map[string]string{"memoryUsage": fmt.Sprintf("%.2f", memoryUsage), "memoryIdle": fmt.Sprintf("%.2f", memoryFree)}
 	avg, err := fs.LoadAvg()
 	if err != nil {
 		klog.Errorf(" failed to get loadavg,err:%s", err)
@@ -94,11 +94,10 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.In
 			totalUsage += cpuStat.System + cpuStat.User + cpuStat.Nice
 			totalIdle += cpuStat.Idle
 		}
-
 		usage := totalUsage / (totalUsage + totalIdle)
 		idle := totalIdle / (totalUsage + totalIdle)
-		nodeInfoResult.NodeInfo["cpuUsage"] = fmt.Sprintf("%.2f", usage*100)
-		nodeInfoResult.NodeInfo["cpuIdle"] = fmt.Sprintf("%.2f", idle*100)
+		nodeInfoResult.NodeInfo["cpuUsage"] = fmt.Sprintf("%.2f", usage)
+		nodeInfoResult.NodeInfo["cpuIdle"] = fmt.Sprintf("%.2f", idle)
 	}
 	_, exist, phase := utils.ArrayFinds(task.Spec.Rules, func(m kubeeyev1alpha2.JobRule) bool {
 		return m.JobName == currentJobName
@@ -120,6 +119,8 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.In
 			if err != nil {
 				errVal := fmt.Sprintf("name:%s to does not exist", sysRule.Name)
 				ctl.Value = &errVal
+				notExist := false
+				ctl.Assert = &notExist
 			} else {
 				val := strings.Join(ctlRule, ",")
 				ctl.Value = &val
@@ -132,10 +133,10 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.In
 						err, res := visitor.EventRuleEvaluate(map[string]interface{}{sysRule.Name: ctlRule[0]}, *sysRule.Rule)
 						if err != nil {
 							sprintf := fmt.Sprintf("err:%s", err.Error())
-							klog.Error(sprintf)
+							notExist := true
+							ctl.Assert = &notExist
 							ctl.Value = &sprintf
 						} else {
-
 							ctl.Assert = &res
 						}
 
