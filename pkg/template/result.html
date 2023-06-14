@@ -6,7 +6,7 @@
 </head>
 <body>
 
-<div class="header">检查报告{{- .title -}}</div>
+<div class="header">巡检报告（{{- .title -}}）</div>
 
 <div class="content">
     <div style="font-size: 30px;min-width: 800px;">总览</div>
@@ -39,13 +39,12 @@
 <div class="content">
     <div style="font-size: 30px;width: 100%"><a id="{{$k}}">{{$k}}</a></div>
     <table border="1" cellpadding="0" cellspacing="0" class="overview">
-
         {{range $i,$v1:=$v }}
         {{if $v1.Issues}}
         <tr class="issues">
-        {{else}}
-        <tr >
-        {{end}}
+            {{else}}
+        <tr>
+            {{end}}
             {{range $v1.Children}}
             <td>{{.Text}}</td>
             {{end}}

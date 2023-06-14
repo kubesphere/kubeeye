@@ -2,7 +2,6 @@ package inspect
 
 import (
 	"context"
-	"fmt"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
@@ -17,7 +16,8 @@ import (
 
 type renderNode struct {
 	Text     string
-	Issues   *bool
+	Issues   bool
+	Header   bool
 	Children []renderNode
 }
 
@@ -47,7 +47,7 @@ func HtmlOutput(clients *kube.KubernetesClient, outPath *string, taskName string
 		}
 	}
 	task, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks(namespace).Get(context.TODO(), taskName, metav1.GetOptions{})
-	year, month, day := task.CreationTimestamp.Date()
+
 	var ruleNumber [][]interface{}
 	if err == nil {
 		for key, val := range task.Spec.InspectRuleTotal {
@@ -58,7 +58,7 @@ func HtmlOutput(clients *kube.KubernetesClient, outPath *string, taskName string
 			ruleNumber = append(ruleNumber, []interface{}{key, val, issues})
 		}
 	}
-	data := map[string]interface{}{"title": fmt.Sprintf("%d-%d-%d", year, month, day), "overview": ruleNumber, "details": resultCollection}
+	data := map[string]interface{}{"title": task.CreationTimestamp.Format("YYYY-MM-DD HH:mm"), "overview": ruleNumber, "details": resultCollection}
 	err = renderView(data)
 	if err != nil {
 		klog.Error(err)
@@ -68,7 +68,7 @@ func HtmlOutput(clients *kube.KubernetesClient, outPath *string, taskName string
 }
 
 func GetOpaList(result []v1alpha2.ResourceResult) (opaList []renderNode) {
-	opaList = append(opaList, renderNode{Children: []renderNode{
+	opaList = append(opaList, renderNode{Header: true, Children: []renderNode{
 		{Text: "NameSpace"}, {Text: "Kind"}, {Text: "Name"}, {Text: "Level"}, {Text: "Message"}, {Text: "Reason"},
 	}})
 	for _, resourceResult := range result {
@@ -92,7 +92,7 @@ func GetOpaList(result []v1alpha2.ResourceResult) (opaList []renderNode) {
 func getPrometheus(pro [][]map[string]string) []renderNode {
 	var prometheus []renderNode
 	for _, p := range pro {
-		header := renderNode{}
+		header := renderNode{Header: true}
 		for _, val := range p {
 			if len(header.Children) == 0 {
 				for k := range val {
@@ -112,7 +112,12 @@ func getPrometheus(pro [][]map[string]string) []renderNode {
 
 func getFileChange(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	var villeinage []renderNode
-	header := renderNode{Children: []renderNode{{Text: "nodeName"}, {Text: "type"}, {Text: "name"}, {Text: "value"}}}
+	header := renderNode{Header: true,
+		Children: []renderNode{
+			{Text: "nodeName"},
+			{Text: "type"},
+			{Text: "name"},
+			{Text: "value"}}}
 	villeinage = append(villeinage, header)
 	for k, v := range infoResult {
 		for _, item := range v.FileChangeResult {
@@ -137,18 +142,36 @@ func getFileChange(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 
 func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	var villeinage []renderNode
-	header := renderNode{Children: []renderNode{{Text: "nodeName"}, {Text: "type"}, {Text: "name"}, {Text: "value"}, {Text: "assert"}}}
+	header := renderNode{Header: true,
+		Children: []renderNode{
+			{Text: "nodeName"},
+			{Text: "type"}, {Text: "name"},
+			{Text: "value"},
+			{Text: "assert"}}}
 	villeinage = append(villeinage, header)
 	for k, v := range infoResult {
+
+		for NodeKey, InfoVal := range v.NodeInfo {
+			val := renderNode{
+				Children: []renderNode{
+					{Text: k},
+					{Text: constant.Sysctl},
+					{Text: NodeKey},
+					{Text: InfoVal},
+					{Text: ""},
+				}}
+			villeinage = append(villeinage, val)
+		}
+
 		for _, item := range v.SysctlResult {
 			val := renderNode{
-				Issues: item.Assert,
+				Issues: assertBoolBackBool(item.Assert),
 				Children: []renderNode{
 					{Text: k},
 					{Text: constant.Sysctl},
 					{Text: item.Name},
 					{Text: *item.Value},
-					{Text: utils.FormatBool(item.Assert)},
+					{Text: assertBoolBackString(utils.FormatBoolString(item.Assert))},
 				}}
 			villeinage = append(villeinage, val)
 
@@ -160,18 +183,25 @@ func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 
 func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	var villeinage []renderNode
-	header := renderNode{Children: []renderNode{{Text: "nodeName"}, {Text: "type"}, {Text: "name"}, {Text: "value"}, {Text: "assert"}}}
+	header := renderNode{Header: true,
+		Children: []renderNode{
+			{Text: "nodeName"},
+			{Text: "type"},
+			{Text: "name"},
+			{Text: "value"},
+			{Text: "assert"}},
+	}
 	villeinage = append(villeinage, header)
 	for k, v := range infoResult {
 		for _, item := range v.SystemdResult {
 			val := renderNode{
-				Issues: item.Assert,
+				Issues: assertBoolBackBool(item.Assert),
 				Children: []renderNode{
 					{Text: k},
 					{Text: constant.Systemd},
 					{Text: item.Name},
 					{Text: *item.Value},
-					{Text: utils.FormatBool(item.Assert)},
+					{Text: assertBoolBackString(utils.FormatBoolString(item.Assert))},
 				}}
 			villeinage = append(villeinage, val)
 		}
@@ -200,4 +230,25 @@ func renderView(data map[string]interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func assertBoolBackBool(b *bool) bool {
+	if b == nil {
+		return false
+	}
+	if *b {
+		return false
+	}
+	return true
+}
+
+func assertBoolBackString(bool string) string {
+	if bool == "" {
+		return bool
+	}
+	if bool == "false" {
+		return "true"
+	}
+	return "false"
+
 }
