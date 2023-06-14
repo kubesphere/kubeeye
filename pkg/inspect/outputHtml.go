@@ -5,7 +5,6 @@ import (
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/utils"
 	"html/template"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -58,7 +57,8 @@ func HtmlOutput(clients *kube.KubernetesClient, outPath *string, taskName string
 			ruleNumber = append(ruleNumber, []interface{}{key, val, issues})
 		}
 	}
-	data := map[string]interface{}{"title": task.CreationTimestamp.Format("YYYY-MM-DD HH:mm"), "overview": ruleNumber, "details": resultCollection}
+
+	data := map[string]interface{}{"title": task.CreationTimestamp.Format("2006-01-02 15:04"), "overview": ruleNumber, "details": resultCollection}
 	err = renderView(data)
 	if err != nil {
 		klog.Error(err)
@@ -147,7 +147,8 @@ func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 			{Text: "nodeName"},
 			{Text: "type"}, {Text: "name"},
 			{Text: "value"},
-			{Text: "assert"}}}
+			//{Text: "assert"},
+		}}
 	villeinage = append(villeinage, header)
 	for k, v := range infoResult {
 
@@ -158,7 +159,6 @@ func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 					{Text: constant.Sysctl},
 					{Text: NodeKey},
 					{Text: InfoVal},
-					{Text: ""},
 				}}
 			villeinage = append(villeinage, val)
 		}
@@ -171,7 +171,7 @@ func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 					{Text: constant.Sysctl},
 					{Text: item.Name},
 					{Text: *item.Value},
-					{Text: assertBoolBackString(utils.FormatBoolString(item.Assert))},
+					//{Text: assertBoolBackString(utils.FormatBoolString(item.Assert))},
 				}}
 			villeinage = append(villeinage, val)
 
@@ -189,7 +189,8 @@ func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 			{Text: "type"},
 			{Text: "name"},
 			{Text: "value"},
-			{Text: "assert"}},
+			//{Text: "assert"},
+		},
 	}
 	villeinage = append(villeinage, header)
 	for k, v := range infoResult {
@@ -201,7 +202,7 @@ func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 					{Text: constant.Systemd},
 					{Text: item.Name},
 					{Text: *item.Value},
-					{Text: assertBoolBackString(utils.FormatBoolString(item.Assert))},
+					//{Text: assertBoolBackString(utils.FormatBoolString(item.Assert))},
 				}}
 			villeinage = append(villeinage, val)
 		}

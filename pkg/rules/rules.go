@@ -232,7 +232,7 @@ func AllocationFileChange(rule []kubeeyev1alpha2.FileChangeRule, taskName string
 	if filterData != nil && len(filterData) > 0 {
 		for _, item := range allNode.Items {
 			jobRule := kubeeyev1alpha2.JobRule{
-				JobName:  fmt.Sprintf("%s-%s-%s-%s", taskName, constant.FileChange, item.Name, filterData[0].Name),
+				JobName:  fmt.Sprintf("%s-%s-%s", taskName, constant.FileChange, item.Name),
 				RuleType: constant.FileChange,
 			}
 			for i := range filterData {
@@ -261,9 +261,9 @@ func AllocationSys(rule []kubeeyev1alpha2.SysRule, taskName string, allNode core
 	var jobRules []kubeeyev1alpha2.JobRule
 	nodeNameMergeMap := mergeSysRule(nodeData)
 
-	for k, v := range nodeNameMergeMap {
+	for _, v := range nodeNameMergeMap {
 		jobRule := kubeeyev1alpha2.JobRule{
-			JobName:  fmt.Sprintf("%s-%s-%s-%s", taskName, ctlOrTem, k, v[0].Name),
+			JobName:  fmt.Sprintf("%s-%s-%d", taskName, ctlOrTem, time.Now().Unix()),
 			RuleType: ctlOrTem,
 		}
 		fileChange, err := json.Marshal(v)

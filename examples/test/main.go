@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/kubesphere/kubeeye/pkg/inspect"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 )
@@ -268,11 +267,7 @@ func main() {
 	//	fmt.Println(err)
 	//}
 
-	a := false
-	b := !a
-	fmt.Println(b)
-
-	_ = inspect.HtmlOutput(clients, nil, "inspectplan-1686709988", "kubeeye-system")
+	_ = inspect.HtmlOutput(clients, nil, "inspectplan-1686717000", "kubeeye-system")
 
 	//inspect.RenderHeader([]string{"1", "2", "3"})
 }

@@ -13,7 +13,7 @@ metadata:
 spec:
   sysctl:
     - name: vm.max_map_count
-      rule: vm.max_map_count==1
+      rule: vm.max_map_count==262144
     - name: net.ipv4.ip_forward
     - name: net.bridge.bridge-nf-call-arptables
       rule: net.bridge.bridge-nf-call-arptables == 1
@@ -21,13 +21,10 @@ spec:
       rule: net.bridge.bridge-nf-call-ip6tables == 1
     - name: net.ipv4.port
       rule: net.ipv4.port == 1
-#      nodeName: node1
-#      nodeSelector:
-#        ope: XXX
+
   systemd:
     - name: docker
       rule: docker = "active"
-#      nodeName: node1
     - name: etcd
       rule: etcd = "active"
       nodeName: master
