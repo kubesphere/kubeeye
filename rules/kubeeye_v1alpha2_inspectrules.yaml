@@ -21,7 +21,6 @@ spec:
       rule: net.bridge.bridge-nf-call-ip6tables == 1
     - name: net.ipv4.port
       rule: net.ipv4.port == 1
-
   systemd:
     - name: docker
       rule: docker = "active"

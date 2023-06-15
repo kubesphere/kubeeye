@@ -1,16 +1,18 @@
-package inspect
+package output
 
 import (
 	"context"
+	"fmt"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"html/template"
+	"github.com/kubesphere/kubeeye/pkg/template"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"os"
-	"path"
 	"strings"
+	"time"
 )
 
 type renderNode struct {
@@ -20,16 +22,19 @@ type renderNode struct {
 	Children []renderNode
 }
 
-func HtmlOutput(clients *kube.KubernetesClient, outPath *string, taskName string, namespace string) error {
+func HtmlOut(ctx context.Context, Clients *kube.KubernetesClient, Path string, TaskName string, TaskNameSpace string) error {
 
-	results, _ := clients.VersionClientSet.KubeeyeV1alpha2().InspectResults(namespace).List(context.TODO(), metav1.ListOptions{
-		LabelSelector: metav1.FormatLabelSelector(metav1.SetAsLabelSelector(map[string]string{constant.LabelName: taskName})),
+	results, err := Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults(TaskNameSpace).List(ctx, metav1.ListOptions{
+		LabelSelector: metav1.FormatLabelSelector(metav1.SetAsLabelSelector(map[string]string{constant.LabelName: TaskName})),
 	})
+	if err != nil || len(results.Items) == 0 {
+		return errors.Errorf("result not exist")
+	}
 	var resultCollection = make(map[string][]renderNode, 5)
 
 	for _, item := range results.Items {
 		if item.Spec.OpaResult.ResourceResults != nil {
-			list := GetOpaList(item.Spec.OpaResult.ResourceResults)
+			list := getOpaList(item.Spec.OpaResult.ResourceResults)
 			resultCollection[constant.Opa] = list
 		}
 		if item.Spec.PrometheusResult != nil {
@@ -45,7 +50,7 @@ func HtmlOutput(clients *kube.KubernetesClient, outPath *string, taskName string
 			resultCollection[constant.Systemd] = systemd
 		}
 	}
-	task, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks(namespace).Get(context.TODO(), taskName, metav1.GetOptions{})
+	task, err := Clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks(TaskNameSpace).Get(context.TODO(), TaskName, metav1.GetOptions{})
 
 	var ruleNumber [][]interface{}
 	if err == nil {
@@ -59,7 +64,7 @@ func HtmlOutput(clients *kube.KubernetesClient, outPath *string, taskName string
 	}
 
 	data := map[string]interface{}{"title": task.CreationTimestamp.Format("2006-01-02 15:04"), "overview": ruleNumber, "details": resultCollection}
-	err = renderView(data)
+	err = renderView(data, Path)
 	if err != nil {
 		klog.Error(err)
 		return err
@@ -67,7 +72,7 @@ func HtmlOutput(clients *kube.KubernetesClient, outPath *string, taskName string
 	return nil
 }
 
-func GetOpaList(result []v1alpha2.ResourceResult) (opaList []renderNode) {
+func getOpaList(result []v1alpha2.ResourceResult) (opaList []renderNode) {
 	opaList = append(opaList, renderNode{Header: true, Children: []renderNode{
 		{Text: "NameSpace"}, {Text: "Kind"}, {Text: "Name"}, {Text: "Level"}, {Text: "Message"}, {Text: "Reason"},
 	}})
@@ -211,22 +216,19 @@ func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	return villeinage
 }
 
-func renderView(data map[string]interface{}) error {
-	dir, err := os.Getwd()
+func renderView(data map[string]interface{}, p string) error {
+
+	htmlTemplate, err := template.GetInspectResultHtmlTemplate()
 	if err != nil {
 		return err
 	}
-	filePath := path.Join(dir, "pkg", "template", "result.html")
-	files, err := template.ParseFiles(filePath)
-	if err != nil {
-		return err
-	}
-	create, err := os.Create("index.html")
+	name := ParseFileName(p, fmt.Sprintf("巡检报告(%s).html", time.Now()))
+	create, err := os.Create(name)
 	if err != nil {
 		return err
 	}
 	defer create.Close()
-	err = files.Execute(create, data)
+	err = htmlTemplate.Execute(create, data)
 	if err != nil {
 		return err
 	}

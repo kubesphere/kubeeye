@@ -45,8 +45,8 @@ func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTas
 					Containers: []corev1.Container{{
 						Name:    "inspect-task-kubeeye",
 						Image:   "jw008/kubeeye:dev",
-						Command: []string{"inspect"},
-						Args:    []string{taskType, "--task-name", inspectTask.Name, "--task-namespace", inspectTask.Namespace, "--result-name", jobName},
+						Command: []string{"ke"},
+						Args:    []string{"create", "job", taskType, "--task-name", inspectTask.Name, "--task-namespace", inspectTask.Namespace, "--result-name", jobName},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      "proc",
 							ReadOnly:  true,
@@ -67,7 +67,7 @@ func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTas
 						}},
 						ImagePullPolicy: "Always",
 						Resources: corev1.ResourceRequirements{
-							Limits:   map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: resource.MustParse("1000m"), corev1.ResourceMemory: resource.MustParse("256Mi")},
+							Limits:   map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: resource.MustParse("1000m"), corev1.ResourceMemory: resource.MustParse("512Mi")},
 							Requests: map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: resource.MustParse("500m"), corev1.ResourceMemory: resource.MustParse("256Mi")},
 						},
 						SecurityContext: &corev1.SecurityContext{

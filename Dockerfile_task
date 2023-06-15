@@ -27,14 +27,14 @@ RUN go mod tidy && go mod vendor
 
 # Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETPLATFORM} go build   -o /workspace/inspect ./cmd/inspect-jobs
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETPLATFORM} go build   -o /workspace/ke ./cmd/inspect-jobs
 
 
 FROM --platform=${TARGETPLATFORM} alpine:3.16
 
 WORKDIR /
 
-COPY --from=builder /workspace/inspect /bin/inspect
+COPY --from=builder /workspace/ke /bin/ke
 RUN addgroup -S kubeeye -g 1000 && adduser -S kubeeye -G kubeeye -u 1000
 USER 1000:1000
-ENTRYPOINT ["/bin/inspecet"]
+ENTRYPOINT ["/bin/ke"]

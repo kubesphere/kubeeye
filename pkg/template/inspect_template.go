@@ -1,3 +1,70 @@
+package template
+
+import texttemplate "text/template"
+import hemltemplate "text/template"
+
+func GetInspectRuleTemplate() (*texttemplate.Template, error) {
+
+	return texttemplate.New("examples-inspect-rule").Parse(`
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  labels:
+    app.kubernetes.io/name: inspectrule
+    app.kubernetes.io/instance: inspectrule-sample
+    app.kubernetes.io/part-of: kubeeye
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kubeeye
+    kubeeye.kubesphere.io/rule-tag: kubeeye_workloads_rego
+  name: inspect-rules-sample
+  namespace: kubeeye-system
+spec:
+  sysctl:
+    - name: vm.max_map_count
+      rule: vm.max_map_count==262144      
+      nodeName: master
+      nodeSelector:
+		kubernetes.io/name: ""
+  systemd:
+    - name: docker
+      rule: docker = "active"
+      nodeName: master
+      nodeSelector:
+		kubernetes.io/name: ""
+  fileChange:
+    - name: 
+      path: 
+      nodeName: master
+      nodeSelector:
+		kubernetes.io/name: ""
+  prometheusEndpoint: 
+  prometheus:
+    - name: 
+      rule: 
+  opas:
+    - module: kubeeye_workloads_rego
+      name: 
+      rule: |-
+`)
+
+}
+
+func GetInspectPlanTemplate() (*texttemplate.Template, error) {
+	return texttemplate.New("examples-inspect-plan").Parse(`
+	apiVersion: kubeeye.kubesphere.io/v1alpha2
+	kind: InspectPlan
+	metadata:
+	  name: inspect-plan-sample
+	  namespace: kubeeye-system
+	spec:
+	  schedule: "*/30 * * *  ?"
+	  maxTasks: 10
+	  tag: kubeeye_workloads_rego
+	`)
+}
+
+func GetInspectResultHtmlTemplate() (*hemltemplate.Template, error) {
+	return hemltemplate.New("result").Parse(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -95,3 +162,5 @@
 </style>
 
 </html>
+`)
+}

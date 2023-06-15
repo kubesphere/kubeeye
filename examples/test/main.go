@@ -1,15 +1,15 @@
 package main
 
 import (
-	"github.com/kubesphere/kubeeye/pkg/inspect"
-	"github.com/kubesphere/kubeeye/pkg/kube"
+	"fmt"
+	"github.com/c-bata/go-prompt"
 )
 
 func main() {
 
-	cluster, _ := kube.GetKubeConfigInCluster()
-	var kc kube.KubernetesClient
-	clients, _ := kc.K8SClients(cluster)
+	//cluster, _ := kube.GetKubeConfigInCluster()
+	//var kc kube.KubernetesClient
+	//clients, _ := kc.K8SClients(cluster)
 
 	//list, err := clients.ClientSet.CoreV1().ServiceAccounts("kubeeye-system").List(context.Background(), metav1.ListOptions{})
 	//klog.Info(list)
@@ -267,7 +267,18 @@ func main() {
 	//	fmt.Println(err)
 	//}
 
-	_ = inspect.HtmlOutput(clients, nil, "inspectplan-1686717000", "kubeeye-system")
+	//_ = inspect.HtmlOutput(clients, nil, "inspectplan-1686727402", "kubeeye-system")
 
-	//inspect.RenderHeader([]string{"1", "2", "3"})
+	fmt.Println("Please select table.")
+	t := prompt.Input("> ", completer)
+	fmt.Println("You selected " + t)
+
+}
+func completer(d prompt.Document) []prompt.Suggest {
+	s := []prompt.Suggest{
+		{Text: "users", Description: "Store the username and age"},
+		{Text: "articles", Description: "Store the article text posted by user"},
+		{Text: "comments", Description: "Store the text commented to articles"},
+	}
+	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }
