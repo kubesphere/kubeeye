@@ -411,6 +411,10 @@ spec:
           spec:
             description: InspectTaskSpec defines the desired state of InspectTask
             properties:
+              inspectRuleTotal:
+                additionalProperties:
+                  type: integer
+                type: object
               rules:
                 items:
                   properties:
@@ -797,6 +801,7 @@ spec:
         - --metrics-bind-address=127.0.0.1:8080
         - --leader-elect
         image: jw008/kubeeye-controller:dev
+        imagePullPolicy: Always
         livenessProbe:
           httpGet:
             path: /healthz
