@@ -50,11 +50,11 @@ func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTas
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      "proc",
 							ReadOnly:  true,
-							MountPath: "/host/proc",
+							MountPath: "/hosts/proc",
 						}, {
 							Name:      "sys",
 							ReadOnly:  true,
-							MountPath: "/host/sys",
+							MountPath: "/hosts/sys",
 						}, {
 							Name:             "root",
 							ReadOnly:         true,

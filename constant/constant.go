@@ -27,6 +27,6 @@ const (
 )
 
 const (
-	DefaultProcPath = "/host/proc"
-	RootPathPrefix  = "/host/root"
+	DefaultProcPath = "/hosts/proc"
+	RootPathPrefix  = "/hosts/root"
 )
