@@ -18,7 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 type sysctlInspect struct {
@@ -122,7 +121,7 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.In
 				notExist := false
 				ctl.Assert = &notExist
 			} else {
-				val := strings.Join(ctlRule, ",")
+				val := parseSysctlVal(ctlRule)
 				ctl.Value = &val
 				if sysRule.Rule != nil {
 					if _, err := visitor.CheckRule(*sysRule.Rule); err != nil {
@@ -130,7 +129,7 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.In
 						klog.Error(sprintf)
 						ctl.Value = &sprintf
 					} else {
-						err, res := visitor.EventRuleEvaluate(map[string]interface{}{sysRule.Name: ctlRule[0]}, *sysRule.Rule)
+						err, res := visitor.EventRuleEvaluate(map[string]interface{}{sysRule.Name: val}, *sysRule.Rule)
 						if err != nil {
 							sprintf := fmt.Sprintf("err:%s", err.Error())
 							notExist := true
@@ -222,4 +221,11 @@ func mergeMap(map1 map[string]string, map2 map[string]string) map[string]string 
 		map1[k] = v
 	}
 	return map1
+}
+
+func parseSysctlVal(val []string) string {
+	if len(val) == 0 && val == nil {
+		return ""
+	}
+	return val[0]
 }

@@ -87,7 +87,6 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 			temp := map[string]string{"value": result.Value.String(), "time": result.Timestamp.String()}
 			klog.Info(i, result)
 			for name, value := range result.Metric {
-				klog.Info(name, value)
 				temp[string(name)] = string(value)
 			}
 			queryResultsMap = append(queryResultsMap, temp)
@@ -108,7 +107,6 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 func (o *prometheusInspect) GetResult(ctx context.Context, c client.Client, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
 	var prometheus [][]map[string]string
 	err := json.Unmarshal(result.BinaryData[constant.Result], &prometheus)
-	klog.Info(prometheus)
 	if err != nil {
 		return err
 	}
