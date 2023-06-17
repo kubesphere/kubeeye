@@ -27,7 +27,7 @@ func (o *opaInspect) CreateJobTask(ctx context.Context, clients *kube.Kubernetes
 
 	var jobNames []kubeeyev1alpha2.JobPhase
 
-	job := template.InspectJobsTemplate(jobRule.JobName, task, "", nil, constant.Opa)
+	job := template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", nil, constant.Opa)
 
 	_, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {

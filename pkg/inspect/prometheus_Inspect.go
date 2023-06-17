@@ -30,7 +30,7 @@ func init() {
 func (o *prometheusInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
 	var jobNames []kubeeyev1alpha2.JobPhase
 
-	job := template.InspectJobsTemplate(jobRule.JobName, task, "", nil, constant.Prometheus)
+	job := template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", nil, constant.Prometheus)
 
 	_, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {

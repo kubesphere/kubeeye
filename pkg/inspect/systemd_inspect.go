@@ -36,11 +36,11 @@ func (o *systemdInspect) CreateJobTask(ctx context.Context, clients *kube.Kubern
 	if systemdRules != nil && len(systemdRules) > 0 {
 		var jobTemplate *v1.Job
 		if systemdRules[0].NodeName != nil {
-			jobTemplate = template.InspectJobsTemplate(jobRule.JobName, task, *systemdRules[0].NodeName, nil, constant.Systemd)
+			jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, *systemdRules[0].NodeName, nil, constant.Systemd)
 		} else if systemdRules[0].NodeSelector != nil {
-			jobTemplate = template.InspectJobsTemplate(jobRule.JobName, task, "", systemdRules[0].NodeSelector, constant.Systemd)
+			jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", systemdRules[0].NodeSelector, constant.Systemd)
 		} else {
-			jobTemplate = template.InspectJobsTemplate(jobRule.JobName, task, "", nil, constant.Systemd)
+			jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", nil, constant.Systemd)
 		}
 
 		_, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, jobTemplate, metav1.CreateOptions{})
