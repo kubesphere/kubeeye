@@ -1,0 +1,11 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: config
+  namespace: system
+data:
+  config: |
+    job:
+      BackLimit: 5
+      Image: jw008/kubeeye:dev
+      ImagePullPolicy: Always

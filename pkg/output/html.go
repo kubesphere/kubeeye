@@ -222,7 +222,7 @@ func renderView(data map[string]interface{}, p string) error {
 	if err != nil {
 		return err
 	}
-	name := ParseFileName(p, fmt.Sprintf("巡检报告(%s).html", time.Now()))
+	name := ParseFileName(p, fmt.Sprintf("巡检报告(%s).html", time.Now().Format("2006-01-02 15:04")))
 	create, err := os.Create(name)
 	if err != nil {
 		return err

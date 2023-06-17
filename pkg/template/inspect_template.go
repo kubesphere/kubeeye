@@ -76,13 +76,13 @@ func GetInspectResultHtmlTemplate() (*hemltemplate.Template, error) {
 <div class="header">巡检报告（{{- .title -}}）</div>
 
 <div class="content">
-    <div style="font-size: 30px;min-width: 800px;">总览</div>
+    <div style="font-size: 30px;min-width: 800px;">overview</div>
     <table border="1" cellpadding="0" cellspacing="0" class="overview">
         <thead>
         <tr>
-            <td>规则名称</td>
-            <td>检查规则数量</td>
-            <td>发现问题数量</td>
+            <td>ruleType</td>
+            <td>inspectRuleNumber</td>
+            <td>issuesNumber</td>
         </tr>
         </thead>
         <tbody>

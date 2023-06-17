@@ -38,11 +38,11 @@ func (o *fileChangeInspect) CreateJobTask(ctx context.Context, clients *kube.Kub
 	if fileRule != nil && len(fileRule) > 0 {
 		var jobTemplate *v1.Job
 		if fileRule[0].NodeName != nil {
-			jobTemplate = template.InspectJobsTemplate(jobRule.JobName, task, *fileRule[0].NodeName, nil, constant.FileChange)
+			jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, *fileRule[0].NodeName, nil, constant.FileChange)
 		} else if fileRule[0].NodeSelector != nil {
-			jobTemplate = template.InspectJobsTemplate(jobRule.JobName, task, "", fileRule[0].NodeSelector, constant.FileChange)
+			jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", fileRule[0].NodeSelector, constant.FileChange)
 		} else {
-			jobTemplate = template.InspectJobsTemplate(jobRule.JobName, task, "", nil, constant.FileChange)
+			jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", nil, constant.FileChange)
 		}
 
 		_, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, jobTemplate, metav1.CreateOptions{})

@@ -1,15 +1,43 @@
 package template
 
 import (
+	"context"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/conf"
+	"github.com/kubesphere/kubeeye/pkg/kube"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/klog/v2"
 )
 
-func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTask, nodeName string, nodeSelector map[string]string, taskType string) *v1.Job {
+func GetJobConfig(ctx context.Context, client *kube.KubernetesClient) *conf.JobConfig {
+
+	kubeeyeCm, err := client.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Get(ctx, "kubeeye-config", metav1.GetOptions{})
+	if err != nil {
+		klog.Errorf("failed to get kubeeye config, kubeeye config file do not exist. err:%s", err)
+		return nil
+	}
+	config := kubeeyeCm.Data["config"]
+	var KubeEyeConfig conf.KubeeyeConfig
+	err = yaml.Unmarshal([]byte(config), &KubeEyeConfig)
+	if err != nil {
+		klog.Errorf("failed to unmarshal kubeeye config. err:%s ", err)
+		return nil
+	}
+	return KubeEyeConfig.Job
+}
+
+func InspectJobsTemplate(ctx context.Context, client *kube.KubernetesClient, jobName string, inspectTask *kubeeyev1alpha2.InspectTask, nodeName string, nodeSelector map[string]string, taskType string) *v1.Job {
+
+	jobConfig := GetJobConfig(ctx, client)
+	if jobConfig == nil {
+		klog.Error("Unable to get jobConfig")
+		return nil
+	}
 
 	var ownerController = true
 	ownerRef := metav1.OwnerReference{
@@ -20,10 +48,8 @@ func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTas
 		Controller:         &ownerController,
 		BlockOwnerDeletion: &ownerController,
 	}
-	var resetBack int32 = 5
-	var autoDelTime int32 = 60
+
 	var mountPropagation = corev1.MountPropagationHostToContainer
-	var RunAsNonRoot = true
 	inspectJob := &v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            jobName,
@@ -32,8 +58,8 @@ func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTas
 			Labels:          map[string]string{constant.LabelResultName: taskType},
 		},
 		Spec: v1.JobSpec{
-			BackoffLimit:            &resetBack,
-			TTLSecondsAfterFinished: &autoDelTime,
+			BackoffLimit:            jobConfig.BackLimit,
+			TTLSecondsAfterFinished: jobConfig.AutoDelTime,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "inspect-job-pod",
@@ -44,7 +70,7 @@ func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTas
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Name:    "inspect-task-kubeeye",
-						Image:   "jw008/kubeeye:dev",
+						Image:   jobConfig.Image,
 						Command: []string{"ke"},
 						Args:    []string{"create", "job", taskType, "--task-name", inspectTask.Name, "--task-namespace", inspectTask.Namespace, "--result-name", jobName},
 						VolumeMounts: []corev1.VolumeMount{{
@@ -65,14 +91,10 @@ func InspectJobsTemplate(jobName string, inspectTask *kubeeyev1alpha2.InspectTas
 							ReadOnly:  true,
 							MountPath: "/var/run/dbus/system_bus_socket",
 						}},
-						ImagePullPolicy: "Always",
+						ImagePullPolicy: corev1.PullPolicy(jobConfig.ImagePullPolicy),
 						Resources: corev1.ResourceRequirements{
 							Limits:   map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: resource.MustParse("1000m"), corev1.ResourceMemory: resource.MustParse("512Mi")},
 							Requests: map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: resource.MustParse("500m"), corev1.ResourceMemory: resource.MustParse("256Mi")},
-						},
-						SecurityContext: &corev1.SecurityContext{
-							RunAsNonRoot:           &RunAsNonRoot,
-							ReadOnlyRootFilesystem: &RunAsNonRoot,
 						},
 					}},
 					HostNetwork:        true,

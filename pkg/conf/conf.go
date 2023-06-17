@@ -25,3 +25,14 @@ const (
 	PluginInstalling  string = "installing"
 	PluginUninstalled string = "uninstalled"
 )
+
+type KubeeyeConfig struct {
+	Job *JobConfig `json:"job,omitempty"`
+}
+
+type JobConfig struct {
+	Image           string
+	ImagePullPolicy string
+	AutoDelTime     *int32
+	BackLimit       *int32
+}

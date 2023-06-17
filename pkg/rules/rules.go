@@ -145,24 +145,59 @@ func MergeRegoRules(ctx context.Context, channels ...[]string) <-chan string {
 func MergeRule(rules []kubeeyev1alpha2.InspectRule) (ruleSpec kubeeyev1alpha2.InspectRuleSpec) {
 	for _, rule := range rules {
 		if rule.Spec.Opas != nil && len(rule.Spec.Opas) > 0 {
-			ruleSpec.Opas = append(ruleSpec.Opas, rule.Spec.Opas...)
-		}
-		if rule.Spec.Prometheus != nil {
-			for index := range rule.Spec.Prometheus {
-				if "" != rule.Spec.PrometheusEndpoint && len(rule.Spec.PrometheusEndpoint) > 0 {
-					rule.Spec.Prometheus[index].Endpoint = rule.Spec.PrometheusEndpoint
+			for _, opa := range rule.Spec.Opas {
+				_, b, _ := utils.ArrayFinds(ruleSpec.Opas, func(m kubeeyev1alpha2.OpaRule) bool {
+					return m.Name == opa.Name
+				})
+				if !b {
+					ruleSpec.Opas = append(ruleSpec.Opas, opa)
 				}
-				ruleSpec.Prometheus = append(ruleSpec.Prometheus, rule.Spec.Prometheus[index])
 			}
 		}
+		if rule.Spec.Prometheus != nil {
+
+			for _, pro := range rule.Spec.Prometheus {
+				if "" != rule.Spec.PrometheusEndpoint && len(rule.Spec.PrometheusEndpoint) > 0 {
+					pro.Endpoint = rule.Spec.PrometheusEndpoint
+				}
+				_, b, _ := utils.ArrayFinds(ruleSpec.Prometheus, func(m kubeeyev1alpha2.PrometheusRule) bool {
+					return m.Name == pro.Name
+				})
+				if !b {
+					ruleSpec.Prometheus = append(ruleSpec.Prometheus, pro)
+				}
+			}
+		}
+
 		if rule.Spec.FileChange != nil && len(rule.Spec.FileChange) > 0 {
-			ruleSpec.FileChange = append(ruleSpec.FileChange, rule.Spec.FileChange...)
+			for _, file := range rule.Spec.FileChange {
+				_, b, _ := utils.ArrayFinds(ruleSpec.FileChange, func(m kubeeyev1alpha2.FileChangeRule) bool {
+					return m.Name == file.Name
+				})
+				if !b {
+					ruleSpec.FileChange = append(ruleSpec.FileChange, file)
+				}
+			}
 		}
 		if rule.Spec.Sysctl != nil && len(rule.Spec.Sysctl) > 0 {
-			ruleSpec.Sysctl = append(ruleSpec.Sysctl, rule.Spec.Sysctl...)
+			for _, sysRule := range rule.Spec.Sysctl {
+				_, b, _ := utils.ArrayFinds(ruleSpec.Sysctl, func(m kubeeyev1alpha2.SysRule) bool {
+					return m.Name == sysRule.Name
+				})
+				if !b {
+					ruleSpec.Sysctl = append(ruleSpec.Sysctl, sysRule)
+				}
+			}
 		}
 		if rule.Spec.Systemd != nil && len(rule.Spec.Systemd) > 0 {
-			ruleSpec.Systemd = append(ruleSpec.Systemd, rule.Spec.Systemd...)
+			for _, sysRule := range rule.Spec.Systemd {
+				_, b, _ := utils.ArrayFinds(ruleSpec.Systemd, func(m kubeeyev1alpha2.SysRule) bool {
+					return m.Name == sysRule.Name
+				})
+				if !b {
+					ruleSpec.Systemd = append(ruleSpec.Systemd, sysRule)
+				}
+			}
 		}
 	}
 	return ruleSpec

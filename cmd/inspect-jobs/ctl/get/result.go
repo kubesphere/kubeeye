@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"os"
 )
 
 type ResultConfig struct {
@@ -34,11 +35,13 @@ func NewResultCmd(client *kube.KubernetesClient) *cobra.Command {
 				err = output.JsonOut(cmd.Context(), r.Clients, r.Path, r.TaskName, r.TaskNameSpace)
 				if err != nil {
 					klog.Error(err)
+					os.Exit(1)
 				}
 			} else {
 				err = output.HtmlOut(cmd.Context(), r.Clients, r.Path, r.TaskName, r.TaskNameSpace)
 				if err != nil {
 					klog.Error(err)
+					os.Exit(1)
 				}
 			}
 
