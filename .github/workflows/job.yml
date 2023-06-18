@@ -34,7 +34,7 @@ jobs:
           file: Dockerfile_task
           platforms: linux/amd64
           push: true
-          tags: jw008/kubeeye:dev
+          tags: jw008/kubeeye:latest
           
       - name: Build and push
         uses: docker/build-push-action@v4
@@ -43,4 +43,4 @@ jobs:
           file: Dockerfile
           platforms: linux/amd64
           push: true
-          tags: jw008/kubeeye-controller:dev
+          tags: jw008/kubeeye-controller:latest
