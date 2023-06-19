@@ -157,28 +157,30 @@ func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	villeinage = append(villeinage, header)
 	for k, v := range infoResult {
 
-		for NodeKey, InfoVal := range v.NodeInfo {
-			val := renderNode{
-				Children: []renderNode{
-					{Text: k},
-					{Text: constant.Sysctl},
-					{Text: NodeKey},
-					{Text: InfoVal},
-				}}
-			villeinage = append(villeinage, val)
-		}
+		//for NodeKey, InfoVal := range v.NodeInfo {
+		//	val := renderNode{
+		//		Children: []renderNode{
+		//			{Text: k},
+		//			{Text: constant.Sysctl},
+		//			{Text: NodeKey},
+		//			{Text: InfoVal},
+		//		}}
+		//	villeinage = append(villeinage, val)
+		//}
 
 		for _, item := range v.SysctlResult {
-			val := renderNode{
-				Issues: assertBoolBackBool(item.Assert),
-				Children: []renderNode{
-					{Text: k},
-					{Text: constant.Sysctl},
-					{Text: item.Name},
-					{Text: *item.Value},
-					//{Text: assertBoolBackString(utils.FormatBoolString(item.Assert))},
-				}}
-			villeinage = append(villeinage, val)
+			if item.Assert != nil && *item.Assert == false {
+				val := renderNode{
+					Issues: assertBoolBackBool(item.Assert),
+					Children: []renderNode{
+						{Text: k},
+						{Text: constant.Sysctl},
+						{Text: item.Name},
+						{Text: *item.Value},
+						//{Text: assertBoolBackString(utils.FormatBoolString(item.Assert))},
+					}}
+				villeinage = append(villeinage, val)
+			}
 
 		}
 
@@ -200,16 +202,18 @@ func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	villeinage = append(villeinage, header)
 	for k, v := range infoResult {
 		for _, item := range v.SystemdResult {
-			val := renderNode{
-				Issues: assertBoolBackBool(item.Assert),
-				Children: []renderNode{
-					{Text: k},
-					{Text: constant.Systemd},
-					{Text: item.Name},
-					{Text: *item.Value},
-					//{Text: assertBoolBackString(utils.FormatBoolString(item.Assert))},
-				}}
-			villeinage = append(villeinage, val)
+			if item.Assert != nil && *item.Assert == false {
+				val := renderNode{
+					Issues: assertBoolBackBool(item.Assert),
+					Children: []renderNode{
+						{Text: k},
+						{Text: constant.Systemd},
+						{Text: item.Name},
+						{Text: *item.Value},
+						//{Text: assertBoolBackString(utils.FormatBoolString(item.Assert))},
+					}}
+				villeinage = append(villeinage, val)
+			}
 		}
 
 	}

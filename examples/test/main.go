@@ -29,7 +29,7 @@ func main() {
 	//			ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
 	//			Spec: corev1.PodSpec{
 	//				Containers: []corev1.Container{{
-	//					Name:    "inspect-jobs",
+	//					Name:    "ke",
 	//					Image:   "jw008/kubeeye:test",
 	//					Command: []string{"inspect"},
 	//					Args:    []string{"file-change", "--task-name", "inspect"},

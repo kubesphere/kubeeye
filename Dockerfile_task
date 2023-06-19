@@ -27,7 +27,7 @@ RUN go mod tidy && go mod vendor
 
 # Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETPLATFORM} go build   -o /workspace/ke ./cmd/inspect-jobs
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETPLATFORM} go build   -o /workspace/ke ./cmd/ke
 
 
 FROM --platform=${TARGETPLATFORM} alpine:3.16

@@ -108,11 +108,8 @@ func GetInspectResultHtmlTemplate() (*hemltemplate.Template, error) {
     <table border="1" cellpadding="0" cellspacing="0" class="overview">
         {{range $i,$v1:=$v }}
 
-        {{if $v1.Issues}}
-        <tr class="issues">
-            {{else}}
         <tr>
-            {{end}}
+     
             {{range $v1.Children}}
 
             {{if $v1.Header}}
@@ -122,6 +119,7 @@ func GetInspectResultHtmlTemplate() (*hemltemplate.Template, error) {
             {{end}}
             {{end}}
         </tr>
+
         {{end}}
     </table>
 </div>

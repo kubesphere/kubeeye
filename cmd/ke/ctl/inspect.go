@@ -2,8 +2,8 @@ package ctl
 
 import (
 	"fmt"
-	"github.com/kubesphere/kubeeye/cmd/inspect-jobs/ctl/create"
-	"github.com/kubesphere/kubeeye/cmd/inspect-jobs/ctl/get"
+	"github.com/kubesphere/kubeeye/cmd/ke/ctl/create"
+	"github.com/kubesphere/kubeeye/cmd/ke/ctl/get"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"

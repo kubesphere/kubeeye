@@ -1,0 +1,136 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.1
+  creationTimestamp: null
+  name: inspectrules.kubeeye.kubesphere.io
+spec:
+  group: kubeeye.kubesphere.io
+  names:
+    kind: InspectRule
+    listKind: InspectRuleList
+    plural: inspectrules
+    singular: inspectrule
+  scope: Namespaced
+  versions:
+    - name: v1alpha2
+      schema:
+        openAPIV3Schema:
+          description: InspectRule is the Schema for the InspectRule API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: InspectRuleSpec defines the desired state of InspectRule
+              properties:
+                fileChange:
+                  items:
+                    properties:
+                      desc:
+                        type: string
+                      name:
+                        type: string
+                      nodeName:
+                        type: string
+                      nodeSelector:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      path:
+                        type: string
+                      rule:
+                        type: string
+                    type: object
+                  type: array
+                opas:
+                  items:
+                    properties:
+                      desc:
+                        type: string
+                      module:
+                        type: string
+                      name:
+                        type: string
+                      rule:
+                        type: string
+                    type: object
+                  type: array
+                prometheus:
+                  items:
+                    properties:
+                      desc:
+                        type: string
+                      endpoint:
+                        type: string
+                      name:
+                        type: string
+                      rule:
+                        type: string
+                    type: object
+                  type: array
+                prometheusEndpoint:
+                  description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                  Important: Run "make" to regenerate code after modifying this file'
+                  type: string
+                sysctl:
+                  items:
+                    properties:
+                      desc:
+                        type: string
+                      name:
+                        type: string
+                      nodeName:
+                        type: string
+                      nodeSelector:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      rule:
+                        type: string
+                    type: object
+                  type: array
+                systemd:
+                  items:
+                    properties:
+                      desc:
+                        type: string
+                      name:
+                        type: string
+                      nodeName:
+                        type: string
+                      nodeSelector:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      rule:
+                        type: string
+                    type: object
+                  type: array
+              type: object
+            status:
+              description: InspectRuleStatus defines the observed state of InspectRule
+              properties:
+                importTime:
+                  format: date-time
+                  type: string
+                ruleCount:
+                  type: integer
+                state:
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
