@@ -4,10 +4,8 @@ go 1.19
 
 require (
 	github.com/aquasecurity/kube-bench v0.6.7
-	github.com/c-bata/go-prompt v0.2.6
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/ghodss/yaml v1.0.0
-	github.com/golang/glog v1.0.0
 	github.com/kubesphere/event-rule-engine v0.0.0-20230602101348-c91b9b139a2c
 	github.com/lithammer/dedent v1.1.0
 	github.com/onsi/ginkgo v1.16.5
@@ -20,7 +18,6 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sergi/go-diff v1.1.0
 	github.com/spf13/cobra v1.5.0
-	github.com/spf13/pflag v1.0.5
 	github.com/xuri/excelize/v2 v2.7.1
 	go.uber.org/zap v1.22.0
 	k8s.io/api v0.24.3
@@ -60,6 +57,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
+	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
@@ -74,10 +72,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
-	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/mattn/go-runewidth v0.0.9 // indirect
-	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -86,7 +80,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
-	github.com/pkg/term v1.2.0-beta.2 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20200313005456-10cdbea86bc0 // indirect
 	github.com/richardlehane/mscfb v1.0.4 // indirect
@@ -94,6 +87,7 @@ require (
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.10.0 // indirect
 	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
