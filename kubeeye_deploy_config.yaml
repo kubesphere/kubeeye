@@ -727,8 +727,9 @@ apiVersion: v1
 data:
   config: |
     job:
+      AutoDelTime: 30
       BackLimit: 5
-      Image: jw008/kubeeye:dev
+      Image: kubespheredev/kubeeye:latest
       ImagePullPolicy: Always
 kind: ConfigMap
 metadata:
@@ -812,7 +813,7 @@ spec:
         - --health-probe-bind-address=:8081
         - --metrics-bind-address=127.0.0.1:8080
         - --leader-elect
-        image: jw008/kubeeye-controller:dev
+        image: kubespheredev/kubeeye-controller:latest
         imagePullPolicy: Always
         livenessProbe:
           httpGet:

@@ -6,6 +6,7 @@ metadata:
 data:
   config: |
     job:
+      AutoDelTime: 30
       BackLimit: 5
-      Image: jw008/kubeeye:dev
+      Image: kubespheredev/kubeeye:latest
       ImagePullPolicy: Always
