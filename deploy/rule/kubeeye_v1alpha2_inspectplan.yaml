@@ -1,9 +1,0 @@
-apiVersion: kubeeye.kubesphere.io/v1alpha2
-kind: InspectPlan
-metadata:
-  name: inspectplan
-  namespace: kubeeye-system
-spec:
-  schedule: "*/30 * * *  ?"
-  maxTasks: 10
-  tag: kubeeye_workloads_rego
