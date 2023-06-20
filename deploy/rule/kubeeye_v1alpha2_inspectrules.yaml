@@ -20,12 +20,6 @@ spec:
   fileChange:
     - name: kubelet-config
       path: /var/lib/kubelet/config.yaml
-  prometheusEndpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
-  prometheus:
-    - name: harbor_health
-      rule: harbor_health==1
-    - name: harbor_system_info
-      rule: node_filesystem_avail_bytes/node_filesystem_size_bytes{mountpoint=~"/var/lib/docker|/kube|/home|/var|/"}>0.25
   opas:
     - module: kubeeye_workloads_rego
       name: imagePullPolicyRule
