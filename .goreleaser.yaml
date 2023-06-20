@@ -10,8 +10,8 @@ builds:
       - arm64
     goos:
       - linux
-      - drawin
       - windows
+      - darwin
 dist: bin
 archives:
   - name_template: "kubeeye-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
@@ -19,7 +19,7 @@ archives:
       linux: linux
       amd64: amd64
       arm64: arm64
-      drawin: drawin
+      darwin: darwin
       windows: windows
     files:
       - none*
