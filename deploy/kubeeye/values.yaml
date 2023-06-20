@@ -5,14 +5,16 @@
 replicaCount: 1
 
 image:
-  repository: kubespheredev/kubeeye-controller
-  pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: v1.0.0-alpha.0
-
+  rbac:
+    repository: gcr.io/kubebuilder/kube-rbac-proxy
+    pullPolicy: IfNotPresent
+    tag: v0.11.0
+  controller:
+    repository: kubespheredev/kubeeye-controller
+    pullPolicy: Always
+    tag: v1.0.0-alpha.1
 imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
+
 
 serviceAccount:
   # Specifies whether a service account should be created
