@@ -117,10 +117,6 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 		fileResults = append(fileResults, resultItem)
 	}
 
-	if fileResults == nil && len(fileResults) == 0 {
-		return nil, nil
-	}
-
 	marshal, err := json.Marshal(fileResults)
 	if err != nil {
 		return nil, err
@@ -130,18 +126,22 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 }
 
 func (o *fileChangeInspect) GetResult(ctx context.Context, c client.Client, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+
+	var fileChangeResult []kubeeyev1alpha2.FileChangeResultItem
+	jsonErr := json.Unmarshal(result.BinaryData[constant.Result], &fileChangeResult)
+	if jsonErr != nil {
+		klog.Error("failed to get result", jsonErr)
+		return jsonErr
+	}
+	if fileChangeResult == nil {
+		return nil
+	}
 	runNodeName := findJobRunNode(ctx, jobs, c)
 	var inspectResult kubeeyev1alpha2.InspectResult
 	err := c.Get(ctx, types.NamespacedName{
 		Namespace: task.Namespace,
 		Name:      fmt.Sprintf("%s-nodeinfo", task.Name),
 	}, &inspectResult)
-	var fileChangeResult []kubeeyev1alpha2.FileChangeResultItem
-	jsonErr := json.Unmarshal(result.BinaryData[constant.Result], &fileChangeResult)
-	if jsonErr != nil {
-		klog.Error("failed to get result", jsonErr)
-		return err
-	}
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			var ownerRefBol = true

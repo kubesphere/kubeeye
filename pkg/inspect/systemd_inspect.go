@@ -124,18 +124,23 @@ func (o *systemdInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.I
 }
 
 func (o *systemdInspect) GetResult(ctx context.Context, c client.Client, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+
+	var nodeInfoResult []kubeeyev1alpha2.NodeResultItem
+	jsonErr := json.Unmarshal(result.BinaryData[constant.Result], &nodeInfoResult)
+	if jsonErr != nil {
+		klog.Error("failed to get result", jsonErr)
+		return jsonErr
+	}
+
+	if nodeInfoResult == nil {
+		return nil
+	}
 	runNodeName := findJobRunNode(ctx, jobs, c)
 	var inspectResult kubeeyev1alpha2.InspectResult
 	err := c.Get(ctx, types.NamespacedName{
 		Namespace: task.Namespace,
 		Name:      fmt.Sprintf("%s-nodeinfo", task.Name),
 	}, &inspectResult)
-	var nodeInfoResult []kubeeyev1alpha2.NodeResultItem
-	jsonErr := json.Unmarshal(result.BinaryData[constant.Result], &nodeInfoResult)
-	if jsonErr != nil {
-		klog.Error("failed to get result", jsonErr)
-		return err
-	}
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			var ownerRefBol = true

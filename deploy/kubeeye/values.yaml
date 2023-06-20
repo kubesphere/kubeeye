@@ -12,9 +12,11 @@ image:
   controller:
     repository: kubespheredev/kubeeye-controller
     pullPolicy: Always
-    tag: v1.0.0-alpha.1
+    tag: v1.0.0-alpha.2
 imagePullSecrets: []
 
+nameOverride: ""
+fullnameOverride: ""
 
 serviceAccount:
   # Specifies whether a service account should be created

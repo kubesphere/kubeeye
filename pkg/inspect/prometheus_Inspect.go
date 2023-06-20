@@ -99,9 +99,7 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 
 		proRuleResult = append(proRuleResult, queryResultsMap)
 	}
-	if proRuleResult == nil && len(proRuleResult) == 0 {
-		return nil, nil
-	}
+
 	marshal, err := json.Marshal(proRuleResult)
 	if err != nil {
 		return nil, err
@@ -111,6 +109,7 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 
 func (o *prometheusInspect) GetResult(ctx context.Context, c client.Client, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
 	var prometheus [][]map[string]string
+
 	err := json.Unmarshal(result.BinaryData[constant.Result], &prometheus)
 	if err != nil {
 		return err
