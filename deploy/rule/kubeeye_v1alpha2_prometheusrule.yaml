@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kubeeye
     kubeeye.kubesphere.io/rule-tag: kubeeye_workloads_rego
-  name: sysctl-sample
+  name: prometheus-sample
   namespace: kubeeye-system
 spec:
   prometheusEndpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090

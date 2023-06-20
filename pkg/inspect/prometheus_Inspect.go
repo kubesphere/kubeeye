@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 	"time"
 )
 
@@ -74,6 +75,7 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 			klog.Errorf("failed to query rule:%s", *proRule.Rule)
 			return nil, err
 		}
+
 		marshal, err := json.Marshal(query)
 
 		var queryResults model.Samples
@@ -82,19 +84,22 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 			klog.Error("unmarshal modal Samples failed", err)
 			continue
 		}
+		if queryResults.Len() == 0 {
+			continue
+		}
 		var queryResultsMap []map[string]string
 		for i, result := range queryResults {
 			temp := map[string]string{"value": result.Value.String(), "time": result.Timestamp.String()}
 			klog.Info(i, result)
 			for name, value := range result.Metric {
-				temp[string(name)] = string(value)
+				temp[formatName(name)] = string(value)
 			}
 			queryResultsMap = append(queryResultsMap, temp)
 		}
 
 		proRuleResult = append(proRuleResult, queryResultsMap)
 	}
-	if proRules == nil && len(proRules) == 0 {
+	if proRuleResult == nil && len(proRuleResult) == 0 {
 		return nil, nil
 	}
 	marshal, err := json.Marshal(proRuleResult)
@@ -109,6 +114,9 @@ func (o *prometheusInspect) GetResult(ctx context.Context, c client.Client, jobs
 	err := json.Unmarshal(result.BinaryData[constant.Result], &prometheus)
 	if err != nil {
 		return err
+	}
+	if prometheus == nil {
+		return nil
 	}
 	var ownerRefBol = true
 	resultRef := metav1.OwnerReference{
@@ -132,4 +140,8 @@ func (o *prometheusInspect) GetResult(ctx context.Context, c client.Client, jobs
 		return err
 	}
 	return nil
+}
+
+func formatName(name model.LabelName) string {
+	return strings.Trim(string(name), "_")
 }
