@@ -14,10 +14,10 @@ func NotReadyPluginsList(pluginsResults []kubeeyev1alpha1.PluginsResult, plugins
 		pluginsMap[result.Name] = result.Ready
 	}
 
-	for _, plugins := range pluginsList.Items {
-		pluginsname := plugins.Name
-		if !pluginsMap[pluginsname] && plugins.Status.State == conf.PluginInstalled {
-			notReadyPluginsList = append(notReadyPluginsList, pluginsname)
+	for _, plugin := range pluginsList.Items {
+		pluginName := plugin.Name
+		if !pluginsMap[pluginName] && plugin.Status.State == conf.PluginInstalled {
+			notReadyPluginsList = append(notReadyPluginsList, pluginName)
 		}
 	}
 	return notReadyPluginsList
