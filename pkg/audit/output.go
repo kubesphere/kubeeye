@@ -40,9 +40,7 @@ func defaultOutput(receiver <-chan []v1alpha1.AuditResults) error {
 func JSONOutput(receiver <-chan []v1alpha1.AuditResults) error {
     var output []v1alpha1.AuditResults
     for r := range receiver {
-        for _, results := range r {
-            output = append(output, results)
-        }
+	output = append(output, r...)    
     }
     
     // output json

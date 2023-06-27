@@ -20,9 +20,7 @@ func formatResults(receiver <-chan []kubeeyev1alpha1.AuditResults) (formattedRes
 
 	for results := range receiver {
 		for _, result := range results {
-			for _, resultInfo := range result.ResultInfos {
-				fmAuditResults[result.NameSpace] = append(fmAuditResults[result.NameSpace], resultInfo)
-			}
+			fmAuditResults[result.NameSpace] = append(fmAuditResults[result.NameSpace], result.ResultInfos...)
 		}
 	}
 
