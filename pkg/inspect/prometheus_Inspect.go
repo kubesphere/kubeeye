@@ -33,7 +33,7 @@ func (o *prometheusInspect) CreateJobTask(ctx context.Context, clients *kube.Kub
 
 	job := template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", nil, constant.Prometheus)
 
-	_, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
+	_, err := clients.ClientSet.BatchV1().Jobs("kubeeye-system").Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
 		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
 		return nil, err

@@ -43,7 +43,7 @@ func (o *systemdInspect) CreateJobTask(ctx context.Context, clients *kube.Kubern
 			jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", nil, constant.Systemd)
 		}
 
-		_, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, jobTemplate, metav1.CreateOptions{})
+		_, err := clients.ClientSet.BatchV1().Jobs("kubeeye-system").Create(ctx, jobTemplate, metav1.CreateOptions{})
 		if err != nil {
 			klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
 			return nil, err

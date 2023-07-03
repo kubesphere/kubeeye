@@ -128,7 +128,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				continue
 			}
 
-			jobInfo, err := r.K8sClients.ClientSet.BatchV1().Jobs(inspectTask.Namespace).Get(ctx, job.JobName, metav1.GetOptions{})
+			jobInfo, err := r.K8sClients.ClientSet.BatchV1().Jobs("kubeeye-system").Get(ctx, job.JobName, metav1.GetOptions{})
 			if err != nil {
 				klog.Error(err)
 				inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
@@ -137,7 +137,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			}
 			if jobInfo.Status.CompletionTime != nil && !jobInfo.Status.CompletionTime.IsZero() && jobInfo.Status.Active == 0 {
 				updateStatus = true
-				configs, err := r.K8sClients.ClientSet.CoreV1().ConfigMaps(inspectTask.Namespace).Get(ctx, job.JobName, metav1.GetOptions{})
+				configs, err := r.K8sClients.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Get(ctx, job.JobName, metav1.GetOptions{})
 				if err != nil {
 					klog.Error(err)
 					inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
@@ -154,7 +154,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 					}
 				}
 				inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseSucceeded
-				_ = r.K8sClients.ClientSet.CoreV1().ConfigMaps(inspectTask.Namespace).Delete(ctx, job.JobName, metav1.DeleteOptions{})
+				_ = r.K8sClients.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Delete(ctx, job.JobName, metav1.DeleteOptions{})
 			}
 		}
 
@@ -167,7 +167,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				if job.Phase == kubeeyev1alpha2.PhaseRunning {
 					inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
 					var DeletePro = metav1.DeletePropagationBackground
-					err := r.K8sClients.ClientSet.BatchV1().Jobs(inspectTask.Namespace).Delete(ctx, job.JobName, metav1.DeleteOptions{PropagationPolicy: &DeletePro})
+					err := r.K8sClients.ClientSet.BatchV1().Jobs("kubeeye-system").Delete(ctx, job.JobName, metav1.DeleteOptions{PropagationPolicy: &DeletePro})
 					if err != nil {
 						klog.Errorf("failed to delete jobs for jobName:%s,%s", job.JobName, err)
 						continue

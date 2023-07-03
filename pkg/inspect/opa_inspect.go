@@ -29,7 +29,7 @@ func (o *opaInspect) CreateJobTask(ctx context.Context, clients *kube.Kubernetes
 
 	job := template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", nil, constant.Opa)
 
-	_, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, job, metav1.CreateOptions{})
+	_, err := clients.ClientSet.BatchV1().Jobs("kubeeye-system").Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
 		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
 		return nil, err

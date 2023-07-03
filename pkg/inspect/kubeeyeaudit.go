@@ -160,7 +160,7 @@ func JobInspect(ctx context.Context, taskName string, resultName string, clients
 
 	resultLabels := map[string]string{constant.LabelName: task.Name, constant.LabelConfigType: constant.Result}
 	resultConfigMap := template.BinaryResultConfigMapTemplate(resultName, task.Namespace, result, true, resultLabels, ownerRef)
-	_, err = clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Create(ctx, resultConfigMap, v1.CreateOptions{})
+	_, err = clients.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Create(ctx, resultConfigMap, v1.CreateOptions{})
 	if err != nil {
 		return errors.New(fmt.Sprintf("create configMap failed. err:%s", err))
 	}

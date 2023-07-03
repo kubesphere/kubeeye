@@ -45,7 +45,7 @@ func (o *fileChangeInspect) CreateJobTask(ctx context.Context, clients *kube.Kub
 			jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", nil, constant.FileChange)
 		}
 
-		_, err := clients.ClientSet.BatchV1().Jobs(task.Namespace).Create(ctx, jobTemplate, metav1.CreateOptions{})
+		_, err := clients.ClientSet.BatchV1().Jobs("kubeeye-system").Create(ctx, jobTemplate, metav1.CreateOptions{})
 		if err != nil {
 			klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
 			return nil, err
@@ -87,14 +87,14 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 			continue
 		}
 		baseFileName := fmt.Sprintf("%s-%s", constant.BaseFilePrefix, file.Name)
-		baseConfig, configErr := clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Get(ctx, baseFileName, metav1.GetOptions{})
+		baseConfig, configErr := clients.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Get(ctx, baseFileName, metav1.GetOptions{})
 		if configErr != nil {
 			klog.Errorf("Failed to open file. cause：file Do not exist,err:%s", err)
 
 			if kubeErr.IsNotFound(configErr) {
 
 				mapTemplate := template.BinaryFileConfigMapTemplate(baseFileName, task.Namespace, baseFile, true)
-				_, createErr := clients.ClientSet.CoreV1().ConfigMaps(task.Namespace).Create(ctx, mapTemplate, metav1.CreateOptions{})
+				_, createErr := clients.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Create(ctx, mapTemplate, metav1.CreateOptions{})
 				if createErr != nil {
 					resultItem.Issues = []string{fmt.Sprintf("%s:create configMap failed", file.Name)}
 				} else {
