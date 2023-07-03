@@ -16,8 +16,8 @@ func NewPrometheusCmd(client *kube.KubernetesClient) *cobra.Command {
 		Short: "inspect on prometheus rule on Kubernetes cluster.",
 		Run: func(cmd *cobra.Command, args []string) {
 
-			if len(taskName) == 0 || len(taskNamespace) == 0 || len(resultName) == 0 {
-				klog.Errorf("taskName or taskNamespace or resultName Incomplete parameters")
+			if len(taskName) == 0 || len(resultName) == 0 {
+				klog.Errorf("taskName  or resultName Incomplete parameters")
 				os.Exit(1)
 			}
 

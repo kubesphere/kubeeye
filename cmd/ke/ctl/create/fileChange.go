@@ -16,7 +16,7 @@ func NewFileChangeCmd(client *kube.KubernetesClient) *cobra.Command {
 		Short: "inspect on filechange rule on Kubernetes cluster.",
 		Run: func(cmd *cobra.Command, args []string) {
 
-			if len(taskName) == 0 || len(taskNamespace) == 0 || len(resultName) == 0 {
+			if len(taskName) == 0 || len(resultName) == 0 {
 				klog.Errorf("taskName or taskNamespace or resultName Incomplete parameters")
 				os.Exit(1)
 			}
