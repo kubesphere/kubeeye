@@ -8,7 +8,6 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/klog/v2"
@@ -53,7 +52,7 @@ func InspectJobsTemplate(ctx context.Context, client *kube.KubernetesClient, job
 	inspectJob := &v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            jobName,
-			Namespace:       inspectTask.Namespace,
+			Namespace:       "kubeeye-system",
 			OwnerReferences: []metav1.OwnerReference{ownerRef},
 			Labels:          map[string]string{constant.LabelResultName: taskType},
 		},
@@ -63,7 +62,7 @@ func InspectJobsTemplate(ctx context.Context, client *kube.KubernetesClient, job
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "inspect-job-pod",
-					Namespace:   inspectTask.Namespace,
+					Namespace:   "kubeeye-system",
 					Annotations: map[string]string{"container.apparmor.security.beta.kubernetes.io/inspect-task-kubeeye": "unconfined"},
 				},
 
@@ -92,10 +91,7 @@ func InspectJobsTemplate(ctx context.Context, client *kube.KubernetesClient, job
 							MountPath: "/var/run/dbus/system_bus_socket",
 						}},
 						ImagePullPolicy: corev1.PullPolicy(jobConfig.ImagePullPolicy),
-						Resources: corev1.ResourceRequirements{
-							Limits:   map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: resource.MustParse("1000m"), corev1.ResourceMemory: resource.MustParse("512Mi")},
-							Requests: map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: resource.MustParse("500m"), corev1.ResourceMemory: resource.MustParse("256Mi")},
-						},
+						Resources:       jobConfig.Resources,
 					}},
 					HostNetwork:        true,
 					HostPID:            true,

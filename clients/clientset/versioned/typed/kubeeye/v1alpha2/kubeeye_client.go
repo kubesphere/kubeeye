@@ -29,11 +29,11 @@ type KubeeyeV1alpha2Interface interface {
 	RESTClient() rest.Interface
 	InspectPlansGetter
 	InspectResultsGetter
-	InspectRulesesGetter
+	InspectRulesGetter
 	InspectTasksGetter
 }
 
-// KubeeyeV1alpha2Client is used to interact with features provided by the kubeeye.kubesphere.io group.
+// KubeeyeV1alpha2Client is used to interact with features provided by the kubeeye group.
 type KubeeyeV1alpha2Client struct {
 	restClient rest.Interface
 }
@@ -46,8 +46,8 @@ func (c *KubeeyeV1alpha2Client) InspectResults(namespace string) InspectResultIn
 	return newInspectResults(c, namespace)
 }
 
-func (c *KubeeyeV1alpha2Client) InspectRules(namespace string) InspectRulesInterface {
-	return newInspectRuleses(c, namespace)
+func (c *KubeeyeV1alpha2Client) InspectRules(namespace string) InspectRuleInterface {
+	return newInspectRules(c, namespace)
 }
 
 func (c *KubeeyeV1alpha2Client) InspectTasks(namespace string) InspectTaskInterface {

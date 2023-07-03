@@ -13,7 +13,7 @@ spec:
     listKind: InspectRuleList
     plural: inspectrules
     singular: inspectrule
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha2
     schema:
@@ -36,6 +36,25 @@ spec:
             description: InspectRuleSpec defines the desired state of InspectRule
             properties:
               fileChange:
+                items:
+                  properties:
+                    desc:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    path:
+                      type: string
+                    rule:
+                      type: string
+                  type: object
+                type: array
+              fileFilter:
                 items:
                   properties:
                     desc:

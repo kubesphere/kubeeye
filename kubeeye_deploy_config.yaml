@@ -19,7 +19,7 @@ spec:
     listKind: InspectPlanList
     plural: inspectplans
     singular: inspectplan
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha2
     schema:
@@ -102,7 +102,7 @@ spec:
     listKind: InspectResultList
     plural: inspectresults
     singular: inspectresult
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha2
     schema:
@@ -252,7 +252,7 @@ spec:
     listKind: InspectRuleList
     plural: inspectrules
     singular: inspectrule
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha2
     schema:
@@ -275,6 +275,25 @@ spec:
             description: InspectRuleSpec defines the desired state of InspectRule
             properties:
               fileChange:
+                items:
+                  properties:
+                    desc:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    path:
+                      type: string
+                    rule:
+                      type: string
+                  type: object
+                type: array
+              fileFilter:
                 items:
                   properties:
                     desc:
@@ -389,7 +408,7 @@ spec:
     listKind: InspectTaskList
     plural: inspecttasks
     singular: inspecttask
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha2
     schema:
@@ -725,12 +744,19 @@ subjects:
 ---
 apiVersion: v1
 data:
-  config: |
+  config: |-
     job:
-      AutoDelTime: 30
-      BackLimit: 5
-      Image: kubespheredev/kubeeye-job:v1.0.0-alpha.0
-      ImagePullPolicy: Always
+      autoDelTime: 30
+      backLimit: 5
+      image: kubespheredev/kubeeye:latest
+      imagePullPolicy: Always
+      resources:
+        limits:
+          cpu: 1000m
+          memory: 512Mi
+        requests:
+          cpu: 500m
+          memory: 256Mi
 kind: ConfigMap
 metadata:
   name: kubeeye-config
@@ -813,7 +839,7 @@ spec:
         - --health-probe-bind-address=:8081
         - --metrics-bind-address=127.0.0.1:8080
         - --leader-elect
-        image: kubespheredev/kubeeye-controller:v1.0.0-alpha.0
+        image: kubespheredev/kubeeye-controller:latest
         imagePullPolicy: Always
         livenessProbe:
           httpGet:

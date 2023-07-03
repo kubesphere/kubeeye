@@ -35,8 +35,8 @@ func (c *FakeKubeeyeV1alpha2) InspectResults(namespace string) v1alpha2.InspectR
 	return &FakeInspectResults{c, namespace}
 }
 
-func (c *FakeKubeeyeV1alpha2) InspectRules(namespace string) v1alpha2.InspectRulesInterface {
-	return &FakeInspectRuleses{c, namespace}
+func (c *FakeKubeeyeV1alpha2) InspectRules(namespace string) v1alpha2.InspectRuleInterface {
+	return &FakeInspectRules{c, namespace}
 }
 
 func (c *FakeKubeeyeV1alpha2) InspectTasks(namespace string) v1alpha2.InspectTaskInterface {

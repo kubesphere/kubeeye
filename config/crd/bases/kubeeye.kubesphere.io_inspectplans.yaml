@@ -13,7 +13,7 @@ spec:
     listKind: InspectPlanList
     plural: inspectplans
     singular: inspectplan
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha2
     schema:

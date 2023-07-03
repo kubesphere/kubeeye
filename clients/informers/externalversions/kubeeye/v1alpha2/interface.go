@@ -27,8 +27,8 @@ type Interface interface {
 	InspectPlans() InspectPlanInformer
 	// InspectResults returns a InspectResultInformer.
 	InspectResults() InspectResultInformer
-	// InspectRules returns a InspectRulesInformer.
-	InspectRules() InspectRulesInformer
+	// InspectRules returns a InspectRuleInformer.
+	InspectRules() InspectRuleInformer
 	// InspectTasks returns a InspectTaskInformer.
 	InspectTasks() InspectTaskInformer
 }
@@ -54,9 +54,9 @@ func (v *version) InspectResults() InspectResultInformer {
 	return &inspectResultInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// InspectRules returns a InspectRulesInformer.
-func (v *version) InspectRules() InspectRulesInformer {
-	return &inspectRulesInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// InspectRules returns a InspectRuleInformer.
+func (v *version) InspectRules() InspectRuleInformer {
+	return &inspectRuleInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // InspectTasks returns a InspectTaskInformer.

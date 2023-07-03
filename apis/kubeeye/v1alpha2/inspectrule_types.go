@@ -33,11 +33,19 @@ type InspectRuleSpec struct {
 	FileChange         []FileChangeRule `json:"fileChange,omitempty" yaml:"fileChange,omitempty"`
 	Sysctl             []SysRule        `json:"sysctl,omitempty"`
 	Systemd            []SysRule        `json:"systemd,omitempty"`
+	FileFilter         []FileFilterRule `json:"fileFilter,omitempty"`
 }
 type RuleItemBases struct {
 	Name string  `json:"name,omitempty" yaml:"name,omitempty"`
 	Rule *string `json:"rule,omitempty" yaml:"rule,omitempty"`
 	Desc string  `json:"desc,omitempty" yaml:"desc,omitempty"`
+}
+
+type FileFilterRule struct {
+	RuleItemBases `json:",inline"`
+	Path          string            `json:"path,omitempty"`
+	NodeName      *string           `json:"nodeName,omitempty"`
+	NodeSelector  map[string]string `json:"nodeSelector,omitempty"`
 }
 
 type SysRule struct {
@@ -84,6 +92,7 @@ type InspectRuleStatus struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 //+kubebuilder:object:root=true
+//+kubebuilder:resource:scope=Cluster
 //+kubebuilder:subresource:status
 
 // InspectRule is the Schema for the InspectRule API

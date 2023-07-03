@@ -17,6 +17,7 @@ const (
 	Result     = "result"
 	Sysctl     = "sysctl"
 	Systemd    = "systemd"
+	FileFilter = "filefilter"
 )
 
 const (

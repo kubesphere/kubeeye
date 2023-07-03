@@ -219,7 +219,8 @@ func (r *InspectPlanReconciler) scanRules(ctx context.Context, taskName string, 
 		klog.Errorf("failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
 		return nil, nil, fmt.Errorf("failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
 	}
-	nodeAll, err := r.K8sClient.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+
+	nodes := r.GetNodes(ctx)
 	ruleSpec := rules.MergeRule(ruleLists.Items)
 
 	var inspectRuleTotal = make(map[string]int)
@@ -236,22 +237,37 @@ func (r *InspectPlanReconciler) scanRules(ctx context.Context, taskName string, 
 		executeRule = append(executeRule, *prometheus)
 		inspectRuleTotal[constant.Prometheus] = len(ruleSpec.Prometheus)
 	}
-	if err == nil {
-		change := rules.AllocationFileChange(ruleSpec.FileChange, taskName, *nodeAll)
+	if nodes != nil && len(nodes) > 0 {
+		change := rules.AllocationRule(ruleSpec.FileChange, taskName, nodes, constant.FileChange)
 		if change != nil && len(change) > 0 {
 			executeRule = append(executeRule, change...)
 			inspectRuleTotal[constant.FileChange] = len(ruleSpec.FileChange)
 		}
-		sysctl := rules.AllocationSys(ruleSpec.Sysctl, taskName, *nodeAll, constant.Sysctl)
+		sysctl := rules.AllocationRule(ruleSpec.Sysctl, taskName, nodes, constant.Sysctl)
 		if sysctl != nil && len(sysctl) > 0 {
 			executeRule = append(executeRule, sysctl...)
 			inspectRuleTotal[constant.Sysctl] = len(ruleSpec.Sysctl)
 		}
-		systemd := rules.AllocationSys(ruleSpec.Systemd, taskName, *nodeAll, constant.Systemd)
+		systemd := rules.AllocationRule(ruleSpec.Systemd, taskName, nodes, constant.Systemd)
 		if systemd != nil && len(systemd) > 0 {
 			executeRule = append(executeRule, systemd...)
 			inspectRuleTotal[constant.Systemd] = len(ruleSpec.Systemd)
 		}
+		fileFilter := rules.AllocationRule(ruleSpec.FileFilter, taskName, nodes, constant.FileFilter)
+		if systemd != nil && len(systemd) > 0 {
+			executeRule = append(executeRule, fileFilter...)
+			inspectRuleTotal[constant.FileFilter] = len(ruleSpec.FileFilter)
+		}
 	}
 	return executeRule, inspectRuleTotal, nil
+}
+
+func (r *InspectPlanReconciler) GetNodes(ctx context.Context) []v1.Node {
+	nodeAll, err := r.K8sClient.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		klog.Error("failed to get nodes", err)
+		return nil
+	}
+	return nodeAll.Items
+
 }

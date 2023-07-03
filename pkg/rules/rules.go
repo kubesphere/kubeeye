@@ -21,7 +21,6 @@ import (
 	"k8s.io/klog/v2"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -118,44 +117,13 @@ func GetRules(ctx context.Context, task types.NamespacedName, client versioned.I
 	return nil
 }
 
-// MergeRegoRules fun-out merge rego ruleFiles
-func MergeRegoRules(ctx context.Context, channels ...[]string) <-chan string {
-	res := make(chan string)
-	var wg sync.WaitGroup
-	wg.Add(len(channels))
-
-	mergeRegoRuls := func(ctx context.Context, ch []string) {
-		defer wg.Done()
-		for _, c := range ch {
-			res <- c
-		}
-	}
-
-	for _, c := range channels {
-		go mergeRegoRuls(ctx, c)
-	}
-
-	go func() {
-		wg.Wait()
-		defer close(res)
-	}()
-	return res
-}
-
 func MergeRule(rules []kubeeyev1alpha2.InspectRule) (ruleSpec kubeeyev1alpha2.InspectRuleSpec) {
 	for _, rule := range rules {
 		if rule.Spec.Opas != nil && len(rule.Spec.Opas) > 0 {
-			for _, opa := range rule.Spec.Opas {
-				_, b, _ := utils.ArrayFinds(ruleSpec.Opas, func(m kubeeyev1alpha2.OpaRule) bool {
-					return m.Name == opa.Name
-				})
-				if !b {
-					ruleSpec.Opas = append(ruleSpec.Opas, opa)
-				}
-			}
+			ruleSpec.Opas = append(ruleSpec.Opas, rule.Spec.Opas...)
+			ruleSpec.Opas = RuleArrayDeduplication[kubeeyev1alpha2.OpaRule](ruleSpec.Opas)
 		}
 		if rule.Spec.Prometheus != nil {
-
 			for _, pro := range rule.Spec.Prometheus {
 				if "" != rule.Spec.PrometheusEndpoint && len(rule.Spec.PrometheusEndpoint) > 0 {
 					pro.Endpoint = rule.Spec.PrometheusEndpoint
@@ -168,39 +136,69 @@ func MergeRule(rules []kubeeyev1alpha2.InspectRule) (ruleSpec kubeeyev1alpha2.In
 				}
 			}
 		}
-
 		if rule.Spec.FileChange != nil && len(rule.Spec.FileChange) > 0 {
-			for _, file := range rule.Spec.FileChange {
-				_, b, _ := utils.ArrayFinds(ruleSpec.FileChange, func(m kubeeyev1alpha2.FileChangeRule) bool {
-					return m.Name == file.Name
-				})
-				if !b {
-					ruleSpec.FileChange = append(ruleSpec.FileChange, file)
-				}
-			}
+			ruleSpec.FileChange = append(ruleSpec.FileChange, rule.Spec.FileChange...)
+			ruleSpec.FileChange = RuleArrayDeduplication[kubeeyev1alpha2.FileChangeRule](ruleSpec.FileChange)
 		}
 		if rule.Spec.Sysctl != nil && len(rule.Spec.Sysctl) > 0 {
-			for _, sysRule := range rule.Spec.Sysctl {
-				_, b, _ := utils.ArrayFinds(ruleSpec.Sysctl, func(m kubeeyev1alpha2.SysRule) bool {
-					return m.Name == sysRule.Name
-				})
-				if !b {
-					ruleSpec.Sysctl = append(ruleSpec.Sysctl, sysRule)
-				}
-			}
+			ruleSpec.Sysctl = append(ruleSpec.Sysctl, rule.Spec.Sysctl...)
+			ruleSpec.Sysctl = RuleArrayDeduplication[kubeeyev1alpha2.SysRule](ruleSpec.Sysctl)
 		}
 		if rule.Spec.Systemd != nil && len(rule.Spec.Systemd) > 0 {
-			for _, sysRule := range rule.Spec.Systemd {
-				_, b, _ := utils.ArrayFinds(ruleSpec.Systemd, func(m kubeeyev1alpha2.SysRule) bool {
-					return m.Name == sysRule.Name
-				})
-				if !b {
-					ruleSpec.Systemd = append(ruleSpec.Systemd, sysRule)
-				}
-			}
+			ruleSpec.Systemd = append(ruleSpec.Systemd, rule.Spec.Systemd...)
+			ruleSpec.Systemd = RuleArrayDeduplication[kubeeyev1alpha2.SysRule](ruleSpec.Systemd)
 		}
+		if rule.Spec.FileFilter != nil && len(rule.Spec.FileFilter) > 0 {
+			ruleSpec.FileFilter = append(ruleSpec.FileFilter, rule.Spec.FileFilter...)
+			ruleSpec.FileFilter = RuleArrayDeduplication[kubeeyev1alpha2.FileFilterRule](ruleSpec.FileFilter)
+		}
+
 	}
 	return ruleSpec
+}
+
+type MapType interface {
+	kubeeyev1alpha2.SysRule | kubeeyev1alpha2.OpaRule | kubeeyev1alpha2.PrometheusRule | kubeeyev1alpha2.FileChangeRule | kubeeyev1alpha2.FileFilterRule
+}
+
+func StructToMap(obj interface{}) []map[string]interface{} {
+	marshal, err := json.Marshal(obj)
+	if err != nil {
+		return nil
+	}
+	var result []map[string]interface{}
+	err = json.Unmarshal(marshal, &result)
+	if err != nil {
+		return nil
+	}
+	return result
+}
+
+func MapToStruct[T MapType](maps []map[string]interface{}) []T {
+	var result []T
+	marshal, err := json.Marshal(maps)
+	if err != nil {
+		return nil
+	}
+	err = json.Unmarshal(marshal, &result)
+	if err != nil {
+		return nil
+	}
+	return result
+}
+func RuleArrayDeduplication[T MapType](obj interface{}) []T {
+	maps := StructToMap(obj)
+	var newMaps []map[string]interface{}
+	for _, m := range maps {
+		_, b, _ := utils.ArrayFinds(newMaps, func(m1 map[string]interface{}) bool {
+			return m["name"] == m1["name"]
+		})
+		if !b {
+			newMaps = append(newMaps, m)
+		}
+	}
+	toStruct := MapToStruct[T](newMaps)
+	return toStruct
 }
 
 func AllocationOpa(rule []kubeeyev1alpha2.OpaRule, taskName string) *kubeeyev1alpha2.JobRule {
@@ -240,61 +238,17 @@ func AllocationPrometheus(rule []kubeeyev1alpha2.PrometheusRule, taskName string
 	jobRule.RunRule = prometheus
 	return jobRule
 }
-func AllocationFileChange(rule []kubeeyev1alpha2.FileChangeRule, taskName string, allNode corev1.NodeList) []kubeeyev1alpha2.JobRule {
+func AllocationRule(rule interface{}, taskName string, allNode []corev1.Node, ctlOrTem string) []kubeeyev1alpha2.JobRule {
 	if rule == nil {
 		return nil
 	}
-	nodeData, filterData := utils.ArrayFilter(rule, func(v kubeeyev1alpha2.FileChangeRule) bool {
-		return v.NodeName != nil || v.NodeSelector != nil
+	toMap := StructToMap(rule)
+
+	nodeData, filterData := utils.ArrayFilter(toMap, func(v map[string]interface{}) bool {
+		return v["nodeName"] != nil || v["nodeSelector"] != nil
 	})
 	var jobRules []kubeeyev1alpha2.JobRule
 	nodeNameMergeMap := mergeNodeRule(nodeData)
-
-	for k, v := range nodeNameMergeMap {
-		jobRule := kubeeyev1alpha2.JobRule{
-			JobName:  fmt.Sprintf("%s-%s-%s-%s", taskName, constant.FileChange, k, v[0].Name),
-			RuleType: constant.FileChange,
-		}
-		fileChange, err := json.Marshal(v)
-		if err != nil {
-			klog.Errorf("Failed to marshal  fileChange rule. err:%s", err)
-			return nil
-		}
-		jobRule.RunRule = fileChange
-		jobRules = append(jobRules, jobRule)
-	}
-
-	if filterData != nil && len(filterData) > 0 {
-		for _, item := range allNode.Items {
-			jobRule := kubeeyev1alpha2.JobRule{
-				JobName:  fmt.Sprintf("%s-%s-%s", taskName, constant.FileChange, item.Name),
-				RuleType: constant.FileChange,
-			}
-			for i := range filterData {
-				filterData[i].NodeName = &item.Name
-			}
-			fileChange, err := json.Marshal(filterData)
-			if err != nil {
-				klog.Errorf("Failed to marshal  fileChange rule. err:%s", err)
-				return nil
-			}
-			jobRule.RunRule = fileChange
-			jobRules = append(jobRules, jobRule)
-		}
-	}
-
-	return jobRules
-}
-
-func AllocationSys(rule []kubeeyev1alpha2.SysRule, taskName string, allNode corev1.NodeList, ctlOrTem string) []kubeeyev1alpha2.JobRule {
-	if rule == nil {
-		return nil
-	}
-	nodeData, filterData := utils.ArrayFilter(rule, func(v kubeeyev1alpha2.SysRule) bool {
-		return v.NodeName != nil || v.NodeSelector != nil
-	})
-	var jobRules []kubeeyev1alpha2.JobRule
-	nodeNameMergeMap := mergeSysRule(nodeData)
 
 	for _, v := range nodeNameMergeMap {
 		jobRule := kubeeyev1alpha2.JobRule{
@@ -311,14 +265,14 @@ func AllocationSys(rule []kubeeyev1alpha2.SysRule, taskName string, allNode core
 	}
 
 	if filterData != nil && len(filterData) > 0 {
-		for _, item := range allNode.Items {
+		for _, item := range allNode {
 			jobRule := kubeeyev1alpha2.JobRule{
 				JobName:  fmt.Sprintf("%s-%s-%s", taskName, ctlOrTem, item.Name),
 				RuleType: ctlOrTem,
 			}
 
 			for i := range filterData {
-				filterData[i].NodeName = &item.Name
+				filterData[i]["nodeName"] = &item.Name
 			}
 			sysMarshal, err := json.Marshal(filterData)
 			if err != nil {
@@ -333,32 +287,18 @@ func AllocationSys(rule []kubeeyev1alpha2.SysRule, taskName string, allNode core
 	return jobRules
 }
 
-func mergeSysRule(rule []kubeeyev1alpha2.SysRule) map[string][]kubeeyev1alpha2.SysRule {
-	var mergeMap = make(map[string][]kubeeyev1alpha2.SysRule)
-
-	for _, changeRule := range rule {
-		if changeRule.NodeName != nil {
-			mergeMap[*changeRule.NodeName] = append(mergeMap[*changeRule.NodeName], changeRule)
-		} else if changeRule.NodeSelector != nil {
-			formatLabels := labels.FormatLabels(changeRule.NodeSelector)
-			mergeMap[formatLabels] = append(mergeMap[formatLabels], changeRule)
+func mergeNodeRule(rule []map[string]interface{}) map[string][]map[string]interface{} {
+	var mergeMap = make(map[string][]map[string]interface{})
+	for _, m := range rule {
+		for k, v := range m {
+			fmt.Println(k, v)
+			if k == "nodeName" {
+				mergeMap[v.(string)] = append(mergeMap[v.(string)], m)
+			} else if k == "nodeSelector" {
+				formatLabels := labels.FormatLabels(v.(map[string]string))
+				mergeMap[formatLabels] = append(mergeMap[formatLabels], m)
+			}
 		}
 	}
-
-	return mergeMap
-}
-
-func mergeNodeRule(rule []kubeeyev1alpha2.FileChangeRule) map[string][]kubeeyev1alpha2.FileChangeRule {
-	var mergeMap = make(map[string][]kubeeyev1alpha2.FileChangeRule)
-
-	for _, changeRule := range rule {
-		if changeRule.NodeName != nil {
-			mergeMap[*changeRule.NodeName] = append(mergeMap[*changeRule.NodeName], changeRule)
-		} else if changeRule.NodeSelector != nil {
-			formatLabels := labels.FormatLabels(changeRule.NodeSelector)
-			mergeMap[formatLabels] = append(mergeMap[formatLabels], changeRule)
-		}
-	}
-
 	return mergeMap
 }

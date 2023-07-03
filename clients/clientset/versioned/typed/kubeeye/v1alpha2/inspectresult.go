@@ -30,7 +30,7 @@ import (
 )
 
 // InspectResultsGetter has a method to return a InspectResultInterface.
-// A group's client should implement this options.
+// A group's client should implement this interface.
 type InspectResultsGetter interface {
 	InspectResults(namespace string) InspectResultInterface
 }

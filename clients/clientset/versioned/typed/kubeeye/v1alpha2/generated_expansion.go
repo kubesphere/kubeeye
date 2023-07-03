@@ -21,6 +21,6 @@ type InspectPlanExpansion interface{}
 
 type InspectResultExpansion interface{}
 
-type InspectRulesExpansion interface{}
+type InspectRuleExpansion interface{}
 
 type InspectTaskExpansion interface{}

@@ -6,7 +6,14 @@ metadata:
 data:
   config: |
     job:
-      AutoDelTime: 30
-      BackLimit: 5
-      Image: kubespheredev/kubeeye:latest
-      ImagePullPolicy: Always
+      autoDelTime: 30
+      backLimit: 5
+      image: kubespheredev/kubeeye:latest
+      imagePullPolicy: Always
+      resources:
+        limits:
+          cpu: 1000m
+          memory: 512Mi
+        requests:
+          cpu: 500m
+          memory: 256Mi

@@ -35,9 +35,9 @@ type FakeInspectTasks struct {
 	ns   string
 }
 
-var inspecttasksResource = schema.GroupVersionResource{Group: "kubeeye.kubesphere.io", Version: "v1alpha2", Resource: "inspecttasks"}
+var inspecttasksResource = schema.GroupVersionResource{Group: "kubeeye", Version: "v1alpha2", Resource: "inspecttasks"}
 
-var inspecttasksKind = schema.GroupVersionKind{Group: "kubeeye.kubesphere.io", Version: "v1alpha2", Kind: "InspectTask"}
+var inspecttasksKind = schema.GroupVersionKind{Group: "kubeeye", Version: "v1alpha2", Kind: "InspectTask"}
 
 // Get takes name of the inspectTask, and returns the corresponding inspectTask object, and an error if there is any.
 func (c *FakeInspectTasks) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.InspectTask, err error) {

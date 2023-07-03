@@ -30,7 +30,7 @@ import (
 )
 
 // InspectPlansGetter has a method to return a InspectPlanInterface.
-// A group's client should implement this options.
+// A group's client should implement this interface.
 type InspectPlansGetter interface {
 	InspectPlans(namespace string) InspectPlanInterface
 }

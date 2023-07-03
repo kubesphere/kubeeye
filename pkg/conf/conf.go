@@ -1,5 +1,9 @@
 package conf
 
+import (
+	corev1 "k8s.io/api/core/v1"
+)
+
 const (
 	AppsGroup                = "apps"
 	NoGroup                  = ""
@@ -31,8 +35,9 @@ type KubeeyeConfig struct {
 }
 
 type JobConfig struct {
-	Image           string
-	ImagePullPolicy string
-	AutoDelTime     *int32
-	BackLimit       *int32
+	Image           string                      `json:"image,omitempty"`
+	ImagePullPolicy string                      `json:"imagePullPolicy,omitempty"`
+	AutoDelTime     *int32                      `json:"autoDelTime,omitempty"`
+	BackLimit       *int32                      `json:"backLimit,omitempty"`
+	Resources       corev1.ResourceRequirements `json:"resources,omitempty"`
 }

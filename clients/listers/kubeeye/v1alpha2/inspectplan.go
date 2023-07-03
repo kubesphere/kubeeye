@@ -35,7 +35,7 @@ type InspectPlanLister interface {
 	InspectPlanListerExpansion
 }
 
-// inspectPlanLister implements the InspectPlanLister options.
+// inspectPlanLister implements the InspectPlanLister interface.
 type inspectPlanLister struct {
 	indexer cache.Indexer
 }
@@ -71,7 +71,7 @@ type InspectPlanNamespaceLister interface {
 }
 
 // inspectPlanNamespaceLister implements the InspectPlanNamespaceLister
-// options.
+// interface.
 type inspectPlanNamespaceLister struct {
 	indexer   cache.Indexer
 	namespace string

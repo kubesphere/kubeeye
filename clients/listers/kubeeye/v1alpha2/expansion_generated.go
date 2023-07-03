@@ -33,13 +33,13 @@ type InspectResultListerExpansion interface{}
 // InspectResultNamespaceLister.
 type InspectResultNamespaceListerExpansion interface{}
 
-// InspectRulesListerExpansion allows custom methods to be added to
-// InspectRulesLister.
-type InspectRulesListerExpansion interface{}
+// InspectRuleListerExpansion allows custom methods to be added to
+// InspectRuleLister.
+type InspectRuleListerExpansion interface{}
 
-// InspectRulesNamespaceListerExpansion allows custom methods to be added to
-// InspectRulesNamespaceLister.
-type InspectRulesNamespaceListerExpansion interface{}
+// InspectRuleNamespaceListerExpansion allows custom methods to be added to
+// InspectRuleNamespaceLister.
+type InspectRuleNamespaceListerExpansion interface{}
 
 // InspectTaskListerExpansion allows custom methods to be added to
 // InspectTaskLister.

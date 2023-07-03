@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 // Package v1alpha2 contains API Schema definitions for the kubeeye v1alpha2 API group
-//+kubebuilder:object:generate=true
-//+groupName=kubeeye.kubesphere.io
+// +kubebuilder:object:generate=true
+// +groupName=kubeeye.kubesphere.io
 package v1alpha2
 
 import (
