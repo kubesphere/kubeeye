@@ -9,9 +9,8 @@ metadata:
     app.kubernetes.io/created-by: kubeeye
     kubeeye.kubesphere.io/rule-tag: kubeeye_workloads_rego
   name: prometheus-sample
-  namespace: kubeeye-system
 spec:
-  prometheusEndpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
+  prometheusEndpoint: http://whizard-agent-proxy.kubesphere-monitoring-system.svc.cluster.local:9090
   prometheus:
     - name: filesystem-less-20
       desc: Filesystem inode where less 20 %

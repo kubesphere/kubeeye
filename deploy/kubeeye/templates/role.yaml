@@ -1,8 +1,8 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: kubeeye-leader-election-role
-  namespace: kubeeye-system
+  name: {{ include "charts.fullname" . }}-leader-election-role
+  namespace: {{ .Release.Namespace}}
 rules:
   - apiGroups:
       - ""
@@ -40,7 +40,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: kubeeye-manager-role
+  name: {{ include "charts.fullname" . }}-manager-role
 rules:
   - apiGroups:
       - ""
@@ -181,7 +181,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kubeeye-metrics-reader
+  name: {{ include "charts.fullname" . }}-metrics-reader
 rules:
   - nonResourceURLs:
       - /metrics
@@ -191,7 +191,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kubeeye-proxy-role
+  name: {{ include "charts.fullname" . }}-proxy-role
 rules:
   - apiGroups:
       - authentication.k8s.io

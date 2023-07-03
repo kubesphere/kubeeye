@@ -3,19 +3,19 @@ kind: Deployment
 metadata:
   labels:
     control-plane: kubeeye-controller-manager
-  name: kubeeye-controller-manager
-  namespace: kubeeye-system
+  name: {{ include "charts.fullname" . }}-controller-manager
+  namespace: {{ .Release.Namespace}}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount}}
   selector:
     matchLabels:
-      control-plane: kubeeye-controller-manager
+      control-plane: {{ include "charts.fullname" . }}-controller-manager
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
       labels:
-        control-plane: kubeeye-controller-manager
+        control-plane: {{ include "charts.fullname" . }}-controller-manager
     spec:
       containers:
         - args:
@@ -56,13 +56,7 @@ spec:
               port: 8081
             initialDelaySeconds: 5
             periodSeconds: 10
-          resources:
-            limits:
-              cpu: 1500m
-              memory: 2048Mi
-            requests:
-              cpu: 200m
-              memory: 256Mi
+          resources: {{ toYaml .Values.resources | nindent 12}}
           securityContext:
             allowPrivilegeEscalation: false
       securityContext:

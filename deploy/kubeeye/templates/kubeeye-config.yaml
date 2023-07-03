@@ -4,9 +4,9 @@ data:
     job:
       AutoDelTime: 30
       BackLimit: 5
-      Image: kubespheredev/kubeeye-job:v1.0.0-alpha.2
+      Image: kubespheredev/kubeeye-job:v1.0.0-alpha.3
       ImagePullPolicy: Always
 kind: ConfigMap
 metadata:
   name: kubeeye-config
-  namespace: kubeeye-system
+  namespace: {{ .Release.Namespace}}

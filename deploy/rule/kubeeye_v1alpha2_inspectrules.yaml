@@ -17,6 +17,9 @@ spec:
     - name: etcd
       rule: etcd = "active"
       nodeName: master
+  sysctl:
+    - name: net.ipv4.ip_forward
+      rule: net.ipv4.ip_forward = 1
   fileChange:
     - name: kubelet-config
       path: /var/lib/kubelet/config.yaml

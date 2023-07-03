@@ -14,5 +14,5 @@ data:
       resourceName: fa68b2a3.kubesphere.io
 kind: ConfigMap
 metadata:
-  name: kubeeye-manager-config
-  namespace: kubeeye-system
+  name: {{ include "charts.fullname" . }}-manager-config
+  namespace: {{ .Release.Namespace}}
