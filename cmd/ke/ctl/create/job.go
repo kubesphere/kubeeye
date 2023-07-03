@@ -6,7 +6,6 @@ import (
 )
 
 var taskName string
-var taskNamespace string
 var resultName string
 
 func NewJobCmd(client *kube.KubernetesClient) *cobra.Command {
@@ -24,7 +23,6 @@ func NewJobCmd(client *kube.KubernetesClient) *cobra.Command {
 
 	jobCmd.PersistentFlags().StringVar(&resultName, "result-name", "", " result config name")
 	jobCmd.PersistentFlags().StringVar(&taskName, "task-name", "", "task name")
-	jobCmd.PersistentFlags().StringVar(&taskNamespace, "task-namespace", "", "task-namespace")
 
 	return jobCmd
 }

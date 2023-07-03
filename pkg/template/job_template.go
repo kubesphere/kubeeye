@@ -71,7 +71,7 @@ func InspectJobsTemplate(ctx context.Context, client *kube.KubernetesClient, job
 						Name:    "inspect-task-kubeeye",
 						Image:   jobConfig.Image,
 						Command: []string{"ke"},
-						Args:    []string{"create", "job", taskType, "--task-name", inspectTask.Name, "--task-namespace", inspectTask.Namespace, "--result-name", jobName},
+						Args:    []string{"create", "job", taskType, "--task-name", inspectTask.Name, "--result-name", jobName},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      "proc",
 							ReadOnly:  true,

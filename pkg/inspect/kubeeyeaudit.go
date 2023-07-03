@@ -127,18 +127,23 @@ func CalculateScore(fmResultss []kubeeyev1alpha2.ResourceResult, k8sResources ku
 	return scoreInfo
 }
 
-func JobInspect(ctx context.Context, taskName string, taskNamespace string, resultName string, clients *kube.KubernetesClient, ruleType string) error {
-	task, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks(taskNamespace).Get(ctx, taskName, v1.GetOptions{})
-	apiVersion := clients.VersionClientSet.KubeeyeV1alpha2().RESTClient().APIVersion().String()
+func JobInspect(ctx context.Context, taskName string, resultName string, clients *kube.KubernetesClient, ruleType string) error {
+	var task *kubeeyev1alpha2.InspectTask
+	raw, err := clients.VersionClientSet.KubeeyeV1alpha2().RESTClient().Get().Resource("inspecttasks").Name(taskName).DoRaw(ctx)
+	if err != nil {
+		klog.Errorf("Failed to get  inspect task. err:%s", err)
+		return err
+	}
+	err = json.Unmarshal(raw, &task)
 	if err != nil || task.Spec.Rules == nil {
-		klog.Error(err, ",Failed to get file Change rule not found")
+		klog.Errorf("Failed to get unmarshal inspect task. err:%s", err)
 		return err
 	}
 
 	var ownerRefBol = true
 	ownerRef := v1.OwnerReference{
-		APIVersion:         apiVersion,
-		Kind:               "InspectTask",
+		APIVersion:         task.APIVersion,
+		Kind:               task.Kind,
 		Name:               task.Name,
 		UID:                task.UID,
 		Controller:         &ownerRefBol,

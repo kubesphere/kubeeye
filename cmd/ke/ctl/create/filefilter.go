@@ -21,12 +21,12 @@ func NewFileFilterCmd(client *kube.KubernetesClient) *cobra.Command {
 				os.Exit(1)
 			}
 
-			err := inspect.JobInspect(cmd.Context(), taskName, taskNamespace, resultName, client, constant.FileFilter)
+			err := inspect.JobInspect(cmd.Context(), taskName, resultName, client, constant.FileFilter)
 			if err != nil {
 				klog.Errorf("kubeeye inspect failed with error: %s,%v", err, err)
 				os.Exit(1)
 			}
-			fmt.Println(args, taskName, taskNamespace)
+			fmt.Println(args, taskName, "inspect success")
 		},
 	}
 	return systemdCmd

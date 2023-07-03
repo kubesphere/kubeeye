@@ -21,12 +21,12 @@ func NewPrometheusCmd(client *kube.KubernetesClient) *cobra.Command {
 				os.Exit(1)
 			}
 
-			err := inspect.JobInspect(cmd.Context(), taskName, taskNamespace, resultName, client, constant.Prometheus)
+			err := inspect.JobInspect(cmd.Context(), taskName, resultName, client, constant.Prometheus)
 			if err != nil {
 				klog.Errorf("kubeeye inspect failed with error: %s", err)
 				os.Exit(1)
 			}
-			fmt.Println(args, taskName, taskNamespace)
+			fmt.Println(args, taskName, "inspect success")
 		},
 	}
 	return prometheusCmd
