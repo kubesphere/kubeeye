@@ -1,23 +1,22 @@
----
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.12.0
-  name: inspectplans.kubeeye.kubesphere.io
+  name: inspecttasks.kubeeye.kubesphere.io
 spec:
   group: kubeeye.kubesphere.io
   names:
-    kind: InspectPlan
-    listKind: InspectPlanList
-    plural: inspectplans
-    singular: inspectplan
+    kind: InspectTask
+    listKind: InspectTaskList
+    plural: inspecttasks
+    singular: inspecttask
   scope: Cluster
   versions:
   - name: v1alpha2
     schema:
       openAPIV3Schema:
-        description: InspectPlan is the Schema for the InspectPlans API
+        description: InspectTask is the Schema for the InspectTasks API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -32,46 +31,57 @@ spec:
           metadata:
             type: object
           spec:
-            description: InspectPlanSpec defines the desired state of InspectPlan
+            description: InspectTaskSpec defines the desired state of InspectTask
             properties:
-              auditors:
+              inspectRuleTotal:
+                additionalProperties:
+                  type: integer
+                type: object
+              rules:
                 items:
-                  type: string
-                minItems: 1
+                  properties:
+                    jobName:
+                      type: string
+                    ruleType:
+                      type: string
+                    runRule:
+                      format: byte
+                      type: string
+                  type: object
                 type: array
-              maxTasks:
-                type: integer
-              ruleNames:
-                items:
-                  type: string
-                type: array
-              schedule:
-                type: string
-              suspend:
-                type: boolean
-              tag:
-                type: string
               timeout:
                 type: string
+            required:
+            - rules
             type: object
           status:
-            description: InspectPlanStatus defines the observed state of InspectPlan
+            description: InspectTaskStatus defines the observed state of InspectTask
             properties:
-              TaskNames:
-                items:
-                  type: string
-                type: array
-              lastScheduleTime:
+              clusterInfo:
                 description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
                   of cluster Important: Run "make" to regenerate code after modifying
                   this file'
+                properties:
+                  namespacesCount:
+                    type: integer
+                  nodesCount:
+                    type: integer
+                  version:
+                    type: string
+                type: object
+              endTimestamp:
                 format: date-time
                 type: string
-              lastTaskName:
-                type: string
-              lastTaskStatus:
-                type: string
-              nextScheduleTime:
+              phase:
+                items:
+                  properties:
+                    jobName:
+                      type: string
+                    phase:
+                      type: string
+                  type: object
+                type: array
+              startTimestamp:
                 format: date-time
                 type: string
             type: object

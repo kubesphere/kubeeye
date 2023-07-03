@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kubeeye.fullname" . }}-controller-manager-metrics-service
+  labels:
+    control-plane: kubeeye-controller-manager
+  {{- include "kubeeye.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.metricsService.type }}
+  selector:
+    control-plane: kubeeye-controller-manager
+  {{- include "kubeeye.selectorLabels" . | nindent 4 }}
+  ports:
+	{{- .Values.metricsService.ports | toYaml | nindent 2 -}}

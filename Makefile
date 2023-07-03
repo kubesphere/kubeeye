@@ -242,3 +242,15 @@ generate-client:
 	rm -rf ./clients
 	mv github.com/kubesphere/kubeeye/clients ./
 	rm -rf ./github.com
+
+
+LOCALBIN = $(shell pwd)/bin
+HELMIFY ?= $(LOCALBIN)/helmify
+
+.PHONY: helmify
+helmify: $(HELMIFY) ## Download helmify locally if necessary.
+$(HELMIFY): $(LOCALBIN)
+	test -s $(LOCALBIN)/helmify || GOBIN=$(LOCALBIN) go install github.com/arttor/helmify/cmd/helmify@latest
+
+helm: manifests kustomize helmify
+	$(KUSTOMIZE) build config/default | $(HELMIFY) --crd-dir chart/kubeeye
