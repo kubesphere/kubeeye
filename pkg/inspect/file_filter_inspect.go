@@ -72,7 +72,7 @@ func (o *fileFilterInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 			return nil, err
 		}
 		for _, rule := range filter {
-			file, err := os.OpenFile("/var/log/message1", os.O_RDONLY, 0222)
+			file, err := os.OpenFile(rule.Path, os.O_RDONLY, 0222)
 			filterR := kubeeyev1alpha2.FileChangeResultItem{
 				FileName: rule.Name,
 				Path:     rule.Path,

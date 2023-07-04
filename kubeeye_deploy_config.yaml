@@ -41,11 +41,10 @@ spec:
           spec:
             description: InspectPlanSpec defines the desired state of InspectPlan
             properties:
-              auditors:
-                items:
-                  type: string
-                minItems: 1
-                type: array
+              clusterName:
+                type: string
+              kubeConfig:
+                type: string
               maxTasks:
                 type: integer
               ruleNames:
@@ -128,6 +127,19 @@ spec:
                 additionalProperties:
                   properties:
                     fileChangeResult:
+                      items:
+                        properties:
+                          fileName:
+                            type: string
+                          issues:
+                            items:
+                              type: string
+                            type: array
+                          path:
+                            type: string
+                        type: object
+                      type: array
+                    filterResult:
                       items:
                         properties:
                           fileName:
@@ -748,7 +760,7 @@ data:
     job:
       autoDelTime: 30
       backLimit: 5
-      image: kubespheredev/kubeeye:latest
+      image: jw008/kubeeye:latest
       imagePullPolicy: Always
       resources:
         limits:
@@ -839,7 +851,7 @@ spec:
         - --health-probe-bind-address=:8081
         - --metrics-bind-address=127.0.0.1:8080
         - --leader-elect
-        image: kubespheredev/kubeeye-controller:latest
+        image: jw008/kubeeye-controller:latest
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
