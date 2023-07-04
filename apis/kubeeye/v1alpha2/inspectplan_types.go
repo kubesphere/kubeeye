@@ -35,14 +35,14 @@ type InspectPlanSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Schedule string `json:"schedule,omitempty"`
-	Suspend  bool   `json:"suspend,omitempty"`
-	// +kubebuilder:validation:MinItems=1
-	Auditors  []Auditor `json:"auditors,omitempty"` // like "kubeeye,kubebench"
-	Timeout   string    `json:"timeout,omitempty"`
-	Tag       string    `json:"tag,omitempty"`
-	RuleNames []string  `json:"ruleNames,omitempty"`
-	MaxTasks  int       `json:"maxTasks,omitempty"`
+	Schedule    *string  `json:"schedule,omitempty"`
+	Suspend     bool     `json:"suspend,omitempty"`
+	Timeout     string   `json:"timeout,omitempty"`
+	Tag         string   `json:"tag,omitempty"`
+	RuleNames   []string `json:"ruleNames,omitempty"`
+	MaxTasks    int      `json:"maxTasks,omitempty"`
+	ClusterName string   `json:"clusterName,omitempty"`
+	KubeConfig  string   `json:"kubeConfig,omitempty"`
 }
 
 // InspectPlanStatus defines the observed state of InspectPlan

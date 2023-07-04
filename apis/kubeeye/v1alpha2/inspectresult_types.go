@@ -44,6 +44,7 @@ type NodeInfoResult struct {
 	FileChangeResult []FileChangeResultItem `json:"fileChangeResult,omitempty"`
 	SysctlResult     []NodeResultItem       `json:"sysctlResult,omitempty"`
 	SystemdResult    []NodeResultItem       `json:"systemdResult,omitempty"`
+	FilterResult     []FileChangeResultItem `json:"filterResult,omitempty"`
 }
 
 type NodeResultItem struct {

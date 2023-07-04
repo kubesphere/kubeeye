@@ -1,16 +1,21 @@
 package main
 
 import (
-	"context"
+	"bufio"
 	"fmt"
-	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/template"
+	"k8s.io/klog/v2"
+	"os"
 )
 
 func main() {
-	var kc kube.KubernetesClient
-	cluster, _ := kube.GetKubeConfigInCluster()
-	clients, _ := kc.K8SClients(cluster)
-	config := template.GetJobConfig(context.TODO(), clients)
-	fmt.Println(config)
+	file, err := os.OpenFile("/var/log/message1", os.O_RDONLY, 0222)
+	if err != nil {
+		klog.Errorf("Failed to open file. err:%s", err)
+		os.Exit(1)
+	}
+	reader := bufio.NewScanner(file)
+	for reader.Scan() {
+		fmt.Println(reader.Text())
+	}
+
 }

@@ -86,3 +86,14 @@ func FormatBoolString(b *bool) string {
 	}
 	return "false"
 }
+
+func IsEmptyString(s string) bool {
+	if strings.TrimSpace(s) == "" {
+		return true
+	}
+	if len(s) == 0 {
+		return true
+	}
+
+	return false
+}

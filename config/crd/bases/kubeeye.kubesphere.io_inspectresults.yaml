@@ -51,6 +51,19 @@ spec:
                             type: string
                         type: object
                       type: array
+                    filterResult:
+                      items:
+                        properties:
+                          fileName:
+                            type: string
+                          issues:
+                            items:
+                              type: string
+                            type: array
+                          path:
+                            type: string
+                        type: object
+                      type: array
                     nodeInfo:
                       additionalProperties:
                         type: string

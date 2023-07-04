@@ -1,11 +1,10 @@
 package inspect
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/coreos/go-systemd/v22/dbus"
-	"github.com/kubesphere/event-rule-engine/visitor"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
@@ -17,6 +16,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
+	"os"
+	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -57,65 +58,48 @@ func (o *fileFilterInspect) CreateJobTask(ctx context.Context, clients *kube.Kub
 
 func (o *fileFilterInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.InspectTask, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
 
-	var nodeResult []kubeeyev1alpha2.NodeResultItem
+	var filterResult []kubeeyev1alpha2.FileChangeResultItem
 
 	_, exist, phase := utils.ArrayFinds(task.Spec.Rules, func(m kubeeyev1alpha2.JobRule) bool {
 		return m.JobName == currentJobName
 	})
 
 	if exist {
-		var systemd []kubeeyev1alpha2.SysRule
-		err := json.Unmarshal(phase.RunRule, &systemd)
+		var filter []kubeeyev1alpha2.FileFilterRule
+		err := json.Unmarshal(phase.RunRule, &filter)
 		if err != nil {
 			klog.Error(err, " Failed to marshal kubeeye result")
 			return nil, err
 		}
-
-		conn, err := dbus.NewWithContext(ctx)
-		if err != nil {
-			return nil, err
-		}
-		unitsContext, err := conn.ListUnitsContext(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, r := range systemd {
-			var ctl kubeeyev1alpha2.NodeResultItem
-			ctl.Name = r.Name
-			for _, status := range unitsContext {
-				if status.Name == fmt.Sprintf("%s.service", r.Name) {
-					ctl.Value = &status.ActiveState
-
-					if r.Rule != nil {
-						if _, err := visitor.CheckRule(*r.Rule); err != nil {
-							sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
-							klog.Error(sprintf)
-							ctl.Value = &sprintf
-						} else {
-							err, res := visitor.EventRuleEvaluate(map[string]interface{}{r.Name: status.ActiveState}, *r.Rule)
-							if err != nil {
-								sprintf := fmt.Sprintf("err:%s", err.Error())
-								ctl.Value = &sprintf
-
-							} else {
-								ctl.Assert = &res
-							}
-						}
-					}
+		for _, rule := range filter {
+			file, err := os.OpenFile("/var/log/message1", os.O_RDONLY, 0222)
+			filterR := kubeeyev1alpha2.FileChangeResultItem{
+				FileName: rule.Name,
+				Path:     rule.Path,
+			}
+			if err != nil {
+				klog.Errorf(" Failed to open file . err:%s", err)
+				filterR.Issues = append(filterR.Issues, fmt.Sprintf("Failed to open file for %s.", rule.Name))
+				filterResult = append(filterResult, filterR)
+				continue
+			}
+			reader := bufio.NewScanner(file)
+			for reader.Scan() {
+				matched, err := regexp.MatchString(fmt.Sprintf(".%s.", *rule.Rule), reader.Text())
+				if err != nil {
+					klog.Errorf(" Failed to match regex. err:%s", err)
+					filterR.Issues = append(filterR.Issues, fmt.Sprintf("Failed to match regex for %s.", rule.Rule))
 					break
 				}
+				if matched {
+					filterR.Issues = append(filterR.Issues, reader.Text())
+				}
 			}
-			if ctl.Value == nil {
-				errVal := fmt.Sprintf("name:%s to does not exist", r.Name)
-				notExist := true
-				ctl.Assert = &notExist
-				ctl.Value = &errVal
-			}
-			nodeResult = append(nodeResult, ctl)
+			filterResult = append(filterResult, filterR)
 		}
 	}
 
-	marshal, err := json.Marshal(nodeResult)
+	marshal, err := json.Marshal(filterResult)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +109,7 @@ func (o *fileFilterInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 
 func (o *fileFilterInspect) GetResult(ctx context.Context, c client.Client, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
 
-	var nodeInfoResult []kubeeyev1alpha2.NodeResultItem
+	var nodeInfoResult []kubeeyev1alpha2.FileChangeResultItem
 	jsonErr := json.Unmarshal(result.BinaryData[constant.Result], &nodeInfoResult)
 	if jsonErr != nil {
 		klog.Error("failed to get result", jsonErr)
@@ -156,7 +140,7 @@ func (o *fileFilterInspect) GetResult(ctx context.Context, c client.Client, jobs
 			inspectResult.Name = fmt.Sprintf("%s-nodeinfo", task.Name)
 			inspectResult.Namespace = task.Namespace
 			inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
-			inspectResult.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {SystemdResult: nodeInfoResult}}
+			inspectResult.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {FilterResult: nodeInfoResult}}
 			err = c.Create(ctx, &inspectResult)
 			if err != nil {
 				klog.Error("Failed to create inspect result", err)
@@ -168,9 +152,9 @@ func (o *fileFilterInspect) GetResult(ctx context.Context, c client.Client, jobs
 	}
 	infoResult, ok := inspectResult.Spec.NodeInfoResult[runNodeName]
 	if ok {
-		infoResult.SystemdResult = append(infoResult.SystemdResult, nodeInfoResult...)
+		infoResult.FilterResult = append(infoResult.FilterResult, nodeInfoResult...)
 	} else {
-		infoResult.SystemdResult = nodeInfoResult
+		infoResult.FilterResult = nodeInfoResult
 	}
 
 	inspectResult.Spec.NodeInfoResult[runNodeName] = infoResult

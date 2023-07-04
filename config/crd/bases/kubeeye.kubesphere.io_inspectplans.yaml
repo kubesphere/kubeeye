@@ -35,11 +35,10 @@ spec:
           spec:
             description: InspectPlanSpec defines the desired state of InspectPlan
             properties:
-              auditors:
-                items:
-                  type: string
-                minItems: 1
-                type: array
+              clusterName:
+                type: string
+              kubeConfig:
+                type: string
               maxTasks:
                 type: integer
               ruleNames:
