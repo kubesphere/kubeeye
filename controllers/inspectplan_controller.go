@@ -160,7 +160,7 @@ func nextScheduledTimeDuration(sched cron.Schedule, now time.Time) *time.Duratio
 
 func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (string, error) {
 	ownerController := true
-	taskName := fmt.Sprintf("%s-%s", inspectPlan.Name, time.Now().Format("20060102_15_04"))
+	taskName := fmt.Sprintf("%s-%s", inspectPlan.Name, time.Now().Format("20060102-15-04"))
 	scanRule, ruleTotal, err := r.scanRules(ctx, taskName, inspectPlan)
 	if err != nil {
 		return "", err
