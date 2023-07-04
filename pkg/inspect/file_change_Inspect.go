@@ -139,8 +139,7 @@ func (o *fileChangeInspect) GetResult(ctx context.Context, c client.Client, jobs
 	runNodeName := findJobRunNode(ctx, jobs, c)
 	var inspectResult kubeeyev1alpha2.InspectResult
 	err := c.Get(ctx, types.NamespacedName{
-		Namespace: task.Namespace,
-		Name:      fmt.Sprintf("%s-nodeinfo", task.Name),
+		Name: fmt.Sprintf("%s-nodeinfo", task.Name),
 	}, &inspectResult)
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
@@ -155,7 +154,6 @@ func (o *fileChangeInspect) GetResult(ctx context.Context, c client.Client, jobs
 			}
 			inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
 			inspectResult.Name = fmt.Sprintf("%s-nodeinfo", task.Name)
-			inspectResult.Namespace = task.Namespace
 			inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
 			inspectResult.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {FileChangeResult: fileChangeResult}}
 			err = c.Create(ctx, &inspectResult)

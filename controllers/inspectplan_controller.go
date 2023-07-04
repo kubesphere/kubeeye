@@ -26,7 +26,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
-	"strconv"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -161,7 +160,7 @@ func nextScheduledTimeDuration(sched cron.Schedule, now time.Time) *time.Duratio
 
 func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (string, error) {
 	ownerController := true
-	taskName := fmt.Sprintf("%s-%s", inspectPlan.Name, strconv.Itoa(int(time.Now().Unix())))
+	taskName := fmt.Sprintf("%s-%s", inspectPlan.Name, time.Now().Format("20060102_15_04"))
 	scanRule, ruleTotal, err := r.scanRules(ctx, taskName, inspectPlan)
 	if err != nil {
 		return "", err

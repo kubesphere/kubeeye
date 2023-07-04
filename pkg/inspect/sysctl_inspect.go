@@ -160,8 +160,7 @@ func (o *sysctlInspect) GetResult(ctx context.Context, c client.Client, jobs *v1
 	runNodeName := findJobRunNode(ctx, jobs, c)
 	var inspectResult kubeeyev1alpha2.InspectResult
 	err := c.Get(ctx, types.NamespacedName{
-		Namespace: task.Namespace,
-		Name:      fmt.Sprintf("%s-nodeinfo", task.Name),
+		Name: fmt.Sprintf("%s-nodeinfo", task.Name),
 	}, &inspectResult)
 	var nodeInfoResult kubeeyev1alpha2.NodeInfoResult
 	jsonErr := json.Unmarshal(result.BinaryData[constant.Result], &nodeInfoResult)
@@ -181,7 +180,6 @@ func (o *sysctlInspect) GetResult(ctx context.Context, c client.Client, jobs *v1
 			}
 			inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
 			inspectResult.Name = fmt.Sprintf("%s-nodeinfo", task.Name)
-			inspectResult.Namespace = task.Namespace
 			inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
 			inspectResult.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: nodeInfoResult}
 			err = c.Create(ctx, &inspectResult)

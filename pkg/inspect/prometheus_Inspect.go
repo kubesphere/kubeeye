@@ -129,7 +129,6 @@ func (o *prometheusInspect) GetResult(ctx context.Context, c client.Client, jobs
 
 	var inspectResult kubeeyev1alpha2.InspectResult
 	inspectResult.Name = fmt.Sprintf("%s-%s", task.Name, constant.Prometheus)
-	inspectResult.Namespace = task.Namespace
 	inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
 	inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
 	inspectResult.Spec.PrometheusResult = prometheus

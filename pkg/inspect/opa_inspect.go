@@ -90,7 +90,6 @@ func (o *opaInspect) GetResult(ctx context.Context, c client.Client, jobs *v1.Jo
 
 	var inspectResult kubeeyev1alpha2.InspectResult
 	inspectResult.Name = fmt.Sprintf("%s-%s", task.Name, constant.Opa)
-	inspectResult.Namespace = task.Namespace
 	inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
 	inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
 	inspectResult.Spec.OpaResult = opaResult
