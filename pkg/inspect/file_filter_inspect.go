@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"os"
+	"path"
 	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -72,7 +73,7 @@ func (o *fileFilterInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 			return nil, err
 		}
 		for _, rule := range filter {
-			file, err := os.OpenFile(rule.Path, os.O_RDONLY, 0222)
+			file, err := os.OpenFile(path.Join(constant.RootPathPrefix, rule.Path), os.O_RDONLY, 0222)
 			filterR := kubeeyev1alpha2.FileChangeResultItem{
 				FileName: rule.Name,
 				Path:     rule.Path,
