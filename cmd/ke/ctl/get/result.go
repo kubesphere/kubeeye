@@ -60,14 +60,13 @@ func (r *ResultConfig) AddFlags(cmd *cobra.Command) {
 }
 
 func (r *ResultConfig) CheckArgs(args []string) error {
-	if len(args) < 2 {
+	if len(args) < 1 {
 		return errors.New("Unable to get task results")
 	}
-	if len(args) > 2 {
-		a := args[:2]
+	if len(args) > 1 {
+		a := args[:1]
 		return errors.Errorf("invalid parameter '%s'", a[0])
 	}
 	r.TaskName = args[0]
-	r.TaskNameSpace = args[1]
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/clients/clientset/versioned/scheme"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/template"
@@ -24,9 +25,11 @@ type renderNode struct {
 
 func HtmlOut(ctx context.Context, Clients *kube.KubernetesClient, Path string, TaskName string, TaskNameSpace string) error {
 
-	results, err := Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults(TaskNameSpace).List(ctx, metav1.ListOptions{
+	listOptions := metav1.ListOptions{
 		LabelSelector: metav1.FormatLabelSelector(metav1.SetAsLabelSelector(map[string]string{constant.LabelName: TaskName})),
-	})
+	}
+	var results v1alpha2.InspectResultList
+	err := Clients.VersionClientSet.KubeeyeV1alpha2().RESTClient().Get().Resource("inspectresults").VersionedParams(&listOptions, scheme.ParameterCodec).Do(ctx).Into(&results)
 	if err != nil || len(results.Items) == 0 {
 		return errors.Errorf("result not exist")
 	}
@@ -49,9 +52,17 @@ func HtmlOut(ctx context.Context, Clients *kube.KubernetesClient, Path string, T
 			systemd := getSystemd(item.Spec.NodeInfoResult)
 			resultCollection[constant.Systemd] = systemd
 		}
+		if item.Spec.FilterResult != nil {
+			filter := getFileFilter(item.Spec.FilterResult)
+			resultCollection[constant.FileFilter] = filter
+		}
 	}
-	task, err := Clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks(TaskNameSpace).Get(context.TODO(), TaskName, metav1.GetOptions{})
-
+	var task v1alpha2.InspectTask
+	err = Clients.VersionClientSet.KubeeyeV1alpha2().RESTClient().Get().Resource("inspecttasks").Name(TaskName).Do(ctx).Into(&task)
+	if err != nil {
+		klog.Errorf("Failed to get  inspect task. err:%s", err)
+		return err
+	}
 	var ruleNumber [][]interface{}
 	if err == nil {
 		for key, val := range task.Spec.InspectRuleTotal {
@@ -145,6 +156,30 @@ func getFileChange(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	return villeinage
 }
 
+func getFileFilter(fileResult map[string][]v1alpha2.FileChangeResultItem) []renderNode {
+	var villeinage []renderNode
+	header := renderNode{Header: true, Children: []renderNode{
+		{Text: "nodeName"},
+		{Text: "FileName"},
+		{Text: "Path"},
+		{Text: "Issues"}},
+	}
+	villeinage = append(villeinage, header)
+
+	for k, v := range fileResult {
+		content := []renderNode{{Text: k}}
+		for _, result := range v {
+			content = append(content, renderNode{Children: []renderNode{
+				{Text: result.FileName},
+				{Text: result.Path},
+				{Text: strings.Join(result.Issues, ",")},
+			}})
+		}
+	}
+
+	return villeinage
+}
+
 func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	var villeinage []renderNode
 	header := renderNode{Header: true,
@@ -152,21 +187,9 @@ func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 			{Text: "nodeName"},
 			{Text: "type"}, {Text: "name"},
 			{Text: "value"},
-			//{Text: "assert"},
 		}}
 	villeinage = append(villeinage, header)
 	for k, v := range infoResult {
-
-		//for NodeKey, InfoVal := range v.NodeInfo {
-		//	val := renderNode{
-		//		Children: []renderNode{
-		//			{Text: k},
-		//			{Text: constant.Sysctl},
-		//			{Text: NodeKey},
-		//			{Text: InfoVal},
-		//		}}
-		//	villeinage = append(villeinage, val)
-		//}
 
 		for _, item := range v.SysctlResult {
 			if item.Assert != nil && *item.Assert == false {
@@ -177,7 +200,6 @@ func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 						{Text: constant.Sysctl},
 						{Text: item.Name},
 						{Text: *item.Value},
-						//{Text: assertBoolBackString(utils.FormatBoolString(item.Assert))},
 					}}
 				villeinage = append(villeinage, val)
 			}
@@ -196,7 +218,6 @@ func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 			{Text: "type"},
 			{Text: "name"},
 			{Text: "value"},
-			//{Text: "assert"},
 		},
 	}
 	villeinage = append(villeinage, header)
@@ -210,7 +231,6 @@ func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 						{Text: constant.Systemd},
 						{Text: item.Name},
 						{Text: *item.Value},
-						//{Text: assertBoolBackString(utils.FormatBoolString(item.Assert))},
 					}}
 				villeinage = append(villeinage, val)
 			}

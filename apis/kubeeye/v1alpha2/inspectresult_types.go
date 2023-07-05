@@ -28,9 +28,10 @@ type InspectResultSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	PrometheusResult [][]map[string]string     `json:"prometheusResult,omitempty"`
-	OpaResult        KubeeyeOpaResult          `json:"opaResult,omitempty"`
-	NodeInfoResult   map[string]NodeInfoResult `json:"nodeInfoResult,omitempty"`
+	PrometheusResult [][]map[string]string             `json:"prometheusResult,omitempty"`
+	OpaResult        KubeeyeOpaResult                  `json:"opaResult,omitempty"`
+	NodeInfoResult   map[string]NodeInfoResult         `json:"nodeInfoResult,omitempty"`
+	FilterResult     map[string][]FileChangeResultItem `json:"filterResult,omitempty"`
 }
 
 // InspectResultStatus defines the observed state of InspectResult
@@ -44,7 +45,6 @@ type NodeInfoResult struct {
 	FileChangeResult []FileChangeResultItem `json:"fileChangeResult,omitempty"`
 	SysctlResult     []NodeResultItem       `json:"sysctlResult,omitempty"`
 	SystemdResult    []NodeResultItem       `json:"systemdResult,omitempty"`
-	FilterResult     []FileChangeResultItem `json:"filterResult,omitempty"`
 }
 
 type NodeResultItem struct {

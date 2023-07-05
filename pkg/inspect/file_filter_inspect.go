@@ -139,7 +139,7 @@ func (o *fileFilterInspect) GetResult(ctx context.Context, c client.Client, jobs
 			inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
 			inspectResult.Name = fmt.Sprintf("%s-filefilter", task.Name)
 			inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
-			inspectResult.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {FilterResult: nodeInfoResult}}
+			inspectResult.Spec.FilterResult = map[string][]kubeeyev1alpha2.FileChangeResultItem{runNodeName: nodeInfoResult}
 			err = c.Create(ctx, &inspectResult)
 			if err != nil {
 				klog.Error("Failed to create inspect result", err)
@@ -149,14 +149,14 @@ func (o *fileFilterInspect) GetResult(ctx context.Context, c client.Client, jobs
 		}
 
 	}
-	infoResult, ok := inspectResult.Spec.NodeInfoResult[runNodeName]
+	infoResult, ok := inspectResult.Spec.FilterResult[runNodeName]
 	if ok {
-		infoResult.FilterResult = append(infoResult.FilterResult, nodeInfoResult...)
+		infoResult = append(infoResult, nodeInfoResult...)
 	} else {
-		infoResult.FilterResult = nodeInfoResult
+		infoResult = nodeInfoResult
 	}
 
-	inspectResult.Spec.NodeInfoResult[runNodeName] = infoResult
+	inspectResult.Spec.FilterResult[runNodeName] = infoResult
 	err = c.Update(ctx, &inspectResult)
 	if err != nil {
 		klog.Error("Failed to update inspect result", err)

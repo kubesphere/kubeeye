@@ -7,8 +7,8 @@ metadata:
 spec:
   fileFilter:
     - name: systemLog
-      path: /var/log/system.log
-      rule: error|warn
+      path: /var/log/syslog
+      rule: error
   opas:
     - module: kubeeye_workloads_rego
       name: AbnormalPodStatus
