@@ -12,6 +12,7 @@ const (
 	APIVersionV1             = "v1"
 	Nodes                    = "nodes"
 	Deployments              = "deployments"
+	Pods                     = "pods"
 	Daemonsets               = "daemonsets"
 	Statefulsets             = "statefulsets"
 	Jobs                     = "jobs"

@@ -1652,5 +1652,3 @@ spec:
           containers := resource.Object.spec.jobTemplate.spec.template.spec.containers[_]
           not containers.resources.limits.cpu
       }
-status:
-  importTime: null

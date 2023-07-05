@@ -7,5 +7,36 @@ metadata:
 spec:
   fileFilter:
     - name: systemLog
-      path: /var/log/messages
+      path: /var/log/system.log
       rule: error|warn
+  opas:
+    - module: kubeeye_workloads_rego
+      name: AbnormalPodStatus
+      rule: |-
+        package kubeeye_workloads_rego
+
+        deny[msg] {
+            resource := input
+            type := resource.Object.kind
+            resourcename := resource.Object.metadata.name
+            resourcenamespace := resource.Object.metadata.namespace
+            type == "Pod"
+            level := "danger"
+
+            CheckPodPhase(resource)
+            CheckPodReady(resource)
+            msg := {
+                "Name": sprintf("%v", [resourcename]),
+                "Namespace": sprintf("%v", [resourcenamespace]),
+                "Type": sprintf("%v", [type]),
+                "Level": sprintf("%v", [level]),
+                "Message": sprintf("Pod Status is %v", [resource.Object.status.phase])
+            }
+        }
+
+        CheckPodPhase(resource) {
+            resource.Object.status.phase != "Running"; resource.Object.status.phase != "Succeeded"
+        }
+        CheckPodReady(resource) {
+            resource.Object.status.containerStatuses[_].ready != true
+        }

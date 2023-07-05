@@ -47,6 +47,13 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercen
 				}
 			}
 		}
+		if queryRule == workloads && Resources.Pods != nil {
+			for _, resource := range Resources.Pods.Items {
+				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
+					auditResults = append(auditResults, auditResult)
+				}
+			}
+		}
 		if queryRule == workloads && Resources.StatefulSets != nil {
 			for _, resource := range Resources.StatefulSets.Items {
 				lock.Lock()
@@ -158,12 +165,6 @@ func MergeRegoRulesValidate(ctx context.Context, regoRulesChan []string, vfuncs 
 	var wg sync.WaitGroup
 	wg.Add(len(vfuncs))
 
-	//regoRulesList := make([]string, 0)
-	//
-	//for rule := range regoRulesChan {
-	//	regoRulesList = append(regoRulesList, rule)
-	//}
-
 	mergeResult := func(ctx context.Context, vf validateFunc) {
 		defer wg.Done()
 		resultChan <- vf(ctx, regoRulesChan)
@@ -186,6 +187,9 @@ func VailOpaRulesResult(ctx context.Context, k8sResources kube.K8SResource, Rego
 
 	if k8sResources.Deployments != nil {
 		auditPercent.TotalAuditCount += len(k8sResources.Deployments.Items)
+	}
+	if k8sResources.Pods != nil {
+		auditPercent.TotalAuditCount += len(k8sResources.Pods.Items)
 	}
 	if k8sResources.StatefulSets != nil {
 		auditPercent.TotalAuditCount += len(k8sResources.StatefulSets.Items)
@@ -266,148 +270,6 @@ func VailOpaRulesResult(ctx context.Context, k8sResources kube.K8SResource, Rego
 	RuleResult.ResourceResults = results
 	return RuleResult
 }
-
-//func PrometheusRulesResult(ctx context.Context, rule []byte) ([]byte, error) {
-//	var proRules []v1alpha2.PrometheusRule
-//	err := json.Unmarshal(rule, &proRules)
-//	if err != nil {
-//		klog.Error(err, " Failed to marshal kubeeye result")
-//		return nil, err
-//	}
-//
-//	var proRuleResult [][]map[string]string
-//	for _, proRule := range proRules {
-//		client, err := api.NewClient(api.Config{
-//			Address: proRule.Endpoint,
-//		})
-//		if err != nil {
-//			klog.Error("create prometheus client failed", err)
-//			continue
-//		}
-//		queryApi := apiprometheusv1.NewAPI(client)
-//		query, _, err := queryApi.Query(ctx, *proRule.Rule, time.Now())
-//		if err != nil {
-//			klog.Errorf("failed to query rule:%s", *proRule.Rule)
-//			return nil, err
-//		}
-//		marshal, err := json.Marshal(query)
-//
-//		var queryResults model.Samples
-//		err = json.Unmarshal(marshal, &queryResults)
-//		if err != nil {
-//			klog.Error("unmarshal modal Samples failed", err)
-//			continue
-//		}
-//		var queryResultsMap []map[string]string
-//		for i, result := range queryResults {
-//			temp := map[string]string{"value": result.Value.String(), "time": result.Timestamp.String()}
-//			klog.Info(i, result)
-//			for name, value := range result.Metric {
-//				klog.Info(name, value)
-//				temp[string(name)] = string(value)
-//			}
-//			queryResultsMap = append(queryResultsMap, temp)
-//		}
-//
-//		proRuleResult = append(proRuleResult, queryResultsMap)
-//	}
-//	if proRules == nil && len(proRules) == 0 {
-//		return nil, nil
-//	}
-//	marshal, err := json.Marshal(proRuleResult)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return marshal, nil
-//}
-
-//func FileChangeRuleResult(ctx context.Context, task *v1alpha2.InspectTask, clients *kube.KubernetesClient, ownerRef ...v1.OwnerReference) ([]byte, error) {
-//	var nodeInfoResult v1alpha2.NodeInfoResult
-//
-//	systemdBytes, ok := task.Spec.Rules[constant.Systemd]
-//
-//	if ok {
-//		var systemd []v1alpha2.SysRule
-//		err := json.Unmarshal(systemdBytes, &systemd)
-//		if err != nil {
-//			klog.Error(err, " Failed to marshal kubeeye result")
-//			return nil, err
-//		}
-//
-//		conn, err := dbus.NewWithContext(ctx)
-//		if err != nil {
-//			return nil, err
-//		}
-//		unitsContext, err := conn.ListUnitsContext(ctx)
-//		if err != nil {
-//			return nil, err
-//		}
-//		for _, r := range systemd {
-//			var ctl v1alpha2.NodeResultItem
-//			ctl.Name = r.Name
-//			for _, status := range unitsContext {
-//				if status.Name == fmt.Sprintf("%s.service", r.Name) {
-//					ctl.Value = &status.ActiveState
-//
-//					if r.Rule != nil {
-//
-//						if _, err := visitor.CheckRule(*r.Rule); err != nil {
-//							sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
-//							klog.Error(sprintf)
-//							ctl.Value = &sprintf
-//						} else {
-//							err, res := visitor.EventRuleEvaluate(map[string]interface{}{r.Name: status.ActiveState}, *r.Rule)
-//							if err != nil {
-//								sprintf := fmt.Sprintf("err:%s", err.Error())
-//								klog.Error(sprintf)
-//								ctl.Value = &sprintf
-//							} else {
-//								ctl.Assert = &res
-//							}
-//
-//						}
-//
-//					}
-//					break
-//				}
-//			}
-//			if ctl.Value == nil {
-//				errVal := fmt.Sprintf("name:%s to does not exist", r.Name)
-//				ctl.Value = &errVal
-//			}
-//			nodeInfoResult.SystemdResult = append(nodeInfoResult.SystemdResult, ctl)
-//		}
-//	}
-//
-//	marshal, err := json.Marshal(nodeInfoResult)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return marshal, nil
-//}
-
-//func OpaRuleResult(ctx context.Context, rule []byte, clients *kube.KubernetesClient) ([]byte, error) {
-//	k8sResources := kube.GetK8SResources(ctx, clients)
-//	klog.Info("getting  Rego rules")
-//
-//	var opaRules []v1alpha2.OpaRule
-//	err := json.Unmarshal(rule, &opaRules)
-//	if err != nil {
-//		fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
-//		return nil, err
-//	}
-//	var RegoRules []string
-//	for i := range opaRules {
-//		RegoRules = append(RegoRules, *opaRules[i].Rule)
-//	}
-//
-//	result := VailOpaRulesResult(ctx, k8sResources, RegoRules)
-//	marshal, err := json.Marshal(result)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return marshal, nil
-//}
 
 // ValidateK8SResource validate kubernetes resource by rego, return the validate results.
 func validateK8SResource(ctx context.Context, resource unstructured.Unstructured, regoRulesList []string, queryRule string) (v1alpha2.ResourceResult, bool) {

@@ -32,6 +32,7 @@ type K8SResource struct {
 	NameSpacesCount  int
 	NameSpacesList   []string
 	Deployments      *unstructured.UnstructuredList
+	Pods             *unstructured.UnstructuredList
 	DaemonSets       *unstructured.UnstructuredList
 	StatefulSets     *unstructured.UnstructuredList
 	Jobs             *unstructured.UnstructuredList

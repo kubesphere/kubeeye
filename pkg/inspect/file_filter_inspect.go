@@ -92,7 +92,7 @@ func (o *fileFilterInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 					filterR.Issues = append(filterR.Issues, fmt.Sprintf("Failed to match regex for %s.", rule.Rule))
 					break
 				}
-				if matched {
+				if matched && len(filterR.Issues) < 1000 {
 					filterR.Issues = append(filterR.Issues, reader.Text())
 				}
 			}

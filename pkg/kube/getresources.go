@@ -65,19 +65,6 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) K8
 	var serverVersion string
 	var namespacesList []string
 
-	// TODO
-	// Implement method to excluded namespace.
-	//excludedNamespaces := []string{"kube-system", "kubesphere-system"}
-	//fieldSelectorString := listOpts.FieldSelector
-	//for _, excludedNamespace := range excludedNamespaces {
-	//	fieldSelectorString += ",metadata.namespace!=" + excludedNamespace
-	//}
-	//fieldSelector, _ := fields.ParseSelector(fieldSelectorString)
-	//listOptsExcludedNamespace := metav1.ListOptions{
-	//	FieldSelector: fieldSelectorString,
-	//	LabelSelector: fieldSelector.String(),
-	//}
-
 	versionInfo, err := clientSet.Discovery().ServerVersion()
 	if err != nil {
 		fmt.Printf("Failed to get Kubernetes serverVersion.\n")
@@ -94,12 +81,13 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) K8
 	}
 
 	deployments, deploymentsCount, _ := GetObjectCounts(ctx, kubernetesClient, conf.Deployments, conf.AppsGroup)
+	pods, podsCount, _ := GetObjectCounts(ctx, kubernetesClient, conf.Pods, conf.NoGroup)
 
 	daemonSets, daemonSetsCount, _ := GetObjectCounts(ctx, kubernetesClient, conf.Daemonsets, conf.AppsGroup)
 
 	statefulSets, statefulSetsCount, _ := GetObjectCounts(ctx, kubernetesClient, conf.Statefulsets, conf.AppsGroup)
 
-	workloadsCount := deploymentsCount + daemonSetsCount + statefulSetsCount
+	workloadsCount := deploymentsCount + daemonSetsCount + statefulSetsCount + podsCount
 
 	jobs, _, _ := GetObjectCounts(ctx, kubernetesClient, conf.Jobs, conf.BatchGroup)
 
@@ -121,6 +109,7 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) K8
 		NameSpacesCount:  namespacesCount,
 		NameSpacesList:   namespacesList,
 		Deployments:      deployments,
+		Pods:             pods,
 		DaemonSets:       daemonSets,
 		StatefulSets:     statefulSets,
 		Jobs:             jobs,

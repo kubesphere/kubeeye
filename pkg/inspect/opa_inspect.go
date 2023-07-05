@@ -41,7 +41,6 @@ func (o *opaInspect) CreateJobTask(ctx context.Context, clients *kube.Kubernetes
 
 func (o *opaInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.InspectTask, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
 
-	k8sResources := kube.GetK8SResources(ctx, clients)
 	klog.Info("getting  Rego rules")
 
 	_, exist, phase := utils.ArrayFinds(task.Spec.Rules, func(m kubeeyev1alpha2.JobRule) bool {
@@ -49,7 +48,7 @@ func (o *opaInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.Inspe
 	})
 
 	if exist {
-
+		k8sResources := kube.GetK8SResources(ctx, clients)
 		var opaRules []kubeeyev1alpha2.OpaRule
 		err := json.Unmarshal(phase.RunRule, &opaRules)
 		if err != nil {
