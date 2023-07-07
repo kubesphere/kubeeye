@@ -4,8 +4,8 @@ FROM --platform=${TARGETPLATFORM} golang:1.19 as builder
 
 #RUN #go env -w GOPROXY=https://goproxy.cn,direct
 # Run this with docker build --build_arg $(go env GOPROXY) to override the goproxy
-ARG goproxy=https://goproxy.cn,direct
-ENV GOPROXY=$goproxy
+#ARG goproxy=https://goproxy.cn,direct
+#ENV GOPROXY=$goproxy
 
 
 WORKDIR /workspace
