@@ -299,6 +299,8 @@ spec:
           spec:
             description: InspectRuleSpec defines the desired state of InspectRule
             properties:
+              component:
+                type: string
               fileChange:
                 items:
                   properties:
@@ -364,8 +366,6 @@ spec:
                   type: object
                 type: array
               prometheusEndpoint:
-                type: string
-              service:
                 type: string
               sysctl:
                 items:
@@ -780,7 +780,7 @@ data:
           cpu: 1000m
           memory: 512Mi
         requests:
-          cpu: 500m
+          cpu: 50m
           memory: 256Mi
 kind: ConfigMap
 metadata:

@@ -35,6 +35,8 @@ spec:
           spec:
             description: InspectRuleSpec defines the desired state of InspectRule
             properties:
+              component:
+                type: string
               fileChange:
                 items:
                   properties:
@@ -100,8 +102,6 @@ spec:
                   type: object
                 type: array
               prometheusEndpoint:
-                type: string
-              service:
                 type: string
               sysctl:
                 items:
