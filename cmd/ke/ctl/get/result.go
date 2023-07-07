@@ -25,7 +25,7 @@ func NewResultCmd(client *kube.KubernetesClient) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:     "result",
 		Short:   "out inspect result to file",
-		Example: "ke get result inspectTask-123456789 kubeeye-system [flags]",
+		Example: "ke get result inspectTask-123456789 [flags]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := r.CheckArgs(args)
 			if err != nil {

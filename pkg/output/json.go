@@ -30,6 +30,12 @@ func JsonOut(ctx context.Context, clients *kube.KubernetesClient, outPath string
 		if item.Spec.NodeInfoResult != nil {
 			result["nodeInfo"] = item.Spec.NodeInfoResult
 		}
+		if item.Spec.FilterResult != nil {
+			result[constant.FileFilter] = item.Spec.FilterResult
+		}
+		if item.Spec.ComponentResult != nil {
+			result[constant.Component] = item.Spec.ComponentResult
+		}
 	}
 	marshal, err := json.Marshal(result)
 	if err != nil {

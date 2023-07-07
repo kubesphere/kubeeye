@@ -20,12 +20,14 @@ import (
 	"context"
 	"fmt"
 	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/inspect"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
+	"strings"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -214,13 +216,19 @@ func (r *InspectPlanReconciler) scanRules(ctx context.Context, taskName string, 
 	ruleSpec := rules.MergeRule(ruleLists.Items)
 
 	var inspectRuleTotal = make(map[string]int)
-
 	var executeRule []kubeeyev1alpha2.JobRule
 
 	component := rules.AllocationComponent(ruleSpec.Component, taskName)
-
 	executeRule = append(executeRule, *component)
+	componentRuleNumber := 0
+	if ruleSpec.Component == nil {
+		inspectComponent, _ := inspect.GetInspectComponent(ctx, r.K8sClient, "")
+		componentRuleNumber = len(inspectComponent)
+	} else {
+		componentRuleNumber = len(strings.Split(*ruleSpec.Component, "|"))
+	}
 
+	inspectRuleTotal[constant.Component] = componentRuleNumber
 	opa := rules.AllocationOpa(ruleSpec.Opas, taskName)
 	if opa != nil {
 		executeRule = append(executeRule, *opa)

@@ -54,32 +54,21 @@ func (o *componentInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2
 		if err != nil {
 			return nil, err
 		}
-		var filterComponents []string
-		if components != "" {
-			filterComponents = strings.Split(components, "|")
-		}
-		services, err := clients.ClientSet.CoreV1().Services(corev1.NamespaceAll).List(context.TODO(), metav1.ListOptions{})
+		component, err := GetInspectComponent(ctx, clients, components)
 		if err != nil {
 			return nil, err
 		}
 		var componentResult []kubeeyev1alpha2.ComponentResultItem
-		for _, item := range services.Items {
-			if len(filterComponents) > 0 {
-				_, b := utils.ArrayFind(item.Name, filterComponents)
-				if !b {
-					continue
-				}
+		for _, item := range component {
+			endpoint := fmt.Sprintf("%s.%s.svc.cluster.local:%d", item.Name, item.Namespace, item.Spec.Ports[0].Port)
+			isConnected := checkConnection(endpoint)
+			if isConnected {
+				klog.Infof("success connect to：%s\n", endpoint)
+			} else {
+				klog.Infof("Unable to connect to: %s \n", endpoint)
+				componentResult = append(componentResult, kubeeyev1alpha2.ComponentResultItem{Name: item.Name, Namespace: item.Namespace, Endpoint: endpoint})
 			}
-			if item.Spec.ClusterIP != "None" {
-				endpoint := fmt.Sprintf("%s.%s.svc.cluster.local:%d", item.Name, item.Namespace, item.Spec.Ports[0].Port)
-				isConnected := checkConnection(endpoint)
-				if isConnected {
-					klog.Infof("success connect to：%s\n", endpoint)
-				} else {
-					klog.Infof("Unable to connect to: %s \n", endpoint)
-					componentResult = append(componentResult, kubeeyev1alpha2.ComponentResultItem{Name: item.Name, Namespace: item.Namespace, Endpoint: endpoint})
-				}
-			}
+
 		}
 
 		marshal, err := json.Marshal(componentResult)
@@ -127,4 +116,30 @@ func checkConnection(address string) bool {
 	}
 	defer conn.Close()
 	return true
+}
+
+func GetInspectComponent(ctx context.Context, clients *kube.KubernetesClient, components string) ([]corev1.Service, error) {
+	var filterComponents []string
+	if components != "" {
+		filterComponents = strings.Split(components, "|")
+	}
+	services, err := clients.ClientSet.CoreV1().Services(corev1.NamespaceAll).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	var component []corev1.Service
+	for _, item := range services.Items {
+		if len(filterComponents) > 0 {
+			_, b := utils.ArrayFind(item.Name, filterComponents)
+			if !b {
+				continue
+			}
+		}
+		if item.Spec.ClusterIP != "None" {
+			component = append(component, item)
+		}
+
+	}
+
+	return component, err
 }

@@ -105,23 +105,23 @@ func GetInspectResultHtmlTemplate() (*hemltemplate.Template, error) {
 
 <div class="content">
     <div style="font-size: 30px;width: 100%"><a id="{{$k}}">{{$k}}</a></div>
-    <table border="1" cellpadding="0" cellspacing="0" class="overview">
+<div class="table">
         {{range $i,$v1:=$v }}
 
-        <tr>
+    <div class="tr">
      
             {{range $v1.Children}}
 
             {{if $v1.Header}}
-            <th>{{.Text}}</th>
+            <div class="td">{{.Text}}</div>
             {{else}}
-            <td>{{.Text}}</td>
+            <div class="td">{{.Text}}</div>
             {{end}}
             {{end}}
-        </tr>
+        </div>
 
         {{end}}
-    </table>
+</div>
 </div>
 
 {{end}}
@@ -154,9 +154,28 @@ func GetInspectResultHtmlTemplate() (*hemltemplate.Template, error) {
         text-align: center;
     }
 
-    .issues {
-        background-color: #ffc3481a;
+  .table{
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
     }
+    .tr{
+        width: 100%;
+        display: flex;
+        overflow: hidden;
+        border: 1px solid #000;
+    }
+    .td{
+        flex: 1;
+        display: flex;
+        flex-wrap: wrap;
+        white-space: pre-wrap;
+        border-right: 1px solid #000;
+        word-break: break-all;
+		padding: 3px;
+    }
+
 </style>
 
 </html>

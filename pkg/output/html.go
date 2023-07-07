@@ -56,6 +56,10 @@ func HtmlOut(ctx context.Context, Clients *kube.KubernetesClient, Path string, T
 			filter := getFileFilter(item.Spec.FilterResult)
 			resultCollection[constant.FileFilter] = filter
 		}
+		if item.Spec.ComponentResult != nil {
+			component := getComponent(item.Spec.ComponentResult)
+			resultCollection[constant.Component] = component
+		}
 	}
 	var task v1alpha2.InspectTask
 	err = Clients.VersionClientSet.KubeeyeV1alpha2().RESTClient().Get().Resource("inspecttasks").Name(TaskName).Do(ctx).Into(&task)
@@ -175,6 +179,22 @@ func getFileFilter(fileResult map[string][]v1alpha2.FileChangeResultItem) []rend
 
 		}
 
+	}
+
+	return villeinage
+}
+func getComponent(component []v1alpha2.ComponentResultItem) []renderNode {
+	var villeinage []renderNode
+	header := renderNode{Header: true, Children: []renderNode{
+		{Text: "name"},
+		{Text: "namespace"},
+		{Text: "endpoint"}},
+	}
+	villeinage = append(villeinage, header)
+
+	for _, c := range component {
+		value := []renderNode{{Text: c.Name}, {Text: c.Namespace}, {Text: c.Endpoint}}
+		villeinage = append(villeinage, renderNode{Children: value})
 	}
 
 	return villeinage
