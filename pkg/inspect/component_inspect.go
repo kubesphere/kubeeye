@@ -71,7 +71,7 @@ func (o *componentInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2
 				}
 			}
 			if item.Spec.ClusterIP != "None" {
-				endpoint := fmt.Sprintf("%s.%s.svc.cluster.local:%s", item.Name, item.Namespace, item.Spec.Ports[0].Port)
+				endpoint := fmt.Sprintf("%s.%s.svc.cluster.local:%d", item.Name, item.Namespace, item.Spec.Ports[0].Port)
 				isConnected := checkConnection(endpoint)
 				if isConnected {
 					klog.Infof("连接到 %s 的端口 %d 成功\n", endpoint)
