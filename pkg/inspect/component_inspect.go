@@ -74,9 +74,9 @@ func (o *componentInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2
 				endpoint := fmt.Sprintf("%s.%s.svc.cluster.local:%d", item.Name, item.Namespace, item.Spec.Ports[0].Port)
 				isConnected := checkConnection(endpoint)
 				if isConnected {
-					klog.Infof("连接到 %s 的端口 %d 成功\n", endpoint)
+					klog.Infof("成功连接到：%s\n", endpoint)
 				} else {
-					klog.Infof("无法连接到 %s 的端口 %d\n", endpoint)
+					klog.Infof("无法连接到: %s \n", endpoint)
 					componentResult = append(componentResult, kubeeyev1alpha2.ComponentResultItem{Name: item.Name, Namespace: item.Namespace, Endpoint: endpoint})
 				}
 			}

@@ -35,7 +35,7 @@ type InspectRuleSpec struct {
 	Sysctl             []SysRule        `json:"sysctl,omitempty"`
 	Systemd            []SysRule        `json:"systemd,omitempty"`
 	FileFilter         []FileFilterRule `json:"fileFilter,omitempty"`
-	Component          *string          `json:"service,omitempty"`
+	Component          *string          `json:"component,omitempty"`
 }
 type RuleItemBases struct {
 	Name string  `json:"name,omitempty"`
