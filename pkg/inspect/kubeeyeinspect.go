@@ -130,7 +130,7 @@ func CalculateScore(fmResultss []kubeeyev1alpha2.ResourceResult, k8sResources ku
 func JobInspect(ctx context.Context, taskName string, resultName string, clients *kube.KubernetesClient, ruleType string) error {
 	var task kubeeyev1alpha2.InspectTask
 	raw, err := clients.VersionClientSet.KubeeyeV1alpha2().RESTClient().Get().Resource("inspecttasks").Name(taskName).DoRaw(ctx)
-	if err != nil || task.Spec.Rules == nil {
+	if err != nil {
 		klog.Errorf("Failed to get  inspect task. err:%s", err)
 		return err
 	}

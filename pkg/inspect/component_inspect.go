@@ -121,7 +121,7 @@ func (o *componentInspect) GetResult(ctx context.Context, c client.Client, jobs 
 }
 
 func checkConnection(address string) bool {
-	conn, err := net.DialTimeout("tcp", address, 5*time.Second)
+	conn, err := net.DialTimeout("tcp", address, 3*time.Second)
 	if err != nil {
 		return false
 	}
