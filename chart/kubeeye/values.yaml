@@ -1,7 +1,6 @@
 config:
   config: |-
     job:
-      autoDelTime: 30
       backLimit: 5
       image: kubespheredev/kubeeye:latest
       imagePullPolicy: Always
@@ -10,7 +9,7 @@ config:
           cpu: 1000m
           memory: 512Mi
         requests:
-          cpu: 500m
+          cpu: 50m
           memory: 256Mi
 controllerManager:
   kubeRbacProxy:

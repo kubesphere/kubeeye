@@ -2,7 +2,8 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.12.0
+    controller-gen.kubebuilder.io/version: v0.11.1
+  creationTimestamp: null
   name: inspectrules.kubeeye.kubesphere.io
 spec:
   group: kubeeye.kubesphere.io
@@ -33,6 +34,8 @@ spec:
           spec:
             description: InspectRuleSpec defines the desired state of InspectRule
             properties:
+              component:
+                type: string
               fileChange:
                 items:
                   properties:
@@ -98,8 +101,6 @@ spec:
                   type: object
                 type: array
               prometheusEndpoint:
-                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                  Important: Run "make" to regenerate code after modifying this file'
                 type: string
               sysctl:
                 items:
