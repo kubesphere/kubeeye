@@ -155,7 +155,8 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				}
 				inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseSucceeded
 				_ = r.K8sClients.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Delete(ctx, job.JobName, metav1.DeleteOptions{})
-				_ = r.K8sClients.ClientSet.BatchV1().Jobs("kubeeye-system").Delete(ctx, job.JobName, metav1.DeleteOptions{})
+				backgroud := metav1.DeletePropagationBackground
+				_ = r.K8sClients.ClientSet.BatchV1().Jobs("kubeeye-system").Delete(ctx, job.JobName, metav1.DeleteOptions{PropagationPolicy: &backgroud})
 			}
 		}
 
