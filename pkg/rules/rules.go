@@ -152,7 +152,7 @@ func MergeRule(rules []kubeeyev1alpha2.InspectRule) (ruleSpec kubeeyev1alpha2.In
 			ruleSpec.FileFilter = append(ruleSpec.FileFilter, rule.Spec.FileFilter...)
 			ruleSpec.FileFilter = RuleArrayDeduplication[kubeeyev1alpha2.FileFilterRule](ruleSpec.FileFilter)
 		}
-
+		ruleSpec.Component = rule.Spec.Component
 	}
 	return ruleSpec
 }
@@ -212,6 +212,22 @@ func AllocationOpa(rule []kubeeyev1alpha2.OpaRule, taskName string) *kubeeyev1al
 	}
 
 	opa, err := json.Marshal(rule)
+	if err != nil {
+		klog.Errorf("Failed to marshal  opa rule. err:%s", err)
+		return nil
+	}
+	jobRule.RunRule = opa
+	return jobRule
+}
+
+func AllocationComponent(components *string, taskName string) *kubeeyev1alpha2.JobRule {
+
+	jobRule := &kubeeyev1alpha2.JobRule{
+		JobName:  fmt.Sprintf("%s-%s", taskName, constant.Component),
+		RuleType: constant.Component,
+	}
+
+	opa, err := json.Marshal(components)
 	if err != nil {
 		klog.Errorf("Failed to marshal  opa rule. err:%s", err)
 		return nil

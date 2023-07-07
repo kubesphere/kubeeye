@@ -32,6 +32,7 @@ type InspectResultSpec struct {
 	OpaResult        KubeeyeOpaResult                  `json:"opaResult,omitempty"`
 	NodeInfoResult   map[string]NodeInfoResult         `json:"nodeInfoResult,omitempty"`
 	FilterResult     map[string][]FileChangeResultItem `json:"filterResult,omitempty"`
+	ComponentResult  []ComponentResultItem             `json:"componentResult,omitempty"`
 }
 
 // InspectResultStatus defines the observed state of InspectResult
@@ -51,6 +52,11 @@ type NodeResultItem struct {
 	Name   string  `json:"name,omitempty"`
 	Assert *bool   `json:"assert,omitempty"`
 	Value  *string `json:"value,omitempty"`
+}
+type ComponentResultItem struct {
+	Name      string `json:"name,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
+	Endpoint  string `json:"endpoint,omitempty"`
 }
 
 // +genclient

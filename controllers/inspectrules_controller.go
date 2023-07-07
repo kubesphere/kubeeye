@@ -119,6 +119,9 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if inspectRules.Spec.Systemd != nil {
 		total += len(inspectRules.Spec.Systemd)
 	}
+	if inspectRules.Spec.FileFilter != nil {
+		total += len(inspectRules.Spec.FileFilter)
+	}
 
 	copyInspectRules.Status.ImportTime = v1.Time{Time: time.Now()}
 	copyInspectRules.Status.State = kubeeyev1alpha2.ImportSuccess

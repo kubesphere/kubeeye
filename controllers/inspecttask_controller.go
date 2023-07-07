@@ -219,7 +219,7 @@ func (r *InspectTaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTask *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
 	var jobNames []kubeeyev1alpha2.JobPhase
-	for key, v := range inspectTask.Spec.Rules {
+	for _, v := range inspectTask.Spec.Rules {
 		inspectInterface, status := inspect.RuleOperatorMap[v.RuleType]
 		if status {
 			task, err := inspectInterface.CreateJobTask(ctx, r.K8sClients, &v, inspectTask)
@@ -229,7 +229,7 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 			}
 			jobNames = append(jobNames, task...)
 		} else {
-			klog.Errorf("%s not found", key)
+			klog.Errorf("%s not found", v.RuleType)
 		}
 
 	}

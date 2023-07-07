@@ -167,14 +167,14 @@ func getFileFilter(fileResult map[string][]v1alpha2.FileChangeResultItem) []rend
 	villeinage = append(villeinage, header)
 
 	for k, v := range fileResult {
-		content := []renderNode{{Text: k}}
 		for _, result := range v {
-			content = append(content, renderNode{Children: []renderNode{
-				{Text: result.FileName},
-				{Text: result.Path},
-				{Text: strings.Join(result.Issues, ",")},
-			}})
+			for _, issue := range result.Issues {
+				content2 := []renderNode{{Text: k}, {Text: result.FileName}, {Text: result.Path}, {Text: issue}}
+				villeinage = append(villeinage, renderNode{Children: content2})
+			}
+
 		}
+
 	}
 
 	return villeinage

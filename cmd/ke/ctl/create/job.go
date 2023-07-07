@@ -20,6 +20,7 @@ func NewJobCmd(client *kube.KubernetesClient) *cobra.Command {
 	jobCmd.AddCommand(NewSysctlCmd(client))
 	jobCmd.AddCommand(NewSystemdCmd(client))
 	jobCmd.AddCommand(NewFileFilterCmd(client))
+	jobCmd.AddCommand(NewComponentCmd(client))
 
 	jobCmd.PersistentFlags().StringVar(&resultName, "result-name", "", " result config name")
 	jobCmd.PersistentFlags().StringVar(&taskName, "task-name", "", "task name")

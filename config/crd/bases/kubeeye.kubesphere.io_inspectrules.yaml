@@ -100,8 +100,8 @@ spec:
                   type: object
                 type: array
               prometheusEndpoint:
-                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                  Important: Run "make" to regenerate code after modifying this file'
+                type: string
+              service:
                 type: string
               sysctl:
                 items:

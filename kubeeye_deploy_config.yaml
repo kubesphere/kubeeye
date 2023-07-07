@@ -123,23 +123,36 @@ spec:
           spec:
             description: InspectResultSpec defines the desired state of InspectResult
             properties:
+              componentResult:
+                items:
+                  properties:
+                    endpoint:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                  type: object
+                type: array
+              filterResult:
+                additionalProperties:
+                  items:
+                    properties:
+                      fileName:
+                        type: string
+                      issues:
+                        items:
+                          type: string
+                        type: array
+                      path:
+                        type: string
+                    type: object
+                  type: array
+                type: object
               nodeInfoResult:
                 additionalProperties:
                   properties:
                     fileChangeResult:
-                      items:
-                        properties:
-                          fileName:
-                            type: string
-                          issues:
-                            items:
-                              type: string
-                            type: array
-                          path:
-                            type: string
-                        type: object
-                      type: array
-                    filterResult:
                       items:
                         properties:
                           fileName:
@@ -351,8 +364,8 @@ spec:
                   type: object
                 type: array
               prometheusEndpoint:
-                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                  Important: Run "make" to regenerate code after modifying this file'
+                type: string
+              service:
                 type: string
               sysctl:
                 items:
@@ -760,7 +773,7 @@ data:
     job:
       autoDelTime: 30
       backLimit: 5
-      image: jw008/kubeeye:latest
+      image: kubespheredev/kubeeye:latest
       imagePullPolicy: Always
       resources:
         limits:
@@ -851,7 +864,7 @@ spec:
         - --health-probe-bind-address=:8081
         - --metrics-bind-address=127.0.0.1:8080
         - --leader-elect
-        image: jw008/kubeeye-controller:latest
+        image: kubespheredev/kubeeye-controller:latest
         imagePullPolicy: Always
         livenessProbe:
           httpGet:

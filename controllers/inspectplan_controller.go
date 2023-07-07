@@ -217,6 +217,10 @@ func (r *InspectPlanReconciler) scanRules(ctx context.Context, taskName string, 
 
 	var executeRule []kubeeyev1alpha2.JobRule
 
+	component := rules.AllocationComponent(ruleSpec.Component, taskName)
+
+	executeRule = append(executeRule, *component)
+
 	opa := rules.AllocationOpa(ruleSpec.Opas, taskName)
 	if opa != nil {
 		executeRule = append(executeRule, *opa)

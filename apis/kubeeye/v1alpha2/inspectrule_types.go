@@ -27,18 +27,20 @@ import (
 type InspectRuleSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	PrometheusEndpoint string           `yaml:"prometheusEndpoint,omitempty" json:"prometheusEndpoint,omitempty"`
-	Opas               []OpaRule        `yaml:"opas,omitempty" json:"opas,omitempty"`
-	Prometheus         []PrometheusRule `yaml:"prometheus,omitempty" json:"prometheus,omitempty"`
-	FileChange         []FileChangeRule `json:"fileChange,omitempty" yaml:"fileChange,omitempty"`
+
+	PrometheusEndpoint string           `json:"prometheusEndpoint,omitempty"`
+	Opas               []OpaRule        `json:"opas,omitempty"`
+	Prometheus         []PrometheusRule `json:"prometheus,omitempty"`
+	FileChange         []FileChangeRule `json:"fileChange,omitempty" `
 	Sysctl             []SysRule        `json:"sysctl,omitempty"`
 	Systemd            []SysRule        `json:"systemd,omitempty"`
 	FileFilter         []FileFilterRule `json:"fileFilter,omitempty"`
+	Component          *string          `json:"service,omitempty"`
 }
 type RuleItemBases struct {
-	Name string  `json:"name,omitempty" yaml:"name,omitempty"`
-	Rule *string `json:"rule,omitempty" yaml:"rule,omitempty"`
-	Desc string  `json:"desc,omitempty" yaml:"desc,omitempty"`
+	Name string  `json:"name,omitempty"`
+	Rule *string `json:"rule,omitempty"`
+	Desc string  `json:"desc,omitempty"`
 }
 
 type FileFilterRule struct {
@@ -60,7 +62,7 @@ type OpaRule struct {
 }
 type PrometheusRule struct {
 	RuleItemBases `json:",inline"`
-	Endpoint      string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+	Endpoint      string `json:"endpoint,omitempty"`
 }
 
 type FileChangeRule struct {
@@ -82,11 +84,11 @@ type InspectRuleStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	ImportTime metav1.Time `yaml:"importTime,omitempty" json:"importTime,omitempty"`
+	ImportTime metav1.Time `json:"importTime,omitempty"`
 
-	State State `yaml:"state,omitempty" json:"state,omitempty"`
+	State State `json:"state,omitempty"`
 
-	RuleCount int `yaml:"ruleCount,omitempty" json:"ruleCount,omitempty"`
+	RuleCount int `json:"ruleCount,omitempty"`
 }
 
 // +genclient

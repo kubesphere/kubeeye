@@ -18,6 +18,7 @@ const (
 	Sysctl     = "sysctl"
 	Systemd    = "systemd"
 	FileFilter = "filefilter"
+	Component  = "component"
 )
 
 const (

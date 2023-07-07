@@ -128,15 +128,10 @@ func CalculateScore(fmResultss []kubeeyev1alpha2.ResourceResult, k8sResources ku
 }
 
 func JobInspect(ctx context.Context, taskName string, resultName string, clients *kube.KubernetesClient, ruleType string) error {
-	var task *kubeeyev1alpha2.InspectTask
-	raw, err := clients.VersionClientSet.KubeeyeV1alpha2().RESTClient().Get().Resource("inspecttasks").Name(taskName).DoRaw(ctx)
-	if err != nil {
-		klog.Errorf("Failed to get  inspect task. err:%s", err)
-		return err
-	}
-	err = json.Unmarshal(raw, &task)
+	var task kubeeyev1alpha2.InspectTask
+	err := clients.VersionClientSet.KubeeyeV1alpha2().RESTClient().Get().Resource("inspecttasks").Name(taskName).Do(ctx).Into(&task)
 	if err != nil || task.Spec.Rules == nil {
-		klog.Errorf("Failed to get unmarshal inspect task. err:%s", err)
+		klog.Errorf("Failed to get  inspect task. err:%s", err)
 		return err
 	}
 
@@ -152,7 +147,7 @@ func JobInspect(ctx context.Context, taskName string, resultName string, clients
 	var result []byte
 	inspectInterface, status := RuleOperatorMap[ruleType]
 	if status {
-		result, err = inspectInterface.RunInspect(ctx, task, clients, resultName, ownerRef)
+		result, err = inspectInterface.RunInspect(ctx, &task, clients, resultName, ownerRef)
 	}
 	if err != nil {
 		return err

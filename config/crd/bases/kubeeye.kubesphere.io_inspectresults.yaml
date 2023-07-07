@@ -35,23 +35,36 @@ spec:
           spec:
             description: InspectResultSpec defines the desired state of InspectResult
             properties:
+              componentResult:
+                items:
+                  properties:
+                    endpoint:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                  type: object
+                type: array
+              filterResult:
+                additionalProperties:
+                  items:
+                    properties:
+                      fileName:
+                        type: string
+                      issues:
+                        items:
+                          type: string
+                        type: array
+                      path:
+                        type: string
+                    type: object
+                  type: array
+                type: object
               nodeInfoResult:
                 additionalProperties:
                   properties:
                     fileChangeResult:
-                      items:
-                        properties:
-                          fileName:
-                            type: string
-                          issues:
-                            items:
-                              type: string
-                            type: array
-                          path:
-                            type: string
-                        type: object
-                      type: array
-                    filterResult:
                       items:
                         properties:
                           fileName:
