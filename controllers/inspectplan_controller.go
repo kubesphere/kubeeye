@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/kubesphere/kubeeye/constant"
-	"github.com/kubesphere/kubeeye/pkg/inspect"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/kubesphere/kubeeye/pkg/utils"
@@ -222,8 +221,8 @@ func (r *InspectPlanReconciler) scanRules(ctx context.Context, taskName string, 
 	executeRule = append(executeRule, *component)
 	componentRuleNumber := 0
 	if ruleSpec.Component == nil {
-		inspectComponent, _ := inspect.GetInspectComponent(ctx, r.K8sClient, "")
-		componentRuleNumber = len(inspectComponent)
+		services, _ := r.K8sClient.ClientSet.CoreV1().Services(v1.NamespaceAll).List(ctx, metav1.ListOptions{})
+		componentRuleNumber = len(services.Items)
 	} else {
 		componentRuleNumber = len(strings.Split(*ruleSpec.Component, "|"))
 	}

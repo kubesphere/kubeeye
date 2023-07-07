@@ -57,8 +57,7 @@ func InspectJobsTemplate(ctx context.Context, client *kube.KubernetesClient, job
 			Labels:          map[string]string{constant.LabelResultName: taskType},
 		},
 		Spec: v1.JobSpec{
-			BackoffLimit:            jobConfig.BackLimit,
-			TTLSecondsAfterFinished: jobConfig.AutoDelTime,
+			BackoffLimit: jobConfig.BackLimit,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "inspect-job-pod",

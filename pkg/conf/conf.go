@@ -38,7 +38,6 @@ type KubeeyeConfig struct {
 type JobConfig struct {
 	Image           string                      `json:"image,omitempty"`
 	ImagePullPolicy string                      `json:"imagePullPolicy,omitempty"`
-	AutoDelTime     *int32                      `json:"autoDelTime,omitempty"`
 	BackLimit       *int32                      `json:"backLimit,omitempty"`
 	Resources       corev1.ResourceRequirements `json:"resources,omitempty"`
 }
