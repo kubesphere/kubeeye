@@ -73,7 +73,7 @@ func GetInspectResultHtmlTemplate() (*hemltemplate.Template, error) {
 </head>
 <body>
 
-<div class="header">巡检报告（{{- .title -}}）</div>
+<div class="header">inspectionReport（{{- .title -}}）</div>
 
 <div class="content">
     <div style="font-size: 30px;min-width: 800px;">overview</div>
