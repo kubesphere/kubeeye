@@ -25,6 +25,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	"strings"
 	"time"
@@ -211,7 +212,7 @@ func (r *InspectPlanReconciler) scanRules(ctx context.Context, taskName string, 
 		return nil, nil, fmt.Errorf("failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
 	}
 
-	nodes := r.GetNodes(ctx)
+	nodes := GetNodes(ctx, r.K8sClient.ClientSet)
 	ruleSpec := rules.MergeRule(ruleLists.Items)
 
 	var inspectRuleTotal = make(map[string]int)
@@ -263,8 +264,8 @@ func (r *InspectPlanReconciler) scanRules(ctx context.Context, taskName string, 
 	return executeRule, inspectRuleTotal, nil
 }
 
-func (r *InspectPlanReconciler) GetNodes(ctx context.Context) []v1.Node {
-	nodeAll, err := r.K8sClient.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+func GetNodes(ctx context.Context, clients kubernetes.Interface) []v1.Node {
+	nodeAll, err := clients.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		klog.Error("failed to get nodes", err)
 		return nil

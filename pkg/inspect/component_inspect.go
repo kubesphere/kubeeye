@@ -26,20 +26,17 @@ func init() {
 	RuleOperatorMap[constant.Component] = &componentInspect{}
 }
 
-func (o *componentInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
-
-	var jobNames []kubeeyev1alpha2.JobPhase
+func (o *componentInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) (*kubeeyev1alpha2.JobPhase, error) {
 
 	job := template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", nil, constant.Component)
 
 	_, err := clients.ClientSet.BatchV1().Jobs("kubeeye-system").Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
-		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
+		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", job.Name, err)
 		return nil, err
 	}
-	jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: jobRule.JobName, Phase: kubeeyev1alpha2.PhaseRunning})
+	return &kubeeyev1alpha2.JobPhase{JobName: jobRule.JobName, Phase: kubeeyev1alpha2.PhaseRunning}, nil
 
-	return jobNames, nil
 }
 
 func (o *componentInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.InspectTask, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {

@@ -19,6 +19,8 @@ package controllers
 import (
 	"context"
 	"github.com/kubesphere/kubeeye/pkg/utils"
+	"math"
+	"sync"
 	"time"
 
 	"github.com/kubesphere/kubeeye/constant"
@@ -109,7 +111,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 		inspectTask.Status.JobPhase = JobPhase
-		klog.Infof("%s start task ", req.Name)
+		klog.Infof("all job finished for taskName:%s", inspectTask.Name)
 		err = r.Status().Update(ctx, inspectTask)
 		if err != nil {
 			klog.Error("failed to update inspect task. ", err)
@@ -117,75 +119,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 		return ctrl.Result{}, nil
 	} else {
-		_, complete := r.IsComplete(inspectTask.Status.JobPhase)
-		if complete {
-			klog.Infof("all job finished for taskName:%s", inspectTask.Name)
-			return ctrl.Result{}, nil
-		}
-		updateStatus := false
-		for i, job := range inspectTask.Status.JobPhase {
-			if job.Phase != kubeeyev1alpha2.PhaseRunning {
-				continue
-			}
-
-			jobInfo, err := r.K8sClients.ClientSet.BatchV1().Jobs("kubeeye-system").Get(ctx, job.JobName, metav1.GetOptions{})
-			if err != nil {
-				klog.Error(err)
-				inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
-				updateStatus = true
-				continue
-			}
-			if jobInfo.Status.CompletionTime != nil && !jobInfo.Status.CompletionTime.IsZero() && jobInfo.Status.Active == 0 {
-				updateStatus = true
-				configs, err := r.K8sClients.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Get(ctx, job.JobName, metav1.GetOptions{})
-				if err != nil {
-					klog.Error(err)
-					inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
-					continue
-				}
-				inspectInterface, status := inspect.RuleOperatorMap[jobInfo.Labels[constant.LabelResultName]]
-				if status {
-					klog.Infof("starting get %s result data", job.JobName)
-					err = inspectInterface.GetResult(ctx, r.Client, jobInfo, configs, inspectTask)
-					if err != nil {
-						klog.Error(err)
-						inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
-						continue
-					}
-				}
-				inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseSucceeded
-				_ = r.K8sClients.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Delete(ctx, job.JobName, metav1.DeleteOptions{})
-				backgroud := metav1.DeletePropagationBackground
-				_ = r.K8sClients.ClientSet.BatchV1().Jobs("kubeeye-system").Delete(ctx, job.JobName, metav1.DeleteOptions{PropagationPolicy: &backgroud})
-			}
-		}
-
-		timeout, err := time.ParseDuration(inspectTask.Spec.Timeout)
-		if err != nil {
-			timeout = constant.DefaultTimeout
-		}
-		if inspectTask.Status.StartTimestamp.Add(timeout).Before(time.Now()) {
-			for i, job := range inspectTask.Status.JobPhase {
-				if job.Phase == kubeeyev1alpha2.PhaseRunning {
-					inspectTask.Status.JobPhase[i].Phase = kubeeyev1alpha2.PhaseFailed
-					var DeletePro = metav1.DeletePropagationBackground
-					err := r.K8sClients.ClientSet.BatchV1().Jobs("kubeeye-system").Delete(ctx, job.JobName, metav1.DeleteOptions{PropagationPolicy: &DeletePro})
-					if err != nil {
-						klog.Errorf("failed to delete jobs for jobName:%s,%s", job.JobName, err)
-						continue
-					}
-				}
-			}
-		}
-		if updateStatus {
-			err = r.Status().Update(ctx, inspectTask)
-			if err != nil && !kubeErr.IsNotFound(err) {
-				klog.Error("failed to update inspect task. ", err)
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{}, nil
-		}
-		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+		return ctrl.Result{}, nil
 	}
 }
 
@@ -221,30 +155,124 @@ func (r *InspectTaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTask *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
 	var jobNames []kubeeyev1alpha2.JobPhase
-	for _, v := range inspectTask.Spec.Rules {
-		inspectInterface, status := inspect.RuleOperatorMap[v.RuleType]
-		if status {
-			task, err := inspectInterface.CreateJobTask(ctx, r.K8sClients, &v, inspectTask)
-			if err != nil {
-				klog.Error("create job error")
-				continue
-			}
-			jobNames = append(jobNames, task...)
-		} else {
-			klog.Errorf("%s not found", v.RuleType)
-		}
-
+	Rules := sortRuleOpaToAlter(inspectTask.Spec.Rules)
+	nodes := GetNodes(ctx, r.K8sClients.ClientSet)
+	concurrency := 5
+	runNumber := math.Round(float64(len(nodes)) + float64(len(Rules))*0.1)
+	if runNumber > 5 {
+		concurrency = int(runNumber)
 	}
 
+	var wg sync.WaitGroup
+	var mutex sync.Mutex
+	semaphore := make(chan struct{}, concurrency)
+	for _, rule := range Rules {
+		wg.Add(1)
+		semaphore <- struct{}{}
+		go func(v kubeeyev1alpha2.JobRule) {
+			defer func() {
+				wg.Done()
+				<-semaphore
+			}()
+			if r.IsTimeout(inspectTask) {
+				jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: v.JobName, Phase: kubeeyev1alpha2.PhaseFailed})
+				return
+			}
+			inspectInterface, status := inspect.RuleOperatorMap[v.RuleType]
+			if status {
+				klog.Infof("Job %s created", v.JobName)
+				jobTask, err := inspectInterface.CreateJobTask(ctx, r.K8sClients, &v, inspectTask)
+				if err != nil {
+					klog.Errorf("create job error. error:%s", err)
+					jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: v.JobName, Phase: kubeeyev1alpha2.PhaseFailed})
+					return
+				}
+				mutex.Lock()
+				resultJob := r.waitForJobCompletionGetResult(ctx, v.JobName, inspectTask, jobTask)
+				jobNames = append(jobNames, *resultJob)
+				mutex.Unlock()
+				klog.Infof("Job %s completed", v.JobName)
+			} else {
+				klog.Errorf("%s not found", v.RuleType)
+			}
+
+		}(rule)
+
+	}
+	wg.Wait()
 	return jobNames, nil
 }
 
-func (r *InspectTaskReconciler) IsComplete(JobPhase []kubeeyev1alpha2.JobPhase) ([]kubeeyev1alpha2.JobPhase, bool) {
-	var Jobs []kubeeyev1alpha2.JobPhase
-	for _, job := range JobPhase {
+func (r *InspectTaskReconciler) IsComplete(task *kubeeyev1alpha2.InspectTask) bool {
+	if len(task.Spec.Rules) != len(task.Status.JobPhase) {
+		return false
+	}
+	for _, job := range task.Status.JobPhase {
 		if job.Phase == kubeeyev1alpha2.PhaseRunning {
-			Jobs = append(Jobs, job)
+			return false
 		}
 	}
-	return Jobs, len(Jobs) == 0
+	return true
+}
+
+func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Context, jobName string, task *kubeeyev1alpha2.InspectTask, jobPhase *kubeeyev1alpha2.JobPhase) *kubeeyev1alpha2.JobPhase {
+
+	for {
+		jobInfo, err := r.K8sClients.ClientSet.BatchV1().Jobs("kubeeye-system").Get(ctx, jobName, metav1.GetOptions{})
+		if err != nil {
+			klog.Error(err)
+			jobPhase.Phase = kubeeyev1alpha2.PhaseFailed
+			return jobPhase
+		}
+		if jobInfo.Status.CompletionTime != nil && !jobInfo.Status.CompletionTime.IsZero() && jobInfo.Status.Active == 0 {
+
+			configs, err := r.K8sClients.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Get(ctx, jobName, metav1.GetOptions{})
+			if err != nil {
+				klog.Error(err)
+				jobPhase.Phase = kubeeyev1alpha2.PhaseFailed
+				return jobPhase
+			}
+			inspectInterface, status := inspect.RuleOperatorMap[jobInfo.Labels[constant.LabelResultName]]
+			if status {
+				klog.Infof("starting get %s result data", jobName)
+				err = inspectInterface.GetResult(ctx, r.Client, jobInfo, configs, task)
+				if err != nil {
+					klog.Error(err)
+					jobPhase.Phase = kubeeyev1alpha2.PhaseFailed
+					return jobPhase
+				}
+			}
+			jobPhase.Phase = kubeeyev1alpha2.PhaseSucceeded
+			_ = r.K8sClients.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Delete(ctx, jobName, metav1.DeleteOptions{})
+			backgroud := metav1.DeletePropagationBackground
+			_ = r.K8sClients.ClientSet.BatchV1().Jobs("kubeeye-system").Delete(ctx, jobName, metav1.DeleteOptions{PropagationPolicy: &backgroud})
+			return jobPhase
+		}
+		time.Sleep(10 * time.Second)
+	}
+
+}
+
+func (r *InspectTaskReconciler) IsTimeout(task *kubeeyev1alpha2.InspectTask) bool {
+	timeout, err := time.ParseDuration(task.Spec.Timeout)
+	if err != nil {
+		timeout = constant.DefaultTimeout
+	}
+	if task.Status.StartTimestamp.Add(timeout).Before(time.Now()) {
+		return true
+	}
+	return false
+}
+
+func sortRuleOpaToAlter(rule []kubeeyev1alpha2.JobRule) []kubeeyev1alpha2.JobRule {
+
+	finds, b, OpaRule := utils.ArrayFinds(rule, func(i kubeeyev1alpha2.JobRule) bool {
+		return i.RuleType == constant.Opa
+	})
+	if b {
+		rule = append(rule[:finds], rule[finds+1:]...)
+		rule = append(rule, OpaRule)
+	}
+
+	return rule
 }

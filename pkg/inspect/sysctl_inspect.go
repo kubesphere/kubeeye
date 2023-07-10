@@ -27,32 +27,31 @@ func init() {
 	RuleOperatorMap[constant.Sysctl] = &sysctlInspect{}
 }
 
-func (o *sysctlInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobPhase, error) {
-	var jobNames []kubeeyev1alpha2.JobPhase
+func (o *sysctlInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) (*kubeeyev1alpha2.JobPhase, error) {
 
 	var sysRules []kubeeyev1alpha2.SysRule
 	_ = json.Unmarshal(jobRule.RunRule, &sysRules)
 
-	if sysRules != nil && len(sysRules) > 0 {
-		var jobTemplate *v1.Job
-		if sysRules[0].NodeName != nil {
-			jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, *sysRules[0].NodeName, nil, constant.Sysctl)
-		} else if sysRules[0].NodeSelector != nil {
-			jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", sysRules[0].NodeSelector, constant.Sysctl)
-		} else {
-			jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", nil, constant.Sysctl)
-		}
-
-		_, err := clients.ClientSet.BatchV1().Jobs("kubeeye-system").Create(ctx, jobTemplate, metav1.CreateOptions{})
-		if err != nil {
-			klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
-			return nil, err
-		}
-		jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: jobRule.JobName, Phase: kubeeyev1alpha2.PhaseRunning})
-
+	if sysRules == nil && len(sysRules) == 0 {
+		return nil, fmt.Errorf("sysctl rule is empty")
 	}
 
-	return jobNames, nil
+	var jobTemplate *v1.Job
+	if sysRules[0].NodeName != nil {
+		jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, *sysRules[0].NodeName, nil, constant.Sysctl)
+	} else if sysRules[0].NodeSelector != nil {
+		jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", sysRules[0].NodeSelector, constant.Sysctl)
+	} else {
+		jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", nil, constant.Sysctl)
+	}
+
+	_, err := clients.ClientSet.BatchV1().Jobs("kubeeye-system").Create(ctx, jobTemplate, metav1.CreateOptions{})
+	if err != nil {
+		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
+		return nil, err
+	}
+	return &kubeeyev1alpha2.JobPhase{JobName: jobRule.JobName, Phase: kubeeyev1alpha2.PhaseRunning}, err
+
 }
 
 func (o *sysctlInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.InspectTask, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
