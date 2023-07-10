@@ -3,7 +3,7 @@ config:
     job:
       autoDelTime: 30
       backLimit: 5
-      image: kubespheredev/kubeeye:latest
+      image: kubespheredev/kubeeye-job:v1.0.0-beta.0
       imagePullPolicy: Always
       resources:
         limits:
@@ -38,7 +38,7 @@ controllerManager:
       allowPrivilegeEscalation: false
     image:
       repository: kubespheredev/kubeeye-controller
-      tag: latest
+      tag: v1.0.0-beta.0
     imagePullPolicy: Always
     resources:
       limits:
