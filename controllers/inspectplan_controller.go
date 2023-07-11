@@ -103,6 +103,9 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if inspectPlan.Spec.Schedule == nil {
+		if inspectPlan.Status.LastTaskName != "" {
+			return ctrl.Result{}, nil
+		}
 		taskName, err := r.createInspectTask(inspectPlan, ctx)
 		if err != nil {
 			klog.Error("failed to create InspectTask.", err)
@@ -113,6 +116,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if err = r.updateStatus(ctx, inspectPlan, time.Now(), taskName); err != nil {
 			return ctrl.Result{}, err
 		}
+
 		return ctrl.Result{}, nil
 	}
 	schedule, err := cron.ParseStandard(*inspectPlan.Spec.Schedule)
