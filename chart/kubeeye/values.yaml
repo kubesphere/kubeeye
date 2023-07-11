@@ -2,7 +2,7 @@ config:
   config: |-
     job:
       backLimit: 5
-      image: kubespheredev/kubeeye-job:v1.0.0-beta.0
+      image: kubespheredev/kubeeye-job:v1.0.0-beta.1
       imagePullPolicy: Always
       resources:
         limits:
@@ -37,7 +37,7 @@ controllerManager:
       allowPrivilegeEscalation: false
     image:
       repository: kubespheredev/kubeeye-controller
-      tag: v1.0.0-beta.0
+      tag: v1.0.0-beta.1
     imagePullPolicy: Always
     resources:
       limits:
