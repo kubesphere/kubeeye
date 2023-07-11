@@ -1,0 +1,8 @@
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectPlan
+metadata:
+  name: inspectplan
+spec:
+  schedule: "* 2 * *  ?"
+  maxTasks: 5
+  tag: inspectrule-sample
