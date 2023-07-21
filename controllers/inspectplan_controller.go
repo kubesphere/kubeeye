@@ -194,7 +194,7 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 func (r *InspectPlanReconciler) removeTask(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan) {
 	if plan.Spec.MaxTasks > 0 {
 		for len(plan.Status.TaskNames) > plan.Spec.MaxTasks-1 {
-			err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().RESTClient().Delete().Resource("inspecttasks").Name(plan.Status.TaskNames[0]).Do(ctx).Error()
+			err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks().Delete(ctx, plan.Status.TaskNames[0], metav1.DeleteOptions{})
 			if err == nil || kubeErr.IsNotFound(err) {
 				plan.Status.TaskNames = plan.Status.TaskNames[1:]
 			} else {

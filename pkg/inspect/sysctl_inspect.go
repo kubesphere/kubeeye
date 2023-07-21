@@ -156,12 +156,8 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 
 func (o *sysctlInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
 	runNodeName := findJobRunNode(ctx, jobs, c.ClientSet)
-	var inspectResult kubeeyev1alpha2.InspectResult
-	//err := c.Get(ctx, types.NamespacedName{
-	//	Name: fmt.Sprintf("%s-nodeinfo", task.Name),
-	//}, &inspectResult)
 
-	err := c.VersionClientSet.KubeeyeV1alpha2().RESTClient().Get().Resource("inspectresults").Do(ctx).Into(&inspectResult)
+	inspectResult, err := c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(ctx, fmt.Sprintf("%s-nodeinfo", task.Name), metav1.GetOptions{})
 
 	var nodeInfoResult kubeeyev1alpha2.NodeInfoResult
 	jsonErr := json.Unmarshal(result.BinaryData[constant.Data], &nodeInfoResult)
@@ -185,7 +181,7 @@ func (o *sysctlInspect) GetResult(ctx context.Context, c *kube.KubernetesClient,
 			inspectResult.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: nodeInfoResult}
 			//err = c.Create(ctx, &inspectResult)
 
-			_, err = c.VersionClientSet.KubeeyeV1alpha2().RESTClient().Post().Resource("inspectresults").Body(&inspectResult).DoRaw(ctx)
+			_, err = c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Create(ctx, inspectResult, metav1.CreateOptions{})
 
 			if err != nil {
 				klog.Error("Failed to create inspect result", err)
@@ -198,17 +194,14 @@ func (o *sysctlInspect) GetResult(ctx context.Context, c *kube.KubernetesClient,
 	infoResult, ok := inspectResult.Spec.NodeInfoResult[runNodeName]
 	if ok {
 		infoResult.NodeInfo = mergeMap(infoResult.NodeInfo, nodeInfoResult.NodeInfo)
-		//infoResult.FileChangeResult = append(infoResult.FileChangeResult, nodeInfoResult.FileChangeResult...)
 		infoResult.SysctlResult = append(infoResult.SysctlResult, nodeInfoResult.SysctlResult...)
-		//infoResult.SystemdResult = append(infoResult.SystemdResult, nodeInfoResult.SystemdResult...)
 	} else {
 		infoResult = nodeInfoResult
 	}
 
 	inspectResult.Spec.NodeInfoResult[runNodeName] = infoResult
-	//err = c.Update(ctx, &inspectResult)
 
-	_, err = c.VersionClientSet.KubeeyeV1alpha2().RESTClient().Put().Resource("inspectresults").Name(inspectResult.Name).Body(&inspectResult).DoRaw(ctx)
+	_, err = c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Update(ctx, inspectResult, metav1.UpdateOptions{})
 
 	if err != nil {
 		klog.Error("Failed to update inspect result", err)

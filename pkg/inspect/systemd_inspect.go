@@ -133,12 +133,8 @@ func (o *systemdInspect) GetResult(ctx context.Context, c *kube.KubernetesClient
 		return nil
 	}
 	runNodeName := findJobRunNode(ctx, jobs, c.ClientSet)
-	var inspectResult kubeeyev1alpha2.InspectResult
-	//err := c.Get(ctx, types.NamespacedName{
-	//	Name: fmt.Sprintf("%s-nodeinfo", task.Name),
-	//}, &inspectResult)
 
-	err := c.VersionClientSet.KubeeyeV1alpha2().RESTClient().Get().Resource("inspectresults").Do(ctx).Into(&inspectResult)
+	inspectResult, err := c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(ctx, fmt.Sprintf("%s-nodeinfo", task.Name), metav1.GetOptions{})
 
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
@@ -155,9 +151,7 @@ func (o *systemdInspect) GetResult(ctx context.Context, c *kube.KubernetesClient
 			inspectResult.Name = fmt.Sprintf("%s-nodeinfo", task.Name)
 			inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
 			inspectResult.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {SystemdResult: nodeInfoResult}}
-			//err = c.Create(ctx, &inspectResult)
-
-			_, err = c.VersionClientSet.KubeeyeV1alpha2().RESTClient().Post().Resource("inspectresults").Body(&inspectResult).DoRaw(ctx)
+			_, err = c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Create(ctx, inspectResult, metav1.CreateOptions{})
 			if err != nil {
 				klog.Error("Failed to create inspect result", err)
 				return err
@@ -174,8 +168,8 @@ func (o *systemdInspect) GetResult(ctx context.Context, c *kube.KubernetesClient
 	}
 
 	inspectResult.Spec.NodeInfoResult[runNodeName] = infoResult
-	//err = c.Update(ctx, &inspectResult)
-	_, err = c.VersionClientSet.KubeeyeV1alpha2().RESTClient().Put().Resource("inspectresults").Name(inspectResult.Name).Body(inspectResult).DoRaw(ctx)
+
+	_, err = c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Update(ctx, inspectResult, metav1.UpdateOptions{})
 	if err != nil {
 		klog.Error("Failed to update inspect result", err)
 		return err

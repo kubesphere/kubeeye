@@ -89,8 +89,8 @@ func (o *opaInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, jo
 	inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
 	inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
 	inspectResult.Spec.OpaResult = opaResult
-	//err = c.Create(ctx, &inspectResult)
-	_, err = c.VersionClientSet.KubeeyeV1alpha2().RESTClient().Post().Resource("inspectresults").Body(&inspectResult).DoRaw(ctx)
+
+	_, err = c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Create(ctx, &inspectResult, metav1.CreateOptions{})
 	if err != nil {
 		klog.Error("Failed to create inspect result", err)
 		return err

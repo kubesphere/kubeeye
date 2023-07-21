@@ -59,8 +59,8 @@ func HtmlOut(ctx context.Context, Clients *kube.KubernetesClient, Path string, T
 			resultCollection[constant.Component] = component
 		}
 	}
-	var task v1alpha2.InspectTask
-	err = Clients.VersionClientSet.KubeeyeV1alpha2().RESTClient().Get().Resource("inspecttasks").Name(TaskName).Do(ctx).Into(&task)
+
+	task, err := Clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks().Get(ctx, TaskName, metav1.GetOptions{})
 	if err != nil {
 		klog.Errorf("Failed to get  inspect task. err:%s", err)
 		return err
