@@ -11,6 +11,8 @@ import (
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/clients/clientset/versioned"
 	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
@@ -59,7 +61,7 @@ func RegoToRuleYaml(path string) {
 		}
 		opaRule.Module = space
 		for i := range inspectRules {
-			if space == inspectRules[i].Labels[constant.LabelRuleTag] {
+			if space == inspectRules[i].Labels[constant.LabelRuleGroup] {
 				inspectRule = inspectRules[i]
 				inspectRules = append(inspectRules[:i], inspectRules[i+1:]...)
 				break
@@ -74,7 +76,7 @@ func RegoToRuleYaml(path string) {
 			"app.kubernetes.io/part-of":    "kubeeye",
 			"app.kubernetes.io/managed-by": "kustomize",
 			"app.kubernetes.io/created-by": "kubeeye",
-			constant.LabelRuleTag:          space,
+			constant.LabelRuleGroup:        space,
 		}
 		if inspectRule.Spec.Opas != nil {
 			ruleItems = append(ruleItems, inspectRule.Spec.Opas...)
@@ -82,7 +84,7 @@ func RegoToRuleYaml(path string) {
 
 		inspectRule.Spec.Opas = ruleItems
 		inspectRule.Name = fmt.Sprintf("%s-%s", "kubeeye-inspectrules", strconv.Itoa(int(time.Now().Unix())))
-		inspectRule.Namespace = "kubeeye-system"
+		inspectRule.Namespace = constant.DefaultNamespace
 		inspectRule.APIVersion = "kubeeye.kubesphere.io/v1alpha2"
 		inspectRule.Kind = "InspectRule"
 		inspectRules = append(inspectRules, inspectRule)
@@ -105,7 +107,7 @@ func RegoToRuleYaml(path string) {
 
 func GetRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) map[string][]byte {
 
-	_, err := client.KubeeyeV1alpha2().InspectTasks(task.Namespace).Get(ctx, task.Name, metav1.GetOptions{})
+	_, err := client.KubeeyeV1alpha2().InspectTasks().Get(ctx, task.Name, metav1.GetOptions{})
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			fmt.Printf("rego ruleFiles not found .\n")
@@ -307,7 +309,6 @@ func mergeNodeRule(rule []map[string]interface{}) map[string][]map[string]interf
 	var mergeMap = make(map[string][]map[string]interface{})
 	for _, m := range rule {
 		for k, v := range m {
-			fmt.Println(k, v)
 			if k == "nodeName" {
 				mergeMap[v.(string)] = append(mergeMap[v.(string)], m)
 			} else if k == "nodeSelector" {
@@ -317,4 +318,70 @@ func mergeNodeRule(rule []map[string]interface{}) map[string][]map[string]interf
 		}
 	}
 	return mergeMap
+}
+
+func ScanRules(ctx context.Context, clients *kube.KubernetesClient, taskName string, ruleGroup []kubeeyev1alpha2.InspectRule, clusterName string) []kubeeyev1alpha2.JobRule {
+
+	nodes := kube.GetNodes(ctx, clients.ClientSet)
+	ruleSpec := MergeRule(ruleGroup)
+
+	var executeRule []kubeeyev1alpha2.JobRule
+
+	component := AllocationComponent(ruleSpec.Component, taskName)
+	executeRule = append(executeRule, *component)
+
+	opa := AllocationOpa(ruleSpec.Opas, taskName)
+	if opa != nil {
+		executeRule = append(executeRule, *opa)
+	}
+	prometheus := AllocationPrometheus(ruleSpec.Prometheus, taskName)
+	if prometheus != nil {
+		executeRule = append(executeRule, *prometheus)
+	}
+	if nodes != nil && len(nodes) > 0 {
+		change := AllocationRule(ruleSpec.FileChange, taskName, nodes, constant.FileChange)
+		if change != nil && len(change) > 0 {
+			executeRule = append(executeRule, change...)
+		}
+		sysctl := AllocationRule(ruleSpec.Sysctl, taskName, nodes, constant.Sysctl)
+		if sysctl != nil && len(sysctl) > 0 {
+			executeRule = append(executeRule, sysctl...)
+		}
+		systemd := AllocationRule(ruleSpec.Systemd, taskName, nodes, constant.Systemd)
+		if systemd != nil && len(systemd) > 0 {
+			executeRule = append(executeRule, systemd...)
+		}
+		fileFilter := AllocationRule(ruleSpec.FileFilter, taskName, nodes, constant.FileFilter)
+		if fileFilter != nil && len(fileFilter) > 0 {
+			executeRule = append(executeRule, fileFilter...)
+		}
+	}
+	return executeRule
+}
+
+func CreateInspectRule(ctx context.Context, clients *kube.KubernetesClient, ruleGroup []kubeeyev1alpha2.JobRule) ([]kubeeyev1alpha2.JobRule, error) {
+	r := sortRuleOpaToAlter(ruleGroup)
+	marshal, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	configMapTemplate := template.BinaryConfigMapTemplate("inspect-rule", constant.DefaultNamespace, marshal, true, map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})
+	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, configMapTemplate, metav1.CreateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+func sortRuleOpaToAlter(rule []kubeeyev1alpha2.JobRule) []kubeeyev1alpha2.JobRule {
+
+	finds, b, OpaRule := utils.ArrayFinds(rule, func(i kubeeyev1alpha2.JobRule) bool {
+		return i.RuleType == constant.Opa
+	})
+	if b {
+		rule = append(rule[:finds], rule[finds+1:]...)
+		rule = append(rule, OpaRule)
+	}
+
+	return rule
 }

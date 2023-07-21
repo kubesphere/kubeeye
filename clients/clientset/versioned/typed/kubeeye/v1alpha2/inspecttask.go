@@ -32,7 +32,7 @@ import (
 // InspectTasksGetter has a method to return a InspectTaskInterface.
 // A group's client should implement this interface.
 type InspectTasksGetter interface {
-	InspectTasks(namespace string) InspectTaskInterface
+	InspectTasks() InspectTaskInterface
 }
 
 // InspectTaskInterface has methods to work with InspectTask resources.
@@ -52,14 +52,12 @@ type InspectTaskInterface interface {
 // inspectTasks implements InspectTaskInterface
 type inspectTasks struct {
 	client rest.Interface
-	ns     string
 }
 
 // newInspectTasks returns a InspectTasks
-func newInspectTasks(c *KubeeyeV1alpha2Client, namespace string) *inspectTasks {
+func newInspectTasks(c *KubeeyeV1alpha2Client) *inspectTasks {
 	return &inspectTasks{
 		client: c.RESTClient(),
-		ns:     namespace,
 	}
 }
 
@@ -67,7 +65,6 @@ func newInspectTasks(c *KubeeyeV1alpha2Client, namespace string) *inspectTasks {
 func (c *inspectTasks) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.InspectTask, err error) {
 	result = &v1alpha2.InspectTask{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("inspecttasks").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
@@ -84,7 +81,6 @@ func (c *inspectTasks) List(ctx context.Context, opts v1.ListOptions) (result *v
 	}
 	result = &v1alpha2.InspectTaskList{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("inspecttasks").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -101,7 +97,6 @@ func (c *inspectTasks) Watch(ctx context.Context, opts v1.ListOptions) (watch.In
 	}
 	opts.Watch = true
 	return c.client.Get().
-		Namespace(c.ns).
 		Resource("inspecttasks").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -112,7 +107,6 @@ func (c *inspectTasks) Watch(ctx context.Context, opts v1.ListOptions) (watch.In
 func (c *inspectTasks) Create(ctx context.Context, inspectTask *v1alpha2.InspectTask, opts v1.CreateOptions) (result *v1alpha2.InspectTask, err error) {
 	result = &v1alpha2.InspectTask{}
 	err = c.client.Post().
-		Namespace(c.ns).
 		Resource("inspecttasks").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(inspectTask).
@@ -125,7 +119,6 @@ func (c *inspectTasks) Create(ctx context.Context, inspectTask *v1alpha2.Inspect
 func (c *inspectTasks) Update(ctx context.Context, inspectTask *v1alpha2.InspectTask, opts v1.UpdateOptions) (result *v1alpha2.InspectTask, err error) {
 	result = &v1alpha2.InspectTask{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("inspecttasks").
 		Name(inspectTask.Name).
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -140,7 +133,6 @@ func (c *inspectTasks) Update(ctx context.Context, inspectTask *v1alpha2.Inspect
 func (c *inspectTasks) UpdateStatus(ctx context.Context, inspectTask *v1alpha2.InspectTask, opts v1.UpdateOptions) (result *v1alpha2.InspectTask, err error) {
 	result = &v1alpha2.InspectTask{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("inspecttasks").
 		Name(inspectTask.Name).
 		SubResource("status").
@@ -154,7 +146,6 @@ func (c *inspectTasks) UpdateStatus(ctx context.Context, inspectTask *v1alpha2.I
 // Delete takes name of the inspectTask and deletes it. Returns an error if one occurs.
 func (c *inspectTasks) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("inspecttasks").
 		Name(name).
 		Body(&opts).
@@ -169,7 +160,6 @@ func (c *inspectTasks) DeleteCollection(ctx context.Context, opts v1.DeleteOptio
 		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("inspecttasks").
 		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -182,7 +172,6 @@ func (c *inspectTasks) DeleteCollection(ctx context.Context, opts v1.DeleteOptio
 func (c *inspectTasks) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.InspectTask, err error) {
 	result = &v1alpha2.InspectTask{}
 	err = c.client.Patch(pt).
-		Namespace(c.ns).
 		Resource("inspecttasks").
 		Name(name).
 		SubResource(subresources...).

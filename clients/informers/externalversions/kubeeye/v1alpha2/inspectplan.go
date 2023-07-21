@@ -41,33 +41,32 @@ type InspectPlanInformer interface {
 type inspectPlanInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
-	namespace        string
 }
 
 // NewInspectPlanInformer constructs a new informer for InspectPlan type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewInspectPlanInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredInspectPlanInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewInspectPlanInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredInspectPlanInformer(client, resyncPeriod, indexers, nil)
 }
 
 // NewFilteredInspectPlanInformer constructs a new informer for InspectPlan type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredInspectPlanInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredInspectPlanInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeeyeV1alpha2().InspectPlans(namespace).List(context.TODO(), options)
+				return client.KubeeyeV1alpha2().InspectPlans().List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeeyeV1alpha2().InspectPlans(namespace).Watch(context.TODO(), options)
+				return client.KubeeyeV1alpha2().InspectPlans().Watch(context.TODO(), options)
 			},
 		},
 		&kubeeyev1alpha2.InspectPlan{},
@@ -77,7 +76,7 @@ func NewFilteredInspectPlanInformer(client versioned.Interface, namespace string
 }
 
 func (f *inspectPlanInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredInspectPlanInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+	return NewFilteredInspectPlanInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
 func (f *inspectPlanInformer) Informer() cache.SharedIndexInformer {

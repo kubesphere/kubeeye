@@ -21,13 +21,8 @@ import (
 	"fmt"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/kubesphere/kubeeye/pkg/utils"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	"strings"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -167,114 +162,33 @@ func nextScheduledTimeDuration(sched cron.Schedule, now time.Time) *time.Duratio
 func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (string, error) {
 	ownerController := true
 	taskName := fmt.Sprintf("%s-%s", inspectPlan.Name, time.Now().Format("20060102-15-04"))
-	scanRule, ruleTotal, err := r.scanRules(ctx, taskName, inspectPlan)
-	if err != nil {
-		return "", err
+
+	inspectTask := kubeeyev1alpha2.InspectTask{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        taskName,
+			Labels:      map[string]string{constant.LabelName: inspectPlan.Name, constant.LabelRuleGroup: inspectPlan.Spec.Tag},
+			Annotations: nil,
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         inspectPlan.APIVersion,
+				Kind:               inspectPlan.Kind,
+				Name:               inspectPlan.Name,
+				UID:                inspectPlan.UID,
+				Controller:         &ownerController,
+				BlockOwnerDeletion: &ownerController,
+			}},
+		},
+		Spec: kubeeyev1alpha2.InspectTaskSpec{
+			ClusterName: inspectPlan.Spec.ClusterName,
+			Timeout:     inspectPlan.Spec.Timeout,
+		},
 	}
 
-	var inspectTask kubeeyev1alpha2.InspectTask
-	inspectTask.Labels = map[string]string{constant.LabelName: inspectPlan.Name}
-	inspectTask.OwnerReferences = []metav1.OwnerReference{{
-		APIVersion:         inspectPlan.APIVersion,
-		Kind:               inspectPlan.Kind,
-		Name:               inspectPlan.Name,
-		UID:                inspectPlan.UID,
-		Controller:         &ownerController,
-		BlockOwnerDeletion: &ownerController,
-	}}
-	inspectTask.Spec.Timeout = inspectPlan.Spec.Timeout
-	inspectTask.Spec.Rules = scanRule
-	inspectTask.Spec.InspectRuleTotal = ruleTotal
-	inspectTask.Name = taskName
-	err = r.Client.Create(ctx, &inspectTask)
+	err := r.Client.Create(ctx, &inspectTask)
 	if err != nil {
-		klog.Error("create inspectTask failed", err)
 		return "", err
 	}
 
 	return inspectTask.Name, nil
-}
-
-func (r *InspectPlanReconciler) scanRules(ctx context.Context, taskName string, inspectPlan *kubeeyev1alpha2.InspectPlan) ([]kubeeyev1alpha2.JobRule, map[string]int, error) {
-	if utils.IsEmptyString(inspectPlan.Spec.Tag) && inspectPlan.Spec.RuleNames == nil {
-		return nil, nil, fmt.Errorf("failed to get tags and rule names")
-	}
-
-	ruleLists, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules(v1.NamespaceAll).List(ctx, metav1.ListOptions{
-		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelRuleTag: inspectPlan.Spec.Tag}),
-	})
-	if err != nil {
-		if kubeErr.IsNotFound(err) {
-			klog.Error("failed get to inspectrules not found.", err)
-			return nil, nil, err
-		}
-		klog.Error("failed get to inspectrules.", err)
-		return nil, nil, err
-	}
-	if ruleLists.Items == nil || len(ruleLists.Items) == 0 {
-		klog.Errorf("failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
-		return nil, nil, fmt.Errorf("failed to  rules not found to tag:%s , check whether it exists", inspectPlan.Spec.Tag)
-	}
-
-	nodes := GetNodes(ctx, r.K8sClient.ClientSet)
-	ruleSpec := rules.MergeRule(ruleLists.Items)
-
-	var inspectRuleTotal = make(map[string]int)
-	var executeRule []kubeeyev1alpha2.JobRule
-
-	component := rules.AllocationComponent(ruleSpec.Component, taskName)
-	executeRule = append(executeRule, *component)
-	componentRuleNumber := 0
-	if ruleSpec.Component == nil {
-		services, _ := r.K8sClient.ClientSet.CoreV1().Services(v1.NamespaceAll).List(ctx, metav1.ListOptions{})
-		componentRuleNumber = len(services.Items)
-	} else {
-		componentRuleNumber = len(strings.Split(*ruleSpec.Component, "|"))
-	}
-
-	inspectRuleTotal[constant.Component] = componentRuleNumber
-	opa := rules.AllocationOpa(ruleSpec.Opas, taskName)
-	if opa != nil {
-		executeRule = append(executeRule, *opa)
-		inspectRuleTotal[constant.Opa] = len(ruleSpec.Opas)
-	}
-	prometheus := rules.AllocationPrometheus(ruleSpec.Prometheus, taskName)
-	if prometheus != nil {
-		executeRule = append(executeRule, *prometheus)
-		inspectRuleTotal[constant.Prometheus] = len(ruleSpec.Prometheus)
-	}
-	if nodes != nil && len(nodes) > 0 {
-		change := rules.AllocationRule(ruleSpec.FileChange, taskName, nodes, constant.FileChange)
-		if change != nil && len(change) > 0 {
-			executeRule = append(executeRule, change...)
-			inspectRuleTotal[constant.FileChange] = len(ruleSpec.FileChange)
-		}
-		sysctl := rules.AllocationRule(ruleSpec.Sysctl, taskName, nodes, constant.Sysctl)
-		if sysctl != nil && len(sysctl) > 0 {
-			executeRule = append(executeRule, sysctl...)
-			inspectRuleTotal[constant.Sysctl] = len(ruleSpec.Sysctl)
-		}
-		systemd := rules.AllocationRule(ruleSpec.Systemd, taskName, nodes, constant.Systemd)
-		if systemd != nil && len(systemd) > 0 {
-			executeRule = append(executeRule, systemd...)
-			inspectRuleTotal[constant.Systemd] = len(ruleSpec.Systemd)
-		}
-		fileFilter := rules.AllocationRule(ruleSpec.FileFilter, taskName, nodes, constant.FileFilter)
-		if fileFilter != nil && len(fileFilter) > 0 {
-			executeRule = append(executeRule, fileFilter...)
-			inspectRuleTotal[constant.FileFilter] = len(ruleSpec.FileFilter)
-		}
-	}
-	return executeRule, inspectRuleTotal, nil
-}
-
-func GetNodes(ctx context.Context, clients kubernetes.Interface) []v1.Node {
-	nodeAll, err := clients.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		klog.Error("failed to get nodes", err)
-		return nil
-	}
-	return nodeAll.Items
 }
 
 func (r *InspectPlanReconciler) removeTask(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan) {

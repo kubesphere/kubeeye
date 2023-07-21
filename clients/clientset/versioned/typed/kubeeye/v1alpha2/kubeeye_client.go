@@ -38,20 +38,20 @@ type KubeeyeV1alpha2Client struct {
 	restClient rest.Interface
 }
 
-func (c *KubeeyeV1alpha2Client) InspectPlans(namespace string) InspectPlanInterface {
-	return newInspectPlans(c, namespace)
+func (c *KubeeyeV1alpha2Client) InspectPlans() InspectPlanInterface {
+	return newInspectPlans(c)
 }
 
-func (c *KubeeyeV1alpha2Client) InspectResults(namespace string) InspectResultInterface {
-	return newInspectResults(c, namespace)
+func (c *KubeeyeV1alpha2Client) InspectResults() InspectResultInterface {
+	return newInspectResults(c)
 }
 
-func (c *KubeeyeV1alpha2Client) InspectRules(namespace string) InspectRuleInterface {
-	return newInspectRules(c, namespace)
+func (c *KubeeyeV1alpha2Client) InspectRules() InspectRuleInterface {
+	return newInspectRules(c)
 }
 
-func (c *KubeeyeV1alpha2Client) InspectTasks(namespace string) InspectTaskInterface {
-	return newInspectTasks(c, namespace)
+func (c *KubeeyeV1alpha2Client) InspectTasks() InspectTaskInterface {
+	return newInspectTasks(c)
 }
 
 // NewForConfig creates a new KubeeyeV1alpha2Client for the given config.

@@ -35,6 +35,7 @@ func Execute() {
 	rootCmd.AddCommand(get.NewGetCmd(clients))
 
 	addFlags(rootCmd)
+
 	err = rootCmd.Execute()
 	if err != nil {
 		fmt.Println(err)
@@ -44,5 +45,5 @@ func Execute() {
 }
 
 func addFlags(cmd *cobra.Command) {
-
+	cmd.PersistentFlags().StringVar(&kubeConfig, "kube-config", "", "kube config")
 }

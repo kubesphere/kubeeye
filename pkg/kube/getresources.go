@@ -17,6 +17,9 @@ package kube
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 	"time"
 
 	"github.com/kubesphere/kubeeye/pkg/conf"
@@ -119,4 +122,13 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) K8
 		ClusterRoles:     clusterRoles,
 		Events:           events,
 	}
+}
+
+func GetNodes(ctx context.Context, clients kubernetes.Interface) []corev1.Node {
+	nodeAll, err := clients.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		klog.Error("failed to get nodes", err)
+		return nil
+	}
+	return nodeAll.Items
 }

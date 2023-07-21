@@ -15,13 +15,21 @@
 package kube
 
 import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"github.com/ghodss/yaml"
 	"github.com/kubesphere/kubeeye/clients/clientset/versioned"
+	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
@@ -106,4 +114,52 @@ func GetK8SClients(kubeconfig string) (*KubernetesClient, error) {
 		return nil, err
 	}
 	return clients, nil
+}
+func GetMultiClusterClient(ctx context.Context, clients *KubernetesClient, clusterName *string) (*KubernetesClient, error) {
+
+	raw, err := clients.ClientSet.CoreV1().RESTClient().Get().AbsPath("/apis/cluster.kubesphere.io/v1alpha1/clusters/" + *clusterName).DoRaw(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var cluster map[string]interface{}
+	err = json.Unmarshal(raw, &cluster)
+	if err != nil {
+		return nil, err
+	}
+	kubeConfig := cluster["spec"].(map[string]interface{})["connection"].(map[string]interface{})["kubeconfig"].(string)
+
+	decodeString, err := base64.StdEncoding.DecodeString(kubeConfig)
+
+	clientCmdConfig, err := clientcmd.NewClientConfigFromBytes(decodeString)
+	if err != nil {
+		return nil, err
+	}
+	clientConfig, err := clientCmdConfig.ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	var kc KubernetesClient
+	sClients, err := kc.K8SClients(clientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return sClients, nil
+}
+func GetKubeEyeConfig(ctx context.Context, client *KubernetesClient) (conf.KubeEyeConfig, error) {
+	var kc conf.KubeEyeConfig
+	kubeeyeCm, err := client.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, "kubeeye-config", metav1.GetOptions{})
+	if err != nil {
+		klog.Errorf("failed to get kubeeye config, kubeeye config file do not exist. err:%s", err)
+		return kc, err
+	}
+	config := kubeeyeCm.Data["config"]
+
+	err = yaml.Unmarshal([]byte(config), &kc)
+	if err != nil {
+		klog.Errorf("failed to unmarshal kubeeye config. err:%s ", err)
+		return kc, err
+	}
+	return kc, nil
 }

@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/part-of: kubeeye
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kubeeye
-    kubeeye.kubesphere.io/rule-tag: kubeeye_workloads_rego
+    kubeeye.kubesphere.io/rule-group: kubeeye_workloads_rego
   name: inspect-rules-sysctl
   namespace: kubeeye-system
 spec:

@@ -42,7 +42,9 @@ spec:
             description: InspectPlanSpec defines the desired state of InspectPlan
             properties:
               clusterName:
-                type: string
+                items:
+                  type: string
+                type: array
               kubeConfig:
                 type: string
               maxTasks:
@@ -455,10 +457,10 @@ spec:
           spec:
             description: InspectTaskSpec defines the desired state of InspectTask
             properties:
-              inspectRuleTotal:
-                additionalProperties:
-                  type: integer
-                type: object
+              clusterName:
+                items:
+                  type: string
+                type: array
               rules:
                 items:
                   properties:
@@ -494,6 +496,10 @@ spec:
               endTimestamp:
                 format: date-time
                 type: string
+              inspectRuleTotal:
+                additionalProperties:
+                  type: integer
+                type: object
               phase:
                 items:
                   properties:
@@ -846,7 +852,7 @@ spec:
         - --upstream=http://127.0.0.1:8080/
         - --logtostderr=true
         - --v=0
-        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.11.0
+        image: kubesphere/kube-rbac-proxy:v0.11.0
         name: kube-rbac-proxy
         ports:
         - containerPort: 8443

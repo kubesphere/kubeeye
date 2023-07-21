@@ -6,6 +6,7 @@ import (
 	"fmt"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
@@ -14,11 +15,10 @@ import (
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	"os"
 	"path"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 )
 
@@ -29,7 +29,7 @@ func init() {
 	RuleOperatorMap[constant.FileChange] = &fileChangeInspect{}
 }
 
-func (o *fileChangeInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) (*kubeeyev1alpha2.JobPhase, error) {
+func (o *fileChangeInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask, config *conf.JobConfig) (*kubeeyev1alpha2.JobPhase, error) {
 
 	var fileRule []kubeeyev1alpha2.FileChangeRule
 	_ = json.Unmarshal(jobRule.RunRule, &fileRule)
@@ -39,14 +39,14 @@ func (o *fileChangeInspect) CreateJobTask(ctx context.Context, clients *kube.Kub
 	}
 	var jobTemplate *v1.Job
 	if fileRule[0].NodeName != nil {
-		jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, *fileRule[0].NodeName, nil, constant.FileChange)
+		jobTemplate = template.InspectJobsTemplate(config, jobRule.JobName, task, *fileRule[0].NodeName, nil, constant.FileChange)
 	} else if fileRule[0].NodeSelector != nil {
-		jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", fileRule[0].NodeSelector, constant.FileChange)
+		jobTemplate = template.InspectJobsTemplate(config, jobRule.JobName, task, "", fileRule[0].NodeSelector, constant.FileChange)
 	} else {
-		jobTemplate = template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", nil, constant.FileChange)
+		jobTemplate = template.InspectJobsTemplate(config, jobRule.JobName, task, "", nil, constant.FileChange)
 	}
 
-	_, err := clients.ClientSet.BatchV1().Jobs("kubeeye-system").Create(ctx, jobTemplate, metav1.CreateOptions{})
+	_, err := clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Create(ctx, jobTemplate, metav1.CreateOptions{})
 	if err != nil {
 		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", jobTemplate.Name, err)
 		return nil, err
@@ -55,10 +55,10 @@ func (o *fileChangeInspect) CreateJobTask(ctx context.Context, clients *kube.Kub
 
 }
 
-func (o *fileChangeInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.InspectTask, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
+func (o *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
 
 	var fileResults []kubeeyev1alpha2.FileChangeResultItem
-	_, exist, phase := utils.ArrayFinds(task.Spec.Rules, func(m kubeeyev1alpha2.JobRule) bool {
+	_, exist, phase := utils.ArrayFinds(rules, func(m kubeeyev1alpha2.JobRule) bool {
 		return m.JobName == currentJobName
 	})
 	if !exist {
@@ -85,14 +85,14 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 			continue
 		}
 		baseFileName := fmt.Sprintf("%s-%s", constant.BaseFilePrefix, file.Name)
-		baseConfig, configErr := clients.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Get(ctx, baseFileName, metav1.GetOptions{})
+		baseConfig, configErr := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, baseFileName, metav1.GetOptions{})
 		if configErr != nil {
 			klog.Errorf("Failed to open file. cause：file Do not exist,err:%s", err)
 
 			if kubeErr.IsNotFound(configErr) {
 
-				mapTemplate := template.BinaryFileConfigMapTemplate(baseFileName, task.Namespace, baseFile, true)
-				_, createErr := clients.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Create(ctx, mapTemplate, metav1.CreateOptions{})
+				mapTemplate := template.BinaryFileConfigMapTemplate(baseFileName, constant.DefaultNamespace, baseFile, true)
+				_, createErr := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, mapTemplate, metav1.CreateOptions{})
 				if createErr != nil {
 					resultItem.Issues = []string{fmt.Sprintf("%s:create configMap failed", file.Name)}
 				} else {
@@ -123,10 +123,10 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha
 
 }
 
-func (o *fileChangeInspect) GetResult(ctx context.Context, c client.Client, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+func (o *fileChangeInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
 
 	var fileChangeResult []kubeeyev1alpha2.FileChangeResultItem
-	jsonErr := json.Unmarshal(result.BinaryData[constant.Result], &fileChangeResult)
+	jsonErr := json.Unmarshal(result.BinaryData[constant.Data], &fileChangeResult)
 	if jsonErr != nil {
 		klog.Error("failed to get result", jsonErr)
 		return jsonErr
@@ -134,11 +134,14 @@ func (o *fileChangeInspect) GetResult(ctx context.Context, c client.Client, jobs
 	if fileChangeResult == nil {
 		return nil
 	}
-	runNodeName := findJobRunNode(ctx, jobs, c)
+	runNodeName := findJobRunNode(ctx, jobs, c.ClientSet)
 	var inspectResult kubeeyev1alpha2.InspectResult
-	err := c.Get(ctx, types.NamespacedName{
-		Name: fmt.Sprintf("%s-nodeinfo", task.Name),
-	}, &inspectResult)
+	//err := c.Get(ctx, types.NamespacedName{
+	//	Name: fmt.Sprintf("%s-nodeinfo", task.Name),
+	//}, &inspectResult)
+
+	err := c.VersionClientSet.KubeeyeV1alpha2().RESTClient().Get().Resource("inspectresults").Name(fmt.Sprintf("%s-nodeinfo", task.Name)).Do(ctx).Into(&inspectResult)
+
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			var ownerRefBol = true
@@ -154,7 +157,8 @@ func (o *fileChangeInspect) GetResult(ctx context.Context, c client.Client, jobs
 			inspectResult.Name = fmt.Sprintf("%s-nodeinfo", task.Name)
 			inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
 			inspectResult.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {FileChangeResult: fileChangeResult}}
-			err = c.Create(ctx, &inspectResult)
+			//err = c.Create(ctx, &inspectResult)
+			_, err = c.VersionClientSet.KubeeyeV1alpha2().RESTClient().Post().Resource("inspectresults").Body(&inspectResult).DoRaw(ctx)
 			if err != nil {
 				klog.Error("Failed to create inspect result", err)
 				return err
@@ -171,7 +175,8 @@ func (o *fileChangeInspect) GetResult(ctx context.Context, c client.Client, jobs
 	}
 
 	inspectResult.Spec.NodeInfoResult[runNodeName] = infoResult
-	err = c.Update(ctx, &inspectResult)
+	_, err = c.VersionClientSet.KubeeyeV1alpha2().RESTClient().Put().Resource("inspectresults").Name(inspectResult.Name).Body(&inspectResult).DoRaw(ctx)
+	//err = c.Update(ctx, &inspectResult)
 	if err != nil {
 		klog.Error("Failed to update inspect result", err)
 		return err
@@ -180,13 +185,8 @@ func (o *fileChangeInspect) GetResult(ctx context.Context, c client.Client, jobs
 
 }
 
-func findJobRunNode(ctx context.Context, job *v1.Job, c client.Client) string {
-	var pods corev1.PodList
-
-	err := c.List(ctx, &pods, &client.ListOptions{
-		LabelSelector: labels.SelectorFromValidatedSet(map[string]string{"job-name": job.Name}),
-		Namespace:     job.Namespace,
-	})
+func findJobRunNode(ctx context.Context, job *v1.Job, c kubernetes.Interface) string {
+	pods, err := c.CoreV1().Pods(job.Namespace).List(ctx, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{"job-name": job.Name})})
 	if err != nil {
 		klog.Error(err)
 		return ""

@@ -22,7 +22,7 @@ func CSVOutput(clients *kube.KubernetesClient, outPath *string, taskName string,
 		}
 	}()
 
-	list, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectResults(namespace).List(context.TODO(), metav1.ListOptions{
+	list, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().List(context.TODO(), metav1.ListOptions{
 		LabelSelector: metav1.FormatLabelSelector(metav1.SetAsLabelSelector(map[string]string{constant.LabelName: taskName})),
 	})
 	if err != nil {

@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-func JsonOut(ctx context.Context, clients *kube.KubernetesClient, outPath string, TaskName string, TaskNameSpace string) error {
-	results, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectResults(TaskNameSpace).List(ctx, metav1.ListOptions{
+func JsonOut(ctx context.Context, clients *kube.KubernetesClient, outPath string, TaskName string) error {
+	results, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().List(ctx, metav1.ListOptions{
 		LabelSelector: metav1.FormatLabelSelector(metav1.SetAsLabelSelector(map[string]string{constant.LabelName: TaskName})),
 	})
 	if err != nil || len(results.Items) == 0 {

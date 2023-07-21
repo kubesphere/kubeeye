@@ -21,30 +21,14 @@ package v1alpha2
 // InspectPlanLister.
 type InspectPlanListerExpansion interface{}
 
-// InspectPlanNamespaceListerExpansion allows custom methods to be added to
-// InspectPlanNamespaceLister.
-type InspectPlanNamespaceListerExpansion interface{}
-
 // InspectResultListerExpansion allows custom methods to be added to
 // InspectResultLister.
 type InspectResultListerExpansion interface{}
-
-// InspectResultNamespaceListerExpansion allows custom methods to be added to
-// InspectResultNamespaceLister.
-type InspectResultNamespaceListerExpansion interface{}
 
 // InspectRuleListerExpansion allows custom methods to be added to
 // InspectRuleLister.
 type InspectRuleListerExpansion interface{}
 
-// InspectRuleNamespaceListerExpansion allows custom methods to be added to
-// InspectRuleNamespaceLister.
-type InspectRuleNamespaceListerExpansion interface{}
-
 // InspectTaskListerExpansion allows custom methods to be added to
 // InspectTaskLister.
 type InspectTaskListerExpansion interface{}
-
-// InspectTaskNamespaceListerExpansion allows custom methods to be added to
-// InspectTaskNamespaceLister.
-type InspectTaskNamespaceListerExpansion interface{}

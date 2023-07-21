@@ -28,19 +28,20 @@ type InspectTaskSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Timeout          string         `json:"timeout,omitempty"`
-	InspectRuleTotal map[string]int `json:"inspectRuleTotal,omitempty"`
-	Rules            []JobRule      `json:"rules"`
+	ClusterName []*string `json:"clusterName,omitempty"`
+	Timeout     string    `json:"timeout,omitempty"`
+	Rules       []JobRule `json:"rules,omitempty"`
 }
 
 // InspectTaskStatus defines the observed state of InspectTask
 type InspectTaskStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	ClusterInfo    `json:"clusterInfo,omitempty"`
-	JobPhase       []JobPhase   `json:"phase,omitempty"`
-	StartTimestamp *metav1.Time `json:"startTimestamp,omitempty"`
-	EndTimestamp   *metav1.Time `json:"endTimestamp,omitempty"`
+	ClusterInfo      `json:"clusterInfo,omitempty"`
+	InspectRuleTotal map[string]int `json:"inspectRuleTotal,omitempty"`
+	JobPhase         []JobPhase     `json:"phase,omitempty"`
+	StartTimestamp   metav1.Time    `json:"startTimestamp,omitempty"`
+	EndTimestamp     metav1.Time    `json:"endTimestamp,omitempty"`
 }
 
 type JobPhase struct {
@@ -71,6 +72,7 @@ type ClusterInfo struct {
 }
 
 // +genclient
+// +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 //+kubebuilder:object:root=true
 //+kubebuilder:resource:scope=Cluster

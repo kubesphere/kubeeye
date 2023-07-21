@@ -32,7 +32,7 @@ import (
 // InspectResultsGetter has a method to return a InspectResultInterface.
 // A group's client should implement this interface.
 type InspectResultsGetter interface {
-	InspectResults(namespace string) InspectResultInterface
+	InspectResults() InspectResultInterface
 }
 
 // InspectResultInterface has methods to work with InspectResult resources.
@@ -52,14 +52,12 @@ type InspectResultInterface interface {
 // inspectResults implements InspectResultInterface
 type inspectResults struct {
 	client rest.Interface
-	ns     string
 }
 
 // newInspectResults returns a InspectResults
-func newInspectResults(c *KubeeyeV1alpha2Client, namespace string) *inspectResults {
+func newInspectResults(c *KubeeyeV1alpha2Client) *inspectResults {
 	return &inspectResults{
 		client: c.RESTClient(),
-		ns:     namespace,
 	}
 }
 
@@ -67,7 +65,6 @@ func newInspectResults(c *KubeeyeV1alpha2Client, namespace string) *inspectResul
 func (c *inspectResults) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.InspectResult, err error) {
 	result = &v1alpha2.InspectResult{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("inspectresults").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
@@ -84,7 +81,6 @@ func (c *inspectResults) List(ctx context.Context, opts v1.ListOptions) (result 
 	}
 	result = &v1alpha2.InspectResultList{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("inspectresults").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -101,7 +97,6 @@ func (c *inspectResults) Watch(ctx context.Context, opts v1.ListOptions) (watch.
 	}
 	opts.Watch = true
 	return c.client.Get().
-		Namespace(c.ns).
 		Resource("inspectresults").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -112,7 +107,6 @@ func (c *inspectResults) Watch(ctx context.Context, opts v1.ListOptions) (watch.
 func (c *inspectResults) Create(ctx context.Context, inspectResult *v1alpha2.InspectResult, opts v1.CreateOptions) (result *v1alpha2.InspectResult, err error) {
 	result = &v1alpha2.InspectResult{}
 	err = c.client.Post().
-		Namespace(c.ns).
 		Resource("inspectresults").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(inspectResult).
@@ -125,7 +119,6 @@ func (c *inspectResults) Create(ctx context.Context, inspectResult *v1alpha2.Ins
 func (c *inspectResults) Update(ctx context.Context, inspectResult *v1alpha2.InspectResult, opts v1.UpdateOptions) (result *v1alpha2.InspectResult, err error) {
 	result = &v1alpha2.InspectResult{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("inspectresults").
 		Name(inspectResult.Name).
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -140,7 +133,6 @@ func (c *inspectResults) Update(ctx context.Context, inspectResult *v1alpha2.Ins
 func (c *inspectResults) UpdateStatus(ctx context.Context, inspectResult *v1alpha2.InspectResult, opts v1.UpdateOptions) (result *v1alpha2.InspectResult, err error) {
 	result = &v1alpha2.InspectResult{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("inspectresults").
 		Name(inspectResult.Name).
 		SubResource("status").
@@ -154,7 +146,6 @@ func (c *inspectResults) UpdateStatus(ctx context.Context, inspectResult *v1alph
 // Delete takes name of the inspectResult and deletes it. Returns an error if one occurs.
 func (c *inspectResults) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("inspectresults").
 		Name(name).
 		Body(&opts).
@@ -169,7 +160,6 @@ func (c *inspectResults) DeleteCollection(ctx context.Context, opts v1.DeleteOpt
 		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("inspectresults").
 		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -182,7 +172,6 @@ func (c *inspectResults) DeleteCollection(ctx context.Context, opts v1.DeleteOpt
 func (c *inspectResults) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.InspectResult, err error) {
 	result = &v1alpha2.InspectResult{}
 	err = c.client.Patch(pt).
-		Namespace(c.ns).
 		Resource("inspectresults").
 		Name(name).
 		SubResource(subresources...).

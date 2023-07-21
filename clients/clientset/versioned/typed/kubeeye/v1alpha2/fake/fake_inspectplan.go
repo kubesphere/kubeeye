@@ -32,7 +32,6 @@ import (
 // FakeInspectPlans implements InspectPlanInterface
 type FakeInspectPlans struct {
 	Fake *FakeKubeeyeV1alpha2
-	ns   string
 }
 
 var inspectplansResource = schema.GroupVersionResource{Group: "kubeeye", Version: "v1alpha2", Resource: "inspectplans"}
@@ -42,8 +41,7 @@ var inspectplansKind = schema.GroupVersionKind{Group: "kubeeye", Version: "v1alp
 // Get takes name of the inspectPlan, and returns the corresponding inspectPlan object, and an error if there is any.
 func (c *FakeInspectPlans) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.InspectPlan, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(inspectplansResource, c.ns, name), &v1alpha2.InspectPlan{})
-
+		Invokes(testing.NewRootGetAction(inspectplansResource, name), &v1alpha2.InspectPlan{})
 	if obj == nil {
 		return nil, err
 	}
@@ -53,8 +51,7 @@ func (c *FakeInspectPlans) Get(ctx context.Context, name string, options v1.GetO
 // List takes label and field selectors, and returns the list of InspectPlans that match those selectors.
 func (c *FakeInspectPlans) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.InspectPlanList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(inspectplansResource, inspectplansKind, c.ns, opts), &v1alpha2.InspectPlanList{})
-
+		Invokes(testing.NewRootListAction(inspectplansResource, inspectplansKind, opts), &v1alpha2.InspectPlanList{})
 	if obj == nil {
 		return nil, err
 	}
@@ -75,15 +72,13 @@ func (c *FakeInspectPlans) List(ctx context.Context, opts v1.ListOptions) (resul
 // Watch returns a watch.Interface that watches the requested inspectPlans.
 func (c *FakeInspectPlans) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(inspectplansResource, c.ns, opts))
-
+		InvokesWatch(testing.NewRootWatchAction(inspectplansResource, opts))
 }
 
 // Create takes the representation of a inspectPlan and creates it.  Returns the server's representation of the inspectPlan, and an error, if there is any.
 func (c *FakeInspectPlans) Create(ctx context.Context, inspectPlan *v1alpha2.InspectPlan, opts v1.CreateOptions) (result *v1alpha2.InspectPlan, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(inspectplansResource, c.ns, inspectPlan), &v1alpha2.InspectPlan{})
-
+		Invokes(testing.NewRootCreateAction(inspectplansResource, inspectPlan), &v1alpha2.InspectPlan{})
 	if obj == nil {
 		return nil, err
 	}
@@ -93,8 +88,7 @@ func (c *FakeInspectPlans) Create(ctx context.Context, inspectPlan *v1alpha2.Ins
 // Update takes the representation of a inspectPlan and updates it. Returns the server's representation of the inspectPlan, and an error, if there is any.
 func (c *FakeInspectPlans) Update(ctx context.Context, inspectPlan *v1alpha2.InspectPlan, opts v1.UpdateOptions) (result *v1alpha2.InspectPlan, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(inspectplansResource, c.ns, inspectPlan), &v1alpha2.InspectPlan{})
-
+		Invokes(testing.NewRootUpdateAction(inspectplansResource, inspectPlan), &v1alpha2.InspectPlan{})
 	if obj == nil {
 		return nil, err
 	}
@@ -105,8 +99,7 @@ func (c *FakeInspectPlans) Update(ctx context.Context, inspectPlan *v1alpha2.Ins
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 func (c *FakeInspectPlans) UpdateStatus(ctx context.Context, inspectPlan *v1alpha2.InspectPlan, opts v1.UpdateOptions) (*v1alpha2.InspectPlan, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(inspectplansResource, "status", c.ns, inspectPlan), &v1alpha2.InspectPlan{})
-
+		Invokes(testing.NewRootUpdateSubresourceAction(inspectplansResource, "status", inspectPlan), &v1alpha2.InspectPlan{})
 	if obj == nil {
 		return nil, err
 	}
@@ -116,14 +109,13 @@ func (c *FakeInspectPlans) UpdateStatus(ctx context.Context, inspectPlan *v1alph
 // Delete takes name of the inspectPlan and deletes it. Returns an error if one occurs.
 func (c *FakeInspectPlans) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(inspectplansResource, c.ns, name, opts), &v1alpha2.InspectPlan{})
-
+		Invokes(testing.NewRootDeleteActionWithOptions(inspectplansResource, name, opts), &v1alpha2.InspectPlan{})
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeInspectPlans) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(inspectplansResource, c.ns, listOpts)
+	action := testing.NewRootDeleteCollectionAction(inspectplansResource, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha2.InspectPlanList{})
 	return err
@@ -132,8 +124,7 @@ func (c *FakeInspectPlans) DeleteCollection(ctx context.Context, opts v1.DeleteO
 // Patch applies the patch and returns the patched inspectPlan.
 func (c *FakeInspectPlans) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.InspectPlan, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(inspectplansResource, c.ns, name, pt, data, subresources...), &v1alpha2.InspectPlan{})
-
+		Invokes(testing.NewRootPatchSubresourceAction(inspectplansResource, name, pt, data, subresources...), &v1alpha2.InspectPlan{})
 	if obj == nil {
 		return nil, err
 	}

@@ -6,3 +6,5 @@ spec:
   schedule: "*/30 * * *  ?"
   maxTasks: 10
   tag: kubeeye_workloads_rego
+  clusterName:
+    - member1

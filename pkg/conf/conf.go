@@ -31,7 +31,7 @@ const (
 	PluginUninstalled string = "uninstalled"
 )
 
-type KubeeyeConfig struct {
+type KubeEyeConfig struct {
 	Job *JobConfig `json:"job,omitempty"`
 }
 

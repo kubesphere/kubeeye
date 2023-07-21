@@ -35,10 +35,10 @@ spec:
           spec:
             description: InspectTaskSpec defines the desired state of InspectTask
             properties:
-              inspectRuleTotal:
-                additionalProperties:
-                  type: integer
-                type: object
+              clusterName:
+                items:
+                  type: string
+                type: array
               rules:
                 items:
                   properties:
@@ -53,8 +53,6 @@ spec:
                 type: array
               timeout:
                 type: string
-            required:
-            - rules
             type: object
           status:
             description: InspectTaskStatus defines the observed state of InspectTask
@@ -74,6 +72,10 @@ spec:
               endTimestamp:
                 format: date-time
                 type: string
+              inspectRuleTotal:
+                additionalProperties:
+                  type: integer
+                type: object
               phase:
                 items:
                   properties:

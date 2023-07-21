@@ -6,6 +6,7 @@ import (
 	"fmt"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
@@ -13,7 +14,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type opaInspect struct {
@@ -23,11 +23,11 @@ func init() {
 	RuleOperatorMap[constant.Opa] = &opaInspect{}
 }
 
-func (o *opaInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) (*kubeeyev1alpha2.JobPhase, error) {
+func (o *opaInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask, config *conf.JobConfig) (*kubeeyev1alpha2.JobPhase, error) {
 
-	job := template.InspectJobsTemplate(ctx, clients, jobRule.JobName, task, "", nil, constant.Opa)
+	job := template.InspectJobsTemplate(config, jobRule.JobName, task, "", nil, constant.Opa)
 
-	_, err := clients.ClientSet.BatchV1().Jobs("kubeeye-system").Create(ctx, job, metav1.CreateOptions{})
+	_, err := clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
 		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", job.Name, err)
 		return nil, err
@@ -36,11 +36,11 @@ func (o *opaInspect) CreateJobTask(ctx context.Context, clients *kube.Kubernetes
 
 }
 
-func (o *opaInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.InspectTask, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
+func (o *opaInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
 
 	klog.Info("getting  Rego rules")
 
-	_, exist, phase := utils.ArrayFinds(task.Spec.Rules, func(m kubeeyev1alpha2.JobRule) bool {
+	_, exist, phase := utils.ArrayFinds(rules, func(m kubeeyev1alpha2.JobRule) bool {
 		return m.JobName == currentJobName
 	})
 
@@ -68,9 +68,9 @@ func (o *opaInspect) RunInspect(ctx context.Context, task *kubeeyev1alpha2.Inspe
 	return nil, nil
 }
 
-func (o *opaInspect) GetResult(ctx context.Context, c client.Client, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+func (o *opaInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
 	var opaResult kubeeyev1alpha2.KubeeyeOpaResult
-	err := json.Unmarshal(result.BinaryData[constant.Result], &opaResult)
+	err := json.Unmarshal(result.BinaryData[constant.Data], &opaResult)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,8 @@ func (o *opaInspect) GetResult(ctx context.Context, c client.Client, jobs *v1.Jo
 	inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
 	inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
 	inspectResult.Spec.OpaResult = opaResult
-	err = c.Create(ctx, &inspectResult)
+	//err = c.Create(ctx, &inspectResult)
+	_, err = c.VersionClientSet.KubeeyeV1alpha2().RESTClient().Post().Resource("inspectresults").Body(&inspectResult).DoRaw(ctx)
 	if err != nil {
 		klog.Error("Failed to create inspect result", err)
 		return err

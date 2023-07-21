@@ -46,20 +46,20 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 
 // InspectPlans returns a InspectPlanInformer.
 func (v *version) InspectPlans() InspectPlanInformer {
-	return &inspectPlanInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+	return &inspectPlanInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // InspectResults returns a InspectResultInformer.
 func (v *version) InspectResults() InspectResultInformer {
-	return &inspectResultInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+	return &inspectResultInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // InspectRules returns a InspectRuleInformer.
 func (v *version) InspectRules() InspectRuleInformer {
-	return &inspectRuleInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+	return &inspectRuleInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // InspectTasks returns a InspectTaskInformer.
 func (v *version) InspectTasks() InspectTaskInformer {
-	return &inspectTaskInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+	return &inspectTaskInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

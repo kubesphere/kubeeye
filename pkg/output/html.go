@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/clients/clientset/versioned/scheme"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/template"
@@ -23,13 +22,12 @@ type renderNode struct {
 	Children []renderNode
 }
 
-func HtmlOut(ctx context.Context, Clients *kube.KubernetesClient, Path string, TaskName string, TaskNameSpace string) error {
+func HtmlOut(ctx context.Context, Clients *kube.KubernetesClient, Path string, TaskName string) error {
 
 	listOptions := metav1.ListOptions{
 		LabelSelector: metav1.FormatLabelSelector(metav1.SetAsLabelSelector(map[string]string{constant.LabelName: TaskName})),
 	}
-	var results v1alpha2.InspectResultList
-	err := Clients.VersionClientSet.KubeeyeV1alpha2().RESTClient().Get().Resource("inspectresults").VersionedParams(&listOptions, scheme.ParameterCodec).Do(ctx).Into(&results)
+	results, err := Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().List(ctx, listOptions)
 	if err != nil || len(results.Items) == 0 {
 		return errors.Errorf("result not exist")
 	}
@@ -69,7 +67,7 @@ func HtmlOut(ctx context.Context, Clients *kube.KubernetesClient, Path string, T
 	}
 	var ruleNumber [][]interface{}
 	if err == nil {
-		for key, val := range task.Spec.InspectRuleTotal {
+		for key, val := range task.Status.InspectRuleTotal {
 			var issues = len(resultCollection[key])
 			if issues > 0 {
 				issues -= 1

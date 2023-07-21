@@ -4,7 +4,7 @@ kind: InspectRule
 metadata:
   name: filter-system-log
   labels:
-    kubeeye.kubesphere.io/rule-tag: inspectrule-sample
+    kubeeye.kubesphere.io/rule-group: inspectrule-sample
 spec:
   fileFilter:
     - name: systemLog
@@ -52,7 +52,7 @@ metadata:
     app.kubernetes.io/part-of: kubeeye
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kubeeye
-    kubeeye.kubesphere.io/rule-tag: inspectrule-sample
+    kubeeye.kubesphere.io/rule-group: inspectrule-sample
   name: inspect-rule-sample
   namespace: kubeeye-system
 spec:
@@ -158,7 +158,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: inspectrules
     app.kubernetes.io/part-of: kubeeye
-    kubeeye.kubesphere.io/rule-tag: kubeeye_events_rego
+    kubeeye.kubesphere.io/rule-group: kubeeye_events_rego
   name: kubeeye-inspectrules0-1680158867
   namespace: kubeeye-system
 spec:
@@ -189,8 +189,7 @@ spec:
                 "Reason": sprintf("%v", [Reason]),
             }
         }
-status:
-  importTime: null
+
 
 ---
 apiVersion: kubeeye.kubesphere.io/v1alpha2
@@ -203,7 +202,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: inspectrules
     app.kubernetes.io/part-of: kubeeye
-    kubeeye.kubesphere.io/rule-tag: kubeeye_nodes_rego
+    kubeeye.kubesphere.io/rule-group: kubeeye_nodes_rego
   name: kubeeye-inspectrules1-1680158867
   namespace: kubeeye-system
 spec:
@@ -272,7 +271,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: inspectrules
     app.kubernetes.io/part-of: kubeeye
-    kubeeye.kubesphere.io/rule-tag: kubeeye_RBAC_rego
+    kubeeye.kubesphere.io/rule-group: kubeeye_RBAC_rego
   name: kubeeye-inspectrules2-1680158867
   namespace: kubeeye-system
 spec:
@@ -616,7 +615,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: inspectrules
     app.kubernetes.io/part-of: kubeeye
-    kubeeye.kubesphere.io/rule-tag: inspectrule-sample
+    kubeeye.kubesphere.io/rule-group: inspectrule-sample
   name: kubeeye-inspectrules3-1680158867
   namespace: kubeeye-system
 spec:
@@ -1021,80 +1020,6 @@ spec:
         
         CronJobSetPrivilegedRule(resource) {
             resource.Object.spec.jobTemplate.spec.template.spec.containers[_].securityContext.privileged == true
-        }
-    - module: kubeeye_workloads_rego
-      name: priorityClassRule
-      rule: |-
-        package kubeeye_workloads_rego
-        
-        deny[msg] {
-            resource := input
-            type := resource.Object.kind
-            resourcename := resource.Object.metadata.name
-            resourcenamespace := resource.Object.metadata.namespace
-            type == "Pod"
-            level := "ignore"
-        
-            PodPriorityClassNameRule(resource)
-        
-            msg := {
-                "Name": sprintf("%v", [resourcename]),
-                "Namespace": sprintf("%v", [resourcenamespace]),
-                "Type": sprintf("%v", [type]),
-                "Level": sprintf("%v", [level]),
-                "Message": "NoPriorityClassName"
-            }
-        }
-        
-        PodPriorityClassNameRule(resource) {
-            not resource.Object.spec.priorityClassName
-        }
-        
-        deny[msg] {
-            resource := input
-            type := resource.Object.kind
-            resourcename := resource.Object.metadata.name
-            resourcenamespace := resource.Object.metadata.namespace
-            workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
-            workloadsType[type]
-            level := "ignore"
-        
-            workloadsPriorityClassNameRule(resource)
-        
-            msg := {
-                "Name": sprintf("%v", [resourcename]),
-                "Namespace": sprintf("%v", [resourcenamespace]),
-                "Type": sprintf("%v", [type]),
-                "Level": sprintf("%v", [level]),
-                "Message": "NoPriorityClassName"
-            }
-        }
-        
-        workloadsPriorityClassNameRule(resource) {
-            not resource.Object.spec.template.spec.priorityClassName
-        }
-        
-        deny[msg] {
-            resource := input
-            type := resource.Object.kind
-            resourcename := resource.Object.metadata.name
-            resourcenamespace := resource.Object.metadata.namespace
-            type == "CronJob"
-            level := "ignore"
-        
-            CronJobPriorityClassNameRule(resource)
-        
-            msg := {
-                "Name": sprintf("%v", [resourcename]),
-                "Namespace": sprintf("%v", [resourcenamespace]),
-                "Type": sprintf("%v", [type]),
-                "Level": sprintf("%v", [level]),
-                "Message": "NoPriorityClassName"
-            }
-        }
-        
-        CronJobPriorityClassNameRule(resource) {
-            not resource.Object.spec.jobTemplate.spec.template.spec.priorityClassName
         }
     - module: kubeeye_workloads_rego
       name: memoryRequestsRule
@@ -2271,7 +2196,7 @@ metadata:
     app.kubernetes.io/part-of: kubeeye
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kubeeye
-    kubeeye.kubesphere.io/rule-tag: inspectrule-sample
+    kubeeye.kubesphere.io/rule-group: inspectrule-sample
   name: prometheus-sample
 spec:
   prometheusEndpoint: http://whizard-agent-proxy.kubesphere-monitoring-system.svc.cluster.local:9090
@@ -2324,7 +2249,7 @@ metadata:
     app.kubernetes.io/part-of: kubeeye
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kubeeye
-    kubeeye.kubesphere.io/rule-tag: inspectrule-sample
+    kubeeye.kubesphere.io/rule-group: inspectrule-sample
   name: inspect-rules-sysctl
   namespace: kubeeye-system
 spec:

@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/part-of: kubeeye
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kubeeye
-    kubeeye.kubesphere.io/rule-tag: kubeeye_workloads_rego
+    kubeeye.kubesphere.io/rule-group: kubeeye_workloads_rego
   name: inspect-rule-sample
   namespace: kubeeye-system
 spec:
@@ -16,7 +16,6 @@ spec:
       rule: docker = "active"
     - name: etcd
       rule: etcd = "active"
-      nodeName: master
   sysctl:
     - name: net.ipv4.ip_forward
       rule: net.ipv4.ip_forward = 1

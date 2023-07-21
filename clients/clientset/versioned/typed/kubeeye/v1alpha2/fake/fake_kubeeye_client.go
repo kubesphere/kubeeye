@@ -27,20 +27,20 @@ type FakeKubeeyeV1alpha2 struct {
 	*testing.Fake
 }
 
-func (c *FakeKubeeyeV1alpha2) InspectPlans(namespace string) v1alpha2.InspectPlanInterface {
-	return &FakeInspectPlans{c, namespace}
+func (c *FakeKubeeyeV1alpha2) InspectPlans() v1alpha2.InspectPlanInterface {
+	return &FakeInspectPlans{c}
 }
 
-func (c *FakeKubeeyeV1alpha2) InspectResults(namespace string) v1alpha2.InspectResultInterface {
-	return &FakeInspectResults{c, namespace}
+func (c *FakeKubeeyeV1alpha2) InspectResults() v1alpha2.InspectResultInterface {
+	return &FakeInspectResults{c}
 }
 
-func (c *FakeKubeeyeV1alpha2) InspectRules(namespace string) v1alpha2.InspectRuleInterface {
-	return &FakeInspectRules{c, namespace}
+func (c *FakeKubeeyeV1alpha2) InspectRules() v1alpha2.InspectRuleInterface {
+	return &FakeInspectRules{c}
 }
 
-func (c *FakeKubeeyeV1alpha2) InspectTasks(namespace string) v1alpha2.InspectTaskInterface {
-	return &FakeInspectTasks{c, namespace}
+func (c *FakeKubeeyeV1alpha2) InspectTasks() v1alpha2.InspectTaskInterface {
+	return &FakeInspectTasks{c}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

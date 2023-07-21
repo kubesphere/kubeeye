@@ -1,42 +1,15 @@
 package template
 
 import (
-	"context"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/conf"
-	"github.com/kubesphere/kubeeye/pkg/kube"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/klog/v2"
 )
 
-func GetJobConfig(ctx context.Context, client *kube.KubernetesClient) *conf.JobConfig {
-
-	kubeeyeCm, err := client.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Get(ctx, "kubeeye-config", metav1.GetOptions{})
-	if err != nil {
-		klog.Errorf("failed to get kubeeye config, kubeeye config file do not exist. err:%s", err)
-		return nil
-	}
-	config := kubeeyeCm.Data["config"]
-	var KubeEyeConfig conf.KubeeyeConfig
-	err = yaml.Unmarshal([]byte(config), &KubeEyeConfig)
-	if err != nil {
-		klog.Errorf("failed to unmarshal kubeeye config. err:%s ", err)
-		return nil
-	}
-	return KubeEyeConfig.Job
-}
-
-func InspectJobsTemplate(ctx context.Context, client *kube.KubernetesClient, jobName string, inspectTask *kubeeyev1alpha2.InspectTask, nodeName string, nodeSelector map[string]string, taskType string) *v1.Job {
-
-	jobConfig := GetJobConfig(ctx, client)
-	if jobConfig == nil {
-		klog.Error("Unable to get jobConfig")
-		return nil
-	}
+func InspectJobsTemplate(jobConfig *conf.JobConfig, jobName string, inspectTask *kubeeyev1alpha2.InspectTask, nodeName string, nodeSelector map[string]string, taskType string) *v1.Job {
 
 	var ownerController = true
 	ownerRef := metav1.OwnerReference{
@@ -52,7 +25,7 @@ func InspectJobsTemplate(ctx context.Context, client *kube.KubernetesClient, job
 	inspectJob := &v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            jobName,
-			Namespace:       "kubeeye-system",
+			Namespace:       constant.DefaultNamespace,
 			OwnerReferences: []metav1.OwnerReference{ownerRef},
 			Labels:          map[string]string{constant.LabelResultName: taskType},
 		},
@@ -61,7 +34,7 @@ func InspectJobsTemplate(ctx context.Context, client *kube.KubernetesClient, job
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "inspect-job-pod",
-					Namespace:   "kubeeye-system",
+					Namespace:   constant.DefaultNamespace,
 					Annotations: map[string]string{"container.apparmor.security.beta.kubernetes.io/inspect-task-kubeeye": "unconfined"},
 				},
 

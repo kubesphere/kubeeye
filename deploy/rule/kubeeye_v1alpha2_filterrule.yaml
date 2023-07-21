@@ -3,7 +3,7 @@ kind: InspectRule
 metadata:
   name: filter-system-log
   labels:
-    kubeeye.kubesphere.io/rule-tag: kubeeye_workloads_rego
+    kubeeye.kubesphere.io/rule-group: kubeeye_workloads_rego
 spec:
   fileFilter:
     - name: systemLog

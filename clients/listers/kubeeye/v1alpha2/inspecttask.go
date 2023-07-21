@@ -30,8 +30,9 @@ type InspectTaskLister interface {
 	// List lists all InspectTasks in the indexer.
 	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha2.InspectTask, err error)
-	// InspectTasks returns an object that can list and get InspectTasks.
-	InspectTasks(namespace string) InspectTaskNamespaceLister
+	// Get retrieves the InspectTask from the index for a given name.
+	// Objects returned here must be treated as read-only.
+	Get(name string) (*v1alpha2.InspectTask, error)
 	InspectTaskListerExpansion
 }
 
@@ -53,41 +54,9 @@ func (s *inspectTaskLister) List(selector labels.Selector) (ret []*v1alpha2.Insp
 	return ret, err
 }
 
-// InspectTasks returns an object that can list and get InspectTasks.
-func (s *inspectTaskLister) InspectTasks(namespace string) InspectTaskNamespaceLister {
-	return inspectTaskNamespaceLister{indexer: s.indexer, namespace: namespace}
-}
-
-// InspectTaskNamespaceLister helps list and get InspectTasks.
-// All objects returned here must be treated as read-only.
-type InspectTaskNamespaceLister interface {
-	// List lists all InspectTasks in the indexer for a given namespace.
-	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.InspectTask, err error)
-	// Get retrieves the InspectTask from the indexer for a given namespace and name.
-	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.InspectTask, error)
-	InspectTaskNamespaceListerExpansion
-}
-
-// inspectTaskNamespaceLister implements the InspectTaskNamespaceLister
-// interface.
-type inspectTaskNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all InspectTasks in the indexer for a given namespace.
-func (s inspectTaskNamespaceLister) List(selector labels.Selector) (ret []*v1alpha2.InspectTask, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.InspectTask))
-	})
-	return ret, err
-}
-
-// Get retrieves the InspectTask from the indexer for a given namespace and name.
-func (s inspectTaskNamespaceLister) Get(name string) (*v1alpha2.InspectTask, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
+// Get retrieves the InspectTask from the index for a given name.
+func (s *inspectTaskLister) Get(name string) (*v1alpha2.InspectTask, error) {
+	obj, exists, err := s.indexer.GetByKey(name)
 	if err != nil {
 		return nil, err
 	}

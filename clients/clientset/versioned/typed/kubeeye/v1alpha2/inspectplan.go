@@ -32,7 +32,7 @@ import (
 // InspectPlansGetter has a method to return a InspectPlanInterface.
 // A group's client should implement this interface.
 type InspectPlansGetter interface {
-	InspectPlans(namespace string) InspectPlanInterface
+	InspectPlans() InspectPlanInterface
 }
 
 // InspectPlanInterface has methods to work with InspectPlan resources.
@@ -52,14 +52,12 @@ type InspectPlanInterface interface {
 // inspectPlans implements InspectPlanInterface
 type inspectPlans struct {
 	client rest.Interface
-	ns     string
 }
 
 // newInspectPlans returns a InspectPlans
-func newInspectPlans(c *KubeeyeV1alpha2Client, namespace string) *inspectPlans {
+func newInspectPlans(c *KubeeyeV1alpha2Client) *inspectPlans {
 	return &inspectPlans{
 		client: c.RESTClient(),
-		ns:     namespace,
 	}
 }
 
@@ -67,7 +65,6 @@ func newInspectPlans(c *KubeeyeV1alpha2Client, namespace string) *inspectPlans {
 func (c *inspectPlans) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.InspectPlan, err error) {
 	result = &v1alpha2.InspectPlan{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("inspectplans").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
@@ -84,7 +81,6 @@ func (c *inspectPlans) List(ctx context.Context, opts v1.ListOptions) (result *v
 	}
 	result = &v1alpha2.InspectPlanList{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("inspectplans").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -101,7 +97,6 @@ func (c *inspectPlans) Watch(ctx context.Context, opts v1.ListOptions) (watch.In
 	}
 	opts.Watch = true
 	return c.client.Get().
-		Namespace(c.ns).
 		Resource("inspectplans").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -112,7 +107,6 @@ func (c *inspectPlans) Watch(ctx context.Context, opts v1.ListOptions) (watch.In
 func (c *inspectPlans) Create(ctx context.Context, inspectPlan *v1alpha2.InspectPlan, opts v1.CreateOptions) (result *v1alpha2.InspectPlan, err error) {
 	result = &v1alpha2.InspectPlan{}
 	err = c.client.Post().
-		Namespace(c.ns).
 		Resource("inspectplans").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(inspectPlan).
@@ -125,7 +119,6 @@ func (c *inspectPlans) Create(ctx context.Context, inspectPlan *v1alpha2.Inspect
 func (c *inspectPlans) Update(ctx context.Context, inspectPlan *v1alpha2.InspectPlan, opts v1.UpdateOptions) (result *v1alpha2.InspectPlan, err error) {
 	result = &v1alpha2.InspectPlan{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("inspectplans").
 		Name(inspectPlan.Name).
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -140,7 +133,6 @@ func (c *inspectPlans) Update(ctx context.Context, inspectPlan *v1alpha2.Inspect
 func (c *inspectPlans) UpdateStatus(ctx context.Context, inspectPlan *v1alpha2.InspectPlan, opts v1.UpdateOptions) (result *v1alpha2.InspectPlan, err error) {
 	result = &v1alpha2.InspectPlan{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("inspectplans").
 		Name(inspectPlan.Name).
 		SubResource("status").
@@ -154,7 +146,6 @@ func (c *inspectPlans) UpdateStatus(ctx context.Context, inspectPlan *v1alpha2.I
 // Delete takes name of the inspectPlan and deletes it. Returns an error if one occurs.
 func (c *inspectPlans) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("inspectplans").
 		Name(name).
 		Body(&opts).
@@ -169,7 +160,6 @@ func (c *inspectPlans) DeleteCollection(ctx context.Context, opts v1.DeleteOptio
 		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("inspectplans").
 		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -182,7 +172,6 @@ func (c *inspectPlans) DeleteCollection(ctx context.Context, opts v1.DeleteOptio
 func (c *inspectPlans) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.InspectPlan, err error) {
 	result = &v1alpha2.InspectPlan{}
 	err = c.client.Patch(pt).
-		Namespace(c.ns).
 		Resource("inspectplans").
 		Name(name).
 		SubResource(subresources...).

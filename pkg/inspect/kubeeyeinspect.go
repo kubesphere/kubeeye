@@ -11,6 +11,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/pkg/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 )
@@ -128,39 +129,31 @@ func CalculateScore(fmResultss []kubeeyev1alpha2.ResourceResult, k8sResources ku
 }
 
 func JobInspect(ctx context.Context, taskName string, resultName string, clients *kube.KubernetesClient, ruleType string) error {
-	var task kubeeyev1alpha2.InspectTask
-	raw, err := clients.VersionClientSet.KubeeyeV1alpha2().RESTClient().Get().Resource("inspecttasks").Name(taskName).DoRaw(ctx)
+	var jobRule []kubeeyev1alpha2.JobRule
+
+	rule, err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).List(ctx, v1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})})
 	if err != nil {
-		klog.Errorf("Failed to get  inspect task. err:%s", err)
+		klog.Errorf("Failed to get  inspect Rule. err:%s", err)
 		return err
 	}
-	err = json.Unmarshal(raw, &task)
-	if err != nil || task.Spec.Rules == nil {
-		klog.Errorf("Failed to get unmarshal inspect task. err:%s", err)
-		return err
+	for _, item := range rule.Items {
+		var tempRule []kubeeyev1alpha2.JobRule
+		data := item.BinaryData[constant.Data]
+		err = json.Unmarshal(data, &tempRule)
+		jobRule = append(jobRule, tempRule...)
 	}
 
-	var ownerRefBol = true
-	ownerRef := v1.OwnerReference{
-		APIVersion:         task.APIVersion,
-		Kind:               task.Kind,
-		Name:               task.Name,
-		UID:                task.UID,
-		Controller:         &ownerRefBol,
-		BlockOwnerDeletion: &ownerRefBol,
-	}
 	var result []byte
 	inspectInterface, status := RuleOperatorMap[ruleType]
 	if status {
-		result, err = inspectInterface.RunInspect(ctx, &task, clients, resultName, ownerRef)
+		result, err = inspectInterface.RunInspect(ctx, jobRule, clients, resultName)
 	}
 	if err != nil {
 		return err
 	}
 
-	resultLabels := map[string]string{constant.LabelName: task.Name, constant.LabelConfigType: constant.Result}
-	resultConfigMap := template.BinaryResultConfigMapTemplate(resultName, task.Namespace, result, true, resultLabels, ownerRef)
-	_, err = clients.ClientSet.CoreV1().ConfigMaps("kubeeye-system").Create(ctx, resultConfigMap, v1.CreateOptions{})
+	resultConfigMap := template.BinaryConfigMapTemplate(resultName, constant.DefaultNamespace, result, true, nil)
+	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, resultConfigMap, v1.CreateOptions{})
 	if err != nil {
 		return errors.New(fmt.Sprintf("create configMap failed. err:%s", err))
 	}

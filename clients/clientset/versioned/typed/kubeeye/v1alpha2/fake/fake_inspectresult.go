@@ -32,7 +32,6 @@ import (
 // FakeInspectResults implements InspectResultInterface
 type FakeInspectResults struct {
 	Fake *FakeKubeeyeV1alpha2
-	ns   string
 }
 
 var inspectresultsResource = schema.GroupVersionResource{Group: "kubeeye", Version: "v1alpha2", Resource: "inspectresults"}
@@ -42,8 +41,7 @@ var inspectresultsKind = schema.GroupVersionKind{Group: "kubeeye", Version: "v1a
 // Get takes name of the inspectResult, and returns the corresponding inspectResult object, and an error if there is any.
 func (c *FakeInspectResults) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.InspectResult, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(inspectresultsResource, c.ns, name), &v1alpha2.InspectResult{})
-
+		Invokes(testing.NewRootGetAction(inspectresultsResource, name), &v1alpha2.InspectResult{})
 	if obj == nil {
 		return nil, err
 	}
@@ -53,8 +51,7 @@ func (c *FakeInspectResults) Get(ctx context.Context, name string, options v1.Ge
 // List takes label and field selectors, and returns the list of InspectResults that match those selectors.
 func (c *FakeInspectResults) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.InspectResultList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(inspectresultsResource, inspectresultsKind, c.ns, opts), &v1alpha2.InspectResultList{})
-
+		Invokes(testing.NewRootListAction(inspectresultsResource, inspectresultsKind, opts), &v1alpha2.InspectResultList{})
 	if obj == nil {
 		return nil, err
 	}
@@ -75,15 +72,13 @@ func (c *FakeInspectResults) List(ctx context.Context, opts v1.ListOptions) (res
 // Watch returns a watch.Interface that watches the requested inspectResults.
 func (c *FakeInspectResults) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(inspectresultsResource, c.ns, opts))
-
+		InvokesWatch(testing.NewRootWatchAction(inspectresultsResource, opts))
 }
 
 // Create takes the representation of a inspectResult and creates it.  Returns the server's representation of the inspectResult, and an error, if there is any.
 func (c *FakeInspectResults) Create(ctx context.Context, inspectResult *v1alpha2.InspectResult, opts v1.CreateOptions) (result *v1alpha2.InspectResult, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(inspectresultsResource, c.ns, inspectResult), &v1alpha2.InspectResult{})
-
+		Invokes(testing.NewRootCreateAction(inspectresultsResource, inspectResult), &v1alpha2.InspectResult{})
 	if obj == nil {
 		return nil, err
 	}
@@ -93,8 +88,7 @@ func (c *FakeInspectResults) Create(ctx context.Context, inspectResult *v1alpha2
 // Update takes the representation of a inspectResult and updates it. Returns the server's representation of the inspectResult, and an error, if there is any.
 func (c *FakeInspectResults) Update(ctx context.Context, inspectResult *v1alpha2.InspectResult, opts v1.UpdateOptions) (result *v1alpha2.InspectResult, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(inspectresultsResource, c.ns, inspectResult), &v1alpha2.InspectResult{})
-
+		Invokes(testing.NewRootUpdateAction(inspectresultsResource, inspectResult), &v1alpha2.InspectResult{})
 	if obj == nil {
 		return nil, err
 	}
@@ -105,8 +99,7 @@ func (c *FakeInspectResults) Update(ctx context.Context, inspectResult *v1alpha2
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 func (c *FakeInspectResults) UpdateStatus(ctx context.Context, inspectResult *v1alpha2.InspectResult, opts v1.UpdateOptions) (*v1alpha2.InspectResult, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(inspectresultsResource, "status", c.ns, inspectResult), &v1alpha2.InspectResult{})
-
+		Invokes(testing.NewRootUpdateSubresourceAction(inspectresultsResource, "status", inspectResult), &v1alpha2.InspectResult{})
 	if obj == nil {
 		return nil, err
 	}
@@ -116,14 +109,13 @@ func (c *FakeInspectResults) UpdateStatus(ctx context.Context, inspectResult *v1
 // Delete takes name of the inspectResult and deletes it. Returns an error if one occurs.
 func (c *FakeInspectResults) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(inspectresultsResource, c.ns, name, opts), &v1alpha2.InspectResult{})
-
+		Invokes(testing.NewRootDeleteActionWithOptions(inspectresultsResource, name, opts), &v1alpha2.InspectResult{})
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeInspectResults) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(inspectresultsResource, c.ns, listOpts)
+	action := testing.NewRootDeleteCollectionAction(inspectresultsResource, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha2.InspectResultList{})
 	return err
@@ -132,8 +124,7 @@ func (c *FakeInspectResults) DeleteCollection(ctx context.Context, opts v1.Delet
 // Patch applies the patch and returns the patched inspectResult.
 func (c *FakeInspectResults) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.InspectResult, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(inspectresultsResource, c.ns, name, pt, data, subresources...), &v1alpha2.InspectResult{})
-
+		Invokes(testing.NewRootPatchSubresourceAction(inspectresultsResource, name, pt, data, subresources...), &v1alpha2.InspectResult{})
 	if obj == nil {
 		return nil, err
 	}

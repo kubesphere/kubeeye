@@ -7,20 +7,10 @@ import (
 )
 
 func BinaryFileConfigMapTemplate(name string, namespace string, binaryData []byte, onRely bool, reference ...metav1.OwnerReference) *corev1.ConfigMap {
-	baseConfigMap := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
-			Namespace:       namespace,
-			OwnerReferences: reference,
-			Labels:          map[string]string{constant.LabelConfigType: constant.BaseFile},
-		},
-		Immutable:  &onRely,
-		BinaryData: map[string][]byte{constant.FileChange: binaryData},
-	}
-	return baseConfigMap
+	return BinaryConfigMapTemplate(name, namespace, binaryData, onRely, map[string]string{constant.LabelConfigType: constant.BaseFile}, reference...)
 }
 
-func BinaryResultConfigMapTemplate(name string, namespace string, binaryData []byte, onRely bool, labels map[string]string, reference ...metav1.OwnerReference) *corev1.ConfigMap {
+func BinaryConfigMapTemplate(name string, namespace string, binaryData []byte, onRely bool, labels map[string]string, reference ...metav1.OwnerReference) *corev1.ConfigMap {
 	resultConfigMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
@@ -29,7 +19,7 @@ func BinaryResultConfigMapTemplate(name string, namespace string, binaryData []b
 			Labels:          labels,
 		},
 		Immutable:  &onRely,
-		BinaryData: map[string][]byte{constant.Result: binaryData},
+		BinaryData: map[string][]byte{constant.Data: binaryData},
 	}
 
 	return resultConfigMap

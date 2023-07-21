@@ -30,8 +30,9 @@ type InspectPlanLister interface {
 	// List lists all InspectPlans in the indexer.
 	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha2.InspectPlan, err error)
-	// InspectPlans returns an object that can list and get InspectPlans.
-	InspectPlans(namespace string) InspectPlanNamespaceLister
+	// Get retrieves the InspectPlan from the index for a given name.
+	// Objects returned here must be treated as read-only.
+	Get(name string) (*v1alpha2.InspectPlan, error)
 	InspectPlanListerExpansion
 }
 
@@ -53,41 +54,9 @@ func (s *inspectPlanLister) List(selector labels.Selector) (ret []*v1alpha2.Insp
 	return ret, err
 }
 
-// InspectPlans returns an object that can list and get InspectPlans.
-func (s *inspectPlanLister) InspectPlans(namespace string) InspectPlanNamespaceLister {
-	return inspectPlanNamespaceLister{indexer: s.indexer, namespace: namespace}
-}
-
-// InspectPlanNamespaceLister helps list and get InspectPlans.
-// All objects returned here must be treated as read-only.
-type InspectPlanNamespaceLister interface {
-	// List lists all InspectPlans in the indexer for a given namespace.
-	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.InspectPlan, err error)
-	// Get retrieves the InspectPlan from the indexer for a given namespace and name.
-	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.InspectPlan, error)
-	InspectPlanNamespaceListerExpansion
-}
-
-// inspectPlanNamespaceLister implements the InspectPlanNamespaceLister
-// interface.
-type inspectPlanNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all InspectPlans in the indexer for a given namespace.
-func (s inspectPlanNamespaceLister) List(selector labels.Selector) (ret []*v1alpha2.InspectPlan, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.InspectPlan))
-	})
-	return ret, err
-}
-
-// Get retrieves the InspectPlan from the indexer for a given namespace and name.
-func (s inspectPlanNamespaceLister) Get(name string) (*v1alpha2.InspectPlan, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
+// Get retrieves the InspectPlan from the index for a given name.
+func (s *inspectPlanLister) Get(name string) (*v1alpha2.InspectPlan, error) {
+	obj, exists, err := s.indexer.GetByKey(name)
 	if err != nil {
 		return nil, err
 	}

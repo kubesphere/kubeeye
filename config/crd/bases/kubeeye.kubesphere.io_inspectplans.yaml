@@ -36,7 +36,9 @@ spec:
             description: InspectPlanSpec defines the desired state of InspectPlan
             properties:
               clusterName:
-                type: string
+                items:
+                  type: string
+                type: array
               kubeConfig:
                 type: string
               maxTasks:

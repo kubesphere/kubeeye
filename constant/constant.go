@@ -14,7 +14,7 @@ const (
 	FileChange = "filechange"
 	Prometheus = "prometheus"
 	BaseFile   = "basefile"
-	Result     = "result"
+	Data       = "data"
 	Sysctl     = "sysctl"
 	Systemd    = "systemd"
 	FileFilter = "filefilter"
@@ -22,10 +22,11 @@ const (
 )
 
 const (
-	LabelName       = "kubeeye.kubesphere.io/name"
-	LabelResultName = "kubeeye.kubesphere.io/result"
-	LabelConfigType = "kubeeye.kubesphere.io/configType"
-	LabelRuleTag    = "kubeeye.kubesphere.io/rule-tag"
+	LabelName             = "kubeeye.kubesphere.io/name"
+	LabelResultName       = "kubeeye.kubesphere.io/result"
+	LabelConfigType       = "kubeeye.kubesphere.io/config-type"
+	LabelRuleGroup        = "kubeeye.kubesphere.io/rule-group"
+	LabelInspectRuleGroup = "kubeeye.kubesphere.io/inspect-rule-group"
 )
 
 const (
