@@ -13,7 +13,6 @@ import (
 	"github.com/prometheus/client_golang/api"
 	apiprometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
-	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -105,7 +104,7 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 	return marshal, nil
 }
 
-func (o *prometheusInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+func (o *prometheusInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, runNodeName string, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
 	var prometheus [][]map[string]string
 
 	err := json.Unmarshal(result.BinaryData[constant.Data], &prometheus)

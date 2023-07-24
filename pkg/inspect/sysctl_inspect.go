@@ -154,8 +154,7 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 
 }
 
-func (o *sysctlInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
-	runNodeName := findJobRunNode(ctx, jobs, c.ClientSet)
+func (o *sysctlInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, runNodeName string, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
 
 	inspectResult, err := c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(ctx, fmt.Sprintf("%s-nodeinfo", task.Name), metav1.GetOptions{})
 
@@ -179,7 +178,6 @@ func (o *sysctlInspect) GetResult(ctx context.Context, c *kube.KubernetesClient,
 			inspectResult.Name = fmt.Sprintf("%s-nodeinfo", task.Name)
 			inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
 			inspectResult.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: nodeInfoResult}
-			//err = c.Create(ctx, &inspectResult)
 
 			_, err = c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Create(ctx, inspectResult, metav1.CreateOptions{})
 

@@ -10,7 +10,6 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
-	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -78,7 +77,7 @@ func (o *componentInspect) RunInspect(ctx context.Context, rules []kubeeyev1alph
 	return nil, nil
 }
 
-func (o *componentInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+func (o *componentInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, runNodeName string, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
 	var componentResult []kubeeyev1alpha2.ComponentResultItem
 	err := json.Unmarshal(result.BinaryData[constant.Data], &componentResult)
 	if err != nil {

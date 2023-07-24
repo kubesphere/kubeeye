@@ -105,7 +105,7 @@ func (o *fileFilterInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 
 }
 
-func (o *fileFilterInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+func (o *fileFilterInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, runNodeName string, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
 
 	var nodeInfoResult []kubeeyev1alpha2.FileChangeResultItem
 	jsonErr := json.Unmarshal(result.BinaryData[constant.Data], &nodeInfoResult)
@@ -117,7 +117,6 @@ func (o *fileFilterInspect) GetResult(ctx context.Context, c *kube.KubernetesCli
 	if nodeInfoResult == nil {
 		return nil
 	}
-	runNodeName := findJobRunNode(ctx, jobs, c.ClientSet)
 
 	inspectResult, err := c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(ctx, fmt.Sprintf("%s-filefilter", task.Name), metav1.GetOptions{})
 

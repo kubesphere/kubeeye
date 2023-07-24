@@ -13,7 +13,7 @@ import (
 type InspectInterface interface {
 	CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask, config *conf.JobConfig) (*kubeeyev1alpha2.JobPhase, error)
 	RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...v1.OwnerReference) ([]byte, error)
-	GetResult(ctx context.Context, c *kube.KubernetesClient, jobs *v12.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error
+	GetResult(ctx context.Context, c *kube.KubernetesClient, runNodeName string, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error
 }
 
 type InspectType struct {

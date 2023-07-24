@@ -21,9 +21,11 @@ import (
 	"fmt"
 	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/kubesphere/kubeeye/pkg/utils"
+	v12 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
 	"math"
 	"sync"
 	"time"
@@ -295,7 +297,8 @@ func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Contex
 			inspectInterface, status := inspect.RuleOperatorMap[jobInfo.Labels[constant.LabelResultName]]
 			if status {
 				klog.Infof("starting get %s result data", jobName)
-				err = inspectInterface.GetResult(ctx, r.K8sClients, jobInfo, configs, task)
+				nodeName := findJobRunNode(ctx, jobInfo, clients.ClientSet)
+				err = inspectInterface.GetResult(ctx, r.K8sClients, nodeName, configs, task)
 				if err != nil {
 					klog.Error(err)
 					jobPhase.Phase = kubeeyev1alpha2.PhaseFailed
@@ -319,6 +322,20 @@ func isTimeout(startTime metav1.Time, t string) bool {
 		duration = constant.DefaultTimeout
 	}
 	return startTime.Add(duration).Before(time.Now())
+}
+func findJobRunNode(ctx context.Context, job *v12.Job, c kubernetes.Interface) string {
+	pods, err := c.CoreV1().Pods(job.Namespace).List(ctx, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{"job-name": job.Name})})
+	if err != nil {
+		klog.Error(err)
+		return ""
+	}
+	for _, item := range pods.Items {
+		if item.Status.Phase == corev1.PodSucceeded {
+			return item.Spec.NodeName
+		}
+	}
+
+	return ""
 }
 
 // InitClusterInspect Initialize the relevant configuration items required for multi-cluster inspection

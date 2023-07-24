@@ -120,7 +120,7 @@ func (o *systemdInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 
 }
 
-func (o *systemdInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+func (o *systemdInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, runNodeName string, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
 
 	var nodeInfoResult []kubeeyev1alpha2.NodeResultItem
 	jsonErr := json.Unmarshal(result.BinaryData[constant.Data], &nodeInfoResult)
@@ -132,7 +132,6 @@ func (o *systemdInspect) GetResult(ctx context.Context, c *kube.KubernetesClient
 	if nodeInfoResult == nil {
 		return nil
 	}
-	runNodeName := findJobRunNode(ctx, jobs, c.ClientSet)
 
 	inspectResult, err := c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(ctx, fmt.Sprintf("%s-nodeinfo", task.Name), metav1.GetOptions{})
 

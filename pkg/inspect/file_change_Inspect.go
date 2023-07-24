@@ -14,8 +14,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	"os"
 	"path"
@@ -123,7 +121,7 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 
 }
 
-func (o *fileChangeInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, jobs *v1.Job, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+func (o *fileChangeInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, runNodeName string, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
 
 	var fileChangeResult []kubeeyev1alpha2.FileChangeResultItem
 	jsonErr := json.Unmarshal(result.BinaryData[constant.Data], &fileChangeResult)
@@ -134,7 +132,6 @@ func (o *fileChangeInspect) GetResult(ctx context.Context, c *kube.KubernetesCli
 	if fileChangeResult == nil {
 		return nil
 	}
-	runNodeName := findJobRunNode(ctx, jobs, c.ClientSet)
 
 	//err := c.Get(ctx, types.NamespacedName{
 	//	Name: fmt.Sprintf("%s-nodeinfo", task.Name),
@@ -182,19 +179,4 @@ func (o *fileChangeInspect) GetResult(ctx context.Context, c *kube.KubernetesCli
 	}
 	return nil
 
-}
-
-func findJobRunNode(ctx context.Context, job *v1.Job, c kubernetes.Interface) string {
-	pods, err := c.CoreV1().Pods(job.Namespace).List(ctx, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{"job-name": job.Name})})
-	if err != nil {
-		klog.Error(err)
-		return ""
-	}
-	for _, item := range pods.Items {
-		if item.Status.Phase == corev1.PodSucceeded {
-			return item.Spec.NodeName
-		}
-	}
-
-	return ""
 }
