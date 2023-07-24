@@ -475,8 +475,6 @@ spec:
                 type: array
               timeout:
                 type: string
-            required:
-            - rules
             type: object
           status:
             description: InspectTaskStatus defines the observed state of InspectTask
@@ -574,8 +572,14 @@ rules:
   resources:
   - '*'
   verbs:
-  - get
   - list
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - get
   - watch
 - apiGroups:
   - apps

@@ -365,6 +365,12 @@ func CreateInspectRule(ctx context.Context, clients *kube.KubernetesClient, rule
 	if err != nil {
 		return nil, err
 	}
+
+	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, "inspect-rule", metav1.GetOptions{})
+	if err == nil {
+		_ = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Delete(ctx, "inspect-rule", metav1.DeleteOptions{})
+	}
+
 	configMapTemplate := template.BinaryConfigMapTemplate("inspect-rule", constant.DefaultNamespace, marshal, true, map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})
 	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, configMapTemplate, metav1.CreateOptions{})
 	if err != nil {
