@@ -13,6 +13,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 )
 
@@ -151,12 +152,22 @@ func JobInspect(ctx context.Context, taskName string, resultName string, clients
 	if err != nil {
 		return err
 	}
-
-	resultConfigMap := template.BinaryConfigMapTemplate(resultName, constant.DefaultNamespace, result, true, nil)
+	node := findJobRunNode(ctx, resultName, clients.ClientSet)
+	resultConfigMap := template.BinaryConfigMapTemplate(resultName, constant.DefaultNamespace, result, true, map[string]string{constant.LabelTaskName: taskName, constant.LabelNodeName: node})
 	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, resultConfigMap, v1.CreateOptions{})
 	if err != nil {
 		return errors.New(fmt.Sprintf("create configMap failed. err:%s", err))
 	}
 
 	return nil
+}
+
+func findJobRunNode(ctx context.Context, jobName string, c kubernetes.Interface) string {
+	pods, err := c.CoreV1().Pods(constant.DefaultNamespace).List(ctx, v1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{"job-name": jobName})})
+	if err != nil {
+		klog.Error(err)
+		return ""
+	}
+
+	return pods.Items[0].Spec.NodeName
 }
