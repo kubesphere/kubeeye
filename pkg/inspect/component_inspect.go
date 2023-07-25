@@ -77,32 +77,16 @@ func (o *componentInspect) RunInspect(ctx context.Context, rules []kubeeyev1alph
 	return nil, nil
 }
 
-func (o *componentInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, runNodeName string, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+func (o *componentInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) *kubeeyev1alpha2.InspectResult {
 	var componentResult []kubeeyev1alpha2.ComponentResultItem
-	err := json.Unmarshal(result.BinaryData[constant.Data], &componentResult)
+	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &componentResult)
 	if err != nil {
-		return err
+		return resultCr
 	}
-	var ownerRefBol = true
 
-	var inspectResult kubeeyev1alpha2.InspectResult
-	inspectResult.Name = fmt.Sprintf("%s-%s", task.Name, constant.Component)
-	inspectResult.OwnerReferences = []metav1.OwnerReference{{
-		APIVersion:         task.APIVersion,
-		Kind:               task.Kind,
-		Name:               task.Name,
-		UID:                task.UID,
-		Controller:         &ownerRefBol,
-		BlockOwnerDeletion: &ownerRefBol,
-	}}
-	inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
-	inspectResult.Spec.ComponentResult = componentResult
-	_, err = c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Create(ctx, &inspectResult, metav1.CreateOptions{})
-	if err != nil {
-		klog.Error("Failed to create inspect result", err)
-		return err
-	}
-	return nil
+	resultCr.Spec.ComponentResult = componentResult
+
+	return resultCr
 }
 
 func checkConnection(address string) bool {

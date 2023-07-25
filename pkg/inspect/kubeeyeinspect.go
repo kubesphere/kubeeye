@@ -153,7 +153,7 @@ func JobInspect(ctx context.Context, taskName string, resultName string, clients
 		return err
 	}
 	node := findJobRunNode(ctx, resultName, clients.ClientSet)
-	resultConfigMap := template.BinaryConfigMapTemplate(resultName, constant.DefaultNamespace, result, true, map[string]string{constant.LabelTaskName: taskName, constant.LabelNodeName: node})
+	resultConfigMap := template.BinaryConfigMapTemplate(resultName, constant.DefaultNamespace, result, true, map[string]string{constant.LabelTaskName: taskName, constant.LabelNodeName: node, constant.LabelRuleType: ruleType})
 	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, resultConfigMap, v1.CreateOptions{})
 	if err != nil {
 		return errors.New(fmt.Sprintf("create configMap failed. err:%s", err))

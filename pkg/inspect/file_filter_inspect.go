@@ -13,7 +13,6 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"os"
@@ -105,61 +104,28 @@ func (o *fileFilterInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 
 }
 
-func (o *fileFilterInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, runNodeName string, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+func (o *fileFilterInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) *kubeeyev1alpha2.InspectResult {
 
 	var nodeInfoResult []kubeeyev1alpha2.FileChangeResultItem
-	jsonErr := json.Unmarshal(result.BinaryData[constant.Data], &nodeInfoResult)
+	jsonErr := json.Unmarshal(resultCm.BinaryData[constant.Data], &nodeInfoResult)
 	if jsonErr != nil {
 		klog.Error("failed to get result", jsonErr)
-		return jsonErr
+		return resultCr
 	}
 
 	if nodeInfoResult == nil {
-		return nil
+		return resultCr
 	}
 
-	inspectResult, err := c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(ctx, fmt.Sprintf("%s-filefilter", task.Name), metav1.GetOptions{})
-
-	if err != nil {
-		if kubeErr.IsNotFound(err) {
-			var ownerRefBol = true
-			resultRef := metav1.OwnerReference{
-				APIVersion:         task.APIVersion,
-				Kind:               task.Kind,
-				Name:               task.Name,
-				UID:                task.UID,
-				Controller:         &ownerRefBol,
-				BlockOwnerDeletion: &ownerRefBol,
-			}
-			inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
-			inspectResult.Name = fmt.Sprintf("%s-filefilter", task.Name)
-			inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
-			inspectResult.Spec.FilterResult = map[string][]kubeeyev1alpha2.FileChangeResultItem{runNodeName: nodeInfoResult}
-
-			_, err = c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Create(ctx, inspectResult, metav1.CreateOptions{})
-			if err != nil {
-				klog.Error("Failed to create inspect result", err)
-				return err
-			}
-			return nil
-		}
-
-	}
-	infoResult, ok := inspectResult.Spec.FilterResult[runNodeName]
+	infoResult, ok := resultCr.Spec.FilterResult[runNodeName]
 	if ok {
 		infoResult = append(infoResult, nodeInfoResult...)
 	} else {
 		infoResult = nodeInfoResult
 	}
 
-	inspectResult.Spec.FilterResult[runNodeName] = infoResult
+	resultCr.Spec.FilterResult[runNodeName] = infoResult
 
-	_, err = c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Update(ctx, inspectResult, metav1.UpdateOptions{})
-
-	if err != nil {
-		klog.Error("Failed to update inspect result", err)
-		return err
-	}
-	return nil
+	return resultCr
 
 }

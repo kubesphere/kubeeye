@@ -27,7 +27,7 @@ func InspectJobsTemplate(jobConfig *conf.JobConfig, jobName string, inspectTask 
 			Name:            jobName,
 			Namespace:       constant.DefaultNamespace,
 			OwnerReferences: []metav1.OwnerReference{ownerRef},
-			Labels:          map[string]string{constant.LabelResultName: taskType},
+			Labels:          map[string]string{constant.LabelRuleType: taskType},
 		},
 		Spec: v1.JobSpec{
 			BackoffLimit: jobConfig.BackLimit,

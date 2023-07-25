@@ -3,7 +3,6 @@ package inspect
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/conf"
@@ -104,38 +103,20 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 	return marshal, nil
 }
 
-func (o *prometheusInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, runNodeName string, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+func (o *prometheusInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) *kubeeyev1alpha2.InspectResult {
 	var prometheus [][]map[string]string
 
-	err := json.Unmarshal(result.BinaryData[constant.Data], &prometheus)
+	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &prometheus)
 	if err != nil {
-		return err
+		return resultCr
 	}
 	if prometheus == nil {
-		return nil
-	}
-	var ownerRefBol = true
-	resultRef := metav1.OwnerReference{
-		APIVersion:         task.APIVersion,
-		Kind:               task.Kind,
-		Name:               task.Name,
-		UID:                task.UID,
-		Controller:         &ownerRefBol,
-		BlockOwnerDeletion: &ownerRefBol,
+		return resultCr
 	}
 
-	var inspectResult kubeeyev1alpha2.InspectResult
-	inspectResult.Name = fmt.Sprintf("%s-%s", task.Name, constant.Prometheus)
-	inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
-	inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
-	inspectResult.Spec.PrometheusResult = prometheus
+	resultCr.Spec.PrometheusResult = prometheus
 
-	_, err = c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Create(ctx, &inspectResult, metav1.CreateOptions{})
-	if err != nil {
-		klog.Error("Failed to create inspect result", err)
-		return err
-	}
-	return nil
+	return resultCr
 }
 
 func formatName(name model.LabelName) string {

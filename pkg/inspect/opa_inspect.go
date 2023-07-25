@@ -67,32 +67,14 @@ func (o *opaInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.Job
 	return nil, nil
 }
 
-func (o *opaInspect) GetResult(ctx context.Context, c *kube.KubernetesClient, runNodeName string, result *corev1.ConfigMap, task *kubeeyev1alpha2.InspectTask) error {
+func (o *opaInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) *kubeeyev1alpha2.InspectResult {
 	var opaResult kubeeyev1alpha2.KubeeyeOpaResult
-	err := json.Unmarshal(result.BinaryData[constant.Data], &opaResult)
+	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &opaResult)
 	if err != nil {
-		return err
-	}
-	var ownerRefBol = true
-	resultRef := metav1.OwnerReference{
-		APIVersion:         task.APIVersion,
-		Kind:               task.Kind,
-		Name:               task.Name,
-		UID:                task.UID,
-		Controller:         &ownerRefBol,
-		BlockOwnerDeletion: &ownerRefBol,
+		return resultCr
 	}
 
-	var inspectResult kubeeyev1alpha2.InspectResult
-	inspectResult.Name = fmt.Sprintf("%s-%s", task.Name, constant.Opa)
-	inspectResult.OwnerReferences = []metav1.OwnerReference{resultRef}
-	inspectResult.Labels = map[string]string{constant.LabelName: task.Name}
-	inspectResult.Spec.OpaResult = opaResult
+	resultCr.Spec.OpaResult = opaResult
 
-	_, err = c.VersionClientSet.KubeeyeV1alpha2().InspectResults().Create(ctx, &inspectResult, metav1.CreateOptions{})
-	if err != nil {
-		klog.Error("Failed to create inspect result", err)
-		return err
-	}
-	return nil
+	return resultCr
 }
