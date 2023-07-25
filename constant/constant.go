@@ -24,6 +24,8 @@ const (
 const (
 	LabelName             = "kubeeye.kubesphere.io/name"
 	LabelResultName       = "kubeeye.kubesphere.io/result"
+	LabelTaskName         = "kubeeye.kubesphere.io/task-name"
+	LabelNodeName         = "kubeeye.kubesphere.io/node-name"
 	LabelConfigType       = "kubeeye.kubesphere.io/config-type"
 	LabelRuleGroup        = "kubeeye.kubesphere.io/rule-group"
 	LabelInspectRuleGroup = "kubeeye.kubesphere.io/inspect-rule-group"
