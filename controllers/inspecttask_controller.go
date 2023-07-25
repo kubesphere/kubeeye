@@ -144,7 +144,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 					return ctrl.Result{}, err
 				}
 				inspectTask.Status.JobPhase = append(inspectTask.Status.JobPhase, JobPhase...)
-				r.GetInspectResultData(ctx, clusterClient, inspectTask)
+				r.GetInspectResultData(ctx, clusterClient, inspectTask, *name)
 			}
 		} else {
 			inspectRule := rules.ScanRules(ctx, r.K8sClients, inspectTask.Name, ruleLists.Items, "default")
@@ -224,7 +224,6 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 				return
 			}
 			if isExistsJob(ctx, clusterClient, v.JobName) {
-				klog.Infof("job already exists for name:%s", v.JobName)
 				mutex.Lock()
 				jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: v.JobName, Phase: kubeeyev1alpha2.PhaseSucceeded})
 				mutex.Unlock()
@@ -240,7 +239,7 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 					jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: v.JobName, Phase: kubeeyev1alpha2.PhaseFailed})
 					return
 				}
-				resultJob := r.waitForJobCompletionGetResult(ctx, clusterClient, v.JobName, inspectTask, jobTask)
+				resultJob := r.waitForJobCompletionGetResult(ctx, clusterClient, v.JobName, jobTask)
 				mutex.Lock()
 				jobNames = append(jobNames, *resultJob)
 				mutex.Unlock()
@@ -253,22 +252,25 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 	}
 	wg.Wait()
 
-	err := r.clearRule(ctx, clusterClient, inspectTask.Spec.ClusterName)
-	if err != nil {
-		return nil, err
-	}
+	//err := r.clearRule(ctx, clusterClient, inspectTask.Spec.ClusterName)
+	//if err != nil {
+	//	return nil, err
+	//}
 	return jobNames, nil
 }
 
 func isExistsJob(ctx context.Context, clients *kube.KubernetesClient, jobName string) bool {
+
 	_, err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, jobName, metav1.GetOptions{})
 	if err != nil && kubeErr.IsNotFound(err) {
 		return false
 	}
+
+	klog.Infof("job already exists for name:%s", jobName)
 	return true
 }
 
-func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Context, clients *kube.KubernetesClient, jobName string, task *kubeeyev1alpha2.InspectTask, jobPhase *kubeeyev1alpha2.JobPhase) *kubeeyev1alpha2.JobPhase {
+func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Context, clients *kube.KubernetesClient, jobName string, jobPhase *kubeeyev1alpha2.JobPhase) *kubeeyev1alpha2.JobPhase {
 	background := metav1.DeletePropagationBackground
 	for {
 		klog.Infof("wait job run complete for name:%s", jobName)
@@ -294,7 +296,7 @@ func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Contex
 
 }
 
-func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask) error {
+func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask, clusterName string) error {
 	configs, err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name}),
 	})
@@ -303,7 +305,7 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 	}
 	var ownerRefBol = true
 	InspectResult := kubeeyev1alpha2.InspectResult{
-		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-result", task.Name),
+		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-%s-result", clusterName, task.Name),
 			Labels: map[string]string{constant.LabelTaskName: task.Name},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         task.APIVersion,
@@ -325,22 +327,24 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 				inspectInterface, status := inspect.RuleOperatorMap[ruleType]
 				if status {
 					klog.Infof("starting get %s result data", phase.JobName)
-					inspectInterface.GetResult("c", &configMap, &InspectResult)
+					_, err = inspectInterface.GetResult("c", &configMap, &InspectResult)
+					if err != nil {
+						klog.Error(err)
+					}
 				}
 			}
 		}
 	}
-	fmt.Println(configs)
-	//inspectInterface, status := inspect.RuleOperatorMap[jobInfo.Labels[constant.LabelResultName]]
-	//if status {
-	//	klog.Infof("starting get %s result data", jobName)
-	//	err = inspectInterface.GetResult(ctx, r.K8sClients, "c", configs, task)
-	//	if err != nil {
-	//		klog.Error(err)
-	//		jobPhase.Phase = kubeeyev1alpha2.PhaseFailed
-	//		return jobPhase
-	//	}
-	//}
+
+	err = r.Create(ctx, &InspectResult)
+	if err != nil {
+		return err
+	}
+	err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name})})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

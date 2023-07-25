@@ -357,23 +357,6 @@ func (in *InspectResultSpec) DeepCopyInto(out *InspectResultSpec) {
 			(*out)[key] = *val.DeepCopy()
 		}
 	}
-	if in.FilterResult != nil {
-		in, out := &in.FilterResult, &out.FilterResult
-		*out = make(map[string][]FileChangeResultItem, len(*in))
-		for key, val := range *in {
-			var outVal []FileChangeResultItem
-			if val == nil {
-				(*out)[key] = nil
-			} else {
-				in, out := &val, &outVal
-				*out = make([]FileChangeResultItem, len(*in))
-				for i := range *in {
-					(*in)[i].DeepCopyInto(&(*out)[i])
-				}
-			}
-			(*out)[key] = outVal
-		}
-	}
 	if in.ComponentResult != nil {
 		in, out := &in.ComponentResult, &out.ComponentResult
 		*out = make([]ComponentResultItem, len(*in))
@@ -736,6 +719,13 @@ func (in *NodeInfoResult) DeepCopyInto(out *NodeInfoResult) {
 	}
 	if in.FileChangeResult != nil {
 		in, out := &in.FileChangeResult, &out.FileChangeResult
+		*out = make([]FileChangeResultItem, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	if in.FileFilterResult != nil {
+		in, out := &in.FileFilterResult, &out.FileFilterResult
 		*out = make([]FileChangeResultItem, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])

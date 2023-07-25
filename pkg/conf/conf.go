@@ -40,4 +40,5 @@ type JobConfig struct {
 	ImagePullPolicy string                      `json:"imagePullPolicy,omitempty"`
 	BackLimit       *int32                      `json:"backLimit,omitempty"`
 	Resources       corev1.ResourceRequirements `json:"resources,omitempty"`
+	AutoDelTime     *int32                      `json:"autoDelTime,omitempty"`
 }

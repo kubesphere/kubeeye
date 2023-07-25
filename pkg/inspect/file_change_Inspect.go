@@ -93,8 +93,6 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 				_, createErr := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, mapTemplate, metav1.CreateOptions{})
 				if createErr != nil {
 					resultItem.Issues = []string{fmt.Sprintf("%s:create configMap failed", file.Name)}
-				} else {
-					resultItem.Issues = []string{fmt.Sprintf("success  initial base config file. name:%s", file.Name)}
 				}
 				fileResults = append(fileResults, resultItem)
 				continue
@@ -121,16 +119,20 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 
 }
 
-func (o *fileChangeInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) *kubeeyev1alpha2.InspectResult {
+func (o *fileChangeInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) (*kubeeyev1alpha2.InspectResult, error) {
 
 	var fileChangeResult []kubeeyev1alpha2.FileChangeResultItem
 	jsonErr := json.Unmarshal(resultCm.BinaryData[constant.Data], &fileChangeResult)
 	if jsonErr != nil {
 		klog.Error("failed to get result", jsonErr)
-		return resultCr
+		return nil, jsonErr
 	}
 	if fileChangeResult == nil {
-		return resultCr
+		return resultCr, nil
+	}
+	if resultCr.Spec.NodeInfoResult == nil {
+		resultCr.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {FileChangeResult: fileChangeResult}}
+		return resultCr, nil
 	}
 
 	infoResult, ok := resultCr.Spec.NodeInfoResult[runNodeName]
@@ -142,6 +144,6 @@ func (o *fileChangeInspect) GetResult(runNodeName string, resultCm *corev1.Confi
 
 	resultCr.Spec.NodeInfoResult[runNodeName] = infoResult
 
-	return resultCr
+	return resultCr, nil
 
 }

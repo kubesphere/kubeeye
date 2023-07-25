@@ -136,25 +136,23 @@ spec:
                       type: string
                   type: object
                 type: array
-              filterResult:
-                additionalProperties:
-                  items:
-                    properties:
-                      fileName:
-                        type: string
-                      issues:
-                        items:
-                          type: string
-                        type: array
-                      path:
-                        type: string
-                    type: object
-                  type: array
-                type: object
               nodeInfoResult:
                 additionalProperties:
                   properties:
                     fileChangeResult:
+                      items:
+                        properties:
+                          fileName:
+                            type: string
+                          issues:
+                            items:
+                              type: string
+                            type: array
+                          path:
+                            type: string
+                        type: object
+                      type: array
+                    fileFilterResult:
                       items:
                         properties:
                           fileName:
@@ -781,6 +779,7 @@ apiVersion: v1
 data:
   config: |-
     job:
+      autoDelTime: 30,
       backLimit: 5
       image: kubespheredev/kubeeye:latest
       imagePullPolicy: Always

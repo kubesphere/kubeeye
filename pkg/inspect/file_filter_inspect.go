@@ -104,28 +104,33 @@ func (o *fileFilterInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 
 }
 
-func (o *fileFilterInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) *kubeeyev1alpha2.InspectResult {
+func (o *fileFilterInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) (*kubeeyev1alpha2.InspectResult, error) {
 
-	var nodeInfoResult []kubeeyev1alpha2.FileChangeResultItem
-	jsonErr := json.Unmarshal(resultCm.BinaryData[constant.Data], &nodeInfoResult)
-	if jsonErr != nil {
-		klog.Error("failed to get result", jsonErr)
-		return resultCr
+	var fileFilterResult []kubeeyev1alpha2.FileChangeResultItem
+	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &fileFilterResult)
+	if err != nil {
+		klog.Error("failed to get result", err)
+		return nil, err
 	}
 
-	if nodeInfoResult == nil {
-		return resultCr
+	if fileFilterResult == nil {
+		return resultCr, nil
 	}
 
-	infoResult, ok := resultCr.Spec.FilterResult[runNodeName]
+	if resultCr.Spec.NodeInfoResult == nil {
+		resultCr.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {FileFilterResult: fileFilterResult}}
+		return resultCr, nil
+	}
+
+	infoResult, ok := resultCr.Spec.NodeInfoResult[runNodeName]
 	if ok {
-		infoResult = append(infoResult, nodeInfoResult...)
+		infoResult.FileFilterResult = append(infoResult.FileFilterResult, fileFilterResult...)
 	} else {
-		infoResult = nodeInfoResult
+		infoResult.FileFilterResult = fileFilterResult
 	}
 
-	resultCr.Spec.FilterResult[runNodeName] = infoResult
+	resultCr.Spec.NodeInfoResult[runNodeName] = infoResult
 
-	return resultCr
+	return resultCr, nil
 
 }

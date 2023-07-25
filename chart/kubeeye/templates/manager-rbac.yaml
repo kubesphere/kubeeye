@@ -10,8 +10,14 @@ rules:
   resources:
   - '*'
   verbs:
-  - get
   - list
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - get
   - watch
 - apiGroups:
   - apps

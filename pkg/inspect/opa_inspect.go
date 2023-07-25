@@ -67,14 +67,14 @@ func (o *opaInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.Job
 	return nil, nil
 }
 
-func (o *opaInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) *kubeeyev1alpha2.InspectResult {
+func (o *opaInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) (*kubeeyev1alpha2.InspectResult, error) {
 	var opaResult kubeeyev1alpha2.KubeeyeOpaResult
 	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &opaResult)
 	if err != nil {
-		return resultCr
+		return nil, err
 	}
 
 	resultCr.Spec.OpaResult = opaResult
 
-	return resultCr
+	return resultCr, nil
 }

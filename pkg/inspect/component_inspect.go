@@ -77,16 +77,19 @@ func (o *componentInspect) RunInspect(ctx context.Context, rules []kubeeyev1alph
 	return nil, nil
 }
 
-func (o *componentInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) *kubeeyev1alpha2.InspectResult {
+func (o *componentInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) (*kubeeyev1alpha2.InspectResult, error) {
 	var componentResult []kubeeyev1alpha2.ComponentResultItem
 	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &componentResult)
 	if err != nil {
-		return resultCr
+		return nil, err
+	}
+	if componentResult == nil {
+		return resultCr, nil
 	}
 
 	resultCr.Spec.ComponentResult = componentResult
 
-	return resultCr
+	return resultCr, nil
 }
 
 func checkConnection(address string) bool {

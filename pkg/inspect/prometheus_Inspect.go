@@ -103,20 +103,20 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 	return marshal, nil
 }
 
-func (o *prometheusInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) *kubeeyev1alpha2.InspectResult {
+func (o *prometheusInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) (*kubeeyev1alpha2.InspectResult, error) {
 	var prometheus [][]map[string]string
 
 	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &prometheus)
 	if err != nil {
-		return resultCr
+		return nil, err
 	}
 	if prometheus == nil {
-		return resultCr
+		return resultCr, nil
 	}
 
 	resultCr.Spec.PrometheusResult = prometheus
 
-	return resultCr
+	return resultCr, nil
 }
 
 func formatName(name model.LabelName) string {

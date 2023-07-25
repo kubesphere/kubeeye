@@ -153,12 +153,18 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 
 }
 
-func (o *sysctlInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) *kubeeyev1alpha2.InspectResult {
+func (o *sysctlInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) (*kubeeyev1alpha2.InspectResult, error) {
 
 	var nodeInfoResult kubeeyev1alpha2.NodeInfoResult
-	jsonErr := json.Unmarshal(resultCm.BinaryData[constant.Data], &nodeInfoResult)
-	if jsonErr != nil {
-		klog.Error("failed to get result", jsonErr)
+	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &nodeInfoResult)
+	if err != nil {
+		klog.Error("failed to get result", err)
+		return nil, err
+	}
+
+	if resultCr.Spec.NodeInfoResult == nil {
+		resultCr.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: nodeInfoResult}
+		return resultCr, nil
 	}
 
 	infoResult, ok := resultCr.Spec.NodeInfoResult[runNodeName]
@@ -171,7 +177,7 @@ func (o *sysctlInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap
 
 	resultCr.Spec.NodeInfoResult[runNodeName] = infoResult
 
-	return resultCr
+	return resultCr, nil
 
 }
 

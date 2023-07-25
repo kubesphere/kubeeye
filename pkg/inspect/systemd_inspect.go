@@ -119,28 +119,32 @@ func (o *systemdInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 
 }
 
-func (o *systemdInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) *kubeeyev1alpha2.InspectResult {
+func (o *systemdInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) (*kubeeyev1alpha2.InspectResult, error) {
 
-	var nodeInfoResult []kubeeyev1alpha2.NodeResultItem
-	jsonErr := json.Unmarshal(resultCm.BinaryData[constant.Data], &nodeInfoResult)
-	if jsonErr != nil {
-		klog.Error("failed to get result", jsonErr)
-		return resultCr
+	var systemdResult []kubeeyev1alpha2.NodeResultItem
+	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &systemdResult)
+	if err != nil {
+		klog.Error("failed to get result", err)
+		return nil, err
 	}
 
-	if nodeInfoResult == nil {
-		return resultCr
+	if systemdResult == nil {
+		return resultCr, nil
+	}
+	if resultCr.Spec.NodeInfoResult == nil {
+		resultCr.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {SystemdResult: systemdResult}}
+		return resultCr, nil
 	}
 
 	infoResult, ok := resultCr.Spec.NodeInfoResult[runNodeName]
 	if ok {
-		infoResult.SystemdResult = append(infoResult.SystemdResult, nodeInfoResult...)
+		infoResult.SystemdResult = append(infoResult.SystemdResult, systemdResult...)
 	} else {
-		infoResult.SystemdResult = nodeInfoResult
+		infoResult.SystemdResult = systemdResult
 	}
 
 	resultCr.Spec.NodeInfoResult[runNodeName] = infoResult
 
-	return resultCr
+	return resultCr, nil
 
 }
