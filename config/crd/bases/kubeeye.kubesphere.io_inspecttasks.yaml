@@ -72,10 +72,6 @@ spec:
               endTimestamp:
                 format: date-time
                 type: string
-              inspectRuleTotal:
-                additionalProperties:
-                  type: integer
-                type: object
               phase:
                 items:
                   properties:

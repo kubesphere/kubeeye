@@ -18,8 +18,10 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/kubesphere/kubeeye/pkg/rules"
+	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/rbac/v1"
@@ -134,8 +136,8 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 					klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s", *name)
 					return ctrl.Result{}, fmt.Errorf("failed To Initialize Cluster Configuration for name:%s", *name)
 				}
-				inspectRule := rules.ScanRules(ctx, clusterClient, inspectTask.Name, ruleLists.Items, *name)
-				rule, err := rules.CreateInspectRule(ctx, clusterClient, inspectRule)
+				inspectRule, inspectRuleNum := rules.ScanRules(ctx, clusterClient, inspectTask.Name, ruleLists.Items)
+				rule, err := createInspectRule(ctx, clusterClient, inspectRule)
 				if err != nil {
 					return ctrl.Result{}, err
 				}
@@ -144,11 +146,11 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 					return ctrl.Result{}, err
 				}
 				inspectTask.Status.JobPhase = append(inspectTask.Status.JobPhase, JobPhase...)
-				r.GetInspectResultData(ctx, clusterClient, inspectTask, *name)
+				r.GetInspectResultData(ctx, clusterClient, inspectTask, *name, inspectRuleNum)
 			}
 		} else {
-			inspectRule := rules.ScanRules(ctx, r.K8sClients, inspectTask.Name, ruleLists.Items, "default")
-			rule, err := rules.CreateInspectRule(ctx, r.K8sClients, inspectRule)
+			inspectRule, inspectRuleNum := rules.ScanRules(ctx, r.K8sClients, inspectTask.Name, ruleLists.Items)
+			rule, err := createInspectRule(ctx, r.K8sClients, inspectRule)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
@@ -157,6 +159,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				return ctrl.Result{}, err
 			}
 			inspectTask.Status.JobPhase = JobPhase
+			r.GetInspectResultData(ctx, r.K8sClients, inspectTask, "default", inspectRuleNum)
 		}
 		inspectTask.Status.EndTimestamp = metav1.Time{Time: time.Now()}
 		klog.Infof("all job finished for taskName:%s", inspectTask.Name)
@@ -168,6 +171,39 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 	return ctrl.Result{}, nil
+}
+
+func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, ruleGroup []kubeeyev1alpha2.JobRule) ([]kubeeyev1alpha2.JobRule, error) {
+	r := sortRuleOpaToAlter(ruleGroup)
+	marshal, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, "inspect-rule", metav1.GetOptions{})
+	if err == nil {
+		_ = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Delete(ctx, "inspect-rule", metav1.DeleteOptions{})
+	}
+
+	configMapTemplate := template.BinaryConfigMapTemplate("inspect-rule", constant.DefaultNamespace, marshal, true, map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})
+	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, configMapTemplate, metav1.CreateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+func sortRuleOpaToAlter(rule []kubeeyev1alpha2.JobRule) []kubeeyev1alpha2.JobRule {
+
+	finds, b, OpaRule := utils.ArrayFinds(rule, func(i kubeeyev1alpha2.JobRule) bool {
+		return i.RuleType == constant.Opa
+	})
+	if b {
+		rule = append(rule[:finds], rule[finds+1:]...)
+		rule = append(rule, OpaRule)
+	}
+
+	return rule
 }
 
 func (r *InspectTaskReconciler) getClusterInfo(ctx context.Context) (kubeeyev1alpha2.ClusterInfo, error) {
@@ -252,10 +288,10 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 	}
 	wg.Wait()
 
-	//err := r.clearRule(ctx, clusterClient, inspectTask.Spec.ClusterName)
-	//if err != nil {
-	//	return nil, err
-	//}
+	err := r.clearRule(ctx, clusterClient, inspectTask.Spec.ClusterName)
+	if err != nil {
+		return nil, err
+	}
 	return jobNames, nil
 }
 
@@ -296,7 +332,7 @@ func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Contex
 
 }
 
-func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask, clusterName string) error {
+func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask, clusterName string, ruleNum map[string]int) error {
 	configs, err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name}),
 	})
@@ -304,7 +340,7 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 		return err
 	}
 	var ownerRefBol = true
-	InspectResult := kubeeyev1alpha2.InspectResult{
+	inspectResult := kubeeyev1alpha2.InspectResult{
 		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-%s-result", clusterName, task.Name),
 			Labels: map[string]string{constant.LabelTaskName: task.Name},
 			OwnerReferences: []metav1.OwnerReference{{
@@ -327,7 +363,7 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 				inspectInterface, status := inspect.RuleOperatorMap[ruleType]
 				if status {
 					klog.Infof("starting get %s result data", phase.JobName)
-					_, err = inspectInterface.GetResult("c", &configMap, &InspectResult)
+					_, err = inspectInterface.GetResult("c", &configMap, &inspectResult)
 					if err != nil {
 						klog.Error(err)
 					}
@@ -335,8 +371,8 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 			}
 		}
 	}
-
-	err = r.Create(ctx, &InspectResult)
+	inspectResult.Spec.InspectRuleTotal = ruleNum
+	err = r.Create(ctx, &inspectResult)
 	if err != nil {
 		return err
 	}

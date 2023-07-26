@@ -24,59 +24,46 @@ type renderNode struct {
 
 func HtmlOut(ctx context.Context, Clients *kube.KubernetesClient, Path string, TaskName string) error {
 
-	listOptions := metav1.ListOptions{
-		LabelSelector: metav1.FormatLabelSelector(metav1.SetAsLabelSelector(map[string]string{constant.LabelName: TaskName})),
-	}
-	results, err := Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().List(ctx, listOptions)
-	if err != nil || len(results.Items) == 0 {
+	results, err := Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(ctx, TaskName, metav1.GetOptions{})
+	if err != nil {
 		return errors.Errorf("result not exist")
 	}
 	var resultCollection = make(map[string][]renderNode, 5)
 
-	for _, item := range results.Items {
-		if item.Spec.OpaResult.ResourceResults != nil {
-			list := getOpaList(item.Spec.OpaResult.ResourceResults)
-			resultCollection[constant.Opa] = list
-		}
-		if item.Spec.PrometheusResult != nil {
-			prometheus := getPrometheus(item.Spec.PrometheusResult)
-			resultCollection[constant.Prometheus] = prometheus
-		}
-		if item.Spec.NodeInfoResult != nil {
-			fileChange := getFileChange(item.Spec.NodeInfoResult)
-			resultCollection[constant.FileChange] = fileChange
-			sysctl := getSysctl(item.Spec.NodeInfoResult)
-			resultCollection[constant.Sysctl] = sysctl
-			systemd := getSystemd(item.Spec.NodeInfoResult)
-			resultCollection[constant.Systemd] = systemd
-		}
-		if item.Spec.FilterResult != nil {
-			filter := getFileFilter(item.Spec.FilterResult)
-			resultCollection[constant.FileFilter] = filter
-		}
-		if item.Spec.ComponentResult != nil {
-			component := getComponent(item.Spec.ComponentResult)
-			resultCollection[constant.Component] = component
-		}
+	if results.Spec.OpaResult.ResourceResults != nil {
+		list := getOpaList(results.Spec.OpaResult.ResourceResults)
+		resultCollection[constant.Opa] = list
+	}
+	if results.Spec.PrometheusResult != nil {
+		prometheus := getPrometheus(results.Spec.PrometheusResult)
+		resultCollection[constant.Prometheus] = prometheus
+	}
+	if results.Spec.NodeInfoResult != nil {
+		fileChange := getFileChange(results.Spec.NodeInfoResult)
+		resultCollection[constant.FileChange] = fileChange
+		sysctl := getSysctl(results.Spec.NodeInfoResult)
+		resultCollection[constant.Sysctl] = sysctl
+		systemd := getSystemd(results.Spec.NodeInfoResult)
+		resultCollection[constant.Systemd] = systemd
+		filter := getFileFilter(results.Spec.NodeInfoResult)
+		resultCollection[constant.FileFilter] = filter
 	}
 
-	task, err := Clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks().Get(ctx, TaskName, metav1.GetOptions{})
-	if err != nil {
-		klog.Errorf("Failed to get  inspect task. err:%s", err)
-		return err
+	if results.Spec.ComponentResult != nil {
+		component := getComponent(results.Spec.ComponentResult)
+		resultCollection[constant.Component] = component
 	}
+
 	var ruleNumber [][]interface{}
-	if err == nil {
-		for key, val := range task.Status.InspectRuleTotal {
-			var issues = len(resultCollection[key])
-			if issues > 0 {
-				issues -= 1
-			}
-			ruleNumber = append(ruleNumber, []interface{}{key, val, issues})
+	for key, val := range results.Spec.InspectRuleTotal {
+		var issues = len(resultCollection[key])
+		if issues > 0 {
+			issues -= 1
 		}
+		ruleNumber = append(ruleNumber, []interface{}{key, val, issues})
 	}
 
-	data := map[string]interface{}{"title": task.CreationTimestamp.Format("2006-01-02 15:04"), "overview": ruleNumber, "details": resultCollection}
+	data := map[string]interface{}{"title": results.CreationTimestamp.Format("2006-01-02 15:04"), "overview": ruleNumber, "details": resultCollection}
 	err = renderView(data, Path)
 	if err != nil {
 		klog.Error(err)
@@ -158,7 +145,7 @@ func getFileChange(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	return villeinage
 }
 
-func getFileFilter(fileResult map[string][]v1alpha2.FileChangeResultItem) []renderNode {
+func getFileFilter(fileResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	var villeinage []renderNode
 	header := renderNode{Header: true, Children: []renderNode{
 		{Text: "nodeName"},
@@ -169,7 +156,7 @@ func getFileFilter(fileResult map[string][]v1alpha2.FileChangeResultItem) []rend
 	villeinage = append(villeinage, header)
 
 	for k, v := range fileResult {
-		for _, result := range v {
+		for _, result := range v.FileFilterResult {
 			for _, issue := range result.Issues {
 				content2 := []renderNode{{Text: k}, {Text: result.FileName}, {Text: result.Path}, {Text: issue}}
 				villeinage = append(villeinage, renderNode{Children: content2})

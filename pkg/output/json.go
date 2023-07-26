@@ -13,30 +13,25 @@ import (
 )
 
 func JsonOut(ctx context.Context, clients *kube.KubernetesClient, outPath string, TaskName string) error {
-	results, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().List(ctx, metav1.ListOptions{
-		LabelSelector: metav1.FormatLabelSelector(metav1.SetAsLabelSelector(map[string]string{constant.LabelName: TaskName})),
-	})
-	if err != nil || len(results.Items) == 0 {
+	results, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(ctx, TaskName, metav1.GetOptions{})
+	if err != nil {
 		return errors.Errorf("result not exist")
 	}
 	var result = make(map[string]interface{}, 3)
-	for _, item := range results.Items {
-		if item.Spec.OpaResult.ResourceResults != nil {
-			result[constant.Opa] = item.Spec.OpaResult.ResourceResults
-		}
-		if item.Spec.PrometheusResult != nil {
-			result[constant.Prometheus] = item.Spec.PrometheusResult
-		}
-		if item.Spec.NodeInfoResult != nil {
-			result["nodeInfo"] = item.Spec.NodeInfoResult
-		}
-		if item.Spec.FilterResult != nil {
-			result[constant.FileFilter] = item.Spec.FilterResult
-		}
-		if item.Spec.ComponentResult != nil {
-			result[constant.Component] = item.Spec.ComponentResult
-		}
+
+	if results.Spec.OpaResult.ResourceResults != nil {
+		result[constant.Opa] = results.Spec.OpaResult.ResourceResults
 	}
+	if results.Spec.PrometheusResult != nil {
+		result[constant.Prometheus] = results.Spec.PrometheusResult
+	}
+	if results.Spec.NodeInfoResult != nil {
+		result["nodeInfo"] = results.Spec.NodeInfoResult
+	}
+	if results.Spec.ComponentResult != nil {
+		result[constant.Component] = results.Spec.ComponentResult
+	}
+
 	marshal, err := json.Marshal(result)
 	if err != nil {
 		return err

@@ -12,7 +12,6 @@ import (
 	"github.com/kubesphere/kubeeye/clients/clientset/versioned"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
@@ -320,74 +319,56 @@ func mergeNodeRule(rule []map[string]interface{}) map[string][]map[string]interf
 	return mergeMap
 }
 
-func ScanRules(ctx context.Context, clients *kube.KubernetesClient, taskName string, ruleGroup []kubeeyev1alpha2.InspectRule, clusterName string) []kubeeyev1alpha2.JobRule {
+func ScanRules(ctx context.Context, clients *kube.KubernetesClient, taskName string, ruleGroup []kubeeyev1alpha2.InspectRule) ([]kubeeyev1alpha2.JobRule, map[string]int) {
 
 	nodes := kube.GetNodes(ctx, clients.ClientSet)
 	ruleSpec := MergeRule(ruleGroup)
-
+	var inspectRuleTotal = make(map[string]int)
 	var executeRule []kubeeyev1alpha2.JobRule
 
 	component := AllocationComponent(ruleSpec.Component, taskName)
 	executeRule = append(executeRule, *component)
-
+	componentRuleNumber := 0
+	if ruleSpec.Component == nil {
+		services, _ := clients.ClientSet.CoreV1().Services(corev1.NamespaceAll).List(ctx, metav1.ListOptions{})
+		componentRuleNumber = len(services.Items)
+	} else {
+		componentRuleNumber = len(strings.Split(*ruleSpec.Component, "|"))
+	}
+	inspectRuleTotal[constant.Component] = componentRuleNumber
 	opa := AllocationOpa(ruleSpec.Opas, taskName)
 	if opa != nil {
 		executeRule = append(executeRule, *opa)
+		inspectRuleTotal[constant.Opa] = len(ruleSpec.Opas)
 	}
 	prometheus := AllocationPrometheus(ruleSpec.Prometheus, taskName)
 	if prometheus != nil {
 		executeRule = append(executeRule, *prometheus)
+		inspectRuleTotal[constant.Prometheus] = len(ruleSpec.Prometheus)
+
 	}
 	if nodes != nil && len(nodes) > 0 {
 		change := AllocationRule(ruleSpec.FileChange, taskName, nodes, constant.FileChange)
 		if change != nil && len(change) > 0 {
 			executeRule = append(executeRule, change...)
+			inspectRuleTotal[constant.FileChange] = len(ruleSpec.FileChange)
 		}
 		sysctl := AllocationRule(ruleSpec.Sysctl, taskName, nodes, constant.Sysctl)
 		if sysctl != nil && len(sysctl) > 0 {
 			executeRule = append(executeRule, sysctl...)
+			inspectRuleTotal[constant.Sysctl] = len(ruleSpec.Sysctl)
 		}
 		systemd := AllocationRule(ruleSpec.Systemd, taskName, nodes, constant.Systemd)
 		if systemd != nil && len(systemd) > 0 {
 			executeRule = append(executeRule, systemd...)
+			inspectRuleTotal[constant.Systemd] = len(ruleSpec.Systemd)
+
 		}
 		fileFilter := AllocationRule(ruleSpec.FileFilter, taskName, nodes, constant.FileFilter)
 		if fileFilter != nil && len(fileFilter) > 0 {
 			executeRule = append(executeRule, fileFilter...)
+			inspectRuleTotal[constant.FileFilter] = len(ruleSpec.FileFilter)
 		}
 	}
-	return executeRule
-}
-
-func CreateInspectRule(ctx context.Context, clients *kube.KubernetesClient, ruleGroup []kubeeyev1alpha2.JobRule) ([]kubeeyev1alpha2.JobRule, error) {
-	r := sortRuleOpaToAlter(ruleGroup)
-	marshal, err := json.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, "inspect-rule", metav1.GetOptions{})
-	if err == nil {
-		_ = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Delete(ctx, "inspect-rule", metav1.DeleteOptions{})
-	}
-
-	configMapTemplate := template.BinaryConfigMapTemplate("inspect-rule", constant.DefaultNamespace, marshal, true, map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})
-	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, configMapTemplate, metav1.CreateOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
-func sortRuleOpaToAlter(rule []kubeeyev1alpha2.JobRule) []kubeeyev1alpha2.JobRule {
-
-	finds, b, OpaRule := utils.ArrayFinds(rule, func(i kubeeyev1alpha2.JobRule) bool {
-		return i.RuleType == constant.Opa
-	})
-	if b {
-		rule = append(rule[:finds], rule[finds+1:]...)
-		rule = append(rule, OpaRule)
-	}
-
-	return rule
+	return executeRule, inspectRuleTotal
 }
