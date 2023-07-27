@@ -136,6 +136,12 @@ spec:
                       type: string
                   type: object
                 type: array
+              inspectRuleTotal:
+                additionalProperties:
+                  type: integer
+                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                  Important: Run "make" to regenerate code after modifying this file'
+                type: object
               nodeInfoResult:
                 additionalProperties:
                   properties:
@@ -492,10 +498,6 @@ spec:
               endTimestamp:
                 format: date-time
                 type: string
-              inspectRuleTotal:
-                additionalProperties:
-                  type: integer
-                type: object
               phase:
                 items:
                   properties:
@@ -779,7 +781,7 @@ apiVersion: v1
 data:
   config: |-
     job:
-      autoDelTime: 30,
+      autoDelTime: 30
       backLimit: 5
       image: kubespheredev/kubeeye:latest
       imagePullPolicy: Always
