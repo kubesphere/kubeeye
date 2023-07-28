@@ -32,8 +32,9 @@ const (
 )
 
 const (
-	AnnotationStartTime = "kubeeye.kubesphere.io/task-start-time"
-	AnnotationEndTime   = "kubeeye.kubesphere.io/task-end-time"
+	AnnotationStartTime     = "kubeeye.kubesphere.io/task-start-time"
+	AnnotationEndTime       = "kubeeye.kubesphere.io/task-end-time"
+	AnnotationInspectPolicy = "kubeeye.kubesphere.io/task-inspect-policy"
 )
 
 const (

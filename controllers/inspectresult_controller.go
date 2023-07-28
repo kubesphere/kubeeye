@@ -19,11 +19,14 @@ package controllers
 import (
 	"context"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/utils"
+	kubeErr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // InspectResultReconciler reconciles a InspectResult object
@@ -46,9 +49,57 @@ type InspectResultReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	result := &kubeeyev1alpha2.InspectResult{}
+	err := r.Get(ctx, req.NamespacedName, result)
+	if err != nil {
+		if kubeErr.IsNotFound(err) {
+			klog.Infof("inspect rule is not found;name:%s\n", req.Name)
+			return ctrl.Result{}, nil
+		}
+		return ctrl.Result{}, err
+	}
 
-	// TODO(user): your logic here
+	if result.DeletionTimestamp.IsZero() {
+		if _, b := utils.ArrayFind(Finalizers, result.Finalizers); !b {
+			result.Finalizers = append(result.Finalizers, Finalizers)
+			err = r.Client.Update(ctx, result)
+			if err != nil {
+				klog.Error("Failed to inspect plan add finalizers", err)
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
+		}
+
+	} else {
+		newFinalizers := utils.SliceRemove(Finalizers, result.Finalizers)
+		result.Finalizers = newFinalizers.([]string)
+		klog.Infof("inspect task is being deleted")
+		err = r.Client.Update(ctx, result)
+		if err != nil {
+			klog.Error("Failed to inspect plan add finalizers. ", err)
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
+
+	if result.Status.Complete {
+		return ctrl.Result{}, nil
+	}
+
+	taskName := result.GetLabels()[constant.LabelTaskName]
+
+	task := &kubeeyev1alpha2.InspectTask{}
+	err = r.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: taskName}, task)
+	if err != nil {
+		klog.Error("Failed to get inspect task", err)
+		return ctrl.Result{}, err
+	}
+
+	result.Status.Policy = task.Spec.InspectPolicy
+	result.Status.Duration = task.Status.EndTimestamp.Sub(task.Status.StartTimestamp.Time).String()
+	result.Status.TaskStartTime = task.Status.StartTimestamp.Time.Format("2006-01-02 15:04:05")
+	result.Status.TaskEndTime = task.Status.EndTimestamp.Format("2006-01-02 15:04:05")
+	result.Status.Complete = true
 
 	return ctrl.Result{}, nil
 }

@@ -39,7 +39,7 @@ spec:
                 items:
                   type: string
                 type: array
-              inspectType:
+              inspectPolicy:
                 type: string
               timeout:
                 type: string

@@ -7,4 +7,5 @@ spec:
   maxTasks: 10
   tag: kubeeye_workloads_rego
   clusterName:
+    - host
     - member1

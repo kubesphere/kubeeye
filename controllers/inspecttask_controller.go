@@ -130,32 +130,18 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 
 		if inspectTask.Spec.ClusterName != nil {
+			var wait sync.WaitGroup
+			wait.Add(len(inspectTask.Spec.ClusterName))
 			for _, name := range inspectTask.Spec.ClusterName {
-				clusterClient, err := kube.GetMultiClusterClient(ctx, r.K8sClients, name)
-				if err != nil {
-					klog.Error(err, "Failed to get multi-cluster client.")
-					return ctrl.Result{}, err
-				}
-				err = r.initClusterInspect(ctx, clusterClient)
-				if err != nil {
-					klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", *name, err)
-					return ctrl.Result{}, err
-				}
-				inspectRule, inspectRuleNum := rules.ScanRules(ctx, clusterClient, inspectTask.Name, ruleLists.Items)
-				rule, err := createInspectRule(ctx, clusterClient, inspectRule, inspectTask)
-				if err != nil {
-					return ctrl.Result{}, err
-				}
-				JobPhase, err := r.createJobsInspect(ctx, inspectTask, clusterClient, kubeEyeConfig.Job, rule)
-				if err != nil {
-					return ctrl.Result{}, err
-				}
-				inspectTask.Status.JobPhase = append(inspectTask.Status.JobPhase, JobPhase...)
-				err = r.GetInspectResultData(ctx, clusterClient, inspectTask, *name, inspectRuleNum)
-				if err != nil {
-					return ctrl.Result{}, err
-				}
+				go func(v *string) {
+					defer wait.Done()
+					err := r.CreateInspect(ctx, v, inspectTask, *ruleLists, kubeEyeConfig)
+					if err != nil {
+						klog.Error("failed to create inspect. ", err)
+					}
+				}(name)
 			}
+			wait.Wait()
 		} else {
 			inspectRule, inspectRuleNum := rules.ScanRules(ctx, r.K8sClients, inspectTask.Name, ruleLists.Items)
 			rule, err := createInspectRule(ctx, r.K8sClients, inspectRule, inspectTask)
@@ -202,6 +188,34 @@ func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, rule
 		return nil, err
 	}
 	return r, nil
+}
+
+func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, name *string, task *kubeeyev1alpha2.InspectTask, ruleLists kubeeyev1alpha2.InspectRuleList, kubeEyeConfig conf.KubeEyeConfig) error {
+	clusterClient, err := kube.GetMultiClusterClient(ctx, r.K8sClients, name)
+	if err != nil {
+		klog.Error(err, "Failed to get multi-cluster client.")
+		return err
+	}
+	err = r.initClusterInspect(ctx, clusterClient)
+	if err != nil {
+		klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", *name, err)
+		return err
+	}
+	inspectRule, inspectRuleNum := rules.ScanRules(ctx, clusterClient, task.Name, ruleLists.Items)
+	rule, err := createInspectRule(ctx, clusterClient, inspectRule, task)
+	if err != nil {
+		return err
+	}
+	JobPhase, err := r.createJobsInspect(ctx, task, clusterClient, kubeEyeConfig.Job, rule)
+	if err != nil {
+		return err
+	}
+	task.Status.JobPhase = append(task.Status.JobPhase, JobPhase...)
+	err = r.GetInspectResultData(ctx, clusterClient, task, *name, inspectRuleNum)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func sortRuleOpaToAlter(rule []kubeeyev1alpha2.JobRule) []kubeeyev1alpha2.JobRule {
@@ -286,7 +300,7 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 					jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: v.JobName, Phase: kubeeyev1alpha2.PhaseFailed})
 					return
 				}
-				resultJob := r.waitForJobCompletionGetResult(ctx, clusterClient, v.JobName, jobTask)
+				resultJob := r.waitForJobCompletionGetResult(ctx, clusterClient, v.JobName, jobTask, inspectTask.Spec.Timeout)
 				mutex.Lock()
 				jobNames = append(jobNames, *resultJob)
 				mutex.Unlock()
@@ -316,7 +330,7 @@ func isExistsJob(ctx context.Context, clients *kube.KubernetesClient, jobName st
 	return err
 }
 
-func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Context, clients *kube.KubernetesClient, jobName string, jobPhase *kubeeyev1alpha2.JobPhase) *kubeeyev1alpha2.JobPhase {
+func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Context, clients *kube.KubernetesClient, jobName string, jobPhase *kubeeyev1alpha2.JobPhase, timeout string) *kubeeyev1alpha2.JobPhase {
 	background := metav1.DeletePropagationBackground
 	for {
 		klog.Infof("wait job run complete for name:%s", jobName)
@@ -326,12 +340,12 @@ func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Contex
 			jobPhase.Phase = kubeeyev1alpha2.PhaseFailed
 			return jobPhase
 		}
-		//if isTimeout(jobInfo.CreationTimestamp, "3m") {
-		//	klog.Infof("timeout for name:%s", jobName)
-		//	jobPhase.Phase = kubeeyev1alpha2.PhaseFailed
-		//	_ = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Delete(ctx, jobName, metav1.DeleteOptions{PropagationPolicy: &background})
-		//	return jobPhase
-		//}
+		if isTimeout(jobInfo.CreationTimestamp, timeout) {
+			klog.Infof("timeout for name:%s", jobName)
+			jobPhase.Phase = kubeeyev1alpha2.PhaseFailed
+			_ = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Delete(ctx, jobName, metav1.DeleteOptions{PropagationPolicy: &background})
+			return jobPhase
+		}
 		if jobInfo.Status.CompletionTime != nil && !jobInfo.Status.CompletionTime.IsZero() && jobInfo.Status.Active == 0 {
 			jobPhase.Phase = kubeeyev1alpha2.PhaseSucceeded
 			_ = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Delete(ctx, jobName, metav1.DeleteOptions{PropagationPolicy: &background})

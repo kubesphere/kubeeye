@@ -180,6 +180,12 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 		Spec: kubeeyev1alpha2.InspectTaskSpec{
 			ClusterName: inspectPlan.Spec.ClusterName,
 			Timeout:     inspectPlan.Spec.Timeout,
+			InspectPolicy: func() kubeeyev1alpha2.Policy {
+				if inspectPlan.Spec.Schedule == nil {
+					return kubeeyev1alpha2.InstantPolicy
+				}
+				return kubeeyev1alpha2.TimingPolicy
+			}(),
 		},
 	}
 

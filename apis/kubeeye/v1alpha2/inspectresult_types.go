@@ -38,7 +38,22 @@ type InspectResultSpec struct {
 type InspectResultStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	Complete      bool          `json:"complete,omitempty"`
+	Policy        Policy        `json:"policy,omitempty"`
+	Duration      string        `json:"duration,omitempty"`
+	TaskStartTime string        `json:"taskStartTime,omitempty"`
+	TaskEndTime   string        `json:"taskEndTime,omitempty"`
+	Level         map[Level]int `json:"level,omitempty"`
 }
+
+type Level string
+
+const (
+	DangerLevel  Level = "danger"
+	WarningLevel Level = "warning"
+	IgnoreLevel  Level = "ignore"
+)
 
 type NodeInfoResult struct {
 	NodeInfo         map[string]string      `json:"nodeInfo,omitempty"`
