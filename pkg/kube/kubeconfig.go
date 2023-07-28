@@ -145,6 +145,11 @@ func GetMultiClusterClient(ctx context.Context, clients *KubernetesClient, clust
 		return nil, err
 	}
 
+	list, err := sClients.ClientSet.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		klog.Error(err)
+	}
+	klog.Info(list.Items)
 	return sClients, nil
 }
 func GetKubeEyeConfig(ctx context.Context, client *KubernetesClient) (conf.KubeEyeConfig, error) {
