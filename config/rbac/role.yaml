@@ -17,6 +17,8 @@ rules:
   - configmaps
   verbs:
   - create
+  - delete
+  - deletecollection
   - get
   - watch
 - apiGroups:

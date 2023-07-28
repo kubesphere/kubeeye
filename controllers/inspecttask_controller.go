@@ -54,7 +54,7 @@ type InspectTaskReconciler struct {
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources="configmaps",verbs=create;get;watch
+//+kubebuilder:rbac:groups="",resources="configmaps",verbs=create;get;watch;delete;deletecollection
 //+kubebuilder:rbac:groups="",resources="*",verbs=list
 //+kubebuilder:rbac:groups="apps",resources="*",verbs=get;list
 //+kubebuilder:rbac:groups="batch",resources="*",verbs=get;list;create;delete
@@ -131,13 +131,16 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if inspectTask.Spec.ClusterName != nil {
 			for _, name := range inspectTask.Spec.ClusterName {
 				clusterClient, err := kube.GetMultiClusterClient(ctx, r.K8sClients, name)
+				klog.Info("invoke")
 				err = r.initClusterInspect(ctx, clusterClient)
+
+				klog.Info("invoke complete")
 				if err != nil {
 					klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s", *name)
 					return ctrl.Result{}, fmt.Errorf("failed To Initialize Cluster Configuration for name:%s", *name)
 				}
 				inspectRule, inspectRuleNum := rules.ScanRules(ctx, clusterClient, inspectTask.Name, ruleLists.Items)
-				rule, err := createInspectRule(ctx, clusterClient, inspectRule)
+				rule, err := createInspectRule(ctx, clusterClient, inspectRule, inspectTask)
 				if err != nil {
 					return ctrl.Result{}, err
 				}
@@ -150,7 +153,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			}
 		} else {
 			inspectRule, inspectRuleNum := rules.ScanRules(ctx, r.K8sClients, inspectTask.Name, ruleLists.Items)
-			rule, err := createInspectRule(ctx, r.K8sClients, inspectRule)
+			rule, err := createInspectRule(ctx, r.K8sClients, inspectRule, inspectTask)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
@@ -173,19 +176,19 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	return ctrl.Result{}, nil
 }
 
-func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, ruleGroup []kubeeyev1alpha2.JobRule) ([]kubeeyev1alpha2.JobRule, error) {
+func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, ruleGroup []kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobRule, error) {
 	r := sortRuleOpaToAlter(ruleGroup)
 	marshal, err := json.Marshal(r)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, "inspect-rule", metav1.GetOptions{})
+	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, task.Name, metav1.GetOptions{})
 	if err == nil {
-		_ = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Delete(ctx, "inspect-rule", metav1.DeleteOptions{})
+		_ = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Delete(ctx, task.Name, metav1.DeleteOptions{})
 	}
 
-	configMapTemplate := template.BinaryConfigMapTemplate("inspect-rule", constant.DefaultNamespace, marshal, true, map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})
+	configMapTemplate := template.BinaryConfigMapTemplate(task.Name, constant.DefaultNamespace, marshal, true, map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})
 	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, configMapTemplate, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
@@ -359,11 +362,12 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 				return m.Name == phase.JobName
 			})
 			if exists {
-				ruleType := configMap.Labels[constant.LabelRuleType]
+				ruleType := configMap.GetLabels()[constant.LabelRuleType]
+				nodeName := configMap.GetLabels()[constant.LabelNodeName]
 				inspectInterface, status := inspect.RuleOperatorMap[ruleType]
 				if status {
 					klog.Infof("starting get %s result data", phase.JobName)
-					_, err = inspectInterface.GetResult("c", &configMap, &inspectResult)
+					_, err = inspectInterface.GetResult(nodeName, &configMap, &inspectResult)
 					if err != nil {
 						klog.Error(err)
 					}
