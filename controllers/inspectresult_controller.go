@@ -100,7 +100,11 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	result.Status.TaskStartTime = task.Status.StartTimestamp.Time.Format("2006-01-02 15:04:05")
 	result.Status.TaskEndTime = task.Status.EndTimestamp.Format("2006-01-02 15:04:05")
 	result.Status.Complete = true
-
+	err = r.Client.Status().Update(ctx, result)
+	if err != nil {
+		klog.Error("Failed to update inspect result status", err)
+		return ctrl.Result{}, err
+	}
 	return ctrl.Result{}, nil
 }
 
