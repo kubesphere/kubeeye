@@ -131,8 +131,16 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if inspectTask.Spec.ClusterName != nil {
 			for _, name := range inspectTask.Spec.ClusterName {
 				clusterClient, err := kube.GetMultiClusterClient(ctx, r.K8sClients, name)
+				if err != nil {
+					klog.Error(err)
+					return ctrl.Result{}, err
+				}
 				klog.Info("invoke")
 				err = r.initClusterInspect(ctx, clusterClient)
+				if err != nil {
+					klog.Error(err)
+					return ctrl.Result{}, err
+				}
 
 				klog.Info("invoke complete")
 				if err != nil {
