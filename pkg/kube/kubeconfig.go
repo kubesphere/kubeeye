@@ -117,28 +117,28 @@ func GetK8SClients(kubeconfig string) (*KubernetesClient, error) {
 }
 func GetMultiClusterClient(ctx context.Context, clients *KubernetesClient, clusterName *string) (*KubernetesClient, error) {
 	klog.Errorf("starting get cluster config %s", *clusterName)
-	raw, err := clients.ClientSet.CoreV1().RESTClient().Get().AbsPath("/apis/cluster.kubesphere.io/v1alpha1/clusters/" + *clusterName).DoRaw(ctx)
+	raw, err := clients.ClientSet.CoreV1().RESTClient().Get().AbsPath("/apis/cluster.kubesphere.io/v1alpha1/clusters/").Name(*clusterName).DoRaw(ctx)
 	if err != nil {
-		klog.Error(err)
+		klog.Error(err, "failed to get cluster config")
 		return nil, err
 	}
 	var cluster map[string]interface{}
 	err = json.Unmarshal(raw, &cluster)
 	if err != nil {
-		klog.Error(err)
+		klog.Error(err, "failed to unmarshal cluster config")
 		return nil, err
 	}
 	kubeConfig := cluster["spec"].(map[string]interface{})["connection"].(map[string]interface{})["kubeconfig"].(string)
 
 	decodeString, err := base64.StdEncoding.DecodeString(kubeConfig)
 	if err != nil {
-		klog.Error(err)
+		klog.Error(err, "failed to decode kubeconfig")
 		return nil, err
 	}
 
 	clientCmdConfig, err := clientcmd.NewClientConfigFromBytes(decodeString)
 	if err != nil {
-		klog.Error(err)
+		klog.Error(err, "failed to get client config")
 		return nil, err
 	}
 	clientConfig, err := clientCmdConfig.ClientConfig()

@@ -52,6 +52,7 @@ type InspectTaskReconciler struct {
 }
 
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cluster.kubesphere.io,resources=clusters,verbs=get
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks/finalizers,verbs=update
 //+kubebuilder:rbac:groups="",resources="configmaps",verbs=create;get;watch;delete;deletecollection
@@ -130,23 +131,15 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 		if inspectTask.Spec.ClusterName != nil {
 			for _, name := range inspectTask.Spec.ClusterName {
-
 				clusterClient, err := kube.GetMultiClusterClient(ctx, r.K8sClients, name)
 				if err != nil {
-					klog.Error(err)
+					klog.Error(err, "Failed to get multi-cluster client.")
 					return ctrl.Result{}, err
 				}
-				klog.Info("invoke")
 				err = r.initClusterInspect(ctx, clusterClient)
 				if err != nil {
-					klog.Error(err)
+					klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", *name, err)
 					return ctrl.Result{}, err
-				}
-
-				klog.Info("invoke complete")
-				if err != nil {
-					klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s", *name)
-					return ctrl.Result{}, fmt.Errorf("failed To Initialize Cluster Configuration for name:%s", *name)
 				}
 				inspectRule, inspectRuleNum := rules.ScanRules(ctx, clusterClient, inspectTask.Name, ruleLists.Items)
 				rule, err := createInspectRule(ctx, clusterClient, inspectRule, inspectTask)

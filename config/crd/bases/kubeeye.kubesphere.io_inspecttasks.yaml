@@ -39,18 +39,8 @@ spec:
                 items:
                   type: string
                 type: array
-              rules:
-                items:
-                  properties:
-                    jobName:
-                      type: string
-                    ruleType:
-                      type: string
-                    runRule:
-                      format: byte
-                      type: string
-                  type: object
-                type: array
+              inspectType:
+                type: string
               timeout:
                 type: string
             type: object

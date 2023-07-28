@@ -38,6 +38,12 @@ rules:
   - get
   - list
 - apiGroups:
+  - cluster.kubesphere.io
+  resources:
+  - clusters
+  verbs:
+  - get
+- apiGroups:
   - kubeeye.kubesphere.io
   resources:
   - inspectplans
