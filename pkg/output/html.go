@@ -273,14 +273,3 @@ func assertBoolBackBool(b *bool) bool {
 	}
 	return true
 }
-
-func assertBoolBackString(bool string) string {
-	if bool == "" {
-		return bool
-	}
-	if bool == "false" {
-		return "true"
-	}
-	return "false"
-
-}

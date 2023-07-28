@@ -44,6 +44,9 @@ func JsonOut(ctx context.Context, clients *kube.KubernetesClient, outPath string
 		return err
 	}
 	defer jsonFile.Close()
-	jsonFile.Write(marshal)
+	_, err = jsonFile.Write(marshal)
+	if err != nil {
+		return err
+	}
 	return nil
 }

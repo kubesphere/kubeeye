@@ -157,7 +157,10 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 					return ctrl.Result{}, err
 				}
 				inspectTask.Status.JobPhase = append(inspectTask.Status.JobPhase, JobPhase...)
-				r.GetInspectResultData(ctx, clusterClient, inspectTask, *name, inspectRuleNum)
+				err = r.GetInspectResultData(ctx, clusterClient, inspectTask, *name, inspectRuleNum)
+				if err != nil {
+					return ctrl.Result{}, err
+				}
 			}
 		} else {
 			inspectRule, inspectRuleNum := rules.ScanRules(ctx, r.K8sClients, inspectTask.Name, ruleLists.Items)
@@ -170,7 +173,10 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				return ctrl.Result{}, err
 			}
 			inspectTask.Status.JobPhase = JobPhase
-			r.GetInspectResultData(ctx, r.K8sClients, inspectTask, "default", inspectRuleNum)
+			err = r.GetInspectResultData(ctx, r.K8sClients, inspectTask, "default", inspectRuleNum)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
 		}
 		inspectTask.Status.EndTimestamp = metav1.Time{Time: time.Now()}
 		klog.Infof("all job finished for taskName:%s", inspectTask.Name)

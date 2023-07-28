@@ -75,10 +75,6 @@ type ResourceProvider struct {
 	Workloads       []Workload
 }
 
-type ReturnMsg struct {
-	what string
-}
-
 type Certificate struct {
 	Name     string `yaml:"name" json:"name,omitempty"`
 	Expires  string `yaml:"expires" json:"expires,omitempty"`

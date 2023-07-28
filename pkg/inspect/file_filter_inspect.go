@@ -85,7 +85,7 @@ func (o *fileFilterInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 				matched, err := regexp.MatchString(fmt.Sprintf(".%s.", *rule.Rule), reader.Text())
 				if err != nil {
 					klog.Errorf(" Failed to match regex. err:%s", err)
-					filterR.Issues = append(filterR.Issues, fmt.Sprintf("Failed to match regex for %s.", rule.Rule))
+					filterR.Issues = append(filterR.Issues, fmt.Sprintf("Failed to match regex for %s.", *rule.Rule))
 					break
 				}
 				if matched && len(filterR.Issues) < 1000 {

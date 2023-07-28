@@ -58,7 +58,7 @@ type SysRule struct {
 
 type OpaRule struct {
 	RuleItemBases `json:",inline"`
-	Module        string `json:"module,omitempty" json:"module,omitempty"`
+	Module        string `json:"module,omitempty"`
 }
 type PrometheusRule struct {
 	RuleItemBases `json:",inline"`

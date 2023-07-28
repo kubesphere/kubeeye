@@ -59,13 +59,11 @@ func (c *ConfigOptions) GenerateInspectConfig() error {
 		if err != nil {
 			return err
 		}
-		break
 	case "INSPECTPLAN":
 		err := c.GenerateInspectPlan()
 		if err != nil {
 			return err
 		}
-		break
 	}
 
 	return nil

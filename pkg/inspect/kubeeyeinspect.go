@@ -79,10 +79,10 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 				fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
 				continue
 			}
-			var RegoRules []string
-			for i := range opaRules {
-				RegoRules = append(RegoRules, *opaRules[i].Rule)
-			}
+			//var RegoRules []string
+			//for i := range opaRules {
+			//	RegoRules = append(RegoRules, *opaRules[i].Rule)
+			//}
 
 			//return VailOpaRulesResult(ctx, k8sResources, RegoRules)
 		} else if key == constant.Prometheus {

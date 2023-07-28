@@ -30,7 +30,7 @@ type InspectTaskSpec struct {
 
 	ClusterName []*string `json:"clusterName,omitempty"`
 	Timeout     string    `json:"timeout,omitempty"`
-	Rules       []JobRule `json:"rules,omitempty"`
+	InspectType string    `json:"inspectType,omitempty"`
 }
 
 // InspectTaskStatus defines the observed state of InspectTask

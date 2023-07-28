@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,8 +32,7 @@ import (
 // InspectRulesReconciler reconciles a Insights object
 type InspectRulesReconciler struct {
 	client.Client
-	k8sClient kube.KubernetesClient
-	Scheme    *runtime.Scheme
+	Scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspectrules,verbs=get;list;watch;create;update;patch;delete

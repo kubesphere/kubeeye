@@ -73,7 +73,10 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 		}
 
 		marshal, err := json.Marshal(query)
-
+		if err != nil {
+			klog.Error("marshal modal Samples failed", err)
+			continue
+		}
 		var queryResults model.Samples
 		err = json.Unmarshal(marshal, &queryResults)
 		if err != nil {

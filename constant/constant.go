@@ -32,6 +32,11 @@ const (
 )
 
 const (
+	AnnotationStartTime = "kubeeye.kubesphere.io/task-start-time"
+	AnnotationEndTime   = "kubeeye.kubesphere.io/task-end-time"
+)
+
+const (
 	DefaultProcPath = "/hosts/proc"
 	RootPathPrefix  = "/hosts/root"
 )

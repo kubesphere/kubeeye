@@ -77,6 +77,9 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) K8
 	}
 
 	nodes, nodesCount, err := GetObjectCounts(ctx, kubernetesClient, conf.Nodes, conf.NoGroup)
+	if err != nil {
+		klog.Error("failed to get nodes and nodesCount")
+	}
 
 	namespaces, namespacesCount, _ := GetObjectCounts(ctx, kubernetesClient, conf.Namespaces, conf.NoGroup)
 	for _, namespacesItem := range namespaces.Items {

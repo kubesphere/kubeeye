@@ -51,13 +51,14 @@ func ArrayDeduplication(sub []string) []string {
 }
 
 func SliceRemove(s string, o interface{}) interface{} {
-	switch o.(type) {
+	switch t := o.(type) {
 	case []string:
-		stringArray := o.([]string)
-		if i, b := ArrayFind(s, stringArray); b {
-			stringArray = append(stringArray[:i], stringArray[i+1:]...)
+		if i, b := ArrayFind(s, t); b {
+			t = append(t[:i], t[i+1:]...)
 		}
-		return stringArray
+		return t
+	case []int:
+		return nil
 	}
 	return nil
 }

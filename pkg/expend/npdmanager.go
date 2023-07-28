@@ -7,8 +7,8 @@ import (
 )
 
 func InstallNPD(ctx context.Context, kubeconfig string) error {
-	var installer Expends
-	installer = Installer{
+
+	installer := Installer{
 		CTX:        ctx,
 		Kubeconfig: kubeconfig,
 	}
@@ -23,8 +23,7 @@ func InstallNPD(ctx context.Context, kubeconfig string) error {
 }
 
 func UninstallNPD(ctx context.Context, kubeconfig string) error {
-	var installer Expends
-	installer = Installer{
+	installer := Installer{
 		CTX:        ctx,
 		Kubeconfig: kubeconfig,
 	}

@@ -253,9 +253,8 @@ func VailOpaRulesResult(ctx context.Context, k8sResources kube.K8SResource, Rego
 	}(ctxCancel)
 
 	for r := range RulesValidateChan {
-		for _, result := range r {
-			results = append(results, result)
-		}
+
+		results = append(results, r...)
 	}
 
 	cancel()

@@ -14,6 +14,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"io/ioutil"
+
 	corev1 "k8s.io/api/core/v1"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -281,7 +282,7 @@ func AllocationRule(rule interface{}, taskName string, allNode []corev1.Node, ct
 		jobRules = append(jobRules, jobRule)
 	}
 
-	if filterData != nil && len(filterData) > 0 {
+	if len(filterData) > 0 {
 		for _, item := range allNode {
 			jobRule := kubeeyev1alpha2.JobRule{
 				JobName:  fmt.Sprintf("%s-%s-%s", taskName, ctlOrTem, item.Name),
@@ -347,25 +348,25 @@ func ScanRules(ctx context.Context, clients *kube.KubernetesClient, taskName str
 		inspectRuleTotal[constant.Prometheus] = len(ruleSpec.Prometheus)
 
 	}
-	if nodes != nil && len(nodes) > 0 {
+	if len(nodes) > 0 {
 		change := AllocationRule(ruleSpec.FileChange, taskName, nodes, constant.FileChange)
-		if change != nil && len(change) > 0 {
+		if len(change) > 0 {
 			executeRule = append(executeRule, change...)
 			inspectRuleTotal[constant.FileChange] = len(ruleSpec.FileChange)
 		}
 		sysctl := AllocationRule(ruleSpec.Sysctl, taskName, nodes, constant.Sysctl)
-		if sysctl != nil && len(sysctl) > 0 {
+		if len(sysctl) > 0 {
 			executeRule = append(executeRule, sysctl...)
 			inspectRuleTotal[constant.Sysctl] = len(ruleSpec.Sysctl)
 		}
 		systemd := AllocationRule(ruleSpec.Systemd, taskName, nodes, constant.Systemd)
-		if systemd != nil && len(systemd) > 0 {
+		if len(systemd) > 0 {
 			executeRule = append(executeRule, systemd...)
 			inspectRuleTotal[constant.Systemd] = len(ruleSpec.Systemd)
 
 		}
 		fileFilter := AllocationRule(ruleSpec.FileFilter, taskName, nodes, constant.FileFilter)
-		if fileFilter != nil && len(fileFilter) > 0 {
+		if len(fileFilter) > 0 {
 			executeRule = append(executeRule, fileFilter...)
 			inspectRuleTotal[constant.FileFilter] = len(ruleSpec.FileFilter)
 		}

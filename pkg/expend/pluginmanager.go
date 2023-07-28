@@ -9,18 +9,17 @@ import (
 //go:embed deploymentfiles/npd-resources.yaml
 var npdResources []byte
 
-//go:embed deploymentfiles/kubebench.yaml
-var kubebenchResources []byte
-
-//go:embed deploymentfiles/kubehunter.yaml
-var kubehunterResources []byte
-
-//go:embed deploymentfiles/kubescape.yaml
-var kubescapeResources []byte
+////go:embed deploymentfiles/kubebench.yaml
+////var kubebenchResources []byte
+//
+////go:embed deploymentfiles/kubehunter.yaml
+//var kubehunterResources []byte
+//
+////go:embed deploymentfiles/kubescape.yaml
+////var kubescapeResources []byte
 
 func PluginsInstaller(ctx context.Context, pluginName string, pluginResources string) (err error) {
-	var installer Expends
-	installer = Installer{
+	installer := Installer{
 		CTX: ctx,
 	}
 	pluginsResource := strings.Split(pluginResources, "---")
@@ -35,8 +34,7 @@ func PluginsInstaller(ctx context.Context, pluginName string, pluginResources st
 }
 
 func PluginsUninstaller(ctx context.Context, pluginName string, pluginResources string) (err error) {
-	var installer Expends
-	installer = Installer{
+	installer := Installer{
 		CTX: ctx,
 	}
 	pluginsResource := strings.Split(pluginResources, "---")

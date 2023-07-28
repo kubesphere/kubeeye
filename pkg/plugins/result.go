@@ -26,10 +26,8 @@ func TriggerPluginsAudit(pluginList []string) {
 
 func CheckPluginsHealth(pluginName string) bool {
 	_, err := http.Get(fmt.Sprintf("http://%s.kubeeye-system.svc/healthz", pluginName))
-	if err != nil {
-		return false
-	}
-	return true
+
+	return err == nil
 }
 
 func TriggerAudit(pluginName string) (error, []byte) {
@@ -45,6 +43,9 @@ func TriggerAudit(pluginName string) (error, []byte) {
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err, nil
+	}
 
 	return nil, body
 }

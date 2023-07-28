@@ -129,6 +129,9 @@ func GetMultiClusterClient(ctx context.Context, clients *KubernetesClient, clust
 	kubeConfig := cluster["spec"].(map[string]interface{})["connection"].(map[string]interface{})["kubeconfig"].(string)
 
 	decodeString, err := base64.StdEncoding.DecodeString(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
 
 	clientCmdConfig, err := clientcmd.NewClientConfigFromBytes(decodeString)
 	if err != nil {
