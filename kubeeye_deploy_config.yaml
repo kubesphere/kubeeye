@@ -465,18 +465,8 @@ spec:
                 items:
                   type: string
                 type: array
-              rules:
-                items:
-                  properties:
-                    jobName:
-                      type: string
-                    ruleType:
-                      type: string
-                    runRule:
-                      format: byte
-                      type: string
-                  type: object
-                type: array
+              inspectType:
+                type: string
               timeout:
                 type: string
             type: object
@@ -570,19 +560,19 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - '*'
-  verbs:
-  - list
-- apiGroups:
-  - ""
-  resources:
   - configmaps
   verbs:
   - create
   - delete
   - deletecollection
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - namespaces
+  verbs:
   - get
-  - watch
+  - list
 - apiGroups:
   - apps
   resources:
@@ -599,6 +589,12 @@ rules:
   - delete
   - get
   - list
+- apiGroups:
+  - cluster.kubesphere.io
+  resources:
+  - clusters
+  verbs:
+  - get
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:

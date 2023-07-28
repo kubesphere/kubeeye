@@ -8,19 +8,19 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - '*'
-  verbs:
-  - list
-- apiGroups:
-  - ""
-  resources:
   - configmaps
   verbs:
   - create
   - delete
   - deletecollection
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - namespaces
+  verbs:
   - get
-  - watch
+  - list
 - apiGroups:
   - apps
   resources:
