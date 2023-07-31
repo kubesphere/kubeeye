@@ -55,8 +55,9 @@ type InspectTaskReconciler struct {
 //+kubebuilder:rbac:groups=cluster.kubesphere.io,resources=clusters,verbs=get
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=create;delete;deletecollection
-//+kubebuilder:rbac:groups="",resources=namespaces;configmaps;nodes,verbs=list;get
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=create;delete;deletecollection;list;get
+//+kubebuilder:rbac:groups="",resources=nodes;services;pods;events,verbs=list;get
+//+kubebuilder:rbac:groups="",resources=namespaces;serviceaccounts,verbs=list;get;create
 //+kubebuilder:rbac:groups="apps",resources="*",verbs=get;list
 //+kubebuilder:rbac:groups="batch",resources="*",verbs=get;list;create;delete
 //+kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources="*",verbs=get;list
@@ -153,12 +154,12 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				return ctrl.Result{}, err
 			}
 			inspectTask.Status.JobPhase = JobPhase
+			inspectTask.Status.EndTimestamp = metav1.Time{Time: time.Now()}
 			err = r.GetInspectResultData(ctx, r.K8sClients, inspectTask, "default", inspectRuleNum)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
 		}
-		inspectTask.Status.EndTimestamp = metav1.Time{Time: time.Now()}
 		klog.Infof("all job finished for taskName:%s", inspectTask.Name)
 		err = r.Status().Update(ctx, inspectTask)
 		if err != nil {
@@ -367,6 +368,11 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 	inspectResult := kubeeyev1alpha2.InspectResult{
 		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-%s-result", clusterName, task.Name),
 			Labels: map[string]string{constant.LabelTaskName: task.Name},
+			Annotations: map[string]string{
+				constant.AnnotationStartTime:     task.Status.StartTimestamp.Format("2006-01-02 15:04:05"),
+				constant.AnnotationEndTime:       task.Status.EndTimestamp.Format("2006-01-02 15:04:05"),
+				constant.AnnotationInspectPolicy: string(task.Spec.InspectPolicy),
+			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         task.APIVersion,
 				Kind:               task.Kind,

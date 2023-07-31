@@ -23,6 +23,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -94,11 +95,24 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		klog.Error("Failed to get inspect task", err)
 		return ctrl.Result{}, err
 	}
+	startTime := result.GetAnnotations()[constant.AnnotationStartTime]
+	endTime := result.GetAnnotations()[constant.AnnotationEndTime]
+
+	parseStart, err := time.Parse("2006-01-02 15:04:05", startTime)
+	if err != nil {
+		klog.Error(err)
+		return ctrl.Result{}, err
+	}
+	parseEnd, err := time.Parse("2006-01-02 15:04:05", endTime)
+	if err != nil {
+		klog.Error(err)
+		return ctrl.Result{}, err
+	}
 
 	result.Status.Policy = task.Spec.InspectPolicy
-	result.Status.Duration = task.Status.EndTimestamp.Sub(task.Status.StartTimestamp.Time).String()
-	result.Status.TaskStartTime = task.Status.StartTimestamp.Time.Format("2006-01-02 15:04:05")
-	result.Status.TaskEndTime = task.Status.EndTimestamp.Format("2006-01-02 15:04:05")
+	result.Status.Duration = parseEnd.Sub(parseStart).String()
+	result.Status.TaskStartTime = startTime
+	result.Status.TaskEndTime = endTime
 	result.Status.Complete = true
 	err = r.Client.Status().Update(ctx, result)
 	if err != nil {
