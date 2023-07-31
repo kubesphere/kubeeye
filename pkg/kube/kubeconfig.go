@@ -115,9 +115,9 @@ func GetK8SClients(kubeconfig string) (*KubernetesClient, error) {
 	}
 	return clients, nil
 }
-func GetMultiClusterClient(ctx context.Context, clients *KubernetesClient, clusterName *string) (*KubernetesClient, error) {
-	klog.Infof("starting get cluster config %s", *clusterName)
-	raw, err := clients.ClientSet.CoreV1().RESTClient().Get().AbsPath("/apis/cluster.kubesphere.io/v1alpha1/clusters/").Name(*clusterName).DoRaw(ctx)
+func GetMultiClusterClient(ctx context.Context, clients *KubernetesClient, clusterName string) (*KubernetesClient, error) {
+	klog.Infof("starting get cluster config %s", clusterName)
+	raw, err := clients.ClientSet.CoreV1().RESTClient().Get().AbsPath("/apis/cluster.kubesphere.io/v1alpha1/clusters/").Name(clusterName).DoRaw(ctx)
 	if err != nil {
 		klog.Error(err, "failed to get cluster config")
 		return nil, err

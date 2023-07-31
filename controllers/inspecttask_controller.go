@@ -134,7 +134,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			var wait sync.WaitGroup
 			wait.Add(len(inspectTask.Spec.ClusterName))
 			for _, name := range inspectTask.Spec.ClusterName {
-				go func(v *string) {
+				go func(v string) {
 					defer wait.Done()
 					err := r.CreateInspect(ctx, v, inspectTask, *ruleLists, kubeEyeConfig)
 					if err != nil {
@@ -144,18 +144,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			}
 			wait.Wait()
 		} else {
-			inspectRule, inspectRuleNum := rules.ScanRules(ctx, r.K8sClients, inspectTask.Name, ruleLists.Items)
-			rule, err := createInspectRule(ctx, r.K8sClients, inspectRule, inspectTask)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
-			JobPhase, err := r.createJobsInspect(ctx, inspectTask, r.K8sClients, kubeEyeConfig.Job, rule)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
-			inspectTask.Status.JobPhase = JobPhase
-			inspectTask.Status.EndTimestamp = metav1.Time{Time: time.Now()}
-			err = r.GetInspectResultData(ctx, r.K8sClients, inspectTask, "default", inspectRuleNum)
+			err := r.CreateInspect(ctx, "default", inspectTask, *ruleLists, kubeEyeConfig)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
@@ -191,7 +180,7 @@ func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, rule
 	return r, nil
 }
 
-func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, name *string, task *kubeeyev1alpha2.InspectTask, ruleLists kubeeyev1alpha2.InspectRuleList, kubeEyeConfig conf.KubeEyeConfig) error {
+func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, name string, task *kubeeyev1alpha2.InspectTask, ruleLists kubeeyev1alpha2.InspectRuleList, kubeEyeConfig conf.KubeEyeConfig) error {
 	clusterClient, err := kube.GetMultiClusterClient(ctx, r.K8sClients, name)
 	if err != nil {
 		klog.Error(err, "Failed to get multi-cluster client.")
@@ -199,7 +188,7 @@ func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, name *string,
 	}
 	err = r.initClusterInspect(ctx, clusterClient)
 	if err != nil {
-		klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", *name, err)
+		klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", name, err)
 		return err
 	}
 	inspectRule, inspectRuleNum := rules.ScanRules(ctx, clusterClient, task.Name, ruleLists.Items)
@@ -212,7 +201,8 @@ func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, name *string,
 		return err
 	}
 	task.Status.JobPhase = append(task.Status.JobPhase, JobPhase...)
-	err = r.GetInspectResultData(ctx, clusterClient, task, *name, inspectRuleNum)
+	task.Status.EndTimestamp = metav1.Time{Time: time.Now()}
+	err = r.GetInspectResultData(ctx, clusterClient, task, name, inspectRuleNum)
 	if err != nil {
 		return err
 	}
@@ -502,7 +492,7 @@ func (r *InspectTaskReconciler) initClusterInspect(ctx context.Context, clients 
 	return nil
 }
 
-func (r *InspectTaskReconciler) clearRule(ctx context.Context, clients *kube.KubernetesClient, clusterName []*string) error {
+func (r *InspectTaskReconciler) clearRule(ctx context.Context, clients *kube.KubernetesClient, clusterName []string) error {
 	return clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"}),
 	})

@@ -28,9 +28,9 @@ type InspectTaskSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	ClusterName   []*string `json:"clusterName,omitempty"`
-	Timeout       string    `json:"timeout,omitempty"`
-	InspectPolicy Policy    `json:"inspectPolicy,omitempty"`
+	ClusterName   []string `json:"clusterName,omitempty"`
+	Timeout       string   `json:"timeout,omitempty"`
+	InspectPolicy Policy   `json:"inspectPolicy,omitempty"`
 }
 
 // InspectTaskStatus defines the observed state of InspectTask
