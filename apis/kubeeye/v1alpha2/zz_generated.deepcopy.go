@@ -225,14 +225,8 @@ func (in *InspectPlanSpec) DeepCopyInto(out *InspectPlanSpec) {
 	}
 	if in.ClusterName != nil {
 		in, out := &in.ClusterName, &out.ClusterName
-		*out = make([]*string, len(*in))
-		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(string)
-				**out = **in
-			}
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 }
 
@@ -604,14 +598,8 @@ func (in *InspectTaskSpec) DeepCopyInto(out *InspectTaskSpec) {
 	*out = *in
 	if in.ClusterName != nil {
 		in, out := &in.ClusterName, &out.ClusterName
-		*out = make([]*string, len(*in))
-		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(string)
-				**out = **in
-			}
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 }
 
