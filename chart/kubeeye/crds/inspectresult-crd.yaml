@@ -171,6 +171,21 @@ spec:
             type: object
           status:
             description: InspectResultStatus defines the observed state of InspectResult
+            properties:
+              complete:
+                type: boolean
+              duration:
+                type: string
+              level:
+                additionalProperties:
+                  type: integer
+                type: object
+              policy:
+                type: string
+              taskEndTime:
+                type: string
+              taskStartTime:
+                type: string
             type: object
         type: object
     served: true

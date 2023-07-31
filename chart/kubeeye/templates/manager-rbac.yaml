@@ -8,17 +8,32 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - '*'
+  - configmaps
   verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
   - list
 - apiGroups:
   - ""
   resources:
-  - configmaps
+  - events
+  - nodes
+  - pods
+  - services
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - serviceaccounts
   verbs:
   - create
   - get
-  - watch
+  - list
 - apiGroups:
   - apps
   resources:
@@ -35,6 +50,12 @@ rules:
   - delete
   - get
   - list
+- apiGroups:
+  - cluster.kubesphere.io
+  resources:
+  - clusters
+  verbs:
+  - get
 - apiGroups:
   - kubeeye.kubesphere.io
   resources:
