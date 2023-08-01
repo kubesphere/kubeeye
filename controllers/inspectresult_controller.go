@@ -114,6 +114,7 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	result.Status.TaskStartTime = startTime
 	result.Status.TaskEndTime = endTime
 	result.Status.Complete = true
+	result.Status.Level = map[kubeeyev1alpha2.Level]int{kubeeyev1alpha2.DangerLevel: 0, kubeeyev1alpha2.WarningLevel: 0, kubeeyev1alpha2.IgnoreLevel: 0}
 	err = r.Client.Status().Update(ctx, result)
 	if err != nil {
 		klog.Error("Failed to update inspect result status", err)

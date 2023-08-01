@@ -13,14 +13,13 @@ import (
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/utils"
-	"io/ioutil"
-
 	corev1 "k8s.io/api/core/v1"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -97,7 +96,7 @@ func RegoToRuleYaml(path string) {
 			panic(err)
 		}
 		filename := fmt.Sprintf("./ruleFiles/kubeeye_v1alpha2_inspectrules%d_%d.yaml", i, time.Now().Unix())
-		err = ioutil.WriteFile(filename, data, 0644)
+		err = os.WriteFile(filename, data, 0644)
 		if err != nil {
 			panic(err)
 		}

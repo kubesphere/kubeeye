@@ -254,3 +254,9 @@ $(HELMIFY): $(LOCALBIN)
 
 helm: manifests kustomize helmify
 	$(KUSTOMIZE) build config/default | $(HELMIFY) --crd-dir chart/kubeeye
+
+swaggerify: ## Download swaggerify locally if necessary.
+	test -s $(LOCALBIN)/swag || GOBIN=$(LOCALBIN) go install github.com/swaggo/swag/cmd/swag@latest
+
+generate-swagger-docs: swaggerify ## Generate swagger docs.
+	swag init -d cmd/apiserver,pkg/server/api -o ./swaggerDocs --parseDependency
