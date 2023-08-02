@@ -136,7 +136,17 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			for _, name := range inspectTask.Spec.ClusterName {
 				go func(v string) {
 					defer wait.Done()
-					err := r.CreateInspect(ctx, v, inspectTask, *ruleLists, kubeEyeConfig)
+					clusterClient, err := kube.GetMultiClusterClient(ctx, r.K8sClients, v)
+					if err != nil {
+						klog.Error(err, "Failed to get multi-cluster client.")
+						return
+					}
+					err = r.initClusterInspect(ctx, clusterClient)
+					if err != nil {
+						klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", v, err)
+						return
+					}
+					err = r.CreateInspect(ctx, v, inspectTask, *ruleLists, clusterClient, kubeEyeConfig)
 					if err != nil {
 						klog.Error("failed to create inspect. ", err)
 					}
@@ -144,7 +154,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			}
 			wait.Wait()
 		} else {
-			err := r.CreateInspect(ctx, "default", inspectTask, *ruleLists, kubeEyeConfig)
+			err := r.CreateInspect(ctx, "default", inspectTask, *ruleLists, r.K8sClients, kubeEyeConfig)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
@@ -180,29 +190,20 @@ func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, rule
 	return r, nil
 }
 
-func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, name string, task *kubeeyev1alpha2.InspectTask, ruleLists kubeeyev1alpha2.InspectRuleList, kubeEyeConfig conf.KubeEyeConfig) error {
-	clusterClient, err := kube.GetMultiClusterClient(ctx, r.K8sClients, name)
-	if err != nil {
-		klog.Error(err, "Failed to get multi-cluster client.")
-		return err
-	}
-	err = r.initClusterInspect(ctx, clusterClient)
-	if err != nil {
-		klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", name, err)
-		return err
-	}
-	inspectRule, inspectRuleNum := rules.ScanRules(ctx, clusterClient, task.Name, ruleLists.Items)
-	rule, err := createInspectRule(ctx, clusterClient, inspectRule, task)
+func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, name string, task *kubeeyev1alpha2.InspectTask, ruleLists kubeeyev1alpha2.InspectRuleList, clients *kube.KubernetesClient, kubeEyeConfig conf.KubeEyeConfig) error {
+
+	inspectRule, inspectRuleNum := rules.ScanRules(ctx, clients, task.Name, ruleLists.Items)
+	rule, err := createInspectRule(ctx, clients, inspectRule, task)
 	if err != nil {
 		return err
 	}
-	JobPhase, err := r.createJobsInspect(ctx, task, clusterClient, kubeEyeConfig.Job, rule)
+	JobPhase, err := r.createJobsInspect(ctx, task, clients, kubeEyeConfig.Job, rule)
 	if err != nil {
 		return err
 	}
 	task.Status.JobPhase = append(task.Status.JobPhase, JobPhase...)
 	task.Status.EndTimestamp = metav1.Time{Time: time.Now()}
-	err = r.GetInspectResultData(ctx, clusterClient, task, name, inspectRuleNum)
+	err = r.GetInspectResultData(ctx, clients, task, name, inspectRuleNum)
 	if err != nil {
 		return err
 	}
