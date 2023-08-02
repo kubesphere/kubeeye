@@ -3,8 +3,8 @@ package router
 import (
 	"context"
 	"github.com/gin-gonic/gin"
-	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/server/api"
+	"github.com/kubesphere/kubeeye-v1alpha2/pkg/kube"
+	"github.com/kubesphere/kubeeye-v1alpha2/pkg/server/api"
 )
 
 const groupPath = "/kapis/kubeeye.kubesphere.io/v1alpha1"

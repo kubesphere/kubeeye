@@ -21,8 +21,8 @@ import (
 	"context"
 	"time"
 
-	v1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	scheme "github.com/kubesphere/kubeeye/clients/clientset/versioned/scheme"
+	v1alpha2 "github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/v1alpha2"
+	scheme "github.com/kubesphere/kubeeye-v1alpha2/clients/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

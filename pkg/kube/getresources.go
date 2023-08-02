@@ -22,7 +22,7 @@ import (
 	"k8s.io/klog/v2"
 	"time"
 
-	"github.com/kubesphere/kubeeye/pkg/conf"
+	"github.com/kubesphere/kubeeye-v1alpha2/pkg/conf"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

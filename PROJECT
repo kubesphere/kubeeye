@@ -6,7 +6,7 @@ domain: kubesphere.io
 layout:
 - go.kubebuilder.io/v3
 projectName: kubeeye
-repo: github.com/kubesphere/kubeeye
+repo: github.com/kubesphere/kubeeye-v1alpha2
 resources:
 - api:
     crdVersion: v1
@@ -15,7 +15,7 @@ resources:
   domain: kubesphere.io
   group: kubeeye
   kind: InspectPlan
-  path: github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2
+  path: github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/v1alpha2
   version: v1alpha2
 - api:
     crdVersion: v1
@@ -24,7 +24,7 @@ resources:
   domain: kubesphere.io
   group: kubeeye
   kind: InspectTask
-  path: github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2
+  path: github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/v1alpha2
   version: v1alpha2
 - api:
     crdVersion: v1
@@ -33,7 +33,7 @@ resources:
   domain: kubesphere.io
   group: kubeeye
   kind: InspectRules
-  path: github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2
+  path: github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/v1alpha2
   version: v1alpha2
 - api:
     crdVersion: v1
@@ -42,6 +42,6 @@ resources:
   domain: kubesphere.io
   group: kubeeye
   kind: InspectResult
-  path: github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2
+  path: github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/v1alpha2
   version: v1alpha2
 version: "3"

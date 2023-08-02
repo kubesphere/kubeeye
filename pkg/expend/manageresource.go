@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye-v1alpha2/pkg/kube"
 	"github.com/lithammer/dedent"
 	"github.com/pkg/errors"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"

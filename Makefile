@@ -238,9 +238,9 @@ runke:
 
 .PHONY: generate-client
 generate-client:
-	./hack/generate_group.sh client,lister,informer github.com/kubesphere/kubeeye/clients github.com/kubesphere/kubeeye/apis "kubeeye:v1alpha2" --output-base=./ -h ./hack/boilerplate.go.txt -v 10
+	./hack/generate_group.sh client,lister,informer github.com/kubesphere/kubeeye-v1alpha2/clients github.com/kubesphere/kubeeye-v1alpha2/apis "kubeeye:v1alpha2" --output-base=./ -h ./hack/boilerplate.go.txt -v 10
 	rm -rf ./clients
-	mv github.com/kubesphere/kubeeye/clients ./
+	mv github.com/kubesphere/kubeeye-v1alpha2/clients ./
 	rm -rf ./github.com
 
 

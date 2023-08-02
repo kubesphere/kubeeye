@@ -18,9 +18,9 @@ package controllers
 
 import (
 	"context"
-	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/constant"
-	"github.com/kubesphere/kubeeye/pkg/utils"
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye-v1alpha2/constant"
+	"github.com/kubesphere/kubeeye-v1alpha2/pkg/utils"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
 	"time"

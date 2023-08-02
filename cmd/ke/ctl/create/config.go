@@ -2,7 +2,7 @@ package create
 
 import (
 	"fmt"
-	kubeeyetemplate "github.com/kubesphere/kubeeye/pkg/template"
+	kubeeyetemplate "github.com/kubesphere/kubeeye-v1alpha2/pkg/template"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"os"

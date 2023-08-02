@@ -15,7 +15,7 @@
 package inspect
 
 import (
-	"github.com/kubesphere/kubeeye/apis/kubeeye/options"
+	"github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/options"
 )
 
 var RuleOperatorMap = make(map[string]options.InspectInterface)

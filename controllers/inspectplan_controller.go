@@ -19,9 +19,9 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/kubesphere/kubeeye/constant"
-	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/utils"
+	"github.com/kubesphere/kubeeye-v1alpha2/constant"
+	"github.com/kubesphere/kubeeye-v1alpha2/pkg/kube"
+	"github.com/kubesphere/kubeeye-v1alpha2/pkg/utils"
 	"k8s.io/klog/v2"
 	"time"
 
@@ -29,7 +29,7 @@ import (
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/v1alpha2"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"

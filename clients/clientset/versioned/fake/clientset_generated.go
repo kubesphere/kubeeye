@@ -18,9 +18,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/kubesphere/kubeeye/clients/clientset/versioned"
-	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/clients/clientset/versioned/typed/kubeeye/v1alpha2"
-	fakekubeeyev1alpha2 "github.com/kubesphere/kubeeye/clients/clientset/versioned/typed/kubeeye/v1alpha2/fake"
+	clientset "github.com/kubesphere/kubeeye-v1alpha2/clients/clientset/versioned"
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye-v1alpha2/clients/clientset/versioned/typed/kubeeye/v1alpha2"
+	fakekubeeyev1alpha2 "github.com/kubesphere/kubeeye-v1alpha2/clients/clientset/versioned/typed/kubeeye/v1alpha2/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

@@ -2,9 +2,9 @@ package create
 
 import (
 	"fmt"
-	"github.com/kubesphere/kubeeye/constant"
-	"github.com/kubesphere/kubeeye/pkg/inspect"
-	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye-v1alpha2/constant"
+	"github.com/kubesphere/kubeeye-v1alpha2/pkg/inspect"
+	"github.com/kubesphere/kubeeye-v1alpha2/pkg/kube"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"os"

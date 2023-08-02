@@ -1,4 +1,4 @@
-module github.com/kubesphere/kubeeye
+module github.com/kubesphere/kubeeye-v1alpha2
 
 go 1.19
 
