@@ -18,8 +18,8 @@ limitations under the License.
 package kubeeye
 
 import (
-	internalinterfaces "github.com/kubesphere/kubeeye-v1alpha2/clients/informers/externalversions/internalinterfaces"
-	v1alpha2 "github.com/kubesphere/kubeeye-v1alpha2/clients/informers/externalversions/kubeeye/v1alpha2"
+	internalinterfaces "github.com/kubesphere/kubeeye/clients/informers/externalversions/internalinterfaces"
+	v1alpha2 "github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye/v1alpha2"
 )
 
 // Interface provides access to each of this group's versions.

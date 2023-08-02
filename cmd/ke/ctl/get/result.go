@@ -2,8 +2,8 @@ package get
 
 import (
 	"fmt"
-	"github.com/kubesphere/kubeeye-v1alpha2/pkg/kube"
-	"github.com/kubesphere/kubeeye-v1alpha2/pkg/output"
+	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/output"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"

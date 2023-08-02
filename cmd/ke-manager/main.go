@@ -15,7 +15,7 @@ package main
 
 import (
 	"flag"
-	"github.com/kubesphere/kubeeye-v1alpha2/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/kube"
 	"go.uber.org/zap/zapcore"
 	"os"
 
@@ -30,8 +30,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	kubeeyev1alpha2 "github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye-v1alpha2/controllers"
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/controllers"
 	//+kubebuilder:scaffold:imports
 )
 

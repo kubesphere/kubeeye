@@ -2,9 +2,9 @@ package ctl
 
 import (
 	"fmt"
-	"github.com/kubesphere/kubeeye-v1alpha2/cmd/ke/ctl/create"
-	"github.com/kubesphere/kubeeye-v1alpha2/cmd/ke/ctl/get"
-	"github.com/kubesphere/kubeeye-v1alpha2/pkg/kube"
+	"github.com/kubesphere/kubeeye/cmd/ke/ctl/create"
+	"github.com/kubesphere/kubeeye/cmd/ke/ctl/get"
+	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"os"

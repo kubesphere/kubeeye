@@ -20,8 +20,8 @@ package v1alpha2
 import (
 	"net/http"
 
-	v1alpha2 "github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye-v1alpha2/clients/clientset/versioned/scheme"
+	v1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/clients/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 

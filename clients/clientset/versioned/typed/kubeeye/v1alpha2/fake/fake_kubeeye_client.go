@@ -18,7 +18,7 @@ limitations under the License.
 package fake
 
 import (
-	v1alpha2 "github.com/kubesphere/kubeeye-v1alpha2/clients/clientset/versioned/typed/kubeeye/v1alpha2"
+	v1alpha2 "github.com/kubesphere/kubeeye/clients/clientset/versioned/typed/kubeeye/v1alpha2"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )

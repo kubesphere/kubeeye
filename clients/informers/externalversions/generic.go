@@ -20,7 +20,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1alpha2 "github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/v1alpha2"
+	v1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )

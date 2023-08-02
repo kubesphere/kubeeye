@@ -22,9 +22,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/kubesphere/kubeeye-v1alpha2/clients/clientset/versioned"
-	internalinterfaces "github.com/kubesphere/kubeeye-v1alpha2/clients/informers/externalversions/internalinterfaces"
-	kubeeye "github.com/kubesphere/kubeeye-v1alpha2/clients/informers/externalversions/kubeeye"
+	versioned "github.com/kubesphere/kubeeye/clients/clientset/versioned"
+	internalinterfaces "github.com/kubesphere/kubeeye/clients/informers/externalversions/internalinterfaces"
+	kubeeye "github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

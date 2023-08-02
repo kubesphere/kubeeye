@@ -1,4 +1,4 @@
-module github.com/kubesphere/kubeeye-v1alpha2/plugins/kubebench
+module github.com/kubesphere/kubeeye/plugins/kubebench
 
 go 1.17
 

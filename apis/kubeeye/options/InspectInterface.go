@@ -2,9 +2,9 @@ package options
 
 import (
 	"context"
-	kubeeyev1alpha2 "github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye-v1alpha2/pkg/conf"
-	"github.com/kubesphere/kubeeye-v1alpha2/pkg/kube"
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/pkg/conf"
+	"github.com/kubesphere/kubeeye/pkg/kube"
 	v12 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

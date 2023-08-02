@@ -3,9 +3,9 @@ package api
 import (
 	"context"
 	"github.com/gin-gonic/gin"
-	"github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye-v1alpha2/cmd/apiserver/options"
-	"github.com/kubesphere/kubeeye-v1alpha2/pkg/kube"
+	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/cmd/apiserver/options"
+	"github.com/kubesphere/kubeeye/pkg/kube"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"sort"

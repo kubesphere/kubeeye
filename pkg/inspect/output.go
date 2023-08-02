@@ -3,9 +3,9 @@ package inspect
 import (
 	"context"
 	"fmt"
-	"github.com/kubesphere/kubeeye-v1alpha2/constant"
-	"github.com/kubesphere/kubeeye-v1alpha2/pkg/kube"
-	"github.com/kubesphere/kubeeye-v1alpha2/pkg/utils"
+	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/utils"
 	"github.com/xuri/excelize/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"

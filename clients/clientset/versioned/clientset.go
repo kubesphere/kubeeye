@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net/http"
 
-	kubeeyev1alpha2 "github.com/kubesphere/kubeeye-v1alpha2/clients/clientset/versioned/typed/kubeeye/v1alpha2"
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/clients/clientset/versioned/typed/kubeeye/v1alpha2"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

@@ -20,7 +20,7 @@ package fake
 import (
 	"context"
 
-	v1alpha2 "github.com/kubesphere/kubeeye-v1alpha2/apis/kubeeye/v1alpha2"
+	v1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

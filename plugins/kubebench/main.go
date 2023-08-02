@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/kubesphere/kubeeye-v1alpha2/plugins/kubebench/pkg"
+	"github.com/kubesphere/kubeeye/plugins/kubebench/pkg"
 )
 
 func main() {
