@@ -10,6 +10,7 @@ COPY controllers/ controllers/
 COPY pkg/ pkg/
 COPY constant/ constant/
 COPY plugins/ plugins/
+COPY swaggerDocs/ swaggerDocs/
 
 # Copy the Go Modules manifests
 COPY go.mod go.mod
