@@ -138,9 +138,3 @@ type ExtraInfo struct {
 	WorkloadsCount int      `json:"workloadsCount,omitempty"`
 	NamespacesList []string `json:"namespacesList,omitempty"`
 }
-
-type FileChangeResultItem struct {
-	FileName string   `json:"fileName,omitempty"`
-	Issues   []string `json:"issues,omitempty"`
-	Path     string   `json:"path,omitempty"`
-}

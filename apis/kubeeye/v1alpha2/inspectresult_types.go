@@ -63,15 +63,23 @@ type NodeInfoResult struct {
 	SystemdResult    []NodeResultItem       `json:"systemdResult,omitempty"`
 }
 
+type FileChangeResultItem struct {
+	FileName string   `json:"fileName,omitempty"`
+	Issues   []string `json:"issues,omitempty"`
+	Path     string   `json:"path,omitempty"`
+	Level    Level    `json:"level,omitempty"`
+}
 type NodeResultItem struct {
 	Name   string  `json:"name,omitempty"`
 	Assert *bool   `json:"assert,omitempty"`
 	Value  *string `json:"value,omitempty"`
+	Level  Level   `json:"level,omitempty"`
 }
 type ComponentResultItem struct {
 	Name      string `json:"name,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
 	Endpoint  string `json:"endpoint,omitempty"`
+	Level     Level  `json:"level,omitempty"`
 }
 
 // +genclient

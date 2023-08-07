@@ -110,8 +110,10 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 		for _, sysRule := range sysctl {
 			ctlRule, err := fs.SysctlStrings(sysRule.Name)
 			klog.Infof("name:%s,value:%s", sysRule.Name, ctlRule)
-			var ctl kubeeyev1alpha2.NodeResultItem
-			ctl.Name = sysRule.Name
+			ctl := kubeeyev1alpha2.NodeResultItem{
+				Name:  sysRule.Name,
+				Level: sysRule.Level,
+			}
 			if err != nil {
 				errVal := fmt.Sprintf("name:%s to does not exist", sysRule.Name)
 				ctl.Value = &errVal
@@ -122,16 +124,15 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 				ctl.Value = &val
 				if sysRule.Rule != nil {
 					if _, err := visitor.CheckRule(*sysRule.Rule); err != nil {
-						sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
-						klog.Error(sprintf)
-						ctl.Value = &sprintf
+						checkErr := fmt.Sprintf("rule condition is not correct, %s", err.Error())
+						ctl.Value = &checkErr
 					} else {
 						err, res := visitor.EventRuleEvaluate(map[string]interface{}{sysRule.Name: val}, *sysRule.Rule)
 						if err != nil {
-							sprintf := fmt.Sprintf("err:%s", err.Error())
+							evalErr := fmt.Sprintf("event rule evaluate to failed err:%s", err)
 							notExist := true
 							ctl.Assert = &notExist
-							ctl.Value = &sprintf
+							ctl.Value = &evalErr
 						} else {
 							ctl.Assert = &res
 						}

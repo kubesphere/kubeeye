@@ -7,6 +7,7 @@ import (
 	"github.com/kubesphere/kubeeye/cmd/apiserver/options"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/output"
+	"github.com/kubesphere/kubeeye/pkg/template"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"net/http"
@@ -53,6 +54,7 @@ func (o *InspectResult) ListInspectResult(gin *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        name path string true "name"
+// @Param        type query string false "type"
 // @Success      200 {object} v1alpha2.InspectResult
 // @Router       /inspectresults/{name} [get]
 func (o *InspectResult) GetInspectResult(gin *gin.Context) {
@@ -65,7 +67,7 @@ func (o *InspectResult) GetInspectResult(gin *gin.Context) {
 			gin.JSON(http.StatusInternalServerError, err)
 			return
 		}
-		gin.HTML(http.StatusOK, "inspectResult.tpl", m)
+		gin.HTML(http.StatusOK, template.InspectResultTemplate, m)
 	default:
 		list, err := o.Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(o.Ctx, name, metav1.GetOptions{})
 		if err != nil {

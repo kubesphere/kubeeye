@@ -123,9 +123,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			klog.Error("Unable to get jobConfig")
 			return ctrl.Result{}, err
 		}
-		err = r.updatePlanStatus(ctx, func() kubeeyev1alpha2.Phase {
-			return kubeeyev1alpha2.PhaseRunning
-		}, inspectTask.GetLabels()[constant.LabelName], inspectTask.Name)
+		err = r.updatePlanStatus(ctx, kubeeyev1alpha2.PhaseRunning, inspectTask.GetLabels()[constant.LabelName], inspectTask.Name)
 		if err != nil {
 			klog.Error("Failed to update inspect plan status. ", err)
 			return ctrl.Result{}, err
@@ -174,19 +172,8 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			klog.Error("failed to update inspect task. ", err)
 			return ctrl.Result{}, err
 		}
-
-		err = r.updatePlanStatus(ctx, func() kubeeyev1alpha2.Phase {
-			if inspectTask.Status.JobPhase == nil {
-				return kubeeyev1alpha2.PhaseFailed
-			}
-			_, ok, _ := utils.ArrayFinds(inspectTask.Status.JobPhase, func(m kubeeyev1alpha2.JobPhase) bool {
-				return m.Phase == kubeeyev1alpha2.PhaseFailed
-			})
-			if ok {
-				return kubeeyev1alpha2.PhaseFailed
-			}
-			return kubeeyev1alpha2.PhaseSucceeded
-		}, inspectTask.GetLabels()[constant.LabelName], inspectTask.Name)
+		getStatus := GetStatus(inspectTask)
+		err = r.updatePlanStatus(ctx, getStatus, inspectTask.GetLabels()[constant.LabelName], inspectTask.Name)
 		if err != nil {
 			klog.Error("failed to update inspect plan comeToAnEnd status. ", err)
 		}
@@ -247,6 +234,18 @@ func sortRuleOpaToAlter(rule []kubeeyev1alpha2.JobRule) []kubeeyev1alpha2.JobRul
 	}
 
 	return rule
+}
+func GetStatus(task *kubeeyev1alpha2.InspectTask) kubeeyev1alpha2.Phase {
+	if task.Status.JobPhase == nil {
+		return kubeeyev1alpha2.PhaseFailed
+	}
+	_, ok, _ := utils.ArrayFinds(task.Status.JobPhase, func(m kubeeyev1alpha2.JobPhase) bool {
+		return m.Phase == kubeeyev1alpha2.PhaseFailed
+	})
+	if ok {
+		return kubeeyev1alpha2.PhaseFailed
+	}
+	return kubeeyev1alpha2.PhaseSucceeded
 }
 
 func (r *InspectTaskReconciler) getClusterInfo(ctx context.Context) (kubeeyev1alpha2.ClusterInfo, error) {
@@ -378,6 +377,7 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 	configs, err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name}),
 	})
+
 	if err != nil {
 		return err
 	}
@@ -425,7 +425,26 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 			}
 		}
 	}
-	file, err := os.OpenFile(path.Join(constant.ResultPath, inspectResult.Name), os.O_CREATE|os.O_WRONLY, 0644)
+	err = saveResultFile(resultData)
+	if err != nil {
+		return err
+	}
+
+	err = r.Create(ctx, &inspectResult)
+	if err != nil {
+		return err
+	}
+
+	err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name})})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func saveResultFile(resultData *kubeeyev1alpha2.InspectResult) error {
+	file, err := os.OpenFile(path.Join(constant.ResultPath, resultData.Name), os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		klog.Error(err, "open file error")
 		return err
@@ -440,17 +459,6 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 		klog.Error(err, "write file error")
 		return err
 	}
-
-	err = r.Create(ctx, &inspectResult)
-	if err != nil {
-		return err
-	}
-
-	err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name})})
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -547,7 +555,7 @@ func (r *InspectTaskReconciler) clearRule(ctx context.Context, clients *kube.Kub
 	})
 }
 
-func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase func() kubeeyev1alpha2.Phase, planName string, taskName string) error {
+func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase kubeeyev1alpha2.Phase, planName string, taskName string) error {
 	plan := &kubeeyev1alpha2.InspectPlan{}
 	err := r.Get(ctx, types.NamespacedName{Name: planName}, plan)
 	if err != nil {
@@ -556,11 +564,11 @@ func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase func
 	}
 	for i, name := range plan.Status.TaskNames {
 		if name.Name == taskName {
-			plan.Status.TaskNames[i].TaskStatus = phase()
+			plan.Status.TaskNames[i].TaskStatus = phase
 			break
 		}
 	}
-	plan.Status.LastTaskStatus = phase()
+	plan.Status.LastTaskStatus = phase
 	err = r.Status().Update(ctx, plan)
 	if err != nil {
 		klog.Error(err, "update plan status error")

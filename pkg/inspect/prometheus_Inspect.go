@@ -87,9 +87,8 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 			continue
 		}
 		var queryResultsMap []map[string]string
-		for i, result := range queryResults {
-			temp := map[string]string{"value": result.Value.String(), "time": result.Timestamp.String()}
-			klog.Info(i, result)
+		for _, result := range queryResults {
+			temp := map[string]string{"value": result.Value.String(), "time": result.Timestamp.String(), "level": string(proRule.Level)}
 			for name, value := range result.Metric {
 				temp[formatName(name)] = string(value)
 			}

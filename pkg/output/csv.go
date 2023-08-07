@@ -1,4 +1,4 @@
-package inspect
+package output
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/xuri/excelize/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-	path "path"
+	"path"
 	"strings"
 )
 

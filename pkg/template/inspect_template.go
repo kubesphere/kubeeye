@@ -63,8 +63,10 @@ func GetInspectPlanTemplate() (*texttemplate.Template, error) {
 	`)
 }
 
+const InspectResultTemplate = "inspectResult.tpl"
+
 func GetInspectResultHtmlTemplate() (*hemltemplate.Template, error) {
-	return hemltemplate.New("inspectResult.tpl").Parse(`
+	return hemltemplate.New(InspectResultTemplate).Parse(`
 <!DOCTYPE html>
 <html lang="en">
 <head>

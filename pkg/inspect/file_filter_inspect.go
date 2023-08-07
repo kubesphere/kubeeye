@@ -73,6 +73,7 @@ func (o *fileFilterInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 			filterR := kubeeyev1alpha2.FileChangeResultItem{
 				FileName: rule.Name,
 				Path:     rule.Path,
+				Level:    rule.Level,
 			}
 			if err != nil {
 				klog.Errorf(" Failed to open file . err:%s", err)

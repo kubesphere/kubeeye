@@ -70,25 +70,24 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 	}
 
 	for _, file := range fileRule {
-		var resultItem kubeeyev1alpha2.FileChangeResultItem
+		resultItem := kubeeyev1alpha2.FileChangeResultItem{
+			FileName: file.Name,
+			Path:     file.Path,
+			Level:    file.Level,
+		}
 
-		resultItem.FileName = file.Name
-		resultItem.Path = file.Path
 		baseFile, fileErr := os.ReadFile(path.Join(constant.RootPathPrefix, file.Path))
 		if fileErr != nil {
 			klog.Errorf("Failed to open base file path:%s,error:%s", baseFile, fileErr)
 			resultItem.Issues = []string{fmt.Sprintf("%s:The file does not exist", file.Name)}
 			fileResults = append(fileResults, resultItem)
-
 			continue
 		}
 		baseFileName := fmt.Sprintf("%s-%s", constant.BaseFilePrefix, file.Name)
 		baseConfig, configErr := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, baseFileName, metav1.GetOptions{})
 		if configErr != nil {
 			klog.Errorf("Failed to open file. cause：file Do not exist,err:%s", err)
-
 			if kubeErr.IsNotFound(configErr) {
-
 				mapTemplate := template.BinaryFileConfigMapTemplate(baseFileName, constant.DefaultNamespace, baseFile, true)
 				_, createErr := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, mapTemplate, metav1.CreateOptions{})
 				if createErr != nil {
