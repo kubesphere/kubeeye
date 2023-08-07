@@ -56,9 +56,15 @@ spec:
         volumeMounts:
           - mountPath: /hosts/result
             name: inspect-result
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
         - name: inspect-result
           persistentVolumeClaim:
             claimName: inspect-result
+        - name: localtime
+          hostPath:
+              path: /etc/localtime

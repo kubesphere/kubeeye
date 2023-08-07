@@ -28,7 +28,10 @@ func main() {
 
 	r := gin.Default()
 
-	r.GET("/ping", func(c *gin.Context) {
+	r.GET("/readyz", func(c *gin.Context) {
+		c.String(http.StatusOK, "pong")
+	})
+	r.GET("/healthz", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
 	})
 
@@ -55,6 +58,7 @@ func main() {
 		Addr:    ":9090",
 		Handler: r,
 	}
+
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	go func() {

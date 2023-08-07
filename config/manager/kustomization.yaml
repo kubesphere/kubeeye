@@ -1,6 +1,7 @@
 resources:
 - manager.yaml
 - kubeeye-config.yaml
+- apiserver.yaml
 
 generatorOptions:
   disableNameSuffixHash: true

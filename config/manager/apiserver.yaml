@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ke-apiserver
+  namespace: system
+spec:
+  selector:
+    app: ke-apiserver
+  ports:
+    - protocol: TCP
+      port: 9090
+      targetPort: 9090
+      nodePort: 30882
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ke-apiserver
+  namespace: system
+  labels:
+    app: ke-apiserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ke-apiserver
+  template:
+    metadata:
+      name: ke-apiserver
+      labels:
+        app: ke-apiserver
+    spec:
+      containers:
+        - name: ke-apiserver
+          image: jw008/kubeeye-apiserver:latest
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - mountPath: /etc/localtime
+              name: localtime
+            - mountPath: /hosts/result
+              name: inspect-result
+          livenessProbe:
+            httpGet:
+              port: 9090
+              path: /readyz
+          readinessProbe:
+            httpGet:
+              port: 9090
+              path: /healthz
+          resources:
+            limits:
+              cpu: 10m
+              memory: 256Mi
+            requests:
+              cpu: 10m
+              memory: 100Mi
+      serviceAccountName: controller-manager
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: inspect-result
+          persistentVolumeClaim:
+            claimName: inspect-result
+      restartPolicy: Always
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%

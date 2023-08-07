@@ -876,6 +876,21 @@ spec:
     control-plane: kubeeye-controller-manager
 ---
 apiVersion: v1
+kind: Service
+metadata:
+  name: kubeeye-ke-apiserver
+  namespace: kubeeye-system
+spec:
+  ports:
+  - nodePort: 30882
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: ke-apiserver
+  type: NodePort
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: kubeeye-inspect-result
@@ -957,11 +972,74 @@ spec:
         volumeMounts:
         - mountPath: /hosts/result
           name: inspect-result
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
       securityContext:
         runAsNonRoot: true
       serviceAccountName: kubeeye-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
+      - name: inspect-result
+        persistentVolumeClaim:
+          claimName: kubeeye-inspect-result
+      - hostPath:
+          path: /etc/localtime
+        name: localtime
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ke-apiserver
+  name: kubeeye-ke-apiserver
+  namespace: kubeeye-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ke-apiserver
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: ke-apiserver
+      name: ke-apiserver
+    spec:
+      containers:
+      - image: jw008/kubeeye-apiserver:latest
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /readyz
+            port: 9090
+        name: ke-apiserver
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 9090
+        resources:
+          limits:
+            cpu: 10m
+            memory: 256Mi
+          requests:
+            cpu: 10m
+            memory: 100Mi
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+        - mountPath: /hosts/result
+          name: inspect-result
+      restartPolicy: Always
+      serviceAccountName: kubeeye-controller-manager
+      volumes:
+      - hostPath:
+          path: /etc/localtime
+        name: localtime
       - name: inspect-result
         persistentVolumeClaim:
           claimName: kubeeye-inspect-result
