@@ -23,6 +23,8 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
+	"os"
+	"path"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -75,6 +77,10 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		newFinalizers := utils.SliceRemove(Finalizers, result.Finalizers)
 		result.Finalizers = newFinalizers.([]string)
 		klog.Infof("inspect task is being deleted")
+		err = os.Remove(path.Join(constant.ResultPath, result.Name))
+		if err != nil {
+			klog.Error(err, "failed to delete file")
+		}
 		err = r.Client.Update(ctx, result)
 		if err != nil {
 			klog.Error("Failed to inspect plan add finalizers. ", err)

@@ -58,6 +58,70 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "description": "CreateInspectPlan",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "InspectPlan"
+                ],
+                "summary": "Show an Inspect",
+                "parameters": [
+                    {
+                        "description": "Add InspectPlan",
+                        "name": "InspectPlan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha2.InspectPlan"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha2.InspectPlan"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "DeleteInspectTask",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "InspectTask"
+                ],
+                "summary": "Show an Inspect",
+                "parameters": [
+                    {
+                        "description": "delete InspectTask",
+                        "name": "v1alpha2.InspectTask",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha2.InspectTask"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha2.InspectTask"
+                        }
+                    }
+                }
             }
         },
         "/inspectplans/{name}": {
@@ -639,6 +703,9 @@ const docTemplate = `{
                 "desc": {
                     "type": "string"
                 },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -664,6 +731,9 @@ const docTemplate = `{
             "properties": {
                 "desc": {
                     "type": "string"
+                },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
                 },
                 "name": {
                     "type": "string"
@@ -748,11 +818,10 @@ const docTemplate = `{
                 "TaskNames": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v1alpha2.TaskStatus"
                     }
                 },
                 "lastScheduleTime": {
-                    "description": "INSERT ADDITIONAL STATUS FIELD - define observed state of cluster\nImportant: Run \"make\" to regenerate code after modifying this file",
                     "type": "string"
                 },
                 "lastTaskName": {
@@ -925,11 +994,14 @@ const docTemplate = `{
         "v1alpha2.InspectRuleStatus": {
             "type": "object",
             "properties": {
-                "importTime": {
+                "endImportTime": {
                     "type": "string"
                 },
                 "ruleCount": {
                     "type": "integer"
+                },
+                "startImportTime": {
+                    "type": "string"
                 },
                 "state": {
                     "$ref": "#/definitions/v1alpha2.State"
@@ -1031,6 +1103,19 @@ const docTemplate = `{
                 }
             }
         },
+        "v1alpha2.Level": {
+            "type": "string",
+            "enum": [
+                "danger",
+                "warning",
+                "ignore"
+            ],
+            "x-enum-varnames": [
+                "DangerLevel",
+                "WarningLevel",
+                "IgnoreLevel"
+            ]
+        },
         "v1alpha2.NodeInfoResult": {
             "type": "object",
             "properties": {
@@ -1086,6 +1171,9 @@ const docTemplate = `{
                 "desc": {
                     "type": "string"
                 },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
+                },
                 "module": {
                     "type": "string"
                 },
@@ -1133,6 +1221,9 @@ const docTemplate = `{
                 },
                 "endpoint": {
                     "type": "string"
+                },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
                 },
                 "name": {
                     "type": "string"
@@ -1203,11 +1294,11 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "StartImport",
-                "importSuccess"
+                "ImportComplete"
             ],
             "x-enum-varnames": [
                 "StartImport",
-                "ImportSuccess"
+                "ImportComplete"
             ]
         },
         "v1alpha2.SysRule": {
@@ -1215,6 +1306,9 @@ const docTemplate = `{
             "properties": {
                 "desc": {
                     "type": "string"
+                },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
                 },
                 "name": {
                     "type": "string"
@@ -1230,6 +1324,17 @@ const docTemplate = `{
                 },
                 "rule": {
                     "type": "string"
+                }
+            }
+        },
+        "v1alpha2.TaskStatus": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "taskStatus": {
+                    "$ref": "#/definitions/v1alpha2.Phase"
                 }
             }
         }

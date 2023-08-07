@@ -55,7 +55,6 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	err := r.Get(ctx, req.NamespacedName, inspectRules)
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
-			klog.Infof("inspect ruleFiles is not found;name:%s,namespect:%s\n", req.Name, req.Namespace)
 			return ctrl.Result{}, nil
 		}
 		klog.Error(err, "failed to get inspect ruleFiles")
@@ -87,6 +86,7 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	if inspectRules.Status.State == "" {
 		inspectRules.Status.State = kubeeyev1alpha2.StartImport
+		inspectRules.Status.StartImportTime = v1.Time{Time: time.Now()}
 		err = r.Status().Update(ctx, inspectRules)
 		if err != nil {
 			klog.Error(err, "failed to update inspect ruleFiles")
@@ -94,12 +94,11 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 		return ctrl.Result{}, nil
 	}
-	if inspectRules.Status.State == kubeeyev1alpha2.ImportSuccess {
+	if inspectRules.Status.State == kubeeyev1alpha2.ImportComplete {
 		klog.Info("import inspect ruleFiles success")
 		return ctrl.Result{}, nil
 	}
 	klog.Info("starting inspect ruleFiles")
-	copyInspectRules := inspectRules.DeepCopy()
 
 	total := 0
 	if inspectRules.Spec.Opas != nil {
@@ -121,10 +120,10 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		total += len(inspectRules.Spec.FileFilter)
 	}
 
-	copyInspectRules.Status.ImportTime = v1.Time{Time: time.Now()}
-	copyInspectRules.Status.State = kubeeyev1alpha2.ImportSuccess
-	copyInspectRules.Status.RuleCount = total
-	err = r.Status().Update(ctx, copyInspectRules)
+	inspectRules.Status.EndImportTime = v1.Time{Time: time.Now()}
+	inspectRules.Status.State = kubeeyev1alpha2.ImportComplete
+	inspectRules.Status.RuleCount = total
+	err = r.Status().Update(ctx, inspectRules)
 	if err != nil {
 		klog.Error(err, "failed to update inspect ruleFiles")
 		return ctrl.Result{}, err

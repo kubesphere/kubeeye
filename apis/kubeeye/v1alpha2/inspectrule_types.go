@@ -38,9 +38,10 @@ type InspectRuleSpec struct {
 	Component          *string          `json:"component,omitempty"`
 }
 type RuleItemBases struct {
-	Name string  `json:"name,omitempty"`
-	Rule *string `json:"rule,omitempty"`
-	Desc string  `json:"desc,omitempty"`
+	Name  string  `json:"name,omitempty"`
+	Rule  *string `json:"rule,omitempty"`
+	Desc  string  `json:"desc,omitempty"`
+	Level Level   `json:"level,omitempty"`
 }
 
 type FileFilterRule struct {
@@ -75,8 +76,8 @@ type FileChangeRule struct {
 type State string
 
 const (
-	StartImport   State = "StartImport"
-	ImportSuccess State = "importSuccess"
+	StartImport    State = "StartImport"
+	ImportComplete State = "ImportComplete"
 )
 
 // InspectRuleStatus defines the observed state of InspectRule
@@ -84,11 +85,10 @@ type InspectRuleStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	ImportTime metav1.Time `json:"importTime,omitempty"`
-
-	State State `json:"state,omitempty"`
-
-	RuleCount int `json:"ruleCount,omitempty"`
+	StartImportTime metav1.Time `json:"startImportTime,omitempty"`
+	EndImportTime   metav1.Time `json:"endImportTime,omitempty"`
+	State           State       `json:"state,omitempty"`
+	RuleCount       int         `json:"ruleCount,omitempty"`
 }
 
 // +genclient

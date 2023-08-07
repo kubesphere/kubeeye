@@ -6,6 +6,7 @@ import (
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/cmd/apiserver/options"
 	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/output"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"net/http"
@@ -56,14 +57,24 @@ func (o *InspectResult) ListInspectResult(gin *gin.Context) {
 // @Router       /inspectresults/{name} [get]
 func (o *InspectResult) GetInspectResult(gin *gin.Context) {
 	name := gin.Param("name")
-	list, err := o.Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(o.Ctx, name, metav1.GetOptions{})
-	if err != nil {
-		klog.Error(err)
-		gin.JSON(http.StatusInternalServerError, err)
-		return
+	outType := gin.Query("type")
+	switch outType {
+	case "html":
+		err, m := output.HtmlOut(gin.Param("name"))
+		if err != nil {
+			gin.JSON(http.StatusInternalServerError, err)
+			return
+		}
+		gin.HTML(http.StatusOK, "inspectResult.tpl", m)
+	default:
+		list, err := o.Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(o.Ctx, name, metav1.GetOptions{})
+		if err != nil {
+			klog.Error(err)
+			gin.JSON(http.StatusInternalServerError, err)
+			return
+		}
+		gin.JSON(http.StatusOK, list)
 	}
-
-	gin.JSON(http.StatusOK, list)
 
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/server/router"
 	_ "github.com/kubesphere/kubeeye/swaggerDocs"
+	"github.com/pkg/errors"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"k8s.io/klog/v2"
@@ -51,14 +52,14 @@ func main() {
 	router.RegisterRouter(ctx, r, clients)
 
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":9090",
 		Handler: r,
 	}
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	go func() {
 		// 服务连接
-		if err = srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err = srv.ListenAndServe(); err != nil && !errors.Is(http.ErrServerClosed, err) {
 			klog.Errorf("listen: %s\n", err)
 			errCh <- err
 		}

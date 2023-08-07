@@ -38,11 +38,11 @@ func NewResultCmd(client *kube.KubernetesClient) *cobra.Command {
 					os.Exit(1)
 				}
 			} else {
-				err = output.HtmlOut(cmd.Context(), r.Clients, r.Path, r.TaskName)
-				if err != nil {
-					klog.Error(err)
-					os.Exit(1)
-				}
+				//err = output.HtmlOut(cmd.Context(), r.Clients, r.Path, r.TaskName)
+				//if err != nil {
+				//	klog.Error(err)
+				//	os.Exit(1)
+				//}
 			}
 
 			fmt.Println("result output success")

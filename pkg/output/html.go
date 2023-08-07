@@ -1,16 +1,14 @@
 package output
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
-	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/template"
-	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
+	"io"
 	"os"
+	"path"
 	"strings"
 	"time"
 )
@@ -22,11 +20,24 @@ type renderNode struct {
 	Children []renderNode
 }
 
-func HtmlOut(ctx context.Context, Clients *kube.KubernetesClient, Path string, TaskName string) error {
+func HtmlOut(resultName string) (error, map[string]interface{}) {
 
-	results, err := Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(ctx, TaskName, metav1.GetOptions{})
+	var results v1alpha2.InspectResult
+
+	open, err := os.Open(path.Join(constant.ResultPath, resultName))
 	if err != nil {
-		return errors.Errorf("result not exist")
+		return err, nil
+	}
+	defer open.Close()
+
+	all, err := io.ReadAll(open)
+	if err != nil {
+		return err, nil
+	}
+
+	err = json.Unmarshal(all, &results)
+	if err != nil {
+		return err, nil
 	}
 	var resultCollection = make(map[string][]renderNode, 5)
 
@@ -64,12 +75,8 @@ func HtmlOut(ctx context.Context, Clients *kube.KubernetesClient, Path string, T
 	}
 
 	data := map[string]interface{}{"title": results.CreationTimestamp.Format("2006-01-02 15:04"), "overview": ruleNumber, "details": resultCollection}
-	err = renderView(data, Path)
-	if err != nil {
-		klog.Error(err)
-		return err
-	}
-	return nil
+
+	return nil, data
 }
 
 func getOpaList(result []v1alpha2.ResourceResult) (opaList []renderNode) {

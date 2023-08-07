@@ -1,13 +1,9 @@
 package rules
 
 import (
-	"bufio"
-	"bytes"
 	"context"
-	"embed"
 	"encoding/json"
 	"fmt"
-	"github.com/ghodss/yaml"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/clients/clientset/versioned"
 	"github.com/kubesphere/kubeeye/constant"
@@ -19,90 +15,10 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 )
-
-//go:embed ruleFiles
-var defaultRegoRules embed.FS
-
-func GetDefaultRegofile(path string) []map[string][]byte {
-	var regoRules []map[string][]byte
-	files, err := defaultRegoRules.ReadDir(path)
-	if err != nil {
-		fmt.Printf("Failed to get Default Rego rule files.\n")
-	}
-	for _, file := range files {
-		rule, _ := defaultRegoRules.ReadFile(path + "/" + file.Name())
-		regoRule := map[string][]byte{"name": []byte(file.Name()), "rule": rule}
-		regoRules = append(regoRules, regoRule)
-	}
-	return regoRules
-}
-
-func RegoToRuleYaml(path string) {
-	regofile := GetDefaultRegofile(path)
-	var inspectRules []kubeeyev1alpha2.InspectRule
-
-	for _, m := range regofile {
-		var ruleItems []kubeeyev1alpha2.OpaRule
-		var inspectRule kubeeyev1alpha2.InspectRule
-		opaRule := kubeeyev1alpha2.OpaRule{}
-		var space string
-		opaRule.Name = strings.Replace(string(m["name"]), ".rego", "", -1)
-		var rule = string(m["rule"])
-		opaRule.Rule = &rule
-		scanner := bufio.NewScanner(bytes.NewReader(m["rule"]))
-		if scanner.Scan() {
-			space = strings.TrimSpace(strings.Replace(scanner.Text(), "package", "", -1))
-		}
-		opaRule.Module = space
-		for i := range inspectRules {
-			if space == inspectRules[i].Labels[constant.LabelRuleGroup] {
-				inspectRule = inspectRules[i]
-				inspectRules = append(inspectRules[:i], inspectRules[i+1:]...)
-				break
-			}
-		}
-
-		ruleItems = append(ruleItems, opaRule)
-
-		inspectRule.Labels = map[string]string{
-			"app.kubernetes.io/name":       "inspectrules",
-			"app.kubernetes.io/instance":   "inspectrules-sample",
-			"app.kubernetes.io/part-of":    "kubeeye",
-			"app.kubernetes.io/managed-by": "kustomize",
-			"app.kubernetes.io/created-by": "kubeeye",
-			constant.LabelRuleGroup:        space,
-		}
-		if inspectRule.Spec.Opas != nil {
-			ruleItems = append(ruleItems, inspectRule.Spec.Opas...)
-		}
-
-		inspectRule.Spec.Opas = ruleItems
-		inspectRule.Name = fmt.Sprintf("%s-%s", "kubeeye-inspectrules", strconv.Itoa(int(time.Now().Unix())))
-		inspectRule.Namespace = constant.DefaultNamespace
-		inspectRule.APIVersion = "kubeeye.kubesphere.io/v1alpha2"
-		inspectRule.Kind = "InspectRule"
-		inspectRules = append(inspectRules, inspectRule)
-	}
-
-	for i := range inspectRules {
-
-		data, err := yaml.Marshal(&inspectRules[i])
-		if err != nil {
-			panic(err)
-		}
-		filename := fmt.Sprintf("./ruleFiles/kubeeye_v1alpha2_inspectrules%d_%d.yaml", i, time.Now().Unix())
-		err = os.WriteFile(filename, data, 0644)
-		if err != nil {
-			panic(err)
-		}
-	}
-	fmt.Println("YAML file written successfully")
-}
 
 func GetRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) map[string][]byte {
 
@@ -319,7 +235,7 @@ func mergeNodeRule(rule []map[string]interface{}) map[string][]map[string]interf
 	return mergeMap
 }
 
-func ScanRules(ctx context.Context, clients *kube.KubernetesClient, taskName string, ruleGroup []kubeeyev1alpha2.InspectRule) ([]kubeeyev1alpha2.JobRule, map[string]int) {
+func ParseRules(ctx context.Context, clients *kube.KubernetesClient, taskName string, ruleGroup []kubeeyev1alpha2.InspectRule) ([]kubeeyev1alpha2.JobRule, map[string]int) {
 
 	nodes := kube.GetNodes(ctx, clients.ClientSet)
 	ruleSpec := MergeRule(ruleGroup)
@@ -371,4 +287,26 @@ func ScanRules(ctx context.Context, clients *kube.KubernetesClient, taskName str
 		}
 	}
 	return executeRule, inspectRuleTotal
+}
+
+func UpdateRuleReferNum(ctx context.Context, clients *kube.KubernetesClient) error {
+	listRule, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(ctx, metav1.ListOptions{})
+	listPlan, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectPlans().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		klog.Error(err, "Failed to list inspectRules and inspectPlan")
+		return err
+	}
+	for _, item := range listRule.Items {
+		filter, _ := utils.ArrayFilter(listPlan.Items, func(v kubeeyev1alpha2.InspectPlan) bool {
+			return v.Spec.Tag == item.GetLabels()[constant.LabelRuleGroup]
+		})
+		item.Annotations = labels.Merge(item.Annotations, map[string]string{constant.AnnotationRuleJoinNum: strconv.Itoa(len(filter))})
+		_, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().Update(ctx, &item, metav1.UpdateOptions{})
+		if err != nil {
+			klog.Error(err, "Failed to update inspectRules refer num")
+			return err
+		}
+	}
+
+	return nil
 }

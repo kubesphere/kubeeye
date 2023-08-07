@@ -45,15 +45,21 @@ type InspectPlanSpec struct {
 	KubeConfig  string   `json:"kubeConfig,omitempty"`
 }
 
+type TaskStatus struct {
+	Name       string `json:"name,omitempty"`
+	TaskStatus Phase  `json:"taskStatus,omitempty"`
+}
+
 // InspectPlanStatus defines the observed state of InspectPlan
 type InspectPlanStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	LastScheduleTime metav1.Time `json:"lastScheduleTime,omitempty"`
-	LastTaskName     string      `json:"lastTaskName,omitempty"`
-	TaskNames        []string    `json:"TaskNames,omitempty"`
-	LastTaskStatus   Phase       `json:"lastTaskStatus,omitempty"`
-	NextScheduleTime metav1.Time `json:"nextScheduleTime,omitempty"`
+
+	LastScheduleTime metav1.Time  `json:"lastScheduleTime,omitempty"`
+	LastTaskName     string       `json:"lastTaskName,omitempty"`
+	TaskNames        []TaskStatus `json:"TaskNames,omitempty"`
+	LastTaskStatus   Phase        `json:"lastTaskStatus,omitempty"`
+	NextScheduleTime metav1.Time  `json:"nextScheduleTime,omitempty"`
 }
 
 // +genclient

@@ -62,6 +62,30 @@ func (i *InspectTask) GetInspectTask(gin *gin.Context) {
 	gin.JSON(http.StatusOK, task)
 }
 
+// DeleteInspectTask  godoc
+// @Summary      Show an Inspect
+// @Description  DeleteInspectTask
+// @Tags         InspectTask
+// @Accept       json
+// @Produce      json
+// @Param		 v1alpha2.InspectTask body	v1alpha2.InspectTask true	"delete InspectTask"
+// @Success      200 {object} v1alpha2.InspectTask
+// @Router       /inspectplans [delete]
+func (i *InspectTask) DeleteInspectTask(gin *gin.Context) {
+	var deleteTask v1alpha2.InspectTask
+	err := gin.Bind(&deleteTask)
+	if err != nil {
+		gin.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	err = i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks().Delete(i.Ctx, deleteTask.Name, metav1.DeleteOptions{})
+	if err != nil {
+		gin.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	gin.JSON(http.StatusOK, deleteTask)
+}
+
 func InspectTaskSortBy(tasks []v1alpha2.InspectTask, gin *gin.Context) {
 	orderBy := gin.Query(options.OrderBy)
 	asc := gin.Query(options.Ascending)

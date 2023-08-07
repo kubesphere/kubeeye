@@ -26,19 +26,21 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
 	"math"
+	"os"
+	"path"
 	"sync"
 	"time"
 
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/inspect"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
-
-	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -121,10 +123,16 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			klog.Error("Unable to get jobConfig")
 			return ctrl.Result{}, err
 		}
+		err = r.updatePlanStatus(ctx, func() kubeeyev1alpha2.Phase {
+			return kubeeyev1alpha2.PhaseRunning
+		}, inspectTask.GetLabels()[constant.LabelName], inspectTask.Name)
+		if err != nil {
+			klog.Error("Failed to update inspect plan status. ", err)
+			return ctrl.Result{}, err
+		}
 
-		ruleLists, err := r.K8sClients.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(ctx, metav1.ListOptions{
-			LabelSelector: labels.FormatLabels(map[string]string{constant.LabelRuleGroup: inspectTask.Labels[constant.LabelRuleGroup]}),
-		})
+		getRules, err := r.GetRules(ctx, inspectTask)
+
 		if err != nil {
 			klog.Error("failed get to inspectrules.", err)
 			return ctrl.Result{}, err
@@ -146,7 +154,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 						klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", v, err)
 						return
 					}
-					err = r.CreateInspect(ctx, v, inspectTask, *ruleLists, clusterClient, kubeEyeConfig)
+					err = r.CreateInspect(ctx, v, inspectTask, *getRules, clusterClient, kubeEyeConfig)
 					if err != nil {
 						klog.Error("failed to create inspect. ", err)
 					}
@@ -154,17 +162,35 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			}
 			wait.Wait()
 		} else {
-			err := r.CreateInspect(ctx, "default", inspectTask, *ruleLists, r.K8sClients, kubeEyeConfig)
+			err := r.CreateInspect(ctx, "default", inspectTask, *getRules, r.K8sClients, kubeEyeConfig)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
 		}
 		klog.Infof("all job finished for taskName:%s", inspectTask.Name)
+
 		err = r.Status().Update(ctx, inspectTask)
 		if err != nil {
 			klog.Error("failed to update inspect task. ", err)
 			return ctrl.Result{}, err
 		}
+
+		err = r.updatePlanStatus(ctx, func() kubeeyev1alpha2.Phase {
+			if inspectTask.Status.JobPhase == nil {
+				return kubeeyev1alpha2.PhaseFailed
+			}
+			_, ok, _ := utils.ArrayFinds(inspectTask.Status.JobPhase, func(m kubeeyev1alpha2.JobPhase) bool {
+				return m.Phase == kubeeyev1alpha2.PhaseFailed
+			})
+			if ok {
+				return kubeeyev1alpha2.PhaseFailed
+			}
+			return kubeeyev1alpha2.PhaseSucceeded
+		}, inspectTask.GetLabels()[constant.LabelName], inspectTask.Name)
+		if err != nil {
+			klog.Error("failed to update inspect plan comeToAnEnd status. ", err)
+		}
+
 		return ctrl.Result{}, nil
 	}
 	return ctrl.Result{}, nil
@@ -192,7 +218,7 @@ func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, rule
 
 func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, name string, task *kubeeyev1alpha2.InspectTask, ruleLists kubeeyev1alpha2.InspectRuleList, clients *kube.KubernetesClient, kubeEyeConfig conf.KubeEyeConfig) error {
 
-	inspectRule, inspectRuleNum := rules.ScanRules(ctx, clients, task.Name, ruleLists.Items)
+	inspectRule, inspectRuleNum := rules.ParseRules(ctx, clients, task.Name, ruleLists.Items)
 	rule, err := createInspectRule(ctx, clients, inspectRule, task)
 	if err != nil {
 		return err
@@ -360,9 +386,10 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-%s-result", clusterName, task.Name),
 			Labels: map[string]string{constant.LabelTaskName: task.Name},
 			Annotations: map[string]string{
-				constant.AnnotationStartTime:     task.Status.StartTimestamp.Format("2006-01-02 15:04:05"),
-				constant.AnnotationEndTime:       task.Status.EndTimestamp.Format("2006-01-02 15:04:05"),
-				constant.AnnotationInspectPolicy: string(task.Spec.InspectPolicy),
+				constant.AnnotationStartTime:      task.Status.StartTimestamp.Format("2006-01-02 15:04:05"),
+				constant.AnnotationEndTime:        task.Status.EndTimestamp.Format("2006-01-02 15:04:05"),
+				constant.AnnotationInspectPolicy:  string(task.Spec.InspectPolicy),
+				constant.AnnotationInspectCluster: clusterName,
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         task.APIVersion,
@@ -373,7 +400,12 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 				BlockOwnerDeletion: &ownerRefBol,
 			}},
 		},
+		Spec: kubeeyev1alpha2.InspectResultSpec{
+			InspectRuleTotal: ruleNum,
+		},
 	}
+
+	resultData := inspectResult.DeepCopy()
 	for _, phase := range task.Status.JobPhase {
 		if phase.Phase == kubeeyev1alpha2.PhaseSucceeded {
 			_, exists, configMap := utils.ArrayFinds(configs.Items, func(m corev1.ConfigMap) bool {
@@ -385,7 +417,7 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 				inspectInterface, status := inspect.RuleOperatorMap[ruleType]
 				if status {
 					klog.Infof("starting get %s result data", phase.JobName)
-					_, err = inspectInterface.GetResult(nodeName, &configMap, &inspectResult)
+					_, err = inspectInterface.GetResult(nodeName, &configMap, resultData)
 					if err != nil {
 						klog.Error(err)
 					}
@@ -393,11 +425,27 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 			}
 		}
 	}
-	inspectResult.Spec.InspectRuleTotal = ruleNum
+	file, err := os.OpenFile(path.Join(constant.ResultPath, inspectResult.Name), os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		klog.Error(err, "open file error")
+		return err
+	}
+	defer file.Close()
+	marshal, err := json.Marshal(resultData)
+	if err != nil {
+		klog.Error(err, "marshal error")
+	}
+	_, err = file.Write(marshal)
+	if err != nil {
+		klog.Error(err, "write file error")
+		return err
+	}
+
 	err = r.Create(ctx, &inspectResult)
 	if err != nil {
 		return err
 	}
+
 	err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name})})
 	if err != nil {
 		return err
@@ -497,4 +545,37 @@ func (r *InspectTaskReconciler) clearRule(ctx context.Context, clients *kube.Kub
 	return clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"}),
 	})
+}
+
+func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase func() kubeeyev1alpha2.Phase, planName string, taskName string) error {
+	plan := &kubeeyev1alpha2.InspectPlan{}
+	err := r.Get(ctx, types.NamespacedName{Name: planName}, plan)
+	if err != nil {
+		klog.Error(err, "get plan error")
+		return err
+	}
+	for i, name := range plan.Status.TaskNames {
+		if name.Name == taskName {
+			plan.Status.TaskNames[i].TaskStatus = phase()
+			break
+		}
+	}
+	plan.Status.LastTaskStatus = phase()
+	err = r.Status().Update(ctx, plan)
+	if err != nil {
+		klog.Error(err, "update plan status error")
+		return err
+	}
+	return nil
+}
+
+func (r *InspectTaskReconciler) GetRules(ctx context.Context, task *kubeeyev1alpha2.InspectTask) (*kubeeyev1alpha2.InspectRuleList, error) {
+	ruleList, err := r.K8sClients.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(ctx, metav1.ListOptions{
+		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelRuleGroup: task.Labels[constant.LabelRuleGroup]}),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return ruleList, nil
 }

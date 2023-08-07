@@ -21,8 +21,10 @@ import (
 	"fmt"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"k8s.io/klog/v2"
+	"sync"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -40,6 +42,7 @@ type InspectPlanReconciler struct {
 	client.Client
 	K8sClient *kube.KubernetesClient
 	Scheme    *runtime.Scheme
+	Instance  sync.Map
 }
 
 const Finalizers = "kubeeye.finalizers.kubesphere.io"
@@ -61,14 +64,24 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	inspectPlan := &kubeeyev1alpha2.InspectPlan{}
 	err := r.Get(ctx, req.NamespacedName, inspectPlan)
+	// Every time a plan operation is triggered, it checks how many plans are associated with the rule
+	rules.UpdateRuleReferNum(ctx, r.K8sClient)
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
-			klog.Infof("inspect plan is not found;name:%s,namespect:%s\n", req.Name, req.Namespace)
 			return ctrl.Result{}, nil
 		}
 		klog.Error("failed to get inspect plan.\n", err)
 		return ctrl.Result{}, err
 	}
+	// Prevent multiple executions of the plan and create the same task multiple times
+	if _, ok := r.Instance.Load(inspectPlan.Name); ok {
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
+	} else {
+		r.Instance.Store(inspectPlan.Name, struct{}{})
+	}
+	defer func() {
+		r.Instance.Delete(inspectPlan.Name)
+	}()
 
 	if inspectPlan.DeletionTimestamp.IsZero() {
 		if _, b := utils.ArrayFind(Finalizers, inspectPlan.Finalizers); !b {
@@ -90,6 +103,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			klog.Error("Failed to inspect plan add finalizers.\n", err)
 			return ctrl.Result{}, err
 		}
+
 		return ctrl.Result{}, nil
 	}
 
@@ -114,6 +128,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 		return ctrl.Result{}, nil
 	}
+
 	schedule, err := cron.ParseStandard(*inspectPlan.Spec.Schedule)
 	if err != nil {
 		klog.Error("Unparseable schedule.\n", err)
@@ -125,7 +140,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 	now := time.Now()
 	scheduledTime := nextScheduledTimeDuration(schedule, inspectPlan.Status.LastScheduleTime.Time)
-	if inspectPlan.Status.LastScheduleTime.Add(*scheduledTime).Before(now) { // if the scheduled time has arrived, create Audit task
+	if inspectPlan.Status.LastScheduleTime.Add(*scheduledTime).Before(now) {
 		taskName, err := r.createInspectTask(inspectPlan, ctx)
 		if err != nil {
 			klog.Error("failed to create InspectTask.", err)
@@ -165,9 +180,8 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 
 	inspectTask := kubeeyev1alpha2.InspectTask{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        taskName,
-			Labels:      map[string]string{constant.LabelName: inspectPlan.Name, constant.LabelRuleGroup: inspectPlan.Spec.Tag},
-			Annotations: nil,
+			Name:   taskName,
+			Labels: map[string]string{constant.LabelName: inspectPlan.Name, constant.LabelRuleGroup: inspectPlan.Spec.Tag},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         inspectPlan.APIVersion,
 				Kind:               inspectPlan.Kind,
@@ -200,7 +214,7 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 func (r *InspectPlanReconciler) removeTask(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan) {
 	if plan.Spec.MaxTasks > 0 {
 		for len(plan.Status.TaskNames) > plan.Spec.MaxTasks-1 {
-			err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks().Delete(ctx, plan.Status.TaskNames[0], metav1.DeleteOptions{})
+			err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks().Delete(ctx, plan.Status.TaskNames[0].Name, metav1.DeleteOptions{})
 			if err == nil || kubeErr.IsNotFound(err) {
 				plan.Status.TaskNames = plan.Status.TaskNames[1:]
 			} else {
@@ -213,7 +227,11 @@ func (r *InspectPlanReconciler) removeTask(ctx context.Context, plan *kubeeyev1a
 func (r *InspectPlanReconciler) updateStatus(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan, now time.Time, taskName string) error {
 	plan.Status.LastScheduleTime = metav1.Time{Time: now}
 	plan.Status.LastTaskName = taskName
-	plan.Status.TaskNames = append(plan.Status.TaskNames, taskName)
+	plan.Status.LastTaskStatus = kubeeyev1alpha2.PhasePending
+	plan.Status.TaskNames = append(plan.Status.TaskNames, kubeeyev1alpha2.TaskStatus{
+		Name:       taskName,
+		TaskStatus: kubeeyev1alpha2.PhasePending,
+	})
 	err := r.Status().Update(ctx, plan)
 	if err != nil {
 		klog.Error("failed to update inspect plan.", err)

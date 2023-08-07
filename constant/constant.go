@@ -32,12 +32,15 @@ const (
 )
 
 const (
-	AnnotationStartTime     = "kubeeye.kubesphere.io/task-start-time"
-	AnnotationEndTime       = "kubeeye.kubesphere.io/task-end-time"
-	AnnotationInspectPolicy = "kubeeye.kubesphere.io/task-inspect-policy"
+	AnnotationStartTime      = "kubeeye.kubesphere.io/task-start-time"
+	AnnotationEndTime        = "kubeeye.kubesphere.io/task-end-time"
+	AnnotationInspectPolicy  = "kubeeye.kubesphere.io/task-inspect-policy"
+	AnnotationInspectCluster = "kubeeye.kubesphere.io/task-inspect-Cluster"
+	AnnotationRuleJoinNum    = "kubeeye.kubesphere.io/rule-join-num"
 )
 
 const (
 	DefaultProcPath = "/hosts/proc"
 	RootPathPrefix  = "/hosts/root"
+	ResultPath      = "/hosts/result"
 )

@@ -61,12 +61,14 @@ spec:
             properties:
               TaskNames:
                 items:
-                  type: string
+                  properties:
+                    name:
+                      type: string
+                    taskStatus:
+                      type: string
+                  type: object
                 type: array
               lastScheduleTime:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
                 format: date-time
                 type: string
               lastTaskName:

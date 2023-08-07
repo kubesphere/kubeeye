@@ -1,7 +1,7 @@
 package template
 
 import texttemplate "text/template"
-import hemltemplate "text/template"
+import hemltemplate "html/template"
 
 func GetInspectRuleTemplate() (*texttemplate.Template, error) {
 
@@ -64,12 +64,12 @@ func GetInspectPlanTemplate() (*texttemplate.Template, error) {
 }
 
 func GetInspectResultHtmlTemplate() (*hemltemplate.Template, error) {
-	return hemltemplate.New("result").Parse(`
+	return hemltemplate.New("inspectResult.tpl").Parse(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>inspect report</title>
 </head>
 <body>
 

@@ -334,6 +334,8 @@ definitions:
     properties:
       desc:
         type: string
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
       name:
         type: string
       nodeName:
@@ -351,6 +353,8 @@ definitions:
     properties:
       desc:
         type: string
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
       name:
         type: string
       nodeName:
@@ -417,12 +421,9 @@ definitions:
     properties:
       TaskNames:
         items:
-          type: string
+          $ref: '#/definitions/v1alpha2.TaskStatus'
         type: array
       lastScheduleTime:
-        description: |-
-          INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-          Important: Run "make" to regenerate code after modifying this file
         type: string
       lastTaskName:
         type: string
@@ -561,10 +562,12 @@ definitions:
     type: object
   v1alpha2.InspectRuleStatus:
     properties:
-      importTime:
+      endImportTime:
         type: string
       ruleCount:
         type: integer
+      startImportTime:
+        type: string
       state:
         $ref: '#/definitions/v1alpha2.State'
     type: object
@@ -642,6 +645,16 @@ definitions:
       scoreInfo:
         $ref: '#/definitions/v1alpha2.ScoreInfo'
     type: object
+  v1alpha2.Level:
+    enum:
+    - danger
+    - warning
+    - ignore
+    type: string
+    x-enum-varnames:
+    - DangerLevel
+    - WarningLevel
+    - IgnoreLevel
   v1alpha2.NodeInfoResult:
     properties:
       fileChangeResult:
@@ -678,6 +691,8 @@ definitions:
     properties:
       desc:
         type: string
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
       module:
         type: string
       name:
@@ -713,6 +728,8 @@ definitions:
         type: string
       endpoint:
         type: string
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
       name:
         type: string
       rule:
@@ -758,15 +775,17 @@ definitions:
   v1alpha2.State:
     enum:
     - StartImport
-    - importSuccess
+    - ImportComplete
     type: string
     x-enum-varnames:
     - StartImport
-    - ImportSuccess
+    - ImportComplete
   v1alpha2.SysRule:
     properties:
       desc:
         type: string
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
       name:
         type: string
       nodeName:
@@ -777,6 +796,13 @@ definitions:
         type: object
       rule:
         type: string
+    type: object
+  v1alpha2.TaskStatus:
+    properties:
+      name:
+        type: string
+      taskStatus:
+        $ref: '#/definitions/v1alpha2.Phase'
     type: object
 host: localhost:8080
 info:
@@ -789,6 +815,27 @@ info:
   version: "1.0"
 paths:
   /inspectplans:
+    delete:
+      consumes:
+      - application/json
+      description: DeleteInspectTask
+      parameters:
+      - description: delete InspectTask
+        in: body
+        name: v1alpha2.InspectTask
+        required: true
+        schema:
+          $ref: '#/definitions/v1alpha2.InspectTask'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1alpha2.InspectTask'
+      summary: Show an Inspect
+      tags:
+      - InspectTask
     get:
       consumes:
       - application/json
@@ -811,6 +858,27 @@ paths:
             items:
               $ref: '#/definitions/v1alpha2.InspectPlan'
             type: array
+      summary: Show an Inspect
+      tags:
+      - InspectPlan
+    post:
+      consumes:
+      - application/json
+      description: CreateInspectPlan
+      parameters:
+      - description: Add InspectPlan
+        in: body
+        name: InspectPlan
+        required: true
+        schema:
+          $ref: '#/definitions/v1alpha2.InspectPlan'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1alpha2.InspectPlan'
       summary: Show an Inspect
       tags:
       - InspectPlan

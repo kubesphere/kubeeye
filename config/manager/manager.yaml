@@ -53,5 +53,12 @@ spec:
           requests:
             cpu: 200m
             memory: 256Mi
+        volumeMounts:
+          - mountPath: /hosts/result
+            name: inspect-result
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
+      volumes:
+        - name: inspect-result
+          persistentVolumeClaim:
+            claimName: inspect-result

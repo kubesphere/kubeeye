@@ -80,7 +80,6 @@ func (i *InspectRule) CreateInspectRule(gin *gin.Context) {
 		gin.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	i.validate(crateRule, gin)
 
 	task, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().Create(i.Ctx, &crateRule, metav1.CreateOptions{})
 	if err != nil {
@@ -150,10 +149,20 @@ func InspectRuleSortBy(tasks []v1alpha2.InspectRule, gin *gin.Context) {
 
 }
 
-func (i *InspectRule) validate(rule v1alpha2.InspectRule, gin *gin.Context) {
-	_, ok := rule.GetAnnotations()[constant.LabelInspectRuleGroup]
-	if !ok {
-		gin.JSON(http.StatusInternalServerError, fmt.Errorf("inspect rule must have label %s", constant.LabelInspectRuleGroup))
+func (i *InspectRule) Validate(gin *gin.Context) {
+	var crateRule v1alpha2.InspectRule
+	err := gin.Bind(&crateRule)
+	if err != nil {
+		gin.JSON(http.StatusInternalServerError, err)
+		gin.Abort()
+		return
 	}
+	_, ok := crateRule.GetLabels()[constant.LabelInspectRuleGroup]
+	if !ok {
+		gin.String(http.StatusInternalServerError, fmt.Sprintf("inspect rule must have label %s", constant.LabelInspectRuleGroup))
+		gin.Abort()
+		return
+	}
+	gin.Next()
 
 }
