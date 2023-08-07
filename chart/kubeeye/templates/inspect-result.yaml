@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "kubeeye.fullname" . }}-inspect-result
+  labels:
+  {{- include "kubeeye.labels" . | nindent 4 }}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.pvc.inspectResult.storageRequest | quote }}
+  volumeMode: Filesystem

@@ -41,6 +41,8 @@ spec:
                   properties:
                     desc:
                       type: string
+                    level:
+                      type: string
                     name:
                       type: string
                     nodeName:
@@ -59,6 +61,8 @@ spec:
                 items:
                   properties:
                     desc:
+                      type: string
+                    level:
                       type: string
                     name:
                       type: string
@@ -79,6 +83,8 @@ spec:
                   properties:
                     desc:
                       type: string
+                    level:
+                      type: string
                     module:
                       type: string
                     name:
@@ -94,6 +100,8 @@ spec:
                       type: string
                     endpoint:
                       type: string
+                    level:
+                      type: string
                     name:
                       type: string
                     rule:
@@ -106,6 +114,8 @@ spec:
                 items:
                   properties:
                     desc:
+                      type: string
+                    level:
                       type: string
                     name:
                       type: string
@@ -124,6 +134,8 @@ spec:
                   properties:
                     desc:
                       type: string
+                    level:
+                      type: string
                     name:
                       type: string
                     nodeName:
@@ -140,11 +152,14 @@ spec:
           status:
             description: InspectRuleStatus defines the observed state of InspectRule
             properties:
-              importTime:
+              endImportTime:
                 format: date-time
                 type: string
               ruleCount:
                 type: integer
+              startImportTime:
+                format: date-time
+                type: string
               state:
                 type: string
             type: object
