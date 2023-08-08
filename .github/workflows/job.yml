@@ -42,7 +42,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: build/apiserverDockerfile
+          file: build/apiserver/Dockerfile
           platforms: linux/amd64
           push: true
           tags: jw008/kubeeye-apiserver:latest

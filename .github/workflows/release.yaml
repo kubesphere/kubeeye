@@ -55,22 +55,29 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
 
-      - name: Build and push
+      - name: Build Job and push
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: Dockerfile
+          file: build/job/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: kubespheredev/kubeeye-job:${{ github.ref_name }}
-
-      - name: Build and push
+      - name: Build Controller and push
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: Dockerfile
+          file: build/controller/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: kubespheredev/kubeeye-controller:${{ github.ref_name }}
+      - name: Build ApiServer and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: build/apiserver/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: kubespheredev/kubeeye-apiserver:${{ github.ref_name }}
 
         
