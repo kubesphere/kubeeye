@@ -144,7 +144,7 @@ func (r *InspectResultReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *InspectResultReconciler) CountLevelNum(resultName string) (map[kubeeyev1alpha2.Level]*int, error) {
-	file, err := os.ReadFile(resultName)
+	file, err := os.ReadFile(path.Join(constant.ResultPath, resultName))
 	if err != nil {
 		return nil, err
 	}
