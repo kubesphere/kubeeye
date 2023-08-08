@@ -20,7 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"

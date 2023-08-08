@@ -15,6 +15,7 @@ package main
 
 import (
 	"flag"
+	controllers2 "github.com/kubesphere/kubeeye/pkg/controllers"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -31,7 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/controllers"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -97,7 +97,7 @@ func main() {
 
 	setupLog.Info("starting inspect")
 
-	if err = (&controllers.InspectPlanReconciler{
+	if err = (&controllers2.InspectPlanReconciler{
 		Client:    mgr.GetClient(),
 		Scheme:    mgr.GetScheme(),
 		K8sClient: clients,
@@ -105,7 +105,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "InspectPlan")
 		os.Exit(1)
 	}
-	if err = (&controllers.InspectTaskReconciler{
+	if err = (&controllers2.InspectTaskReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		K8sClients: clients,
@@ -113,14 +113,14 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "InspectTask")
 		os.Exit(1)
 	}
-	if err = (&controllers.InspectResultReconciler{
+	if err = (&controllers2.InspectResultReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "InspectResult")
 		os.Exit(1)
 	}
-	if err = (&controllers.InspectRulesReconciler{
+	if err = (&controllers2.InspectRulesReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {

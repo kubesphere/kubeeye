@@ -1,7 +1,7 @@
 package template
 
 import (
-	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/constant"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

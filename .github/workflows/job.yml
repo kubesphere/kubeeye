@@ -26,7 +26,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: Dockerfile_task
+          file: build/job/Dockerfile
           platforms: linux/amd64
           push: true
           tags: jw008/kubeeye:latest
@@ -34,7 +34,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: Dockerfile
+          file: build/controller/Dockerfile
           platforms: linux/amd64
           push: true
           tags: jw008/kubeeye-controller:latest
@@ -42,7 +42,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: Dockerfile_apiserver
+          file: build/apiserverDockerfile
           platforms: linux/amd64
           push: true
           tags: jw008/kubeeye-apiserver:latest

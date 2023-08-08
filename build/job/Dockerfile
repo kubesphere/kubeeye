@@ -10,19 +10,19 @@ FROM --platform=${TARGETPLATFORM} golang:1.19 as builder
 
 WORKDIR /workspace
 
-COPY apis/ apis/
-COPY clients/ clients/
-COPY cmd/ cmd/
-COPY controllers/ controllers/
-COPY pkg/ pkg/
-COPY constant/ constant/
-COPY plugins/ plugins/
-COPY swaggerDocs/ swaggerDocs/
+COPY ../../apis apis/
+COPY ../../clients clients/
+COPY ../../cmd cmd/
+COPY ../../pkg/controllers controllers/
+COPY ../../pkg pkg/
+COPY ../../pkg/constant constant/
+COPY ../../plugins plugins/
+COPY ../../swaggerDocs swaggerDocs/
 
 
 
-COPY go.mod go.mod
-COPY go.sum go.sum
+COPY ../../go.mod go.mod
+COPY ../../go.sum go.sum
 
 RUN go mod tidy && go mod vendor
 

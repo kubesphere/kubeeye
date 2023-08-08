@@ -2,7 +2,7 @@ package create
 
 import (
 	"fmt"
-	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/inspect"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/spf13/cobra"

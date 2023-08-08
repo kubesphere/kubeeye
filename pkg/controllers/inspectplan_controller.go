@@ -19,7 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/kubesphere/kubeeye/pkg/utils"

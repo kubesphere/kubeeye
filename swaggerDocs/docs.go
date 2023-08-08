@@ -216,6 +216,12 @@ const docTemplate = `{
                         "name": "name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "type",
+                        "name": "type",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -658,6 +664,9 @@ const docTemplate = `{
                 "endpoint": {
                     "type": "string"
                 },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -691,6 +700,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
                 },
                 "path": {
                     "type": "string"
@@ -1156,6 +1168,9 @@ const docTemplate = `{
             "properties": {
                 "assert": {
                     "type": "boolean"
+                },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
                 },
                 "name": {
                     "type": "string"

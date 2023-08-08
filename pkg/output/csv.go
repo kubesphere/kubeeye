@@ -3,7 +3,7 @@ package output
 import (
 	"context"
 	"fmt"
-	"github.com/kubesphere/kubeeye/constant"
+	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"github.com/xuri/excelize/v2"

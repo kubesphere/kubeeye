@@ -31,7 +31,7 @@ jobs:
 
   push-image-to-dockerhub:
     runs-on: ubuntu-latest
-    needs: [goreleaser]
+    needs: [ goreleaser ]
 
     steps:
       - uses: actions/checkout@v2
@@ -54,16 +54,16 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-  
+
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: Dockerfile_task
+          file: Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: kubespheredev/kubeeye-job:${{ github.ref_name }}
-          
+
       - name: Build and push
         uses: docker/build-push-action@v4
         with:

@@ -305,6 +305,8 @@ definitions:
     properties:
       endpoint:
         type: string
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
       name:
         type: string
       namespace:
@@ -327,6 +329,8 @@ definitions:
         items:
           type: string
         type: array
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
       path:
         type: string
     type: object
@@ -682,6 +686,8 @@ definitions:
     properties:
       assert:
         type: boolean
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
       name:
         type: string
       value:
@@ -939,6 +945,10 @@ paths:
         in: path
         name: name
         required: true
+        type: string
+      - description: type
+        in: query
+        name: type
         type: string
       produces:
       - application/json

@@ -209,6 +209,12 @@
                         "name": "name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "type",
+                        "name": "type",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -651,6 +657,9 @@
                 "endpoint": {
                     "type": "string"
                 },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -684,6 +693,9 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
                 },
                 "path": {
                     "type": "string"
@@ -1149,6 +1161,9 @@
             "properties": {
                 "assert": {
                     "type": "boolean"
+                },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
                 },
                 "name": {
                     "type": "string"
