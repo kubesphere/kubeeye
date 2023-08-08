@@ -380,9 +380,17 @@ func (in *InspectResultStatus) DeepCopyInto(out *InspectResultStatus) {
 	*out = *in
 	if in.Level != nil {
 		in, out := &in.Level, &out.Level
-		*out = make(map[Level]int, len(*in))
+		*out = make(map[Level]*int, len(*in))
 		for key, val := range *in {
-			(*out)[key] = val
+			var outVal *int
+			if val == nil {
+				(*out)[key] = nil
+			} else {
+				in, out := &val, &outVal
+				*out = new(int)
+				**out = **in
+			}
+			(*out)[key] = outVal
 		}
 	}
 }

@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/constant"
 	"github.com/kubesphere/kubeeye/pkg/utils"
@@ -120,7 +121,13 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	result.Status.TaskStartTime = startTime
 	result.Status.TaskEndTime = endTime
 	result.Status.Complete = true
-	result.Status.Level = map[kubeeyev1alpha2.Level]int{kubeeyev1alpha2.DangerLevel: 0, kubeeyev1alpha2.WarningLevel: 0, kubeeyev1alpha2.IgnoreLevel: 0}
+	countLevelNum, err := r.CountLevelNum(result.Name)
+	if err != nil {
+		klog.Error("Failed to count level num", err)
+		return ctrl.Result{}, err
+	}
+	result.Status.Level = countLevelNum
+
 	err = r.Client.Status().Update(ctx, result)
 	if err != nil {
 		klog.Error("Failed to update inspect result status", err)
@@ -134,4 +141,64 @@ func (r *InspectResultReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kubeeyev1alpha2.InspectResult{}).
 		Complete(r)
+}
+
+func (r *InspectResultReconciler) CountLevelNum(resultName string) (map[kubeeyev1alpha2.Level]*int, error) {
+	file, err := os.ReadFile(resultName)
+	if err != nil {
+		return nil, err
+	}
+
+	var result kubeeyev1alpha2.InspectResult
+
+	err = json.Unmarshal(file, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	levelTotal := make(map[kubeeyev1alpha2.Level]*int)
+	for _, v := range result.Spec.NodeInfoResult {
+		for _, item := range v.FileChangeResult {
+			computeLevel(item.Level, levelTotal)
+		}
+		for _, item := range v.FileFilterResult {
+			computeLevel(item.Level, levelTotal)
+		}
+		for _, item := range v.SysctlResult {
+			computeLevel(item.Level, levelTotal)
+		}
+
+		for _, item := range v.SystemdResult {
+			computeLevel(item.Level, levelTotal)
+		}
+	}
+	levelTotal[kubeeyev1alpha2.DangerLevel] = &result.Spec.OpaResult.Dangerous
+	levelTotal[kubeeyev1alpha2.WarningLevel] = &result.Spec.OpaResult.Warning
+	levelTotal[kubeeyev1alpha2.IgnoreLevel] = &result.Spec.OpaResult.Ignore
+	for _, item := range result.Spec.PrometheusResult {
+		for _, m := range item {
+			computeLevel(kubeeyev1alpha2.Level(m["level"]), levelTotal)
+		}
+	}
+
+	for _, item := range result.Spec.ComponentResult {
+		computeLevel(item.Level, levelTotal)
+	}
+	return levelTotal, nil
+}
+
+func computeLevel(v kubeeyev1alpha2.Level, m map[kubeeyev1alpha2.Level]*int) {
+	Autoincrement := func(level kubeeyev1alpha2.Level) *int {
+		if m[level] == nil {
+			m[level] = new(int)
+		}
+		*m[level]++
+		return m[level]
+	}
+	if v == "" {
+		m[kubeeyev1alpha2.DangerLevel] = Autoincrement(kubeeyev1alpha2.DangerLevel)
+	} else {
+		m[v] = Autoincrement(v)
+	}
+
 }

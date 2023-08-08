@@ -40,6 +40,8 @@ spec:
                   properties:
                     endpoint:
                       type: string
+                    level:
+                      type: string
                     name:
                       type: string
                     namespace:
@@ -64,6 +66,8 @@ spec:
                             items:
                               type: string
                             type: array
+                          level:
+                            type: string
                           path:
                             type: string
                         type: object
@@ -77,6 +81,8 @@ spec:
                             items:
                               type: string
                             type: array
+                          level:
+                            type: string
                           path:
                             type: string
                         type: object
@@ -90,6 +96,8 @@ spec:
                         properties:
                           assert:
                             type: boolean
+                          level:
+                            type: string
                           name:
                             type: string
                           value:
@@ -101,6 +109,8 @@ spec:
                         properties:
                           assert:
                             type: boolean
+                          level:
+                            type: string
                           name:
                             type: string
                           value:

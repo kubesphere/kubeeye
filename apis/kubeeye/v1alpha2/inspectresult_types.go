@@ -39,12 +39,12 @@ type InspectResultStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Complete      bool          `json:"complete,omitempty"`
-	Policy        Policy        `json:"policy,omitempty"`
-	Duration      string        `json:"duration,omitempty"`
-	TaskStartTime string        `json:"taskStartTime,omitempty"`
-	TaskEndTime   string        `json:"taskEndTime,omitempty"`
-	Level         map[Level]int `json:"level,omitempty"`
+	Complete      bool           `json:"complete,omitempty"`
+	Policy        Policy         `json:"policy,omitempty"`
+	Duration      string         `json:"duration,omitempty"`
+	TaskStartTime string         `json:"taskStartTime,omitempty"`
+	TaskEndTime   string         `json:"taskEndTime,omitempty"`
+	Level         map[Level]*int `json:"level,omitempty"`
 }
 
 type Level string
