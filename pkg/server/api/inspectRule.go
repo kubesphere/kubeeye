@@ -75,9 +75,10 @@ func (i *InspectRule) GetInspectRule(gin *gin.Context) {
 // @Router       /inspectrules [post]
 func (i *InspectRule) CreateInspectRule(gin *gin.Context) {
 	var crateRule v1alpha2.InspectRule
-	err := gin.Bind(&crateRule)
+	err := GetRequestBody(gin, &crateRule)
 	if err != nil {
-		gin.JSON(http.StatusInternalServerError, err)
+		Errs := NewErrors("bind data error", "InspectRule")
+		gin.JSON(http.StatusInternalServerError, Errs)
 		return
 	}
 
@@ -100,7 +101,7 @@ func (i *InspectRule) CreateInspectRule(gin *gin.Context) {
 // @Router       /inspectrules [delete]
 func (i *InspectRule) DeleteInspectRule(gin *gin.Context) {
 	var deleteRule v1alpha2.InspectRule
-	err := gin.Bind(&deleteRule)
+	err := GetRequestBody(gin, &deleteRule)
 	if err != nil {
 		gin.JSON(http.StatusInternalServerError, err)
 		return
@@ -124,7 +125,7 @@ func (i *InspectRule) DeleteInspectRule(gin *gin.Context) {
 // @Router       /inspectrules [put]
 func (i *InspectRule) UpdateInspectRule(gin *gin.Context) {
 	var updateRule v1alpha2.InspectRule
-	err := gin.Bind(&updateRule)
+	err := GetRequestBody(gin, &updateRule)
 	if err != nil {
 		gin.JSON(http.StatusInternalServerError, err)
 		return
@@ -151,18 +152,20 @@ func InspectRuleSortBy(tasks []v1alpha2.InspectRule, gin *gin.Context) {
 
 func (i *InspectRule) Validate(gin *gin.Context) {
 	var crateRule v1alpha2.InspectRule
-	err := gin.Bind(&crateRule)
+
+	err := GetRequestBody(gin, &crateRule)
 	if err != nil {
 		gin.JSON(http.StatusInternalServerError, err)
 		gin.Abort()
 		return
 	}
+
 	_, ok := crateRule.GetLabels()[constant.LabelInspectRuleGroup]
 	if !ok {
-		gin.String(http.StatusInternalServerError, fmt.Sprintf("inspect rule must have label %s", constant.LabelInspectRuleGroup))
+		ResultErr := NewErrors(fmt.Sprintf("inspect rule must have label %s", constant.LabelInspectRuleGroup), "InspectRule")
+		gin.JSON(http.StatusInternalServerError, ResultErr)
 		gin.Abort()
 		return
 	}
-	gin.Next()
 
 }

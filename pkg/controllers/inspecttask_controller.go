@@ -80,7 +80,6 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	err := r.Get(ctx, req.NamespacedName, inspectTask)
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
-			klog.Infof("inspect task is not found;name:%s,namespect:%s\n", req.Name, req.Namespace)
 			return ctrl.Result{}, nil
 		}
 		klog.Error("failed to get inspect task. ", err)
@@ -205,7 +204,10 @@ func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, rule
 
 func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, name string, task *kubeeyev1alpha2.InspectTask, ruleLists kubeeyev1alpha2.InspectRuleList, clients *kube.KubernetesClient, kubeEyeConfig conf.KubeEyeConfig) error {
 
-	inspectRule, inspectRuleNum := rules.ParseRules(ctx, clients, task.Name, ruleLists.Items)
+	inspectRule, inspectRuleNum, err := rules.ParseRules(ctx, clients, task.Name, ruleLists.Items)
+	if err != nil {
+		return err
+	}
 	rule, err := createInspectRule(ctx, clients, inspectRule, task)
 	if err != nil {
 		return err
@@ -343,7 +345,7 @@ func isExistsJob(ctx context.Context, clients *kube.KubernetesClient, jobName st
 	if err != nil && kubeErr.IsNotFound(err) {
 		return nil
 	}
-	klog.Error("job already exists for name:%s", jobName)
+	klog.Errorf("job already exists for name:%s", jobName)
 	return err
 }
 
@@ -579,7 +581,7 @@ func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase kube
 
 func (r *InspectTaskReconciler) GetRules(ctx context.Context, task *kubeeyev1alpha2.InspectTask) (*kubeeyev1alpha2.InspectRuleList, error) {
 	ruleList, err := r.K8sClients.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(ctx, metav1.ListOptions{
-		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelRuleGroup: task.Labels[constant.LabelRuleGroup]}),
+		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelInspectRuleGroup: task.Labels[constant.LabelRuleGroup]}),
 	})
 	if err != nil {
 		return nil, err

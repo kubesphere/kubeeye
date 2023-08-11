@@ -1,0 +1,11 @@
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  name: custom-command
+  labels:
+    "kubeeye.kubesphere.io/inspect-rule-group": "kubeeye_workloads_rego"
+spec:
+  customCommand:
+    - name: dh
+      command: df -h
+      rule: result contains /dev/sda1

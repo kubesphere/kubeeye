@@ -37,6 +37,27 @@ spec:
             properties:
               component:
                 type: string
+              customCommand:
+                items:
+                  properties:
+                    command:
+                      type: string
+                    desc:
+                      type: string
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    rule:
+                      type: string
+                  type: object
+                type: array
               fileChange:
                 items:
                   properties:

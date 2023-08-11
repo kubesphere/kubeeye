@@ -34,11 +34,16 @@ func GetRules(ctx context.Context, task types.NamespacedName, client versioned.I
 	return nil
 }
 
-func MergeRule(rules []kubeeyev1alpha2.InspectRule) (ruleSpec kubeeyev1alpha2.InspectRuleSpec) {
+func MergeRule(rules []kubeeyev1alpha2.InspectRule) (*kubeeyev1alpha2.InspectRuleSpec, error) {
+	ruleSpec := &kubeeyev1alpha2.InspectRuleSpec{}
 	for _, rule := range rules {
 		if rule.Spec.Opas != nil && len(rule.Spec.Opas) > 0 {
-			ruleSpec.Opas = append(ruleSpec.Opas, rule.Spec.Opas...)
-			ruleSpec.Opas = RuleArrayDeduplication[kubeeyev1alpha2.OpaRule](ruleSpec.Opas)
+
+			opas, err := RuleArrayDeduplication[kubeeyev1alpha2.OpaRule](append(ruleSpec.Opas, rule.Spec.Opas...))
+			if err != nil {
+				return nil, err
+			}
+			ruleSpec.Opas = opas
 		}
 		if rule.Spec.Prometheus != nil {
 			for _, pro := range rule.Spec.Prometheus {
@@ -54,41 +59,64 @@ func MergeRule(rules []kubeeyev1alpha2.InspectRule) (ruleSpec kubeeyev1alpha2.In
 			}
 		}
 		if rule.Spec.FileChange != nil && len(rule.Spec.FileChange) > 0 {
-			ruleSpec.FileChange = append(ruleSpec.FileChange, rule.Spec.FileChange...)
-			ruleSpec.FileChange = RuleArrayDeduplication[kubeeyev1alpha2.FileChangeRule](ruleSpec.FileChange)
+
+			fileChange, err := RuleArrayDeduplication[kubeeyev1alpha2.FileChangeRule](append(ruleSpec.FileChange, rule.Spec.FileChange...))
+			if err != nil {
+				return nil, err
+			}
+			ruleSpec.FileChange = fileChange
 		}
 		if rule.Spec.Sysctl != nil && len(rule.Spec.Sysctl) > 0 {
-			ruleSpec.Sysctl = append(ruleSpec.Sysctl, rule.Spec.Sysctl...)
-			ruleSpec.Sysctl = RuleArrayDeduplication[kubeeyev1alpha2.SysRule](ruleSpec.Sysctl)
+
+			sysctl, err := RuleArrayDeduplication[kubeeyev1alpha2.SysRule](append(ruleSpec.Sysctl, rule.Spec.Sysctl...))
+			if err != nil {
+				return nil, err
+			}
+			ruleSpec.Sysctl = sysctl
 		}
 		if rule.Spec.Systemd != nil && len(rule.Spec.Systemd) > 0 {
-			ruleSpec.Systemd = append(ruleSpec.Systemd, rule.Spec.Systemd...)
-			ruleSpec.Systemd = RuleArrayDeduplication[kubeeyev1alpha2.SysRule](ruleSpec.Systemd)
+
+			systemd, err := RuleArrayDeduplication[kubeeyev1alpha2.SysRule](append(ruleSpec.Systemd, rule.Spec.Systemd...))
+			if err != nil {
+				return nil, err
+			}
+			ruleSpec.Systemd = systemd
 		}
 		if rule.Spec.FileFilter != nil && len(rule.Spec.FileFilter) > 0 {
-			ruleSpec.FileFilter = append(ruleSpec.FileFilter, rule.Spec.FileFilter...)
-			ruleSpec.FileFilter = RuleArrayDeduplication[kubeeyev1alpha2.FileFilterRule](ruleSpec.FileFilter)
+			fileFilter, err := RuleArrayDeduplication[kubeeyev1alpha2.FileFilterRule](append(ruleSpec.FileFilter, rule.Spec.FileFilter...))
+			if err != nil {
+				return nil, err
+			}
+			ruleSpec.FileFilter = fileFilter
 		}
+		if rule.Spec.CustomCommand != nil {
+			command, err := RuleArrayDeduplication[kubeeyev1alpha2.CustomCommandRule](append(ruleSpec.CustomCommand, rule.Spec.CustomCommand...))
+			if err != nil {
+				return nil, err
+			}
+			ruleSpec.CustomCommand = command
+		}
+
 		ruleSpec.Component = rule.Spec.Component
 	}
-	return ruleSpec
+	return ruleSpec, nil
 }
 
 type MapType interface {
-	kubeeyev1alpha2.SysRule | kubeeyev1alpha2.OpaRule | kubeeyev1alpha2.PrometheusRule | kubeeyev1alpha2.FileChangeRule | kubeeyev1alpha2.FileFilterRule
+	kubeeyev1alpha2.SysRule | kubeeyev1alpha2.OpaRule | kubeeyev1alpha2.PrometheusRule | kubeeyev1alpha2.FileChangeRule | kubeeyev1alpha2.FileFilterRule | kubeeyev1alpha2.CustomCommandRule
 }
 
-func StructToMap(obj interface{}) []map[string]interface{} {
+func StructToMap(obj interface{}) ([]map[string]interface{}, error) {
 	marshal, err := json.Marshal(obj)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	var result []map[string]interface{}
 	err = json.Unmarshal(marshal, &result)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return result
+	return result, nil
 }
 
 func MapToStruct[T MapType](maps []map[string]interface{}) []T {
@@ -103,8 +131,11 @@ func MapToStruct[T MapType](maps []map[string]interface{}) []T {
 	}
 	return result
 }
-func RuleArrayDeduplication[T MapType](obj interface{}) []T {
-	maps := StructToMap(obj)
+func RuleArrayDeduplication[T MapType](obj interface{}) ([]T, error) {
+	maps, err := StructToMap(obj)
+	if err != nil {
+		return nil, err
+	}
 	var newMaps []map[string]interface{}
 	for _, m := range maps {
 		_, b, _ := utils.ArrayFinds(newMaps, func(m1 map[string]interface{}) bool {
@@ -115,67 +146,39 @@ func RuleArrayDeduplication[T MapType](obj interface{}) []T {
 		}
 	}
 	toStruct := MapToStruct[T](newMaps)
-	return toStruct
+	return toStruct, nil
 }
 
-func AllocationOpa(rule []kubeeyev1alpha2.OpaRule, taskName string) *kubeeyev1alpha2.JobRule {
-	if rule == nil {
-		return nil
-	}
+func Allocation(rule interface{}, taskName string, ruleType string) (*kubeeyev1alpha2.JobRule, error) {
 
-	jobRule := &kubeeyev1alpha2.JobRule{
-		JobName:  fmt.Sprintf("%s-%s", taskName, constant.Opa),
-		RuleType: constant.Opa,
-	}
-
-	opa, err := json.Marshal(rule)
+	toMap, err := StructToMap(rule)
 	if err != nil {
-		klog.Errorf("Failed to marshal  opa rule. err:%s", err)
-		return nil
+		klog.Errorf("Failed to convert rule to map. err:%s", err)
+		return nil, err
 	}
-	jobRule.RunRule = opa
-	return jobRule
-}
-
-func AllocationComponent(components *string, taskName string) *kubeeyev1alpha2.JobRule {
-
-	jobRule := &kubeeyev1alpha2.JobRule{
-		JobName:  fmt.Sprintf("%s-%s", taskName, constant.Component),
-		RuleType: constant.Component,
+	if toMap == nil && ruleType != constant.Component {
+		return nil, fmt.Errorf("failed to Allocation rule for empty")
 	}
 
-	opa, err := json.Marshal(components)
+	marshalRule, err := json.Marshal(toMap)
 	if err != nil {
-		klog.Errorf("Failed to marshal  opa rule. err:%s", err)
-		return nil
+		return nil, err
 	}
-	jobRule.RunRule = opa
-	return jobRule
+
+	return &kubeeyev1alpha2.JobRule{
+		JobName:  fmt.Sprintf("%s-%s", taskName, ruleType),
+		RuleType: ruleType,
+		RunRule:  marshalRule,
+	}, nil
 }
 
-func AllocationPrometheus(rule []kubeeyev1alpha2.PrometheusRule, taskName string) *kubeeyev1alpha2.JobRule {
-	if rule == nil {
-		return nil
-	}
+func AllocationRule(rule interface{}, taskName string, allNode []corev1.Node, ctlOrTem string) ([]kubeeyev1alpha2.JobRule, error) {
 
-	jobRule := &kubeeyev1alpha2.JobRule{
-		JobName:  fmt.Sprintf("%s-%s", taskName, constant.Prometheus),
-		RuleType: constant.Prometheus,
-	}
-
-	prometheus, err := json.Marshal(rule)
+	toMap, err := StructToMap(rule)
 	if err != nil {
-		klog.Errorf("Failed to marshal  prometheus rule. err:%s", err)
-		return nil
+		klog.Errorf("Failed to convert rule to map. err:%s", err)
+		return nil, err
 	}
-	jobRule.RunRule = prometheus
-	return jobRule
-}
-func AllocationRule(rule interface{}, taskName string, allNode []corev1.Node, ctlOrTem string) []kubeeyev1alpha2.JobRule {
-	if rule == nil {
-		return nil
-	}
-	toMap := StructToMap(rule)
 
 	nodeData, filterData := utils.ArrayFilter(toMap, func(v map[string]interface{}) bool {
 		return v["nodeName"] != nil || v["nodeSelector"] != nil
@@ -191,7 +194,7 @@ func AllocationRule(rule interface{}, taskName string, allNode []corev1.Node, ct
 		fileChange, err := json.Marshal(v)
 		if err != nil {
 			klog.Errorf("Failed to marshal  fileChange rule. err:%s", err)
-			return nil
+			return nil, err
 		}
 		jobRule.RunRule = fileChange
 		jobRules = append(jobRules, jobRule)
@@ -210,14 +213,14 @@ func AllocationRule(rule interface{}, taskName string, allNode []corev1.Node, ct
 			sysMarshal, err := json.Marshal(filterData)
 			if err != nil {
 				klog.Errorf("Failed to marshal  fileChange rule. err:%s", err)
-				return nil
+				return nil, err
 			}
 			jobRule.RunRule = sysMarshal
 			jobRules = append(jobRules, jobRule)
 		}
 	}
 
-	return jobRules
+	return jobRules, nil
 }
 
 func mergeNodeRule(rule []map[string]interface{}) map[string][]map[string]interface{} {
@@ -235,58 +238,72 @@ func mergeNodeRule(rule []map[string]interface{}) map[string][]map[string]interf
 	return mergeMap
 }
 
-func ParseRules(ctx context.Context, clients *kube.KubernetesClient, taskName string, ruleGroup []kubeeyev1alpha2.InspectRule) ([]kubeeyev1alpha2.JobRule, map[string]int) {
+func ParseRules(ctx context.Context, clients *kube.KubernetesClient, taskName string, ruleGroup []kubeeyev1alpha2.InspectRule) ([]kubeeyev1alpha2.JobRule, map[string]int, error) {
 
 	nodes := kube.GetNodes(ctx, clients.ClientSet)
-	ruleSpec := MergeRule(ruleGroup)
+	ruleSpec, err := MergeRule(ruleGroup)
+	if err != nil {
+		return nil, nil, err
+	}
 	var inspectRuleTotal = make(map[string]int)
 	var executeRule []kubeeyev1alpha2.JobRule
 
-	component := AllocationComponent(ruleSpec.Component, taskName)
-	executeRule = append(executeRule, *component)
-	componentRuleNumber := 0
-	if ruleSpec.Component == nil {
-		services, _ := clients.ClientSet.CoreV1().Services(corev1.NamespaceAll).List(ctx, metav1.ListOptions{})
-		componentRuleNumber = len(services.Items)
-	} else {
-		componentRuleNumber = len(strings.Split(*ruleSpec.Component, "|"))
+	component, err := Allocation(ruleSpec.Component, taskName, constant.Component)
+	if err == nil {
+		executeRule = append(executeRule, *component)
+		inspectRuleTotal[constant.Component] = TotalServiceNum(ctx, clients, ruleSpec.Component)
 	}
-	inspectRuleTotal[constant.Component] = componentRuleNumber
-	opa := AllocationOpa(ruleSpec.Opas, taskName)
-	if opa != nil {
+
+	opa, err := Allocation(ruleSpec.Opas, taskName, constant.Opa)
+	if err == nil {
 		executeRule = append(executeRule, *opa)
 		inspectRuleTotal[constant.Opa] = len(ruleSpec.Opas)
 	}
-	prometheus := AllocationPrometheus(ruleSpec.Prometheus, taskName)
-	if prometheus != nil {
+
+	prometheus, err := Allocation(ruleSpec.Prometheus, taskName, constant.Prometheus)
+	if err == nil {
 		executeRule = append(executeRule, *prometheus)
 		inspectRuleTotal[constant.Prometheus] = len(ruleSpec.Prometheus)
-
 	}
+
 	if len(nodes) > 0 {
-		change := AllocationRule(ruleSpec.FileChange, taskName, nodes, constant.FileChange)
-		if len(change) > 0 {
-			executeRule = append(executeRule, change...)
-			inspectRuleTotal[constant.FileChange] = len(ruleSpec.FileChange)
+		change, err := AllocationRule(ruleSpec.FileChange, taskName, nodes, constant.FileChange)
+		if err != nil {
+			return nil, nil, err
 		}
-		sysctl := AllocationRule(ruleSpec.Sysctl, taskName, nodes, constant.Sysctl)
-		if len(sysctl) > 0 {
-			executeRule = append(executeRule, sysctl...)
-			inspectRuleTotal[constant.Sysctl] = len(ruleSpec.Sysctl)
-		}
-		systemd := AllocationRule(ruleSpec.Systemd, taskName, nodes, constant.Systemd)
-		if len(systemd) > 0 {
-			executeRule = append(executeRule, systemd...)
-			inspectRuleTotal[constant.Systemd] = len(ruleSpec.Systemd)
+		executeRule = append(executeRule, change...)
+		inspectRuleTotal[constant.FileChange] = len(ruleSpec.FileChange)
 
+		sysctl, err := AllocationRule(ruleSpec.Sysctl, taskName, nodes, constant.Sysctl)
+		if err != nil {
+			return nil, nil, err
 		}
-		fileFilter := AllocationRule(ruleSpec.FileFilter, taskName, nodes, constant.FileFilter)
-		if len(fileFilter) > 0 {
-			executeRule = append(executeRule, fileFilter...)
-			inspectRuleTotal[constant.FileFilter] = len(ruleSpec.FileFilter)
+		executeRule = append(executeRule, sysctl...)
+		inspectRuleTotal[constant.Sysctl] = len(ruleSpec.Sysctl)
+
+		systemd, err := AllocationRule(ruleSpec.Systemd, taskName, nodes, constant.Systemd)
+		if err != nil {
+			return nil, nil, err
 		}
+		executeRule = append(executeRule, systemd...)
+		inspectRuleTotal[constant.Systemd] = len(ruleSpec.Systemd)
+
+		fileFilter, err := AllocationRule(ruleSpec.FileFilter, taskName, nodes, constant.FileFilter)
+		if err != nil {
+			return nil, nil, err
+		}
+		executeRule = append(executeRule, fileFilter...)
+		inspectRuleTotal[constant.FileFilter] = len(ruleSpec.FileFilter)
+
+		customCommand, err := AllocationRule(ruleSpec.CustomCommand, taskName, nodes, constant.CustomCommand)
+		if err != nil {
+			return nil, nil, err
+		}
+		executeRule = append(executeRule, customCommand...)
+		inspectRuleTotal[constant.CustomCommand] = len(ruleSpec.CustomCommand)
+
 	}
-	return executeRule, inspectRuleTotal
+	return executeRule, inspectRuleTotal, nil
 }
 
 func UpdateRuleReferNum(ctx context.Context, clients *kube.KubernetesClient) error {
@@ -298,7 +315,7 @@ func UpdateRuleReferNum(ctx context.Context, clients *kube.KubernetesClient) err
 	}
 	for _, item := range listRule.Items {
 		filter, _ := utils.ArrayFilter(listPlan.Items, func(v kubeeyev1alpha2.InspectPlan) bool {
-			return v.Spec.Tag == item.GetLabels()[constant.LabelRuleGroup]
+			return v.Spec.RuleGroup == item.GetLabels()[constant.LabelRuleGroup]
 		})
 		item.Annotations = labels.Merge(item.Annotations, map[string]string{constant.AnnotationRuleJoinNum: strconv.Itoa(len(filter))})
 		_, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().Update(ctx, &item, metav1.UpdateOptions{})
@@ -309,4 +326,19 @@ func UpdateRuleReferNum(ctx context.Context, clients *kube.KubernetesClient) err
 	}
 
 	return nil
+}
+
+func TotalServiceNum(ctx context.Context, clients *kube.KubernetesClient, component *string) int {
+	componentRuleNumber := 0
+	if component == nil {
+		services, err := clients.ClientSet.CoreV1().Services(corev1.NamespaceAll).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			klog.Errorf("Failed to list services. err:%s", err)
+			return componentRuleNumber
+		}
+		componentRuleNumber = len(services.Items)
+	} else {
+		componentRuleNumber = len(strings.Split(*component, "|"))
+	}
+	return componentRuleNumber
 }

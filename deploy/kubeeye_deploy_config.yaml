@@ -49,6 +49,10 @@ spec:
                 type: string
               maxTasks:
                 type: integer
+              one:
+                type: boolean
+              ruleGroup:
+                type: string
               ruleNames:
                 items:
                   type: string
@@ -57,8 +61,6 @@ spec:
                 type: string
               suspend:
                 type: boolean
-              tag:
-                type: string
               timeout:
                 type: string
             type: object
@@ -132,6 +134,8 @@ spec:
                   properties:
                     endpoint:
                       type: string
+                    level:
+                      type: string
                     name:
                       type: string
                     namespace:
@@ -156,6 +160,8 @@ spec:
                             items:
                               type: string
                             type: array
+                          level:
+                            type: string
                           path:
                             type: string
                         type: object
@@ -169,6 +175,8 @@ spec:
                             items:
                               type: string
                             type: array
+                          level:
+                            type: string
                           path:
                             type: string
                         type: object
@@ -182,6 +190,8 @@ spec:
                         properties:
                           assert:
                             type: boolean
+                          level:
+                            type: string
                           name:
                             type: string
                           value:
@@ -193,6 +203,8 @@ spec:
                         properties:
                           assert:
                             type: boolean
+                          level:
+                            type: string
                           name:
                             type: string
                           value:
@@ -324,6 +336,27 @@ spec:
             properties:
               component:
                 type: string
+              customCommand:
+                items:
+                  properties:
+                    command:
+                      type: string
+                    desc:
+                      type: string
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    rule:
+                      type: string
+                  type: object
+                type: array
               fileChange:
                 items:
                   properties:

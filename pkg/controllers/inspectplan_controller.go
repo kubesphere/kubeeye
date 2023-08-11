@@ -66,6 +66,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	err := r.Get(ctx, req.NamespacedName, inspectPlan)
 	// Every time a plan operation is triggered, it checks how many plans are associated with the rule
 	rules.UpdateRuleReferNum(ctx, r.K8sClient)
+
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -107,14 +108,14 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 
+	if (inspectPlan.Spec.Schedule == nil || inspectPlan.Spec.Once) && inspectPlan.Status.LastTaskName != "" {
+		return ctrl.Result{}, nil
+	}
 	if inspectPlan.Spec.Timeout == "" {
 		inspectPlan.Spec.Timeout = "10m"
 	}
 
 	if inspectPlan.Spec.Schedule == nil {
-		if inspectPlan.Status.LastTaskName != "" {
-			return ctrl.Result{}, nil
-		}
 		taskName, err := r.createInspectTask(inspectPlan, ctx)
 		if err != nil {
 			klog.Error("failed to create InspectTask.", err)
@@ -122,7 +123,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 		klog.Info("create a new inspect task.", taskName)
 		r.removeTask(ctx, inspectPlan)
-		if err = r.updateStatus(ctx, inspectPlan, time.Now(), taskName); err != nil {
+		if err = r.UpdateStatus(ctx, inspectPlan, time.Now(), taskName); err != nil {
 			return ctrl.Result{}, err
 		}
 
@@ -149,7 +150,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		klog.Info("create a new inspect task.", taskName)
 		r.removeTask(ctx, inspectPlan)
 		inspectPlan.Status.NextScheduleTime = metav1.Time{Time: schedule.Next(now)}
-		if err = r.updateStatus(ctx, inspectPlan, now, taskName); err != nil {
+		if err = r.UpdateStatus(ctx, inspectPlan, now, taskName); err != nil {
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
@@ -181,7 +182,7 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 	inspectTask := kubeeyev1alpha2.InspectTask{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   taskName,
-			Labels: map[string]string{constant.LabelName: inspectPlan.Name, constant.LabelRuleGroup: inspectPlan.Spec.Tag},
+			Labels: map[string]string{constant.LabelName: inspectPlan.Name, constant.LabelRuleGroup: inspectPlan.Spec.RuleGroup},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         inspectPlan.APIVersion,
 				Kind:               inspectPlan.Kind,
@@ -224,7 +225,7 @@ func (r *InspectPlanReconciler) removeTask(ctx context.Context, plan *kubeeyev1a
 		}
 	}
 }
-func (r *InspectPlanReconciler) updateStatus(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan, now time.Time, taskName string) error {
+func (r *InspectPlanReconciler) UpdateStatus(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan, now time.Time, taskName string) error {
 	plan.Status.LastScheduleTime = metav1.Time{Time: now}
 	plan.Status.LastTaskName = taskName
 	plan.Status.LastTaskStatus = kubeeyev1alpha2.PhasePending

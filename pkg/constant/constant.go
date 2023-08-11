@@ -1,6 +1,8 @@
 package constant
 
-import "time"
+import (
+	"time"
+)
 
 const AuditorServiceAddrConfigMap = "auditor-service-addr"
 
@@ -10,15 +12,16 @@ const DefaultNamespace = "kubeeye-system"
 
 const BaseFilePrefix = "kubeeye-base-file"
 const (
-	Opa        = "opa"
-	FileChange = "filechange"
-	Prometheus = "prometheus"
-	BaseFile   = "basefile"
-	Data       = "data"
-	Sysctl     = "sysctl"
-	Systemd    = "systemd"
-	FileFilter = "filefilter"
-	Component  = "component"
+	Opa           = "opa"
+	FileChange    = "filechange"
+	Prometheus    = "prometheus"
+	BaseFile      = "basefile"
+	Data          = "data"
+	Sysctl        = "sysctl"
+	Systemd       = "systemd"
+	FileFilter    = "filefilter"
+	Component     = "component"
+	CustomCommand = "customcommand"
 )
 
 const (
@@ -42,5 +45,6 @@ const (
 const (
 	DefaultProcPath = "/hosts/proc"
 	RootPathPrefix  = "/hosts/root"
-	ResultPath      = "/hosts/result"
+	//ResultPath      = "/hosts/result"
+	ResultPath = "/Users/xiaoliu/Desktop/work/kubeeye"
 )

@@ -28,14 +28,15 @@ type InspectRuleSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	PrometheusEndpoint string           `json:"prometheusEndpoint,omitempty"`
-	Opas               []OpaRule        `json:"opas,omitempty"`
-	Prometheus         []PrometheusRule `json:"prometheus,omitempty"`
-	FileChange         []FileChangeRule `json:"fileChange,omitempty" `
-	Sysctl             []SysRule        `json:"sysctl,omitempty"`
-	Systemd            []SysRule        `json:"systemd,omitempty"`
-	FileFilter         []FileFilterRule `json:"fileFilter,omitempty"`
-	Component          *string          `json:"component,omitempty"`
+	PrometheusEndpoint string              `json:"prometheusEndpoint,omitempty"`
+	Opas               []OpaRule           `json:"opas,omitempty"`
+	Prometheus         []PrometheusRule    `json:"prometheus,omitempty"`
+	FileChange         []FileChangeRule    `json:"fileChange,omitempty" `
+	Sysctl             []SysRule           `json:"sysctl,omitempty"`
+	Systemd            []SysRule           `json:"systemd,omitempty"`
+	FileFilter         []FileFilterRule    `json:"fileFilter,omitempty"`
+	CustomCommand      []CustomCommandRule `json:"customCommand,omitempty"`
+	Component          *string             `json:"component,omitempty"`
 }
 type RuleItemBases struct {
 	Name  string  `json:"name,omitempty"`
@@ -44,17 +45,20 @@ type RuleItemBases struct {
 	Level Level   `json:"level,omitempty"`
 }
 
+type Node struct {
+	NodeName     *string           `json:"nodeName,omitempty"`
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+}
+
 type FileFilterRule struct {
 	RuleItemBases `json:",inline"`
-	Path          string            `json:"path,omitempty"`
-	NodeName      *string           `json:"nodeName,omitempty"`
-	NodeSelector  map[string]string `json:"nodeSelector,omitempty"`
+	Path          string `json:"path,omitempty"`
+	Node          `json:",inline"`
 }
 
 type SysRule struct {
 	RuleItemBases `json:",inline"`
-	NodeName      *string           `json:"nodeName,omitempty"`
-	NodeSelector  map[string]string `json:"nodeSelector,omitempty"`
+	Node          `json:",inline"`
 }
 
 type OpaRule struct {
@@ -68,9 +72,13 @@ type PrometheusRule struct {
 
 type FileChangeRule struct {
 	RuleItemBases `json:",inline"`
-	Path          string            `json:"path,omitempty"`
-	NodeName      *string           `json:"nodeName,omitempty"`
-	NodeSelector  map[string]string `json:"nodeSelector,omitempty"`
+	Path          string `json:"path,omitempty"`
+	Node          `json:",inline"`
+}
+type CustomCommandRule struct {
+	RuleItemBases `json:",inline"`
+	Command       string `json:"command,omitempty"`
+	Node          `json:",inline"`
 }
 
 type State string

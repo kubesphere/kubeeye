@@ -43,6 +43,10 @@ spec:
                 type: string
               maxTasks:
                 type: integer
+              one:
+                type: boolean
+              ruleGroup:
+                type: string
               ruleNames:
                 items:
                   type: string
@@ -51,8 +55,6 @@ spec:
                 type: string
               suspend:
                 type: boolean
-              tag:
-                type: string
               timeout:
                 type: string
             type: object

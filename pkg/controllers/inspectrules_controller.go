@@ -119,6 +119,9 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if inspectRules.Spec.FileFilter != nil {
 		total += len(inspectRules.Spec.FileFilter)
 	}
+	if inspectRules.Spec.CustomCommand != nil {
+		total += len(inspectRules.Spec.CustomCommand)
+	}
 
 	inspectRules.Status.EndImportTime = v1.Time{Time: time.Now()}
 	inspectRules.Status.State = kubeeyev1alpha2.ImportComplete

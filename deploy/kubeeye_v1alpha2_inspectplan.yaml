@@ -5,7 +5,4 @@ metadata:
 spec:
   schedule: "*/30 * * *  ?"
   maxTasks: 10
-  tag: kubeeye_workloads_rego
-  clusterName:
-    - host
-    - member1
+  ruleGroup: kubeeye_workloads_rego
