@@ -160,9 +160,9 @@ func (i *InspectRule) Validate(gin *gin.Context) {
 		return
 	}
 
-	_, ok := crateRule.GetLabels()[constant.LabelInspectRuleGroup]
+	_, ok := crateRule.GetLabels()[constant.LabelRuleGroup]
 	if !ok {
-		ResultErr := NewErrors(fmt.Sprintf("inspect rule must have label %s", constant.LabelInspectRuleGroup), "InspectRule")
+		ResultErr := NewErrors(fmt.Sprintf("inspect rule must have label %s", constant.LabelRuleGroup), "InspectRule")
 		gin.JSON(http.StatusInternalServerError, ResultErr)
 		gin.Abort()
 		return

@@ -581,7 +581,7 @@ func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase kube
 
 func (r *InspectTaskReconciler) GetRules(ctx context.Context, task *kubeeyev1alpha2.InspectTask) (*kubeeyev1alpha2.InspectRuleList, error) {
 	ruleList, err := r.K8sClients.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(ctx, metav1.ListOptions{
-		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelInspectRuleGroup: task.Labels[constant.LabelRuleGroup]}),
+		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelRuleGroup: task.Labels[constant.LabelRuleGroup]}),
 	})
 	if err != nil {
 		return nil, err

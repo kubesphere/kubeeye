@@ -3,7 +3,7 @@ kind: InspectRule
 metadata:
   name: custom-command
   labels:
-    "kubeeye.kubesphere.io/inspect-rule-group": "kubeeye_workloads_rego"
+    "kubeeye.kubesphere.io/rule-group": "kubeeye_workloads_rego"
 spec:
   customCommand:
     - name: dh

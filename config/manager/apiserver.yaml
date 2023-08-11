@@ -36,6 +36,9 @@ spec:
         - name: ke-apiserver
           image: jw008/kubeeye-apiserver:latest
           imagePullPolicy: IfNotPresent
+          env:
+            - name: GIN_MODE
+              value: release
           volumeMounts:
             - mountPath: /etc/localtime
               name: localtime

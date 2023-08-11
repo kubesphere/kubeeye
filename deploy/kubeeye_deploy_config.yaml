@@ -1044,7 +1044,10 @@ spec:
       name: ke-apiserver
     spec:
       containers:
-      - image: jw008/kubeeye-apiserver:latest
+      - env:
+        - name: GIN_MODE
+          value: release
+        image: jw008/kubeeye-apiserver:latest
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
