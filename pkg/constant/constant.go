@@ -45,6 +45,6 @@ const (
 const (
 	DefaultProcPath = "/hosts/proc"
 	RootPathPrefix  = "/hosts/root"
-	//ResultPath      = "/hosts/result"
-	ResultPath = "/Users/xiaoliu/Desktop/work/kubeeye"
+	ResultPath      = "/hosts/result"
+	//ResultPath = "/Users/xiaoliu/Desktop/work/kubeeye"
 )
