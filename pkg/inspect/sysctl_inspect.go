@@ -117,8 +117,7 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 			if err != nil {
 				errVal := fmt.Sprintf("name:%s to does not exist", sysRule.Name)
 				ctl.Value = &errVal
-				notExist := false
-				ctl.Assert = &notExist
+				ctl.Assert = true
 			} else {
 				val := parseSysctlVal(ctlRule)
 				ctl.Value = &val
@@ -126,15 +125,15 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 					if _, err := visitor.CheckRule(*sysRule.Rule); err != nil {
 						checkErr := fmt.Sprintf("rule condition is not correct, %s", err.Error())
 						ctl.Value = &checkErr
+						ctl.Assert = true
 					} else {
 						err, res := visitor.EventRuleEvaluate(map[string]interface{}{sysRule.Name: val}, *sysRule.Rule)
 						if err != nil {
 							evalErr := fmt.Sprintf("event rule evaluate to failed err:%s", err)
-							notExist := true
-							ctl.Assert = &notExist
+							ctl.Assert = true
 							ctl.Value = &evalErr
 						} else {
-							ctl.Assert = &res
+							ctl.Assert = !res
 						}
 
 					}

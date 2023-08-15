@@ -1,9 +1,7 @@
 package utils
 
 import (
-	"bufio"
-	"fmt"
-	"github.com/sergi/go-diff/diffmatchpatch"
+	"encoding/json"
 	"strings"
 )
 
@@ -63,26 +61,8 @@ func SliceRemove(s string, o interface{}) interface{} {
 	return nil
 }
 
-func DiffString(base1 string, base2 string) []string {
-	dmp := diffmatchpatch.New()
-	diffs := dmp.DiffMain(base1, base2, false)
-	scan := bufio.NewScanner(strings.NewReader(dmp.DiffPrettyText(diffs)))
-	lineNum := 1
-	var isseus []string
-	for scan.Scan() {
-		line := scan.Text()
-		if strings.Contains(line, "\x1b[3") {
-			isseus = append(isseus, fmt.Sprintf("%d行 %s\n", lineNum, line))
-		}
-		lineNum++
-	}
-	return isseus
-}
-func FormatBoolString(b *bool) string {
-	if b == nil {
-		return ""
-	}
-	if *b {
+func FormatBoolString(b bool) string {
+	if b {
 		return "true"
 	}
 	return "false"
@@ -97,4 +77,30 @@ func IsEmptyString(s string) bool {
 	}
 
 	return false
+}
+
+func StructToMap(obj interface{}) ([]map[string]interface{}, error) {
+	marshal, err := json.Marshal(obj)
+	if err != nil {
+		return nil, err
+	}
+	var result []map[string]interface{}
+	err = json.Unmarshal(marshal, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func MapToStruct[T any](maps []map[string]interface{}) []T {
+	var result []T
+	marshal, err := json.Marshal(maps)
+	if err != nil {
+		return nil
+	}
+	err = json.Unmarshal(marshal, &result)
+	if err != nil {
+		return nil
+	}
+	return result
 }

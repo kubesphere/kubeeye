@@ -100,32 +100,40 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 	klog.Info("starting inspect ruleFiles")
 
-	total := 0
+	var levelCount = make(map[kubeeyev1alpha2.Level]*int)
+
 	if inspectRules.Spec.Opas != nil {
-		total += len(inspectRules.Spec.Opas)
+
+		ComputeLevel(inspectRules.Spec.Opas, levelCount)
 	}
 	if inspectRules.Spec.Prometheus != nil {
-		total += len(inspectRules.Spec.Prometheus)
+
+		ComputeLevel(inspectRules.Spec.Prometheus, levelCount)
 	}
 	if inspectRules.Spec.FileChange != nil {
-		total += len(inspectRules.Spec.FileChange)
+
+		ComputeLevel(inspectRules.Spec.FileChange, levelCount)
 	}
 	if inspectRules.Spec.Sysctl != nil {
-		total += len(inspectRules.Spec.Sysctl)
+
+		ComputeLevel(inspectRules.Spec.Sysctl, levelCount)
 	}
 	if inspectRules.Spec.Systemd != nil {
-		total += len(inspectRules.Spec.Systemd)
+
+		ComputeLevel(inspectRules.Spec.Systemd, levelCount)
 	}
 	if inspectRules.Spec.FileFilter != nil {
-		total += len(inspectRules.Spec.FileFilter)
+
+		ComputeLevel(inspectRules.Spec.FileFilter, levelCount)
 	}
 	if inspectRules.Spec.CustomCommand != nil {
-		total += len(inspectRules.Spec.CustomCommand)
+
+		ComputeLevel(inspectRules.Spec.CustomCommand, levelCount)
 	}
 
 	inspectRules.Status.EndImportTime = v1.Time{Time: time.Now()}
 	inspectRules.Status.State = kubeeyev1alpha2.ImportComplete
-	inspectRules.Status.RuleCount = total
+	inspectRules.Status.LevelCount = levelCount
 	err = r.Status().Update(ctx, inspectRules)
 	if err != nil {
 		klog.Error(err, "failed to update inspect ruleFiles")
@@ -140,4 +148,30 @@ func (r *InspectRulesReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kubeeyev1alpha2.InspectRule{}).
 		Complete(r)
+}
+
+func ComputeLevel(data interface{}, m map[kubeeyev1alpha2.Level]*int) {
+
+	toMap, err := utils.StructToMap(data)
+	if err != nil {
+		return
+	}
+	Autoincrement := func(level kubeeyev1alpha2.Level) *int {
+		if m[level] == nil {
+			m[level] = new(int)
+		}
+		*m[level]++
+		return m[level]
+	}
+	for _, t := range toMap {
+		v, ok := t["level"]
+		if !ok {
+			m[kubeeyev1alpha2.DangerLevel] = Autoincrement(kubeeyev1alpha2.DangerLevel)
+		} else {
+			l := v.(string)
+			m[kubeeyev1alpha2.Level(l)] = Autoincrement(kubeeyev1alpha2.Level(l))
+		}
+
+	}
+
 }

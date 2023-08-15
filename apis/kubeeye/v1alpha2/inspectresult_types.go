@@ -61,6 +61,7 @@ type NodeInfoResult struct {
 	FileFilterResult []FileChangeResultItem `json:"fileFilterResult,omitempty"`
 	SysctlResult     []NodeResultItem       `json:"sysctlResult,omitempty"`
 	SystemdResult    []NodeResultItem       `json:"systemdResult,omitempty"`
+	CommandResult    []CommandResultItem    `json:"commandResult,omitempty"`
 }
 
 type FileChangeResultItem struct {
@@ -71,7 +72,7 @@ type FileChangeResultItem struct {
 }
 type NodeResultItem struct {
 	Name   string  `json:"name,omitempty"`
-	Assert *bool   `json:"assert,omitempty"`
+	Assert bool    `json:"assert,omitempty"`
 	Value  *string `json:"value,omitempty"`
 	Level  Level   `json:"level,omitempty"`
 }
@@ -80,6 +81,13 @@ type ComponentResultItem struct {
 	Namespace string `json:"namespace,omitempty"`
 	Endpoint  string `json:"endpoint,omitempty"`
 	Level     Level  `json:"level,omitempty"`
+}
+type CommandResultItem struct {
+	Name    string `json:"name,omitempty"`
+	Command string `json:"command,omitempty"`
+	Level   Level  `json:"level,omitempty"`
+	Assert  bool   `json:"assert,omitempty"`
+	Value   string `json:"value,omitempty"`
 }
 
 // +genclient

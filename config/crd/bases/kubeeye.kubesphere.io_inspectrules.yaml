@@ -177,8 +177,10 @@ spec:
               endImportTime:
                 format: date-time
                 type: string
-              ruleCount:
-                type: integer
+              levelCount:
+                additionalProperties:
+                  type: integer
+                type: object
               startImportTime:
                 format: date-time
                 type: string

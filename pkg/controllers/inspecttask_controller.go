@@ -128,7 +128,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 
-		getRules, err := r.GetRules(ctx, inspectTask)
+		getRules, err := r.getRules(ctx, inspectTask)
 
 		if err != nil {
 			klog.Error("failed get to inspectrules.", err)
@@ -299,7 +299,7 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 				wg.Done()
 				<-semaphore
 			}()
-			if isTimeout(inspectTask.Status.StartTimestamp, inspectTask.Spec.Timeout) {
+			if isTimeout(inspectTask.CreationTimestamp, inspectTask.Spec.Timeout) {
 				jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: v.JobName, Phase: kubeeyev1alpha2.PhaseFailed})
 				return
 			}
@@ -340,17 +340,16 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 }
 
 func isExistsJob(ctx context.Context, clients *kube.KubernetesClient, jobName string) error {
-
 	_, err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, jobName, metav1.GetOptions{})
 	if err != nil && kubeErr.IsNotFound(err) {
 		return nil
 	}
 	klog.Errorf("job already exists for name:%s", jobName)
-	return err
+	return fmt.Errorf("job already exists for name:%s", jobName)
 }
 
 func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Context, clients *kube.KubernetesClient, jobName string, jobPhase *kubeeyev1alpha2.JobPhase, timeout string) *kubeeyev1alpha2.JobPhase {
-	background := metav1.DeletePropagationBackground
+
 	for {
 		klog.Infof("wait job run complete for name:%s", jobName)
 		jobInfo, err := clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Get(ctx, jobName, metav1.GetOptions{})
@@ -362,12 +361,12 @@ func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Contex
 		if isTimeout(jobInfo.CreationTimestamp, timeout) {
 			klog.Infof("timeout for name:%s", jobName)
 			jobPhase.Phase = kubeeyev1alpha2.PhaseFailed
+			background := metav1.DeletePropagationBackground
 			_ = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Delete(ctx, jobName, metav1.DeleteOptions{PropagationPolicy: &background})
 			return jobPhase
 		}
 		if jobInfo.Status.CompletionTime != nil && !jobInfo.Status.CompletionTime.IsZero() && jobInfo.Status.Active == 0 {
 			jobPhase.Phase = kubeeyev1alpha2.PhaseSucceeded
-			_ = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Delete(ctx, jobName, metav1.DeleteOptions{PropagationPolicy: &background})
 			return jobPhase
 		}
 		time.Sleep(10 * time.Second)
@@ -579,7 +578,7 @@ func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase kube
 	return nil
 }
 
-func (r *InspectTaskReconciler) GetRules(ctx context.Context, task *kubeeyev1alpha2.InspectTask) (*kubeeyev1alpha2.InspectRuleList, error) {
+func (r *InspectTaskReconciler) getRules(ctx context.Context, task *kubeeyev1alpha2.InspectTask) (*kubeeyev1alpha2.InspectRuleList, error) {
 	ruleList, err := r.K8sClients.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(ctx, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelRuleGroup: task.Labels[constant.LabelRuleGroup]}),
 	})

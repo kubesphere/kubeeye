@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -102,37 +101,8 @@ func MergeRule(rules []kubeeyev1alpha2.InspectRule) (*kubeeyev1alpha2.InspectRul
 	return ruleSpec, nil
 }
 
-type MapType interface {
-	kubeeyev1alpha2.SysRule | kubeeyev1alpha2.OpaRule | kubeeyev1alpha2.PrometheusRule | kubeeyev1alpha2.FileChangeRule | kubeeyev1alpha2.FileFilterRule | kubeeyev1alpha2.CustomCommandRule
-}
-
-func StructToMap(obj interface{}) ([]map[string]interface{}, error) {
-	marshal, err := json.Marshal(obj)
-	if err != nil {
-		return nil, err
-	}
-	var result []map[string]interface{}
-	err = json.Unmarshal(marshal, &result)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func MapToStruct[T MapType](maps []map[string]interface{}) []T {
-	var result []T
-	marshal, err := json.Marshal(maps)
-	if err != nil {
-		return nil
-	}
-	err = json.Unmarshal(marshal, &result)
-	if err != nil {
-		return nil
-	}
-	return result
-}
-func RuleArrayDeduplication[T MapType](obj interface{}) ([]T, error) {
-	maps, err := StructToMap(obj)
+func RuleArrayDeduplication[T any](obj interface{}) ([]T, error) {
+	maps, err := utils.StructToMap(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -145,13 +115,13 @@ func RuleArrayDeduplication[T MapType](obj interface{}) ([]T, error) {
 			newMaps = append(newMaps, m)
 		}
 	}
-	toStruct := MapToStruct[T](newMaps)
+	toStruct := utils.MapToStruct[T](newMaps)
 	return toStruct, nil
 }
 
 func Allocation(rule interface{}, taskName string, ruleType string) (*kubeeyev1alpha2.JobRule, error) {
 
-	toMap, err := StructToMap(rule)
+	toMap, err := utils.StructToMap(rule)
 	if err != nil {
 		klog.Errorf("Failed to convert rule to map. err:%s", err)
 		return nil, err
@@ -174,7 +144,7 @@ func Allocation(rule interface{}, taskName string, ruleType string) (*kubeeyev1a
 
 func AllocationRule(rule interface{}, taskName string, allNode []corev1.Node, ctlOrTem string) ([]kubeeyev1alpha2.JobRule, error) {
 
-	toMap, err := StructToMap(rule)
+	toMap, err := utils.StructToMap(rule)
 	if err != nil {
 		klog.Errorf("Failed to convert rule to map. err:%s", err)
 		return nil, err
@@ -304,28 +274,6 @@ func ParseRules(ctx context.Context, clients *kube.KubernetesClient, taskName st
 
 	}
 	return executeRule, inspectRuleTotal, nil
-}
-
-func UpdateRuleReferNum(ctx context.Context, clients *kube.KubernetesClient) error {
-	listRule, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(ctx, metav1.ListOptions{})
-	listPlan, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectPlans().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		klog.Error(err, "Failed to list inspectRules and inspectPlan")
-		return err
-	}
-	for _, item := range listRule.Items {
-		filter, _ := utils.ArrayFilter(listPlan.Items, func(v kubeeyev1alpha2.InspectPlan) bool {
-			return v.Spec.RuleGroup == item.GetLabels()[constant.LabelRuleGroup]
-		})
-		item.Annotations = labels.Merge(item.Annotations, map[string]string{constant.AnnotationRuleJoinNum: strconv.Itoa(len(filter))})
-		_, err := clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().Update(ctx, &item, metav1.UpdateOptions{})
-		if err != nil {
-			klog.Error(err, "Failed to update inspectRules refer num")
-			return err
-		}
-	}
-
-	return nil
 }
 
 func TotalServiceNum(ctx context.Context, clients *kube.KubernetesClient, component *string) int {

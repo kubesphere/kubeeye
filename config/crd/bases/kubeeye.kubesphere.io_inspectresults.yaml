@@ -57,6 +57,21 @@ spec:
               nodeInfoResult:
                 additionalProperties:
                   properties:
+                    commandResult:
+                      items:
+                        properties:
+                          assert:
+                            type: boolean
+                          command:
+                            type: string
+                          level:
+                            type: string
+                          name:
+                            type: string
+                          value:
+                            type: string
+                        type: object
+                      type: array
                     fileChangeResult:
                       items:
                         properties:

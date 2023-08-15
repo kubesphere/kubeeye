@@ -204,9 +204,9 @@ func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	for k, v := range infoResult {
 
 		for _, item := range v.SysctlResult {
-			if item.Assert != nil && *item.Assert == false {
+			if item.Assert {
 				val := renderNode{
-					Issues: assertBoolBackBool(item.Assert),
+					Issues: item.Assert,
 					Children: []renderNode{
 						{Text: k},
 						{Text: constant.Sysctl},
@@ -235,9 +235,9 @@ func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	villeinage = append(villeinage, header)
 	for k, v := range infoResult {
 		for _, item := range v.SystemdResult {
-			if item.Assert != nil && *item.Assert == false {
+			if item.Assert {
 				val := renderNode{
-					Issues: assertBoolBackBool(item.Assert),
+					Issues: item.Assert,
 					Children: []renderNode{
 						{Text: k},
 						{Text: constant.Systemd},

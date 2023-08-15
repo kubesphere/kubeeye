@@ -8,4 +8,7 @@ spec:
   customCommand:
     - name: dh
       command: df -h
-      rule: result contains /dev/sda1
+      rule: result contains /dev
+    - name: etcdHealth
+      command: systemctl status etcd | grep active
+      rule: result contains running

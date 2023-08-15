@@ -21,9 +21,11 @@ import (
 	"fmt"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/kubesphere/kubeeye/pkg/utils"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
+	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -65,7 +67,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	inspectPlan := &kubeeyev1alpha2.InspectPlan{}
 	err := r.Get(ctx, req.NamespacedName, inspectPlan)
 	// Every time a plan operation is triggered, it checks how many plans are associated with the rule
-	rules.UpdateRuleReferNum(ctx, r.K8sClient)
+	r.updateRuleReferNum(ctx)
 
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
@@ -85,7 +87,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}()
 
 	if inspectPlan.DeletionTimestamp.IsZero() {
-		if _, b := utils.ArrayFind(Finalizers, inspectPlan.Finalizers); !b {
+		if _, ok := utils.ArrayFind(Finalizers, inspectPlan.Finalizers); !ok {
 			inspectPlan.Finalizers = append(inspectPlan.Finalizers, Finalizers)
 			err = r.Client.Update(ctx, inspectPlan)
 			if err != nil {
@@ -122,8 +124,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 		klog.Info("create a new inspect task.", taskName)
-		r.removeTask(ctx, inspectPlan)
-		if err = r.UpdateStatus(ctx, inspectPlan, time.Now(), taskName); err != nil {
+		if err = r.updateStatus(ctx, inspectPlan, time.Now(), taskName); err != nil {
 			return ctrl.Result{}, err
 		}
 
@@ -148,9 +149,8 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 		klog.Info("create a new inspect task.", taskName)
-		r.removeTask(ctx, inspectPlan)
 		inspectPlan.Status.NextScheduleTime = metav1.Time{Time: schedule.Next(now)}
-		if err = r.UpdateStatus(ctx, inspectPlan, now, taskName); err != nil {
+		if err = r.updateStatus(ctx, inspectPlan, now, taskName); err != nil {
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
@@ -177,11 +177,10 @@ func nextScheduledTimeDuration(sched cron.Schedule, now time.Time) *time.Duratio
 
 func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (string, error) {
 	ownerController := true
-	taskName := fmt.Sprintf("%s-%s", inspectPlan.Name, time.Now().Format("20060102-15-04"))
-
+	r.removeTask(ctx, inspectPlan)
 	inspectTask := kubeeyev1alpha2.InspectTask{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   taskName,
+			Name:   fmt.Sprintf("%s-%s", inspectPlan.Name, time.Now().Format("20060102-15-04")),
 			Labels: map[string]string{constant.LabelName: inspectPlan.Name, constant.LabelRuleGroup: inspectPlan.Spec.RuleGroup},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         inspectPlan.APIVersion,
@@ -214,18 +213,26 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 
 func (r *InspectPlanReconciler) removeTask(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan) {
 	if plan.Spec.MaxTasks > 0 {
-		for len(plan.Status.TaskNames) > plan.Spec.MaxTasks-1 {
-			err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks().Delete(ctx, plan.Status.TaskNames[0].Name, metav1.DeleteOptions{})
-			if err == nil || kubeErr.IsNotFound(err) {
-				plan.Status.TaskNames = plan.Status.TaskNames[1:]
-			} else {
-				klog.Error("Failed to delete inspect task", err)
+		tasks, err := r.getInspectTaskForLabel(ctx, plan.Name)
+		if err != nil {
+			klog.Error("Failed to get inspect task for label", err)
+		}
+		if len(tasks) > plan.Spec.MaxTasks {
+			for _, task := range tasks[:len(tasks)-plan.Spec.MaxTasks] {
+				err = r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks().Delete(ctx, task.Name, metav1.DeleteOptions{})
+				if err == nil || kubeErr.IsNotFound(err) {
+					klog.Info("delete inspect task", task.Name)
+				} else {
+					klog.Error("Failed to delete inspect task", err)
+				}
 			}
 
+			plan.Status.TaskNames = ConvertTaskStatus(tasks[len(tasks)-plan.Spec.MaxTasks:])
 		}
+
 	}
 }
-func (r *InspectPlanReconciler) UpdateStatus(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan, now time.Time, taskName string) error {
+func (r *InspectPlanReconciler) updateStatus(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan, now time.Time, taskName string) error {
 	plan.Status.LastScheduleTime = metav1.Time{Time: now}
 	plan.Status.LastTaskName = taskName
 	plan.Status.LastTaskStatus = kubeeyev1alpha2.PhasePending
@@ -238,5 +245,62 @@ func (r *InspectPlanReconciler) UpdateStatus(ctx context.Context, plan *kubeeyev
 		klog.Error("failed to update inspect plan.", err)
 		return err
 	}
+	return nil
+}
+
+func (r *InspectPlanReconciler) getInspectTaskForLabel(ctx context.Context, planName string) ([]kubeeyev1alpha2.InspectTask, error) {
+	list, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks().List(ctx, metav1.ListOptions{
+		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelName: planName}),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(list.Items, func(i, j int) bool {
+		return list.Items[i].CreationTimestamp.Before(&list.Items[j].CreationTimestamp)
+	})
+	return list.Items, nil
+}
+
+func ConvertTaskStatus(tasks []kubeeyev1alpha2.InspectTask) (taskStatus []kubeeyev1alpha2.TaskStatus) {
+
+	for _, t := range tasks {
+		if t.Status.EndTimestamp.IsZero() {
+			taskStatus = append(taskStatus, kubeeyev1alpha2.TaskStatus{
+				Name:       t.Name,
+				TaskStatus: kubeeyev1alpha2.PhasePending,
+			})
+		} else {
+			taskStatus = append(taskStatus, kubeeyev1alpha2.TaskStatus{
+				Name:       t.Name,
+				TaskStatus: GetStatus(&t),
+			})
+		}
+
+	}
+
+	return
+
+}
+
+func (r *InspectPlanReconciler) updateRuleReferNum(ctx context.Context) error {
+	listRule, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(ctx, metav1.ListOptions{})
+	listPlan, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectPlans().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		klog.Error(err, "Failed to list inspectRules and inspectPlan")
+		return err
+	}
+	for _, item := range listRule.Items {
+		filter, _ := utils.ArrayFilter(listPlan.Items, func(v kubeeyev1alpha2.InspectPlan) bool {
+			return v.Spec.RuleGroup == item.GetLabels()[constant.LabelRuleGroup]
+		})
+		item.Annotations = labels.Merge(item.Annotations, map[string]string{constant.AnnotationRuleJoinNum: strconv.Itoa(len(filter))})
+		err = r.Client.Update(ctx, &item)
+		if err != nil {
+			klog.Error(err, "Failed to update inspectRules refer num")
+			return err
+		}
+	}
+
 	return nil
 }

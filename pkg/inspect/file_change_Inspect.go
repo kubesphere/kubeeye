@@ -1,6 +1,7 @@
 package inspect
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
+	"github.com/sergi/go-diff/diffmatchpatch"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
@@ -99,14 +101,14 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 		}
 		baseContent := baseConfig.BinaryData[constant.FileChange]
 
-		diffString := utils.DiffString(string(baseContent), string(baseFile))
+		diffResult := diffString(string(baseContent), string(baseFile))
 
-		for i := range diffString {
-			diffString[i] = strings.ReplaceAll(diffString[i], "\x1b[32m", "")
-			diffString[i] = strings.ReplaceAll(diffString[i], "\x1b[31m", "")
-			diffString[i] = strings.ReplaceAll(diffString[i], "\x1b[0m", "")
+		for i := range diffResult {
+			diffResult[i] = strings.ReplaceAll(diffResult[i], "\x1b[32m", "")
+			diffResult[i] = strings.ReplaceAll(diffResult[i], "\x1b[31m", "")
+			diffResult[i] = strings.ReplaceAll(diffResult[i], "\x1b[0m", "")
 		}
-		resultItem.Issues = diffString
+		resultItem.Issues = diffResult
 		fileResults = append(fileResults, resultItem)
 	}
 
@@ -145,4 +147,20 @@ func (o *fileChangeInspect) GetResult(runNodeName string, resultCm *corev1.Confi
 
 	return resultCr, nil
 
+}
+
+func diffString(base1 string, base2 string) []string {
+	dmp := diffmatchpatch.New()
+	diffs := dmp.DiffMain(base1, base2, false)
+	scan := bufio.NewScanner(strings.NewReader(dmp.DiffPrettyText(diffs)))
+	lineNum := 1
+	var isseus []string
+	for scan.Scan() {
+		line := scan.Text()
+		if strings.Contains(line, "\x1b[3") {
+			isseus = append(isseus, fmt.Sprintf("%d行 %s\n", lineNum, line))
+		}
+		lineNum++
+	}
+	return isseus
 }
