@@ -30,8 +30,14 @@ func InspectJobsTemplate(jobConfig *conf.JobConfig, jobName string, inspectTask 
 			Labels:          map[string]string{constant.LabelRuleType: taskType},
 		},
 		Spec: v1.JobSpec{
-			BackoffLimit:            jobConfig.BackLimit,
-			TTLSecondsAfterFinished: jobConfig.AutoDelTime,
+			BackoffLimit: jobConfig.BackLimit,
+			TTLSecondsAfterFinished: func() *int32 {
+				if jobConfig.AutoDelTime != nil && *jobConfig.AutoDelTime < 15 {
+					var time int32 = 15
+					jobConfig.AutoDelTime = &time
+				}
+				return jobConfig.AutoDelTime
+			}(),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "inspect-job-pod",

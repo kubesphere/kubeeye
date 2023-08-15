@@ -96,7 +96,7 @@ func (o *systemdInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 								ctl.Value = &sprintf
 
 							} else {
-								ctl.Assert = res
+								ctl.Assert = !res
 							}
 						}
 					}
@@ -105,8 +105,7 @@ func (o *systemdInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 			}
 			if ctl.Value == nil {
 				errVal := fmt.Sprintf("name:%s to does not exist", r.Name)
-				notExist := true
-				ctl.Assert = notExist
+				ctl.Assert = true
 				ctl.Value = &errVal
 			}
 			nodeResult = append(nodeResult, ctl)
