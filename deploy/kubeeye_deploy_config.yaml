@@ -151,6 +151,21 @@ spec:
               nodeInfoResult:
                 additionalProperties:
                   properties:
+                    commandResult:
+                      items:
+                        properties:
+                          assert:
+                            type: boolean
+                          command:
+                            type: string
+                          level:
+                            type: string
+                          name:
+                            type: string
+                          value:
+                            type: string
+                        type: object
+                      type: array
                     fileChangeResult:
                       items:
                         properties:
@@ -476,8 +491,10 @@ spec:
               endImportTime:
                 format: date-time
                 type: string
-              ruleCount:
-                type: integer
+              levelCount:
+                additionalProperties:
+                  type: integer
+                type: object
               startImportTime:
                 format: date-time
                 type: string
@@ -859,7 +876,7 @@ data:
     job:
       autoDelTime: 30
       backLimit: 5
-      image: kubespheredev/kubeeye:latest
+      image: kubespheredev/kubeeye-job:latest
       imagePullPolicy: Always
       resources:
         limits:
@@ -1047,8 +1064,8 @@ spec:
       - env:
         - name: GIN_MODE
           value: release
-        image: jw008/kubeeye-apiserver:latest
-        imagePullPolicy: IfNotPresent
+        image: kubespheredev/kubeeye-apiserver:latest
+        imagePullPolicy: Always
         livenessProbe:
           httpGet:
             path: /readyz
