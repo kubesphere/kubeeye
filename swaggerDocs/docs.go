@@ -658,6 +658,26 @@ const docTemplate = `{
                 }
             }
         },
+        "v1alpha2.CommandResultItem": {
+            "type": "object",
+            "properties": {
+                "assert": {
+                    "type": "boolean"
+                },
+                "command": {
+                    "type": "string"
+                },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "v1alpha2.ComponentResultItem": {
             "type": "object",
             "properties": {
@@ -671,6 +691,35 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "namespace": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1alpha2.CustomCommandRule": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "nodeName": {
+                    "type": "string"
+                },
+                "nodeSelector": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "rule": {
                     "type": "string"
                 }
             }
@@ -804,6 +853,12 @@ const docTemplate = `{
                 "maxTasks": {
                     "type": "integer"
                 },
+                "one": {
+                    "type": "boolean"
+                },
+                "ruleGroup": {
+                    "type": "string"
+                },
                 "ruleNames": {
                     "type": "array",
                     "items": {
@@ -815,9 +870,6 @@ const docTemplate = `{
                 },
                 "suspend": {
                     "type": "boolean"
-                },
-                "tag": {
-                    "type": "string"
                 },
                 "timeout": {
                     "type": "string"
@@ -962,6 +1014,12 @@ const docTemplate = `{
                 "component": {
                     "type": "string"
                 },
+                "customCommand": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha2.CustomCommandRule"
+                    }
+                },
                 "fileChange": {
                     "type": "array",
                     "items": {
@@ -1009,8 +1067,11 @@ const docTemplate = `{
                 "endImportTime": {
                     "type": "string"
                 },
-                "ruleCount": {
-                    "type": "integer"
+                "levelCount": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
                 },
                 "startImportTime": {
                     "type": "string"
@@ -1131,6 +1192,12 @@ const docTemplate = `{
         "v1alpha2.NodeInfoResult": {
             "type": "object",
             "properties": {
+                "commandResult": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha2.CommandResultItem"
+                    }
+                },
                 "fileChangeResult": {
                     "type": "array",
                     "items": {

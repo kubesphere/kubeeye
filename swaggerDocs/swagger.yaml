@@ -301,6 +301,19 @@ definitions:
       version:
         type: string
     type: object
+  v1alpha2.CommandResultItem:
+    properties:
+      assert:
+        type: boolean
+      command:
+        type: string
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
+      name:
+        type: string
+      value:
+        type: string
+    type: object
   v1alpha2.ComponentResultItem:
     properties:
       endpoint:
@@ -310,6 +323,25 @@ definitions:
       name:
         type: string
       namespace:
+        type: string
+    type: object
+  v1alpha2.CustomCommandRule:
+    properties:
+      command:
+        type: string
+      desc:
+        type: string
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
+      name:
+        type: string
+      nodeName:
+        type: string
+      nodeSelector:
+        additionalProperties:
+          type: string
+        type: object
+      rule:
         type: string
     type: object
   v1alpha2.ExtraInfo:
@@ -408,6 +440,10 @@ definitions:
         type: string
       maxTasks:
         type: integer
+      one:
+        type: boolean
+      ruleGroup:
+        type: string
       ruleNames:
         items:
           type: string
@@ -416,8 +452,6 @@ definitions:
         type: string
       suspend:
         type: boolean
-      tag:
-        type: string
       timeout:
         type: string
     type: object
@@ -537,6 +571,10 @@ definitions:
     properties:
       component:
         type: string
+      customCommand:
+        items:
+          $ref: '#/definitions/v1alpha2.CustomCommandRule'
+        type: array
       fileChange:
         items:
           $ref: '#/definitions/v1alpha2.FileChangeRule'
@@ -568,8 +606,10 @@ definitions:
     properties:
       endImportTime:
         type: string
-      ruleCount:
-        type: integer
+      levelCount:
+        additionalProperties:
+          type: integer
+        type: object
       startImportTime:
         type: string
       state:
@@ -661,6 +701,10 @@ definitions:
     - IgnoreLevel
   v1alpha2.NodeInfoResult:
     properties:
+      commandResult:
+        items:
+          $ref: '#/definitions/v1alpha2.CommandResultItem'
+        type: array
       fileChangeResult:
         items:
           $ref: '#/definitions/v1alpha2.FileChangeResultItem'
