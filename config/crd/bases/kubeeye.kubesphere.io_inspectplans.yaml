@@ -44,7 +44,8 @@ spec:
               maxTasks:
                 type: integer
               one:
-                type: boolean
+                format: date-time
+                type: string
               ruleGroup:
                 type: string
               ruleNames:

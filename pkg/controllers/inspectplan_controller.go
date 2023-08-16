@@ -76,15 +76,6 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		klog.Error("failed to get inspect plan.\n", err)
 		return ctrl.Result{}, err
 	}
-	// Prevent multiple executions of the plan and create the same task multiple times
-	if _, ok := r.Instance.Load(inspectPlan.Name); ok {
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
-	} else {
-		r.Instance.Store(inspectPlan.Name, struct{}{})
-	}
-	defer func() {
-		r.Instance.Delete(inspectPlan.Name)
-	}()
 
 	if inspectPlan.DeletionTimestamp.IsZero() {
 		if _, ok := utils.ArrayFind(Finalizers, inspectPlan.Finalizers); !ok {
@@ -110,34 +101,48 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 
-	if (inspectPlan.Spec.Schedule == nil || inspectPlan.Spec.Once) && inspectPlan.Status.LastTaskName != "" {
-		return ctrl.Result{}, nil
-	}
-	if inspectPlan.Spec.Timeout == "" {
-		inspectPlan.Spec.Timeout = "10m"
+	if inspectPlan.Spec.Once != nil {
+		if !utils.IsEmptyString(inspectPlan.Status.LastTaskName) {
+			return ctrl.Result{}, nil
+		}
+		if !inspectPlan.Spec.Once.After(time.Now()) {
+			taskName, err := r.createInspectTask(inspectPlan, ctx)
+			if err != nil {
+				klog.Error("failed to create InspectTask.", err)
+				return ctrl.Result{}, err
+			}
+
+			if err = r.updateStatus(ctx, inspectPlan, time.Now(), taskName); err != nil {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
+		}
+		nextScheduledTime := inspectPlan.Spec.Once.Sub(time.Now())
+		return ctrl.Result{RequeueAfter: nextScheduledTime}, nil
 	}
 
 	if inspectPlan.Spec.Schedule == nil {
+		if utils.IsEmptyString(inspectPlan.Status.LastTaskName) {
+			return ctrl.Result{}, nil
+		}
 		taskName, err := r.createInspectTask(inspectPlan, ctx)
 		if err != nil {
 			klog.Error("failed to create InspectTask.", err)
 			return ctrl.Result{}, err
 		}
-		klog.Info("create a new inspect task.", taskName)
 		if err = r.updateStatus(ctx, inspectPlan, time.Now(), taskName); err != nil {
 			return ctrl.Result{}, err
 		}
 
 		return ctrl.Result{}, nil
 	}
-
+	if inspectPlan.Spec.Suspend {
+		klog.Info("inspect plan suspend")
+		return ctrl.Result{}, nil
+	}
 	schedule, err := cron.ParseStandard(*inspectPlan.Spec.Schedule)
 	if err != nil {
 		klog.Error("Unparseable schedule.\n", err)
-		return ctrl.Result{}, nil
-	}
-	if inspectPlan.Spec.Suspend {
-		klog.Info("inspect plan suspend")
 		return ctrl.Result{}, nil
 	}
 	now := time.Now()
@@ -148,7 +153,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			klog.Error("failed to create InspectTask.", err)
 			return ctrl.Result{}, err
 		}
-		klog.Info("create a new inspect task.", taskName)
+
 		inspectPlan.Status.NextScheduleTime = metav1.Time{Time: schedule.Next(now)}
 		if err = r.updateStatus(ctx, inspectPlan, now, taskName); err != nil {
 			return ctrl.Result{}, err
@@ -193,7 +198,12 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 		},
 		Spec: kubeeyev1alpha2.InspectTaskSpec{
 			ClusterName: inspectPlan.Spec.ClusterName,
-			Timeout:     inspectPlan.Spec.Timeout,
+			Timeout: func() string {
+				if inspectPlan.Spec.Timeout == "" {
+					return "10m"
+				}
+				return inspectPlan.Spec.Timeout
+			}(),
 			InspectPolicy: func() kubeeyev1alpha2.Policy {
 				if inspectPlan.Spec.Schedule == nil {
 					return kubeeyev1alpha2.InstantPolicy
@@ -207,7 +217,7 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 	if err != nil {
 		return "", err
 	}
-
+	klog.Info("create a new inspect task.", inspectTask.Name)
 	return inspectTask.Name, nil
 }
 

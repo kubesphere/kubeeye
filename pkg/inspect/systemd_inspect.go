@@ -94,7 +94,6 @@ func (o *systemdInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 							if err != nil {
 								sprintf := fmt.Sprintf("err:%s", err.Error())
 								ctl.Value = &sprintf
-
 							} else {
 								ctl.Assert = !res
 							}

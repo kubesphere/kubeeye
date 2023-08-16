@@ -23,27 +23,20 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-type Auditor string
-
-const (
-	AuditorKubeeye   Auditor = "kubeeye"
-	Auditorkubebench Auditor = "kubebench"
-)
-
 // InspectPlanSpec defines the desired state of InspectPlan
 type InspectPlanSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Schedule    *string  `json:"schedule,omitempty"`
-	Suspend     bool     `json:"suspend,omitempty"`
-	Timeout     string   `json:"timeout,omitempty"`
-	RuleGroup   string   `json:"ruleGroup,omitempty"`
-	RuleNames   []string `json:"ruleNames,omitempty"`
-	MaxTasks    int      `json:"maxTasks,omitempty"`
-	ClusterName []string `json:"clusterName,omitempty"`
-	KubeConfig  string   `json:"kubeConfig,omitempty"`
-	Once        bool     `json:"one,omitempty"`
+	Schedule    *string      `json:"schedule,omitempty"`
+	Suspend     bool         `json:"suspend,omitempty"`
+	Timeout     string       `json:"timeout,omitempty"`
+	RuleGroup   string       `json:"ruleGroup,omitempty"`
+	RuleNames   []string     `json:"ruleNames,omitempty"`
+	MaxTasks    int          `json:"maxTasks,omitempty"`
+	ClusterName []string     `json:"clusterName,omitempty"`
+	KubeConfig  string       `json:"kubeConfig,omitempty"`
+	Once        *metav1.Time `json:"one,omitempty"`
 }
 
 type TaskStatus struct {

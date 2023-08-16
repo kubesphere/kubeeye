@@ -854,7 +854,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "one": {
-                    "type": "boolean"
+                    "type": "string"
                 },
                 "ruleGroup": {
                     "type": "string"
