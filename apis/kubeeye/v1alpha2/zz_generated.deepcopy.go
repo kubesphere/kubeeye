@@ -240,7 +240,8 @@ func (in *InspectPlanSpec) DeepCopyInto(out *InspectPlanSpec) {
 	}
 	if in.Once != nil {
 		in, out := &in.Once, &out.Once
-		*out = (*in).DeepCopy()
+		*out = new(string)
+		**out = **in
 	}
 }
 

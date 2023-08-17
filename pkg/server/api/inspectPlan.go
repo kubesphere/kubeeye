@@ -74,6 +74,7 @@ func (i *InspectPlan) GetInspectPlan(gin *gin.Context) {
 func (i *InspectPlan) CreateInspectPlan(gin *gin.Context) {
 	var cratePlan v1alpha2.InspectPlan
 	err := GetRequestBody(gin, &cratePlan)
+
 	if err != nil {
 		gin.JSON(http.StatusInternalServerError, err)
 		return

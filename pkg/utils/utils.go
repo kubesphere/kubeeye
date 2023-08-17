@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"strings"
+	"time"
 )
 
 func ArrayFind(s string, sub []string) (int, bool) {
@@ -103,4 +104,14 @@ func MapToStruct[T any](maps []map[string]interface{}) []T {
 		return nil
 	}
 	return result
+}
+
+// ParseDateTime parse time string to time.Time (2006-01-02 15:04:05)
+func ParseDateTime(timeStr *string) (time.Time, error) {
+	parse, err := time.Parse("2006-01-02 15:04:05", *timeStr)
+	if err != nil {
+		return parse, err
+	}
+	return parse, nil
+
 }

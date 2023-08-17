@@ -1,8 +1,9 @@
 apiVersion: kubeeye.kubesphere.io/v1alpha2
 kind: InspectPlan
 metadata:
-  name: inspectplan
+  name: inspectplan-test
 spec:
   schedule: "*/30 * * *  ?"
   maxTasks: 10
   ruleGroup: kubeeye_workloads_rego
+  one: 2023-08-19T01:52:09Z

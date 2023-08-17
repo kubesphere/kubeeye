@@ -105,7 +105,12 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if !utils.IsEmptyString(inspectPlan.Status.LastTaskName) {
 			return ctrl.Result{}, nil
 		}
-		if !inspectPlan.Spec.Once.After(time.Now()) {
+		dateTime, err := utils.ParseDateTime(inspectPlan.Spec.Once)
+		if err != nil {
+			klog.Error("failed to parse once time.", err)
+			return ctrl.Result{}, err
+		}
+		if !dateTime.After(time.Now()) {
 			taskName, err := r.createInspectTask(inspectPlan, ctx)
 			if err != nil {
 				klog.Error("failed to create InspectTask.", err)
@@ -117,7 +122,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			}
 			return ctrl.Result{}, nil
 		}
-		nextScheduledTime := inspectPlan.Spec.Once.Sub(time.Now())
+		nextScheduledTime := dateTime.Sub(time.Now())
 		return ctrl.Result{RequeueAfter: nextScheduledTime}, nil
 	}
 
@@ -236,7 +241,6 @@ func (r *InspectPlanReconciler) removeTask(ctx context.Context, plan *kubeeyev1a
 					klog.Error("Failed to delete inspect task", err)
 				}
 			}
-
 			plan.Status.TaskNames = ConvertTaskStatus(tasks[len(tasks)-plan.Spec.MaxTasks:])
 		}
 
