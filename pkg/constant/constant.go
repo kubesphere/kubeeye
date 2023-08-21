@@ -40,6 +40,7 @@ const (
 	AnnotationInspectPolicy  = "kubeeye.kubesphere.io/task-inspect-policy"
 	AnnotationInspectCluster = "kubeeye.kubesphere.io/task-inspect-Cluster"
 	AnnotationRuleJoinNum    = "kubeeye.kubesphere.io/rule-join-num"
+	AnnotationDescription    = "kubeeye.kubesphere.io/description"
 )
 
 const (

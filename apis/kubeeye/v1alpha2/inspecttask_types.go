@@ -29,6 +29,7 @@ type InspectTaskSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	ClusterName   []string `json:"clusterName,omitempty"`
+	RuleNames     []string `json:"ruleNames,omitempty"`
 	Timeout       string   `json:"timeout,omitempty"`
 	InspectPolicy Policy   `json:"inspectPolicy,omitempty"`
 }

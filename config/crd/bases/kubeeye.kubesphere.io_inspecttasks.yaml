@@ -41,6 +41,10 @@ spec:
                 type: array
               inspectPolicy:
                 type: string
+              ruleNames:
+                items:
+                  type: string
+                type: array
               timeout:
                 type: string
             type: object

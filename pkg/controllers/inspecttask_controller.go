@@ -128,7 +128,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 
-		getRules, err := r.getRules(ctx, inspectTask)
+		getRules := r.getRules(ctx, inspectTask)
 
 		if err != nil {
 			klog.Error("failed get to inspectrules.", err)
@@ -151,7 +151,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 						klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", v, err)
 						return
 					}
-					err = r.CreateInspect(ctx, v, inspectTask, *getRules, clusterClient, kubeEyeConfig)
+					err = r.CreateInspect(ctx, v, inspectTask, getRules, clusterClient, kubeEyeConfig)
 					if err != nil {
 						klog.Error("failed to create inspect. ", err)
 					}
@@ -159,7 +159,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			}
 			wait.Wait()
 		} else {
-			err := r.CreateInspect(ctx, "default", inspectTask, *getRules, r.K8sClients, kubeEyeConfig)
+			err := r.CreateInspect(ctx, "default", inspectTask, getRules, r.K8sClients, kubeEyeConfig)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
@@ -202,9 +202,9 @@ func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, rule
 	return r, nil
 }
 
-func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, name string, task *kubeeyev1alpha2.InspectTask, ruleLists kubeeyev1alpha2.InspectRuleList, clients *kube.KubernetesClient, kubeEyeConfig conf.KubeEyeConfig) error {
+func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, name string, task *kubeeyev1alpha2.InspectTask, ruleLists []kubeeyev1alpha2.InspectRule, clients *kube.KubernetesClient, kubeEyeConfig conf.KubeEyeConfig) error {
 
-	inspectRule, inspectRuleNum, err := rules.ParseRules(ctx, clients, task.Name, ruleLists.Items)
+	inspectRule, inspectRuleNum, err := rules.ParseRules(ctx, clients, task.Name, ruleLists)
 	if err != nil {
 		return err
 	}
@@ -578,13 +578,18 @@ func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase kube
 	return nil
 }
 
-func (r *InspectTaskReconciler) getRules(ctx context.Context, task *kubeeyev1alpha2.InspectTask) (*kubeeyev1alpha2.InspectRuleList, error) {
-	ruleList, err := r.K8sClients.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(ctx, metav1.ListOptions{
-		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelRuleGroup: task.Labels[constant.LabelRuleGroup]}),
-	})
-	if err != nil {
-		return nil, err
+func (r *InspectTaskReconciler) getRules(ctx context.Context, task *kubeeyev1alpha2.InspectTask) (rules []kubeeyev1alpha2.InspectRule) {
+	//ruleList, err := r.K8sClients.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(ctx, metav1.ListOptions{
+	//	LabelSelector: labels.FormatLabels(map[string]string{constant.LabelRuleGroup: task.Labels[constant.LabelRuleGroup]}),
+	//})
+	for _, name := range task.Spec.RuleNames {
+		rule, err := r.K8sClients.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			klog.Error(err, "get rule error")
+			continue
+		}
+		rules = append(rules, *rule)
 	}
 
-	return ruleList, nil
+	return rules
 }

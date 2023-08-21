@@ -36,6 +36,7 @@ type InspectRuleSpec struct {
 	Systemd            []SysRule           `json:"systemd,omitempty"`
 	FileFilter         []FileFilterRule    `json:"fileFilter,omitempty"`
 	CustomCommand      []CustomCommandRule `json:"customCommand,omitempty"`
+	NodeInfo           []NodeInfo          `json:"nodeInfo,omitempty"`
 	Component          *string             `json:"component,omitempty"`
 }
 type RuleItemBases struct {
@@ -48,6 +49,11 @@ type RuleItemBases struct {
 type Node struct {
 	NodeName     *string           `json:"nodeName,omitempty"`
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+}
+
+type NodeInfo struct {
+	RuleItemBases `json:",inline"`
+	Node          `json:",inline"`
 }
 
 type FileFilterRule struct {
