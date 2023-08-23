@@ -21,8 +21,8 @@ import (
 // @license.name  Apache 2.0
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host      localhost:8080
-// @BasePath  /kapis/kubeeye.kubesphere.io/v1alpha1
+// @host      172.31.73.216:30882
+// @BasePath  /kapis/kubeeye.kubesphere.io/v1alpha2
 
 func main() {
 

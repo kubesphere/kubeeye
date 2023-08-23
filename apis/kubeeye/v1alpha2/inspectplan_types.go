@@ -34,7 +34,7 @@ type InspectPlanSpec struct {
 	RuleGroup   string       `json:"ruleGroup,omitempty"`
 	RuleNames   []string     `json:"ruleNames,omitempty"`
 	MaxTasks    int          `json:"maxTasks,omitempty"`
-	ClusterName []string     `json:"clusterName,omitempty"`
+	ClusterName []Cluster    `json:"clusterName,omitempty"`
 	KubeConfig  string       `json:"kubeConfig,omitempty"`
 	Once        *metav1.Time `json:"one,omitempty"`
 }
@@ -49,11 +49,13 @@ type InspectPlanStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	LastScheduleTime metav1.Time  `json:"lastScheduleTime,omitempty"`
-	LastTaskName     string       `json:"lastTaskName,omitempty"`
-	TaskNames        []TaskStatus `json:"TaskNames,omitempty"`
-	LastTaskStatus   Phase        `json:"lastTaskStatus,omitempty"`
-	NextScheduleTime metav1.Time  `json:"nextScheduleTime,omitempty"`
+	LastScheduleTime  metav1.Time  `json:"lastScheduleTime,omitempty"`
+	LastTaskStartTime metav1.Time  `json:"lastTaskStartTime,omitempty"`
+	LastTaskEndTime   metav1.Time  `json:"lastTaskEndTime,omitempty"`
+	LastTaskName      string       `json:"lastTaskName,omitempty"`
+	TaskNames         []TaskStatus `json:"TaskNames,omitempty"`
+	LastTaskStatus    Phase        `json:"lastTaskStatus,omitempty"`
+	NextScheduleTime  metav1.Time  `json:"nextScheduleTime,omitempty"`
 }
 
 // +genclient
@@ -79,6 +81,11 @@ type InspectPlanList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []InspectPlan `json:"items"`
+}
+
+type Cluster struct {
+	Name     string `json:"name,omitempty"`
+	Provider string `json:"provider,omitempty"`
 }
 
 func init() {

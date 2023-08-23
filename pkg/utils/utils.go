@@ -115,3 +115,13 @@ func ParseDateTime(timeStr *string) (time.Time, error) {
 	return parse, nil
 
 }
+
+func MergeMap[T any](maps ...map[string]T) map[string]T {
+	result := make(map[string]T)
+	for _, m := range maps {
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+	return result
+}

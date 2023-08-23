@@ -27,6 +27,8 @@ import (
 type InspectResultSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	InspectCluster   Cluster                   `json:"inspectCluster,omitempty"`
 	InspectRuleTotal map[string]int            `json:"inspectRuleTotal,omitempty"`
 	PrometheusResult [][]map[string]string     `json:"prometheusResult,omitempty"`
 	OpaResult        KubeeyeOpaResult          `json:"opaResult,omitempty"`

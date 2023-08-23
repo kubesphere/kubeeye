@@ -644,6 +644,17 @@ const docTemplate = `{
                 }
             }
         },
+        "v1alpha2.Cluster": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                }
+            }
+        },
         "v1alpha2.ClusterInfo": {
             "type": "object",
             "properties": {
@@ -844,7 +855,7 @@ const docTemplate = `{
                 "clusterName": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v1alpha2.Cluster"
                     }
                 },
                 "kubeConfig": {
@@ -888,7 +899,13 @@ const docTemplate = `{
                 "lastScheduleTime": {
                     "type": "string"
                 },
+                "lastTaskEndTime": {
+                    "type": "string"
+                },
                 "lastTaskName": {
+                    "type": "string"
+                },
+                "lastTaskStartTime": {
                     "type": "string"
                 },
                 "lastTaskStatus": {
@@ -930,8 +947,10 @@ const docTemplate = `{
                         "$ref": "#/definitions/v1alpha2.ComponentResultItem"
                     }
                 },
+                "inspectCluster": {
+                    "$ref": "#/definitions/v1alpha2.Cluster"
+                },
                 "inspectRuleTotal": {
-                    "description": "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster\nImportant: Run \"make\" to regenerate code after modifying this file",
                     "type": "object",
                     "additionalProperties": {
                         "type": "integer"
@@ -1032,6 +1051,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/v1alpha2.FileFilterRule"
                     }
                 },
+                "nodeInfo": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha2.NodeInfo"
+                    }
+                },
                 "opas": {
                     "type": "array",
                     "items": {
@@ -1109,11 +1134,17 @@ const docTemplate = `{
                 "clusterName": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v1alpha2.Cluster"
                     }
                 },
                 "inspectPolicy": {
                     "$ref": "#/definitions/v1alpha2.Policy"
+                },
+                "ruleNames": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "timeout": {
                     "type": "string"
@@ -1130,6 +1161,9 @@ const docTemplate = `{
                             "$ref": "#/definitions/v1alpha2.ClusterInfo"
                         }
                     ]
+                },
+                "duration": {
+                    "type": "string"
                 },
                 "endTimestamp": {
                     "type": "string"
@@ -1188,6 +1222,32 @@ const docTemplate = `{
                 "WarningLevel",
                 "IgnoreLevel"
             ]
+        },
+        "v1alpha2.NodeInfo": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "nodeName": {
+                    "type": "string"
+                },
+                "nodeSelector": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "rule": {
+                    "type": "string"
+                }
+            }
         },
         "v1alpha2.NodeInfoResult": {
             "type": "object",
@@ -1426,8 +1486,8 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
-	BasePath:         "/kapis/kubeeye.kubesphere.io/v1alpha1",
+	Host:             "172.31.73.216:30882",
+	BasePath:         "/kapis/kubeeye.kubesphere.io/v1alpha2",
 	Schemes:          []string{},
 	Title:            "KubeEye API",
 	Description:      "This is a kubeeye api server.",

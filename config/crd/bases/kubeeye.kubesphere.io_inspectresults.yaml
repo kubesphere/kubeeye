@@ -48,11 +48,16 @@ spec:
                       type: string
                   type: object
                 type: array
+              inspectCluster:
+                properties:
+                  name:
+                    type: string
+                  provider:
+                    type: string
+                type: object
               inspectRuleTotal:
                 additionalProperties:
                   type: integer
-                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                  Important: Run "make" to regenerate code after modifying this file'
                 type: object
               nodeInfoResult:
                 additionalProperties:

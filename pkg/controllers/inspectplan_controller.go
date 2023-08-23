@@ -80,6 +80,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	if inspectPlan.DeletionTimestamp.IsZero() {
 		if _, ok := utils.ArrayFind(Finalizers, inspectPlan.Finalizers); !ok {
 			inspectPlan.Finalizers = append(inspectPlan.Finalizers, Finalizers)
+			inspectPlan.Annotations = utils.MergeMap(inspectPlan.Annotations, map[string]string{constant.AnnotationJoinRuleNum: strconv.Itoa(len(inspectPlan.Spec.RuleNames))})
 			err = r.Client.Update(ctx, inspectPlan)
 			if err != nil {
 				klog.Error("Failed to  add finalizers for inspect plan .\n", err)
@@ -186,7 +187,7 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 	inspectTask := kubeeyev1alpha2.InspectTask{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   fmt.Sprintf("%s-%s", inspectPlan.Name, time.Now().Format("20060102-15-04")),
-			Labels: map[string]string{constant.LabelName: inspectPlan.Name},
+			Labels: map[string]string{constant.LabelPlanName: inspectPlan.Name},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         inspectPlan.APIVersion,
 				Kind:               inspectPlan.Kind,
@@ -304,7 +305,7 @@ func (r *InspectPlanReconciler) updateRuleReferNum(ctx context.Context) error {
 		filter, _ := utils.ArrayFilter(listPlan.Items, func(v kubeeyev1alpha2.InspectPlan) bool {
 			return v.Spec.RuleGroup == item.GetLabels()[constant.LabelRuleGroup]
 		})
-		item.Annotations = labels.Merge(item.Annotations, map[string]string{constant.AnnotationRuleJoinNum: strconv.Itoa(len(filter))})
+		item.Annotations = labels.Merge(item.Annotations, map[string]string{constant.AnnotationJoinPlanNum: strconv.Itoa(len(filter))})
 		err = r.Client.Update(ctx, &item)
 		if err != nil {
 			klog.Error(err, "Failed to update inspectRules refer num")

@@ -43,14 +43,20 @@ spec:
             properties:
               clusterName:
                 items:
-                  type: string
+                  properties:
+                    name:
+                      type: string
+                    provider:
+                      type: string
+                  type: object
                 type: array
               kubeConfig:
                 type: string
               maxTasks:
                 type: integer
               one:
-                type: boolean
+                format: date-time
+                type: string
               ruleGroup:
                 type: string
               ruleNames:
@@ -79,7 +85,13 @@ spec:
               lastScheduleTime:
                 format: date-time
                 type: string
+              lastTaskEndTime:
+                format: date-time
+                type: string
               lastTaskName:
+                type: string
+              lastTaskStartTime:
+                format: date-time
                 type: string
               lastTaskStatus:
                 type: string
@@ -142,11 +154,16 @@ spec:
                       type: string
                   type: object
                 type: array
+              inspectCluster:
+                properties:
+                  name:
+                    type: string
+                  provider:
+                    type: string
+                type: object
               inspectRuleTotal:
                 additionalProperties:
                   type: integer
-                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                  Important: Run "make" to regenerate code after modifying this file'
                 type: object
               nodeInfoResult:
                 additionalProperties:
@@ -414,6 +431,25 @@ spec:
                       type: string
                   type: object
                 type: array
+              nodeInfo:
+                items:
+                  properties:
+                    desc:
+                      type: string
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    rule:
+                      type: string
+                  type: object
+                type: array
               opas:
                 items:
                   properties:
@@ -545,10 +581,19 @@ spec:
             properties:
               clusterName:
                 items:
-                  type: string
+                  properties:
+                    name:
+                      type: string
+                    provider:
+                      type: string
+                  type: object
                 type: array
               inspectPolicy:
                 type: string
+              ruleNames:
+                items:
+                  type: string
+                type: array
               timeout:
                 type: string
             type: object
@@ -567,6 +612,8 @@ spec:
                   version:
                     type: string
                 type: object
+              duration:
+                type: string
               endTimestamp:
                 format: date-time
                 type: string
@@ -876,7 +923,7 @@ data:
     job:
       autoDelTime: 30
       backLimit: 5
-      image: kubespheredev/kubeeye-job:latest
+      image: kubespheredev/kubeeye:latest
       imagePullPolicy: Always
       resources:
         limits:
@@ -1064,8 +1111,8 @@ spec:
       - env:
         - name: GIN_MODE
           value: release
-        image: kubespheredev/kubeeye-apiserver:latest
-        imagePullPolicy: Always
+        image: jw008/kubeeye-apiserver:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /readyz

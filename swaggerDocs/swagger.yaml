@@ -1,4 +1,4 @@
-basePath: /kapis/kubeeye.kubesphere.io/v1alpha1
+basePath: /kapis/kubeeye.kubesphere.io/v1alpha2
 definitions:
   v1.FieldsV1:
     type: object
@@ -292,6 +292,13 @@ definitions:
           More info: http://kubernetes.io/docs/user-guide/identifiers#uids
         type: string
     type: object
+  v1alpha2.Cluster:
+    properties:
+      name:
+        type: string
+      provider:
+        type: string
+    type: object
   v1alpha2.ClusterInfo:
     properties:
       namespacesCount:
@@ -434,7 +441,7 @@ definitions:
     properties:
       clusterName:
         items:
-          type: string
+          $ref: '#/definitions/v1alpha2.Cluster'
         type: array
       kubeConfig:
         type: string
@@ -463,7 +470,11 @@ definitions:
         type: array
       lastScheduleTime:
         type: string
+      lastTaskEndTime:
+        type: string
       lastTaskName:
+        type: string
+      lastTaskStartTime:
         type: string
       lastTaskStatus:
         $ref: '#/definitions/v1alpha2.Phase'
@@ -502,12 +513,11 @@ definitions:
         items:
           $ref: '#/definitions/v1alpha2.ComponentResultItem'
         type: array
+      inspectCluster:
+        $ref: '#/definitions/v1alpha2.Cluster'
       inspectRuleTotal:
         additionalProperties:
           type: integer
-        description: |-
-          INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-          Important: Run "make" to regenerate code after modifying this file
         type: object
       nodeInfoResult:
         additionalProperties:
@@ -583,6 +593,10 @@ definitions:
         items:
           $ref: '#/definitions/v1alpha2.FileFilterRule'
         type: array
+      nodeInfo:
+        items:
+          $ref: '#/definitions/v1alpha2.NodeInfo'
+        type: array
       opas:
         items:
           $ref: '#/definitions/v1alpha2.OpaRule'
@@ -645,10 +659,14 @@ definitions:
     properties:
       clusterName:
         items:
-          type: string
+          $ref: '#/definitions/v1alpha2.Cluster'
         type: array
       inspectPolicy:
         $ref: '#/definitions/v1alpha2.Policy'
+      ruleNames:
+        items:
+          type: string
+        type: array
       timeout:
         type: string
     type: object
@@ -660,6 +678,8 @@ definitions:
         description: |-
           INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
           Important: Run "make" to regenerate code after modifying this file
+      duration:
+        type: string
       endTimestamp:
         type: string
       phase:
@@ -699,6 +719,23 @@ definitions:
     - DangerLevel
     - WarningLevel
     - IgnoreLevel
+  v1alpha2.NodeInfo:
+    properties:
+      desc:
+        type: string
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
+      name:
+        type: string
+      nodeName:
+        type: string
+      nodeSelector:
+        additionalProperties:
+          type: string
+        type: object
+      rule:
+        type: string
+    type: object
   v1alpha2.NodeInfoResult:
     properties:
       commandResult:
@@ -854,7 +891,7 @@ definitions:
       taskStatus:
         $ref: '#/definitions/v1alpha2.Phase'
     type: object
-host: localhost:8080
+host: 172.31.73.216:30882
 info:
   contact: {}
   description: This is a kubeeye api server.

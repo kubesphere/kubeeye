@@ -26,6 +26,7 @@ const (
 
 const (
 	LabelName             = "kubeeye.kubesphere.io/name"
+	LabelPlanName         = "kubeeye.kubesphere.io/plan-name"
 	LabelRuleType         = "kubeeye.kubesphere.io/rule-type"
 	LabelTaskName         = "kubeeye.kubesphere.io/task-name"
 	LabelNodeName         = "kubeeye.kubesphere.io/node-name"
@@ -35,12 +36,12 @@ const (
 )
 
 const (
-	AnnotationStartTime      = "kubeeye.kubesphere.io/task-start-time"
-	AnnotationEndTime        = "kubeeye.kubesphere.io/task-end-time"
-	AnnotationInspectPolicy  = "kubeeye.kubesphere.io/task-inspect-policy"
-	AnnotationInspectCluster = "kubeeye.kubesphere.io/task-inspect-Cluster"
-	AnnotationRuleJoinNum    = "kubeeye.kubesphere.io/rule-join-num"
-	AnnotationDescription    = "kubeeye.kubesphere.io/description"
+	AnnotationStartTime     = "kubeeye.kubesphere.io/task-start-time"
+	AnnotationEndTime       = "kubeeye.kubesphere.io/task-end-time"
+	AnnotationInspectPolicy = "kubeeye.kubesphere.io/task-inspect-policy"
+	AnnotationJoinPlanNum   = "kubeeye.kubesphere.io/join-plan-num"
+	AnnotationJoinRuleNum   = "kubeeye.kubesphere.io/join-run-num"
+	AnnotationDescription   = "kubeeye.kubesphere.io/description"
 )
 
 const (

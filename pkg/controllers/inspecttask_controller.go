@@ -138,10 +138,10 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if inspectTask.Spec.ClusterName != nil {
 			var wait sync.WaitGroup
 			wait.Add(len(inspectTask.Spec.ClusterName))
-			for _, name := range inspectTask.Spec.ClusterName {
-				go func(v string) {
+			for _, cluster := range inspectTask.Spec.ClusterName {
+				go func(v kubeeyev1alpha2.Cluster) {
 					defer wait.Done()
-					clusterClient, err := kube.GetMultiClusterClient(ctx, r.K8sClients, v)
+					clusterClient, err := kube.GetMultiClusterClient(ctx, r.K8sClients, v.Name)
 					if err != nil {
 						klog.Error(err, "Failed to get multi-cluster client.")
 						return
@@ -155,17 +155,16 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 					if err != nil {
 						klog.Error("failed to create inspect. ", err)
 					}
-				}(name)
+				}(cluster)
 			}
 			wait.Wait()
 		} else {
-			err := r.CreateInspect(ctx, "default", inspectTask, getRules, r.K8sClients, kubeEyeConfig)
+			err := r.CreateInspect(ctx, kubeeyev1alpha2.Cluster{Name: "default"}, inspectTask, getRules, r.K8sClients, kubeEyeConfig)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
 		}
 		klog.Infof("all job finished for taskName:%s", inspectTask.Name)
-
 		err = r.Status().Update(ctx, inspectTask)
 		if err != nil {
 			klog.Error("failed to update inspect task. ", err)
@@ -202,7 +201,7 @@ func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, rule
 	return r, nil
 }
 
-func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, name string, task *kubeeyev1alpha2.InspectTask, ruleLists []kubeeyev1alpha2.InspectRule, clients *kube.KubernetesClient, kubeEyeConfig conf.KubeEyeConfig) error {
+func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, cluster kubeeyev1alpha2.Cluster, task *kubeeyev1alpha2.InspectTask, ruleLists []kubeeyev1alpha2.InspectRule, clients *kube.KubernetesClient, kubeEyeConfig conf.KubeEyeConfig) error {
 
 	inspectRule, inspectRuleNum, err := rules.ParseRules(ctx, clients, task.Name, ruleLists)
 	if err != nil {
@@ -218,7 +217,8 @@ func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, name string, 
 	}
 	task.Status.JobPhase = append(task.Status.JobPhase, JobPhase...)
 	task.Status.EndTimestamp = metav1.Time{Time: time.Now()}
-	err = r.GetInspectResultData(ctx, clients, task, name, inspectRuleNum)
+	task.Status.Duration = task.Status.EndTimestamp.Sub(task.Status.StartTimestamp.Time).String()
+	err = r.GetInspectResultData(ctx, clients, task, cluster, inspectRuleNum)
 	if err != nil {
 		return err
 	}
@@ -374,7 +374,7 @@ func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Contex
 
 }
 
-func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask, clusterName string, ruleNum map[string]int) error {
+func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask, cluster kubeeyev1alpha2.Cluster, ruleNum map[string]int) error {
 	configs, err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name}),
 	})
@@ -384,13 +384,12 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 	}
 	var ownerRefBol = true
 	inspectResult := kubeeyev1alpha2.InspectResult{
-		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-%s-result", clusterName, task.Name),
+		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-%s-result", cluster.Name, task.Name),
 			Labels: map[string]string{constant.LabelTaskName: task.Name},
 			Annotations: map[string]string{
-				constant.AnnotationStartTime:      task.Status.StartTimestamp.Format("2006-01-02 15:04:05"),
-				constant.AnnotationEndTime:        task.Status.EndTimestamp.Format("2006-01-02 15:04:05"),
-				constant.AnnotationInspectPolicy:  string(task.Spec.InspectPolicy),
-				constant.AnnotationInspectCluster: clusterName,
+				constant.AnnotationStartTime:     task.Status.StartTimestamp.Format("2006-01-02 15:04:05"),
+				constant.AnnotationEndTime:       task.Status.EndTimestamp.Format("2006-01-02 15:04:05"),
+				constant.AnnotationInspectPolicy: string(task.Spec.InspectPolicy),
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         task.APIVersion,
@@ -403,6 +402,7 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 		},
 		Spec: kubeeyev1alpha2.InspectResultSpec{
 			InspectRuleTotal: ruleNum,
+			InspectCluster:   cluster,
 		},
 	}
 
@@ -550,7 +550,7 @@ func (r *InspectTaskReconciler) initClusterInspect(ctx context.Context, clients 
 	return nil
 }
 
-func (r *InspectTaskReconciler) clearRule(ctx context.Context, clients *kube.KubernetesClient, clusterName []string) error {
+func (r *InspectTaskReconciler) clearRule(ctx context.Context, clients *kube.KubernetesClient, clusterName []kubeeyev1alpha2.Cluster) error {
 	return clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"}),
 	})
@@ -568,6 +568,11 @@ func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase kube
 			plan.Status.TaskNames[i].TaskStatus = phase
 			break
 		}
+	}
+	if phase == kubeeyev1alpha2.PhaseRunning {
+		plan.Status.LastTaskStartTime = metav1.Now()
+	} else {
+		plan.Status.LastTaskEndTime = metav1.Now()
 	}
 	plan.Status.LastTaskStatus = phase
 	err = r.Status().Update(ctx, plan)

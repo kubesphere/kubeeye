@@ -10,8 +10,8 @@
         },
         "version": "1.0"
     },
-    "host": "localhost:8080",
-    "basePath": "/kapis/kubeeye.kubesphere.io/v1alpha1",
+    "host": "172.31.73.216:30882",
+    "basePath": "/kapis/kubeeye.kubesphere.io/v1alpha2",
     "paths": {
         "/inspectplans": {
             "get": {
@@ -637,6 +637,17 @@
                 }
             }
         },
+        "v1alpha2.Cluster": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                }
+            }
+        },
         "v1alpha2.ClusterInfo": {
             "type": "object",
             "properties": {
@@ -837,7 +848,7 @@
                 "clusterName": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v1alpha2.Cluster"
                     }
                 },
                 "kubeConfig": {
@@ -881,7 +892,13 @@
                 "lastScheduleTime": {
                     "type": "string"
                 },
+                "lastTaskEndTime": {
+                    "type": "string"
+                },
                 "lastTaskName": {
+                    "type": "string"
+                },
+                "lastTaskStartTime": {
                     "type": "string"
                 },
                 "lastTaskStatus": {
@@ -923,8 +940,10 @@
                         "$ref": "#/definitions/v1alpha2.ComponentResultItem"
                     }
                 },
+                "inspectCluster": {
+                    "$ref": "#/definitions/v1alpha2.Cluster"
+                },
                 "inspectRuleTotal": {
-                    "description": "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster\nImportant: Run \"make\" to regenerate code after modifying this file",
                     "type": "object",
                     "additionalProperties": {
                         "type": "integer"
@@ -1025,6 +1044,12 @@
                         "$ref": "#/definitions/v1alpha2.FileFilterRule"
                     }
                 },
+                "nodeInfo": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha2.NodeInfo"
+                    }
+                },
                 "opas": {
                     "type": "array",
                     "items": {
@@ -1102,11 +1127,17 @@
                 "clusterName": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v1alpha2.Cluster"
                     }
                 },
                 "inspectPolicy": {
                     "$ref": "#/definitions/v1alpha2.Policy"
+                },
+                "ruleNames": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "timeout": {
                     "type": "string"
@@ -1123,6 +1154,9 @@
                             "$ref": "#/definitions/v1alpha2.ClusterInfo"
                         }
                     ]
+                },
+                "duration": {
+                    "type": "string"
                 },
                 "endTimestamp": {
                     "type": "string"
@@ -1181,6 +1215,32 @@
                 "WarningLevel",
                 "IgnoreLevel"
             ]
+        },
+        "v1alpha2.NodeInfo": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "nodeName": {
+                    "type": "string"
+                },
+                "nodeSelector": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "rule": {
+                    "type": "string"
+                }
+            }
         },
         "v1alpha2.NodeInfoResult": {
             "type": "object",
