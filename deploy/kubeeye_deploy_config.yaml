@@ -1069,9 +1069,6 @@ spec:
         volumeMounts:
         - mountPath: /hosts/result
           name: inspect-result
-        - mountPath: /etc/localtime
-          name: localtime
-          readOnly: true
       securityContext:
         runAsNonRoot: true
       serviceAccountName: kubeeye-controller-manager
@@ -1080,9 +1077,6 @@ spec:
       - name: inspect-result
         persistentVolumeClaim:
           claimName: kubeeye-inspect-result
-      - hostPath:
-          path: /etc/localtime
-        name: localtime
 ---
 apiVersion: apps/v1
 kind: Deployment

@@ -122,7 +122,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			klog.Error("Unable to get jobConfig")
 			return ctrl.Result{}, err
 		}
-		err = r.updatePlanStatus(ctx, kubeeyev1alpha2.PhaseRunning, inspectTask.GetLabels()[constant.LabelName], inspectTask.Name)
+		err = r.updatePlanStatus(ctx, kubeeyev1alpha2.PhaseRunning, inspectTask.Labels[constant.LabelPlanName], inspectTask.Name)
 		if err != nil {
 			klog.Error("Failed to update inspect plan status. ", err)
 			return ctrl.Result{}, err
@@ -171,7 +171,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 		getStatus := GetStatus(inspectTask)
-		err = r.updatePlanStatus(ctx, getStatus, inspectTask.GetLabels()[constant.LabelName], inspectTask.Name)
+		err = r.updatePlanStatus(ctx, getStatus, inspectTask.Labels[constant.LabelPlanName], inspectTask.Name)
 		if err != nil {
 			klog.Error("failed to update inspect plan comeToAnEnd status. ", err)
 		}

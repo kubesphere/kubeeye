@@ -40,7 +40,7 @@ const (
 	AnnotationEndTime       = "kubeeye.kubesphere.io/task-end-time"
 	AnnotationInspectPolicy = "kubeeye.kubesphere.io/task-inspect-policy"
 	AnnotationJoinPlanNum   = "kubeeye.kubesphere.io/join-plan-num"
-	AnnotationJoinRuleNum   = "kubeeye.kubesphere.io/join-run-num"
+	AnnotationJoinRuleNum   = "kubeeye.kubesphere.io/join-rule-num"
 	AnnotationDescription   = "kubeeye.kubesphere.io/description"
 )
 
