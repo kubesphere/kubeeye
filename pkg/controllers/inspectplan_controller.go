@@ -123,7 +123,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if inspectPlan.Spec.Schedule == nil {
-		if utils.IsEmptyString(inspectPlan.Status.LastTaskName) {
+		if !utils.IsEmptyString(inspectPlan.Status.LastTaskName) {
 			return ctrl.Result{}, nil
 		}
 		taskName, err := r.createInspectTask(inspectPlan, ctx)
