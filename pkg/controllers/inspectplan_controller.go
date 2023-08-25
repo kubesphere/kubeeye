@@ -261,7 +261,7 @@ func (r *InspectPlanReconciler) updateStatus(ctx context.Context, plan *kubeeyev
 
 func (r *InspectPlanReconciler) getInspectTaskForLabel(ctx context.Context, planName string) ([]kubeeyev1alpha2.InspectTask, error) {
 	list, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks().List(ctx, metav1.ListOptions{
-		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelName: planName}),
+		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelPlanName: planName}),
 	})
 
 	if err != nil {
