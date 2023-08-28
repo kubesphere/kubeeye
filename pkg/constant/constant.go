@@ -42,6 +42,7 @@ const (
 	AnnotationJoinPlanNum   = "kubeeye.kubesphere.io/join-plan-num"
 	AnnotationJoinRuleNum   = "kubeeye.kubesphere.io/join-rule-num"
 	AnnotationDescription   = "kubeeye.kubesphere.io/description"
+	AnnotationInspectType   = "kubeeye.kubesphere.io/inspect-type"
 )
 
 const (

@@ -59,8 +59,12 @@ type JobRule struct {
 type Policy string
 
 const (
-	TimingPolicy  Policy = "timing"
-	InstantPolicy Policy = "instant"
+	CyclePolicy  Policy = "cycle"
+	SinglePolicy Policy = "single"
+)
+const (
+	InspectTypeTiming  Policy = "timing"
+	InspectTypeInstant Policy = "instant"
 )
 
 type Phase string

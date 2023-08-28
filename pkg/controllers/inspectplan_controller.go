@@ -188,6 +188,12 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   fmt.Sprintf("%s-%s", inspectPlan.Name, time.Now().Format("20060102-15-04")),
 			Labels: map[string]string{constant.LabelPlanName: inspectPlan.Name},
+			Annotations: map[string]string{constant.AnnotationInspectType: func() string {
+				if inspectPlan.Spec.Schedule == nil {
+					return string(kubeeyev1alpha2.InspectTypeInstant)
+				}
+				return string(kubeeyev1alpha2.InspectTypeTiming)
+			}()},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         inspectPlan.APIVersion,
 				Kind:               inspectPlan.Kind,
@@ -207,10 +213,10 @@ func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.I
 				return inspectPlan.Spec.Timeout
 			}(),
 			InspectPolicy: func() kubeeyev1alpha2.Policy {
-				if inspectPlan.Spec.Schedule == nil {
-					return kubeeyev1alpha2.InstantPolicy
+				if inspectPlan.Spec.Once == nil && inspectPlan.Spec.Schedule != nil {
+					return kubeeyev1alpha2.CyclePolicy
 				}
-				return kubeeyev1alpha2.TimingPolicy
+				return kubeeyev1alpha2.SinglePolicy
 			}(),
 		},
 	}

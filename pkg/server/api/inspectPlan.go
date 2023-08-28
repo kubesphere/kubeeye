@@ -150,6 +150,8 @@ func (i *InspectPlan) compare(a, b map[string]interface{}, orderBy string) bool 
 		return left[0].CreationTimestamp.Before(&right[0].CreationTimestamp)
 	case query.Phase:
 		return strings.Compare(string(left[0].Status.LastTaskStatus), string(right[0].Status.LastTaskStatus)) < 0
+	case query.LastTaskStartTime:
+		return left[0].Status.LastTaskStartTime.Before(&right[0].Status.LastTaskStartTime)
 	case query.InspectPolicy:
 		return true
 	default:
@@ -164,10 +166,15 @@ func (i *InspectPlan) filter(data map[string]interface{}, f *query.Filter) bool 
 		switch k {
 		case query.Suspend:
 			return result.Spec.Suspend == utils.StringToBool(v)
-		case query.Phase:
+		case query.LastTaskStatus:
 			return result.Status.LastTaskStatus == v1alpha2.Phase(v)
 		case query.InspectPolicy:
-			if v1alpha2.Policy(v) == v1alpha2.InstantPolicy {
+			if v1alpha2.Policy(v) == v1alpha2.SinglePolicy {
+				return result.Spec.Once != nil
+			}
+			return result.Spec.Once == nil && result.Spec.Schedule != nil
+		case query.InspectType:
+			if v1alpha2.Policy(v) == v1alpha2.InspectTypeInstant {
 				return result.Spec.Schedule == nil
 			}
 			return result.Spec.Schedule != nil

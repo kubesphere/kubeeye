@@ -19,12 +19,15 @@ const (
 	LabelSelector = "labelSelector"
 )
 const (
-	CreateTime    = "createTime"
-	Name          = "name"
-	InspectPolicy = "inspectPolicy"
-	Phase         = "phase"
-	Duration      = "duration"
-	Suspend       = "suspend"
+	CreateTime        = "createTime"
+	Name              = "name"
+	InspectPolicy     = "inspectPolicy"
+	Phase             = "phase"
+	Duration          = "duration"
+	Suspend           = "suspend"
+	InspectType       = "inspectType"
+	LastTaskStatus    = "lastTaskStatus"
+	LastTaskStartTime = "lastTaskStartTime"
 )
 
 type SortBy string
