@@ -36,8 +36,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "orderBy=createTime",
-                        "name": "orderBy",
+                        "description": "sortBy=createTime",
+                        "name": "sortBy",
                         "in": "query"
                     },
                     {
@@ -190,8 +190,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "orderBy=createTime",
-                        "name": "orderBy",
+                        "description": "sortBy=createTime",
+                        "name": "sortBy",
                         "in": "query"
                     },
                     {
@@ -286,8 +286,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "orderBy=createTime",
-                        "name": "orderBy",
+                        "description": "sortBy=createTime",
+                        "name": "sortBy",
                         "in": "query"
                     },
                     {
@@ -472,8 +472,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "orderBy=createTime",
-                        "name": "orderBy",
+                        "description": "sortBy=createTime",
+                        "name": "sortBy",
                         "in": "query"
                     },
                     {
@@ -1419,12 +1419,16 @@ const docTemplate = `{
         "v1alpha2.Policy": {
             "type": "string",
             "enum": [
+                "cycle",
+                "single",
                 "timing",
                 "instant"
             ],
             "x-enum-varnames": [
-                "TimingPolicy",
-                "InstantPolicy"
+                "CyclePolicy",
+                "SinglePolicy",
+                "InspectTypeTiming",
+                "InspectTypeInstant"
             ]
         },
         "v1alpha2.PrometheusRule": {

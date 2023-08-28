@@ -803,12 +803,16 @@ definitions:
     - PhaseUnknown
   v1alpha2.Policy:
     enum:
+    - cycle
+    - single
     - timing
     - instant
     type: string
     x-enum-varnames:
-    - TimingPolicy
-    - InstantPolicy
+    - CyclePolicy
+    - SinglePolicy
+    - InspectTypeTiming
+    - InspectTypeInstant
   v1alpha2.PrometheusRule:
     properties:
       desc:
@@ -928,9 +932,9 @@ paths:
       - application/json
       description: ListInspectPlan
       parameters:
-      - description: orderBy=createTime
+      - description: sortBy=createTime
         in: query
-        name: orderBy
+        name: sortBy
         type: string
       - description: ascending=true
         in: query
@@ -1008,9 +1012,9 @@ paths:
       - application/json
       description: get ListInspectResult
       parameters:
-      - description: orderBy=createTime
+      - description: sortBy=createTime
         in: query
-        name: orderBy
+        name: sortBy
         type: string
       - description: ascending=true
         in: query
@@ -1092,9 +1096,9 @@ paths:
       - application/json
       description: ListInspectRule
       parameters:
-      - description: orderBy=createTime
+      - description: sortBy=createTime
         in: query
-        name: orderBy
+        name: sortBy
         type: string
       - description: ascending=true
         in: query
@@ -1193,9 +1197,9 @@ paths:
       - application/json
       description: ListInspectTask
       parameters:
-      - description: orderBy=createTime
+      - description: sortBy=createTime
         in: query
-        name: orderBy
+        name: sortBy
         type: string
       - description: ascending=true
         in: query
