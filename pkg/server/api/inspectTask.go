@@ -31,7 +31,7 @@ func NewInspectTask(ctx context.Context, clients *kube.KubernetesClient) *Inspec
 // @Tags         InspectTask
 // @Accept       json
 // @Produce      json
-// @Param        orderBy query string false "orderBy=createTime"
+// @Param        sortBy query string false "sortBy=createTime"
 // @Param        ascending query string false "ascending=true"
 // @Param        limit query int false "limit=10"
 // @Param        page query int false "page=1"

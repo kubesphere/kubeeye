@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	OrderBy       = "orderBy"
+	OrderBy       = "sortBy"
 	Ascending     = "ascending"
 	Descending    = "descending"
 	Limit         = "limit"
