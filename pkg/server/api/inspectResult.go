@@ -4,14 +4,15 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/cmd/apiserver/options"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/output"
+	"github.com/kubesphere/kubeeye/pkg/server/query"
 	"github.com/kubesphere/kubeeye/pkg/template"
+	"github.com/kubesphere/kubeeye/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"net/http"
-	"sort"
+	"strings"
 )
 
 type InspectResult struct {
@@ -32,19 +33,26 @@ func NewInspectResult(ctx context.Context, clients *kube.KubernetesClient) *Insp
 // @Tags         InspectResult
 // @Accept       json
 // @Produce      json
-// @Param        orderBy query string false "orderBy"
-// @Param        ascending query string false "ascending"
+// @Param        orderBy query string false "orderBy=createTime"
+// @Param        ascending query string false "ascending=true"
+// @Param        limit query int false "limit=10"
+// @Param        page query int false "page=1"
+// @Param        labelSelector query string false "labelSelector=app=nginx"
 // @Success      200 {array} v1alpha2.InspectResult
 // @Router       /inspectresults [get]
-func (o *InspectResult) ListInspectResult(gin *gin.Context) {
-	list, err := o.Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().List(o.Ctx, metav1.ListOptions{})
+func (i *InspectResult) ListInspectResult(gin *gin.Context) {
+	q := query.ParseQuery(gin)
+	list, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().List(i.Ctx, metav1.ListOptions{
+		LabelSelector: q.LabelSelector,
+	})
 	if err != nil {
 		klog.Error(err)
 		gin.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	InspectResultSortBy(list.Items, gin)
-	gin.JSON(http.StatusOK, list.Items)
+	data := q.GetPageData(list.Items, i.compare, i.filter)
+
+	gin.JSON(http.StatusOK, data)
 }
 
 // GetInspectResult godoc
@@ -57,7 +65,7 @@ func (o *InspectResult) ListInspectResult(gin *gin.Context) {
 // @Param        type query string false "type"
 // @Success      200 {object} v1alpha2.InspectResult
 // @Router       /inspectresults/{name} [get]
-func (o *InspectResult) GetInspectResult(gin *gin.Context) {
+func (i *InspectResult) GetInspectResult(gin *gin.Context) {
 	name := gin.Param("name")
 	outType := gin.Query("type")
 	switch outType {
@@ -69,7 +77,7 @@ func (o *InspectResult) GetInspectResult(gin *gin.Context) {
 		}
 		gin.HTML(http.StatusOK, template.InspectResultTemplate, m)
 	default:
-		list, err := o.Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(o.Ctx, name, metav1.GetOptions{})
+		list, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(i.Ctx, name, metav1.GetOptions{})
 		if err != nil {
 			klog.Error(err)
 			gin.JSON(http.StatusInternalServerError, err)
@@ -80,22 +88,26 @@ func (o *InspectResult) GetInspectResult(gin *gin.Context) {
 
 }
 
-func InspectResultSortBy(result []v1alpha2.InspectResult, gin *gin.Context) {
-	orderBy := gin.Query(options.OrderBy)
-	asc := gin.Query(options.Ascending)
-	sort.Slice(result, func(i, j int) bool {
-		if asc == "true" {
-			i, j = j, i
-		}
-		return ObjectMetaCompare(result[i].ObjectMeta, result[j].ObjectMeta, orderBy)
-	})
+func (i *InspectResult) compare(a, b map[string]interface{}, orderBy string) bool {
+	left := utils.MapToStruct[v1alpha2.InspectResult](a)
+	right := utils.MapToStruct[v1alpha2.InspectResult](b)
 
+	switch orderBy {
+	case query.CreateTime:
+		return left[0].CreationTimestamp.Before(&right[0].CreationTimestamp)
+	}
+	return false
 }
 
-func ObjectMetaCompare(a, b metav1.ObjectMeta, orderBy string) bool {
-	switch orderBy {
-	case options.CreateTime:
-		return a.CreationTimestamp.Before(&b.CreationTimestamp)
+func (i *InspectResult) filter(data map[string]interface{}, f *query.Filter) bool {
+	result := utils.MapToStruct[v1alpha2.InspectResult](data)[0]
+	for k, v := range *f {
+		switch k {
+		case query.Name:
+			return strings.Contains(result.Name, v)
+		default:
+			return false
+		}
 	}
 	return false
 }

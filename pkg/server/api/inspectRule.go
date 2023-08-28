@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/cmd/apiserver/options"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/server/query"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
-	"sort"
 )
 
 type InspectRule struct {
@@ -31,18 +30,25 @@ func NewInspectRule(ctx context.Context, clients *kube.KubernetesClient) *Inspec
 // @Tags         InspectRule
 // @Accept       json
 // @Produce      json
-// @Param        orderBy query string false "orderBy"
-// @Param        ascending query string false "ascending"
+// @Param        orderBy query string false "orderBy=createTime"
+// @Param        ascending query string false "ascending=true"
+// @Param        limit query int false "limit=10"
+// @Param        page query int false "page=1"
+// @Param        labelSelector query string false "labelSelector=app=nginx"
 // @Success      200 {array} v1alpha2.InspectRule
 // @Router       /inspectrules [get]
-func (i *InspectRule) ListInspectRule(gin *gin.Context) {
-	list, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(i.Ctx, metav1.ListOptions{})
+func (i *InspectRule) ListInspectRule(g *gin.Context) {
+	q := query.ParseQuery(g)
+	list, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(i.Ctx, metav1.ListOptions{
+		LabelSelector: q.LabelSelector,
+	})
 	if err != nil {
-		gin.JSON(http.StatusInternalServerError, err)
+		g.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	InspectRuleSortBy(list.Items, gin)
-	gin.JSON(http.StatusOK, list.Items)
+	data := q.GetPageData(list.Items, nil, nil)
+
+	g.JSON(http.StatusOK, data)
 }
 
 // GetInspectRule  godoc
@@ -136,18 +142,6 @@ func (i *InspectRule) UpdateInspectRule(gin *gin.Context) {
 		return
 	}
 	gin.JSON(http.StatusOK, rule)
-}
-
-func InspectRuleSortBy(tasks []v1alpha2.InspectRule, gin *gin.Context) {
-	orderBy := gin.Query(options.OrderBy)
-	asc := gin.Query(options.Ascending)
-	sort.Slice(tasks, func(i, j int) bool {
-		if asc == "true" {
-			i, j = j, i
-		}
-		return ObjectMetaCompare(tasks[i].ObjectMeta, tasks[j].ObjectMeta, orderBy)
-	})
-
 }
 
 func (i *InspectRule) Validate(gin *gin.Context) {

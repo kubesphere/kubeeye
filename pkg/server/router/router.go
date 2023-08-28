@@ -44,7 +44,7 @@ func RegisterRouter(ctx context.Context, r *gin.Engine, clients *kube.Kubernetes
 
 		v1alpha1.GET("/inspectrules", rule.ListInspectRule)
 		v1alpha1.GET("/inspectrules/:name", rule.GetInspectRule)
-		v1alpha1.Use(rule.Validate).POST("/inspectrules", rule.CreateInspectRule)
+		v1alpha1.POST("/inspectrules", rule.CreateInspectRule)
 		v1alpha1.DELETE("/inspectrules", rule.DeleteInspectRule)
 		v1alpha1.PUT("/inspectrules", rule.UpdateInspectRule)
 

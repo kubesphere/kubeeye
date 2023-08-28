@@ -115,7 +115,7 @@ func RuleArrayDeduplication[T any](obj interface{}) ([]T, error) {
 			newMaps = append(newMaps, m)
 		}
 	}
-	toStruct := utils.MapToStruct[T](newMaps)
+	toStruct := utils.MapToStruct[T](newMaps...)
 	return toStruct, nil
 }
 

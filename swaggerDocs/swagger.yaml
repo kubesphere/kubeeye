@@ -928,13 +928,25 @@ paths:
       - application/json
       description: ListInspectPlan
       parameters:
-      - description: orderBy
+      - description: orderBy=createTime
         in: query
         name: orderBy
         type: string
-      - description: ascending
+      - description: ascending=true
         in: query
         name: ascending
+        type: string
+      - description: limit=10
+        in: query
+        name: limit
+        type: integer
+      - description: page=1
+        in: query
+        name: page
+        type: integer
+      - description: labelSelector=app=nginx
+        in: query
+        name: labelSelector
         type: string
       produces:
       - application/json
@@ -996,13 +1008,25 @@ paths:
       - application/json
       description: get ListInspectResult
       parameters:
-      - description: orderBy
+      - description: orderBy=createTime
         in: query
         name: orderBy
         type: string
-      - description: ascending
+      - description: ascending=true
         in: query
         name: ascending
+        type: string
+      - description: limit=10
+        in: query
+        name: limit
+        type: integer
+      - description: page=1
+        in: query
+        name: page
+        type: integer
+      - description: labelSelector=app=nginx
+        in: query
+        name: labelSelector
         type: string
       produces:
       - application/json
@@ -1068,13 +1092,25 @@ paths:
       - application/json
       description: ListInspectRule
       parameters:
-      - description: orderBy
+      - description: orderBy=createTime
         in: query
         name: orderBy
         type: string
-      - description: ascending
+      - description: ascending=true
         in: query
         name: ascending
+        type: string
+      - description: limit=10
+        in: query
+        name: limit
+        type: integer
+      - description: page=1
+        in: query
+        name: page
+        type: integer
+      - description: labelSelector=app=nginx
+        in: query
+        name: labelSelector
         type: string
       produces:
       - application/json
@@ -1157,13 +1193,25 @@ paths:
       - application/json
       description: ListInspectTask
       parameters:
-      - description: orderBy
+      - description: orderBy=createTime
         in: query
         name: orderBy
         type: string
-      - description: ascending
+      - description: ascending=true
         in: query
         name: ascending
+        type: string
+      - description: limit=10
+        in: query
+        name: limit
+        type: integer
+      - description: page=1
+        in: query
+        name: page
+        type: integer
+      - description: labelSelector=app=nginx
+        in: query
+        name: labelSelector
         type: string
       produces:
       - application/json

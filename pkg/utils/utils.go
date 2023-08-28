@@ -62,11 +62,14 @@ func SliceRemove(s string, o interface{}) interface{} {
 	return nil
 }
 
-func FormatBoolString(b bool) string {
+func BoolToString(b bool) string {
 	if b {
 		return "true"
 	}
 	return "false"
+}
+func StringToBool(b string) bool {
+	return b == "true"
 }
 
 func IsEmptyString(s string) bool {
@@ -93,7 +96,7 @@ func StructToMap(obj interface{}) ([]map[string]interface{}, error) {
 	return result, nil
 }
 
-func MapToStruct[T any](maps []map[string]interface{}) []T {
+func MapToStruct[T any](maps ...map[string]interface{}) []T {
 	var result []T
 	marshal, err := json.Marshal(maps)
 	if err != nil {

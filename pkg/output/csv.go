@@ -109,7 +109,7 @@ func CSVOutput(clients *kube.KubernetesClient, outPath *string, taskName string,
 				}
 				if val.SysctlResult != nil {
 					for _, resultItem := range val.SysctlResult {
-						err := f.SetSheetRow("nodeInfo", fmt.Sprintf("A%d", row), &[]string{key, "sysctl", resultItem.Name, *resultItem.Value, utils.FormatBoolString(resultItem.Assert)})
+						err := f.SetSheetRow("nodeInfo", fmt.Sprintf("A%d", row), &[]string{key, "sysctl", resultItem.Name, *resultItem.Value, utils.BoolToString(resultItem.Assert)})
 						row++
 						if err != nil {
 							fmt.Println(err)
@@ -118,7 +118,7 @@ func CSVOutput(clients *kube.KubernetesClient, outPath *string, taskName string,
 				}
 				if val.SystemdResult != nil {
 					for _, resultItem := range val.SystemdResult {
-						err := f.SetSheetRow("nodeInfo", fmt.Sprintf("A%d", row), &[]string{key, "systemd", resultItem.Name, *resultItem.Value, utils.FormatBoolString(resultItem.Assert)})
+						err := f.SetSheetRow("nodeInfo", fmt.Sprintf("A%d", row), &[]string{key, "systemd", resultItem.Name, *resultItem.Value, utils.BoolToString(resultItem.Assert)})
 						row++
 						if err != nil {
 							fmt.Println(err)

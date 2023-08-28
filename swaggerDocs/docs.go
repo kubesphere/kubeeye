@@ -36,14 +36,32 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "orderBy",
+                        "description": "orderBy=createTime",
                         "name": "orderBy",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "ascending",
+                        "description": "ascending=true",
                         "name": "ascending",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "limit=10",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page=1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "labelSelector=app=nginx",
+                        "name": "labelSelector",
                         "in": "query"
                     }
                 ],
@@ -172,14 +190,32 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "orderBy",
+                        "description": "orderBy=createTime",
                         "name": "orderBy",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "ascending",
+                        "description": "ascending=true",
                         "name": "ascending",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "limit=10",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page=1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "labelSelector=app=nginx",
+                        "name": "labelSelector",
                         "in": "query"
                     }
                 ],
@@ -250,14 +286,32 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "orderBy",
+                        "description": "orderBy=createTime",
                         "name": "orderBy",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "ascending",
+                        "description": "ascending=true",
                         "name": "ascending",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "limit=10",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page=1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "labelSelector=app=nginx",
+                        "name": "labelSelector",
                         "in": "query"
                     }
                 ],
@@ -418,14 +472,32 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "orderBy",
+                        "description": "orderBy=createTime",
                         "name": "orderBy",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "ascending",
+                        "description": "ascending=true",
                         "name": "ascending",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "limit=10",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page=1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "labelSelector=app=nginx",
+                        "name": "labelSelector",
                         "in": "query"
                     }
                 ],
