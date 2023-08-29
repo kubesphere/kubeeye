@@ -34,12 +34,12 @@ func RegisterRouter(ctx context.Context, r *gin.Engine, clients *kube.Kubernetes
 
 		v1alpha1.GET("/inspecttasks", task.ListInspectTask)
 		v1alpha1.GET("/inspecttasks/:name", task.GetInspectTask)
-		v1alpha1.DELETE("/inspecttasks", task.DeleteInspectTask)
+		v1alpha1.DELETE("/inspecttasks/:name", task.DeleteInspectTask)
 
 		v1alpha1.GET("/inspectplans", plan.ListInspectPlan)
 		v1alpha1.GET("/inspectplans/:name", plan.GetInspectPlan)
 		v1alpha1.POST("/inspectplans", plan.CreateInspectPlan)
-		v1alpha1.DELETE("/inspectplans", plan.DeleteInspectPlan)
+		v1alpha1.DELETE("/inspectplans/:name", plan.DeleteInspectPlan)
 		v1alpha1.PUT("/inspectplans", plan.UpdateInspectPlan)
 
 		v1alpha1.GET("/inspectrules", rule.ListInspectRule)

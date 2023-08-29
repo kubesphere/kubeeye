@@ -906,27 +906,6 @@ info:
   version: "1.0"
 paths:
   /inspectplans:
-    delete:
-      consumes:
-      - application/json
-      description: DeleteInspectTask
-      parameters:
-      - description: delete InspectTask
-        in: body
-        name: v1alpha2.InspectTask
-        required: true
-        schema:
-          $ref: '#/definitions/v1alpha2.InspectTask'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1alpha2.InspectTask'
-      summary: Show an Inspect
-      tags:
-      - InspectTask
     get:
       consumes:
       - application/json
@@ -985,7 +964,48 @@ paths:
       summary: Show an Inspect
       tags:
       - InspectPlan
+    put:
+      consumes:
+      - application/json
+      description: UpdateInspectRule
+      parameters:
+      - description: update InspectPlan
+        in: body
+        name: v1alpha2.InspectPlan
+        required: true
+        schema:
+          $ref: '#/definitions/v1alpha2.InspectPlan'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1alpha2.InspectPlan'
+      summary: Show an Inspect
+      tags:
+      - InspectPlan
   /inspectplans/{name}:
+    delete:
+      consumes:
+      - application/json
+      description: DeleteInspectRule
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1alpha2.InspectPlan'
+      summary: Show an Inspect
+      tags:
+      - InspectPlan
     get:
       consumes:
       - application/json
@@ -1192,6 +1212,26 @@ paths:
       tags:
       - InspectRule
   /inspecttasks:
+    delete:
+      consumes:
+      - application/json
+      description: DeleteInspectTask
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1alpha2.InspectTask'
+      summary: Show an Inspect
+      tags:
+      - InspectTask
     get:
       consumes:
       - application/json

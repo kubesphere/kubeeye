@@ -77,6 +77,38 @@ const docTemplate = `{
                     }
                 }
             },
+            "put": {
+                "description": "UpdateInspectRule",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "InspectPlan"
+                ],
+                "summary": "Show an Inspect",
+                "parameters": [
+                    {
+                        "description": "update InspectPlan",
+                        "name": "v1alpha2.InspectPlan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha2.InspectPlan"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha2.InspectPlan"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "CreateInspectPlan",
                 "consumes": [
@@ -108,9 +140,11 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "delete": {
-                "description": "DeleteInspectTask",
+            }
+        },
+        "/inspectplans/{name}": {
+            "get": {
+                "description": "GetInspectPlan",
                 "consumes": [
                     "application/json"
                 ],
@@ -118,33 +152,29 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "InspectTask"
+                    "InspectPlan"
                 ],
                 "summary": "Show an Inspect",
                 "parameters": [
                     {
-                        "description": "delete InspectTask",
-                        "name": "v1alpha2.InspectTask",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1alpha2.InspectTask"
-                        }
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1alpha2.InspectTask"
+                            "$ref": "#/definitions/v1alpha2.InspectPlan"
                         }
                     }
                 }
-            }
-        },
-        "/inspectplans/{name}": {
-            "get": {
-                "description": "GetInspectPlan",
+            },
+            "delete": {
+                "description": "DeleteInspectRule",
                 "consumes": [
                     "application/json"
                 ],
@@ -509,6 +539,36 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/v1alpha2.InspectTask"
                             }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "DeleteInspectTask",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "InspectTask"
+                ],
+                "summary": "Show an Inspect",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha2.InspectTask"
                         }
                     }
                 }

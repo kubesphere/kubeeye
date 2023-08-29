@@ -99,22 +99,18 @@ func (i *InspectPlan) CreateInspectPlan(gin *gin.Context) {
 // @Tags         InspectPlan
 // @Accept       json
 // @Produce      json
-// @Param		 v1alpha2.InspectPlan body	v1alpha2.InspectPlan true	"delete InspectPlan"
+// @Param        name path string true "name"
 // @Success      200 {object} v1alpha2.InspectPlan
-// @Router       /inspectplans [delete]
+// @Router       /inspectplans/{name} [delete]
 func (i *InspectPlan) DeleteInspectPlan(gin *gin.Context) {
-	var deletePlan v1alpha2.InspectPlan
-	err := gin.Bind(&deletePlan)
+
+	name := gin.Param("name")
+	err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectPlans().Delete(i.Ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		gin.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	err = i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectPlans().Delete(i.Ctx, deletePlan.Name, metav1.DeleteOptions{})
-	if err != nil {
-		gin.JSON(http.StatusInternalServerError, err)
-		return
-	}
-	gin.JSON(http.StatusOK, deletePlan)
+	gin.JSON(http.StatusOK, nil)
 }
 
 // UpdateInspectPlan  godoc
@@ -125,7 +121,7 @@ func (i *InspectPlan) DeleteInspectPlan(gin *gin.Context) {
 // @Produce      json
 // @Param		 v1alpha2.InspectPlan body	v1alpha2.InspectPlan true	"update InspectPlan"
 // @Success      200 {object} v1alpha2.InspectPlan
-// @Router       /inspectrules [put]
+// @Router       /inspectplans [put]
 func (i *InspectPlan) UpdateInspectPlan(g *gin.Context) {
 	var updatePlan v1alpha2.InspectPlan
 	err := GetRequestBody(g, &updatePlan)
