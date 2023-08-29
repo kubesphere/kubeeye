@@ -420,9 +420,11 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "delete": {
-                "description": "DeleteInspectRule",
+            }
+        },
+        "/inspectrules/{name}": {
+            "get": {
+                "description": "GetInspectRule",
                 "consumes": [
                     "application/json"
                 ],
@@ -435,13 +437,11 @@ const docTemplate = `{
                 "summary": "Show an Inspect",
                 "parameters": [
                     {
-                        "description": "Add InspectRule",
-                        "name": "v1alpha2.InspectRule",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1alpha2.InspectRule"
-                        }
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -452,11 +452,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/inspectrules/{name}": {
-            "get": {
-                "description": "GetInspectRule",
+            },
+            "delete": {
+                "description": "DeleteInspectRule",
                 "consumes": [
                     "application/json"
                 ],
@@ -542,9 +540,11 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "delete": {
-                "description": "DeleteInspectTask",
+            }
+        },
+        "/inspecttasks/{name}": {
+            "get": {
+                "description": "ListInspectTask",
                 "consumes": [
                     "application/json"
                 ],
@@ -572,11 +572,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/inspecttasks/{name}": {
-            "get": {
-                "description": "ListInspectTask",
+            },
+            "delete": {
+                "description": "DeleteInspectTask",
                 "consumes": [
                     "application/json"
                 ],

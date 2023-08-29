@@ -118,14 +118,14 @@ func ParsePagination(values url.Values) *Pagination {
 	pagination := NewPagination()
 	if page != "" {
 		atoi, err := strconv.Atoi(page)
-		if err != nil {
+		if err != nil || atoi < 1 {
 			atoi = 1
 		}
 		pagination.Offset = (atoi - 1) * pagination.Limit
 	}
 	if limit != "" {
 		atoi, err := strconv.Atoi(limit)
-		if err != nil {
+		if err != nil || atoi < 1 {
 			atoi = 10
 		}
 		pagination.Limit = atoi
@@ -165,6 +165,10 @@ func (q *Query) GetPageData(data interface{}, c compare, f filterC) Result {
 
 func (p *Pagination) computeIndex(total int) (int, int) {
 	var startIndex, endIndex = 0, 0
+
+	if p.Limit < 0 || p.Offset < 0 || p.Offset > total {
+		return 0, 0
+	}
 
 	startIndex = p.Offset
 	endIndex = startIndex + p.Limit

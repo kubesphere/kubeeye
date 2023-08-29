@@ -1090,27 +1090,6 @@ paths:
       tags:
       - InspectResult
   /inspectrules:
-    delete:
-      consumes:
-      - application/json
-      description: DeleteInspectRule
-      parameters:
-      - description: Add InspectRule
-        in: body
-        name: v1alpha2.InspectRule
-        required: true
-        schema:
-          $ref: '#/definitions/v1alpha2.InspectRule'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1alpha2.InspectRule'
-      summary: Show an Inspect
-      tags:
-      - InspectRule
     get:
       consumes:
       - application/json
@@ -1191,6 +1170,26 @@ paths:
       tags:
       - InspectRule
   /inspectrules/{name}:
+    delete:
+      consumes:
+      - application/json
+      description: DeleteInspectRule
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1alpha2.InspectRule'
+      summary: Show an Inspect
+      tags:
+      - InspectRule
     get:
       consumes:
       - application/json
@@ -1212,26 +1211,6 @@ paths:
       tags:
       - InspectRule
   /inspecttasks:
-    delete:
-      consumes:
-      - application/json
-      description: DeleteInspectTask
-      parameters:
-      - description: name
-        in: path
-        name: name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1alpha2.InspectTask'
-      summary: Show an Inspect
-      tags:
-      - InspectTask
     get:
       consumes:
       - application/json
@@ -1270,6 +1249,26 @@ paths:
       tags:
       - InspectTask
   /inspecttasks/{name}:
+    delete:
+      consumes:
+      - application/json
+      description: DeleteInspectTask
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1alpha2.InspectTask'
+      summary: Show an Inspect
+      tags:
+      - InspectTask
     get:
       consumes:
       - application/json

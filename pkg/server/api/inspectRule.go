@@ -102,22 +102,17 @@ func (i *InspectRule) CreateInspectRule(gin *gin.Context) {
 // @Tags         InspectRule
 // @Accept       json
 // @Produce      json
-// @Param		 v1alpha2.InspectRule body	v1alpha2.InspectRule true	"Add InspectRule"
+// @Param        name path string true "name"
 // @Success      200 {object} v1alpha2.InspectRule
-// @Router       /inspectrules [delete]
+// @Router       /inspectrules/{name} [delete]
 func (i *InspectRule) DeleteInspectRule(gin *gin.Context) {
-	var deleteRule v1alpha2.InspectRule
-	err := GetRequestBody(gin, &deleteRule)
+	name := gin.Param("name")
+	err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().Delete(i.Ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		gin.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	err = i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().Delete(i.Ctx, deleteRule.Name, metav1.DeleteOptions{})
-	if err != nil {
-		gin.JSON(http.StatusInternalServerError, err)
-		return
-	}
-	gin.JSON(http.StatusOK, deleteRule)
+	gin.JSON(http.StatusOK, nil)
 }
 
 // UpdateInspectRule  godoc

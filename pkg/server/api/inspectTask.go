@@ -76,7 +76,7 @@ func (i *InspectTask) GetInspectTask(gin *gin.Context) {
 // @Produce      json
 // @Param        name path string true "name"
 // @Success      200 {object} v1alpha2.InspectTask
-// @Router       /inspecttasks [delete]
+// @Router       /inspecttasks/{name} [delete]
 func (i *InspectTask) DeleteInspectTask(gin *gin.Context) {
 	name := gin.Param("name")
 	err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks().Delete(i.Ctx, name, metav1.DeleteOptions{})

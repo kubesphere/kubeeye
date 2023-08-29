@@ -413,9 +413,11 @@
                         }
                     }
                 }
-            },
-            "delete": {
-                "description": "DeleteInspectRule",
+            }
+        },
+        "/inspectrules/{name}": {
+            "get": {
+                "description": "GetInspectRule",
                 "consumes": [
                     "application/json"
                 ],
@@ -428,13 +430,11 @@
                 "summary": "Show an Inspect",
                 "parameters": [
                     {
-                        "description": "Add InspectRule",
-                        "name": "v1alpha2.InspectRule",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1alpha2.InspectRule"
-                        }
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -445,11 +445,9 @@
                         }
                     }
                 }
-            }
-        },
-        "/inspectrules/{name}": {
-            "get": {
-                "description": "GetInspectRule",
+            },
+            "delete": {
+                "description": "DeleteInspectRule",
                 "consumes": [
                     "application/json"
                 ],
@@ -535,9 +533,11 @@
                         }
                     }
                 }
-            },
-            "delete": {
-                "description": "DeleteInspectTask",
+            }
+        },
+        "/inspecttasks/{name}": {
+            "get": {
+                "description": "ListInspectTask",
                 "consumes": [
                     "application/json"
                 ],
@@ -565,11 +565,9 @@
                         }
                     }
                 }
-            }
-        },
-        "/inspecttasks/{name}": {
-            "get": {
-                "description": "ListInspectTask",
+            },
+            "delete": {
+                "description": "DeleteInspectTask",
                 "consumes": [
                     "application/json"
                 ],
