@@ -40,7 +40,9 @@ func NewInspectTask(ctx context.Context, clients *kube.KubernetesClient) *Inspec
 // @Router       /inspecttasks [get]
 func (i *InspectTask) ListInspectTask(gin *gin.Context) {
 	q := query.ParseQuery(gin)
-	list, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks().List(i.Ctx, metav1.ListOptions{})
+	list, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks().List(i.Ctx, metav1.ListOptions{
+		LabelSelector: q.LabelSelector,
+	})
 	if err != nil {
 		gin.JSON(http.StatusInternalServerError, err)
 		return
