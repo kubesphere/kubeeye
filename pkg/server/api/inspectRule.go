@@ -8,8 +8,10 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/server/query"
+	"github.com/kubesphere/kubeeye/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
+	"strings"
 )
 
 type InspectRule struct {
@@ -46,7 +48,7 @@ func (i *InspectRule) ListInspectRule(g *gin.Context) {
 		g.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	data := q.GetPageData(list.Items, nil, nil)
+	data := q.GetPageData(list.Items, nil, i.filter)
 
 	g.JSON(http.StatusOK, data)
 }
@@ -112,7 +114,7 @@ func (i *InspectRule) DeleteInspectRule(gin *gin.Context) {
 		gin.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	gin.JSON(http.StatusOK, nil)
+	gin.String(http.StatusOK, "success")
 }
 
 // UpdateInspectRule  godoc
@@ -157,4 +159,32 @@ func (i *InspectRule) Validate(gin *gin.Context) {
 		return
 	}
 
+}
+
+func (i *InspectRule) compare(a, b map[string]interface{}, orderBy string) bool {
+	left := utils.MapToStruct[v1alpha2.InspectRule](a)
+	right := utils.MapToStruct[v1alpha2.InspectRule](b)
+
+	switch orderBy {
+	case query.CreateTime:
+		return left[0].CreationTimestamp.Before(&right[0].CreationTimestamp)
+	case query.Name:
+		return strings.Compare(left[0].Name, right[0].Name) < 0
+	default:
+		return false
+	}
+
+}
+
+func (i *InspectRule) filter(data map[string]interface{}, f *query.Filter) bool {
+	result := utils.MapToStruct[v1alpha2.InspectRule](data)[0]
+	for k, v := range *f {
+		switch k {
+		case query.Name:
+			return strings.Contains(result.Name, v)
+		default:
+			return false
+		}
+	}
+	return false
 }

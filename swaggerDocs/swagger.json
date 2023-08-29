@@ -195,6 +195,86 @@
                         }
                     }
                 }
+            },
+            "patch": {
+                "description": "PatchInspectPlan",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "InspectPlan"
+                ],
+                "summary": "Show an Inspect",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "patch InspectPlan",
+                        "name": "v1alpha2.InspectPlan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha2.InspectPlan"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha2.InspectPlan"
+                        }
+                    }
+                }
+            }
+        },
+        "/inspectplans/{name}/status": {
+            "patch": {
+                "description": "PatchInspectPlanStatus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "InspectPlan"
+                ],
+                "summary": "Show an Inspect",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "{status:{lastTaskStatus:‘’}}",
+                        "name": "status",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha2.InspectPlanStatus"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha2.InspectPlan"
+                        }
+                    }
+                }
             }
         },
         "/inspectresults": {

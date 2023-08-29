@@ -41,6 +41,8 @@ func RegisterRouter(ctx context.Context, r *gin.Engine, clients *kube.Kubernetes
 		v1alpha1.POST("/inspectplans", plan.CreateInspectPlan)
 		v1alpha1.DELETE("/inspectplans/:name", plan.DeleteInspectPlan)
 		v1alpha1.PUT("/inspectplans", plan.UpdateInspectPlan)
+		v1alpha1.PATCH("/inspectplans/:name/status", plan.PatchInspectPlanStatus)
+		v1alpha1.PATCH("/inspectplans/:name", plan.PatchInspectPlan)
 
 		v1alpha1.GET("/inspectrules", rule.ListInspectRule)
 		v1alpha1.GET("/inspectrules/:name", rule.GetInspectRule)

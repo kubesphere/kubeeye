@@ -8,6 +8,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/server/query"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"net/http"
 	"strings"
 )
@@ -110,7 +111,7 @@ func (i *InspectPlan) DeleteInspectPlan(gin *gin.Context) {
 		gin.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	gin.JSON(http.StatusOK, nil)
+	gin.String(http.StatusOK, "success")
 }
 
 // UpdateInspectPlan  godoc
@@ -126,7 +127,7 @@ func (i *InspectPlan) UpdateInspectPlan(g *gin.Context) {
 	var updatePlan v1alpha2.InspectPlan
 	err := GetRequestBody(g, &updatePlan)
 	if err != nil {
-		g.JSON(http.StatusInternalServerError, err)
+		g.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectPlan"))
 		return
 	}
 	rule, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectPlans().Update(i.Ctx, &updatePlan, metav1.UpdateOptions{})
@@ -135,6 +136,58 @@ func (i *InspectPlan) UpdateInspectPlan(g *gin.Context) {
 		return
 	}
 	g.JSON(http.StatusOK, rule)
+}
+
+// PatchInspectPlan   godoc
+// @Summary      Show an Inspect
+// @Description  PatchInspectPlan
+// @Tags         InspectPlan
+// @Accept       json
+// @Produce      json
+// @Param        name path string true "name"
+// @Param		 v1alpha2.InspectPlan body	v1alpha2.InspectPlan true	"patch InspectPlan"
+// @Success      200 {object} v1alpha2.InspectPlan
+// @Router       /inspectplans/{name} [patch]
+func (i *InspectPlan) PatchInspectPlan(g *gin.Context) {
+	name := g.Param("name")
+	data, err := g.GetRawData()
+	if err != nil {
+		g.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectPlan"))
+		return
+	}
+	result, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectPlans().Patch(i.Ctx, name, types.MergePatchType, data, metav1.PatchOptions{})
+	if err != nil {
+		g.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	g.JSON(http.StatusOK, result)
+}
+
+// PatchInspectPlanStatus   godoc
+// @Summary      Show an Inspect
+// @Description  PatchInspectPlanStatus
+// @Tags         InspectPlan
+// @Accept       json
+// @Produce      json
+// @Param        name path string true "name"
+// @Param		 status body v1alpha2.InspectPlanStatus true "{status:{lastTaskStatus:‘’}}"
+// @Success      200 {object} v1alpha2.InspectPlan
+// @Router       /inspectplans/{name}/status [patch]
+func (i *InspectPlan) PatchInspectPlanStatus(g *gin.Context) {
+	name := g.Param("name")
+	data, err := g.GetRawData()
+	if err != nil {
+		g.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectPlan"))
+		return
+	}
+
+	result, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectPlans().Patch(i.Ctx, name, types.MergePatchType, data, metav1.PatchOptions{}, "status")
+	if err != nil {
+		g.JSON(http.StatusInternalServerError, err)
+		return
+
+	}
+	g.JSON(http.StatusOK, result)
 }
 
 func (i *InspectPlan) compare(a, b map[string]interface{}, orderBy string) bool {

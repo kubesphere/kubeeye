@@ -1026,6 +1026,59 @@ paths:
       summary: Show an Inspect
       tags:
       - InspectPlan
+    patch:
+      consumes:
+      - application/json
+      description: PatchInspectPlan
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: patch InspectPlan
+        in: body
+        name: v1alpha2.InspectPlan
+        required: true
+        schema:
+          $ref: '#/definitions/v1alpha2.InspectPlan'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1alpha2.InspectPlan'
+      summary: Show an Inspect
+      tags:
+      - InspectPlan
+  /inspectplans/{name}/status:
+    patch:
+      consumes:
+      - application/json
+      description: PatchInspectPlanStatus
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: '{status:{lastTaskStatus:‘’}}'
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/v1alpha2.InspectPlanStatus'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1alpha2.InspectPlan'
+      summary: Show an Inspect
+      tags:
+      - InspectPlan
   /inspectresults:
     get:
       consumes:

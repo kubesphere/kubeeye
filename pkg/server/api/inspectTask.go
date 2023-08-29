@@ -84,7 +84,7 @@ func (i *InspectTask) DeleteInspectTask(gin *gin.Context) {
 		gin.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	gin.JSON(http.StatusOK, nil)
+	gin.String(http.StatusOK, "success")
 }
 
 func (i *InspectTask) compare(a, b map[string]interface{}, orderBy string) bool {
