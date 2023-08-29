@@ -67,7 +67,6 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	inspectPlan := &kubeeyev1alpha2.InspectPlan{}
 	err := r.Get(ctx, req.NamespacedName, inspectPlan)
 	// Every time a plan operation is triggered, it checks how many plans are associated with the rule
-	r.updateRuleReferNum(ctx)
 
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
@@ -81,6 +80,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if _, ok := utils.ArrayFind(Finalizers, inspectPlan.Finalizers); !ok {
 			inspectPlan.Finalizers = append(inspectPlan.Finalizers, Finalizers)
 			inspectPlan.Annotations = utils.MergeMap(inspectPlan.Annotations, map[string]string{constant.AnnotationJoinRuleNum: strconv.Itoa(len(inspectPlan.Spec.RuleNames))})
+			r.updateAddRuleReferNum(ctx, inspectPlan)
 			err = r.Client.Update(ctx, inspectPlan)
 			if err != nil {
 				klog.Error("Failed to  add finalizers for inspect plan .\n", err)
@@ -93,6 +93,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		newFinalizers := utils.SliceRemove(Finalizers, inspectPlan.Finalizers)
 		inspectPlan.Finalizers = newFinalizers.([]string)
 		klog.Info("inspect plan is being deleted.")
+		r.updateSubRuleReferNum(ctx, inspectPlan)
 		err = r.Client.Update(ctx, inspectPlan)
 		if err != nil {
 			klog.Error("Failed to inspect plan add finalizers.\n", err)
@@ -300,24 +301,61 @@ func ConvertTaskStatus(tasks []kubeeyev1alpha2.InspectTask) (taskStatus []kubeey
 
 }
 
-func (r *InspectPlanReconciler) updateRuleReferNum(ctx context.Context) error {
-	listRule, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(ctx, metav1.ListOptions{})
-	listPlan, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectPlans().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		klog.Error(err, "Failed to list inspectRules and inspectPlan")
-		return err
-	}
-	for _, item := range listRule.Items {
-		filter, _ := utils.ArrayFilter(listPlan.Items, func(v kubeeyev1alpha2.InspectPlan) bool {
-			return v.Spec.RuleGroup == item.GetLabels()[constant.LabelRuleGroup]
-		})
-		item.Annotations = labels.Merge(item.Annotations, map[string]string{constant.AnnotationJoinPlanNum: strconv.Itoa(len(filter))})
-		err = r.Client.Update(ctx, &item)
+func (r *InspectPlanReconciler) updateAddRuleReferNum(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan) {
+
+	for _, v := range plan.Spec.RuleNames {
+		rule, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, v, metav1.GetOptions{})
 		if err != nil {
-			klog.Error(err, "Failed to update inspectRules refer num")
-			return err
+			klog.Error(err, "Failed to get inspectRules")
+			continue
 		}
+		rule.Labels = utils.MergeMap(rule.Labels, map[string]string{fmt.Sprintf("%s/%s", "kubeeye.kubesphere.io", plan.Name): plan.Name})
+		num := 0
+		n, ok := rule.Annotations[constant.AnnotationJoinPlanNum]
+		if ok {
+			num, _ = strconv.Atoi(n)
+			num++
+		}
+		rule.Annotations = utils.MergeMap(rule.Annotations, map[string]string{constant.AnnotationJoinPlanNum: strconv.Itoa(num)})
+
+		_, err = r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules().Update(ctx, rule, metav1.UpdateOptions{})
+		if err != nil {
+			klog.Error(err, "Failed to update inspectRules")
+			continue
+		}
+		plan.Labels = utils.MergeMap(plan.Labels, map[string]string{fmt.Sprintf("%s/%s", "kubeeye.kubesphere.io", v): v})
+
 	}
 
-	return nil
+}
+
+func (r *InspectPlanReconciler) updateSubRuleReferNum(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan) {
+
+	for _, v := range plan.Spec.RuleNames {
+		rule, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, v, metav1.GetOptions{})
+		if err != nil {
+			klog.Error(err, "Failed to get inspectRules")
+			continue
+		}
+		delete(rule.Labels, fmt.Sprintf("%s/%s", "kubeeye.kubesphere.io", plan.Name))
+		//rule.Labels = utils.MergeMap(rule.Labels, map[string]string{fmt.Sprintf("%s/%s", "kubeeye.kubesphere.io", plan.Name): plan.Name})
+		num := 0
+		n, ok := rule.Annotations[constant.AnnotationJoinPlanNum]
+		if ok {
+			num, _ = strconv.Atoi(n)
+			if num > 0 {
+				num--
+			}
+		}
+		rule.Annotations = utils.MergeMap(rule.Annotations, map[string]string{constant.AnnotationJoinPlanNum: strconv.Itoa(num)})
+
+		_, err = r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules().Update(ctx, rule, metav1.UpdateOptions{})
+		if err != nil {
+			klog.Error(err, "Failed to update inspectRules")
+			continue
+		}
+		delete(plan.Labels, fmt.Sprintf("%s/%s", "kubeeye.kubesphere.io", v))
+
+	}
+
 }
