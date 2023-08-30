@@ -47,9 +47,9 @@ type Query struct {
 
 type Result struct {
 	// total number of items
-	Total int
+	TotalItems int `json:"totalItems,omitempty"`
 	// items
-	Items []map[string]interface{}
+	Items []map[string]interface{} `json:"items"`
 }
 
 type Pagination struct {
@@ -137,8 +137,8 @@ func (q *Query) GetPageData(data interface{}, c compare, f filterC) Result {
 	toMap, err := utils.StructToMap(data)
 	if err != nil {
 		return Result{
-			Total: 0,
-			Items: nil,
+			TotalItems: 0,
+			Items:      nil,
 		}
 	}
 
@@ -158,8 +158,8 @@ func (q *Query) GetPageData(data interface{}, c compare, f filterC) Result {
 	start, end := q.Pagination.computeIndex(len(toMap))
 
 	return Result{
-		Total: len(toMap),
-		Items: toMap[start:end],
+		TotalItems: len(toMap),
+		Items:      toMap[start:end],
 	}
 }
 
