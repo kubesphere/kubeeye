@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/output"
 	"github.com/kubesphere/kubeeye/pkg/server/query"
@@ -12,6 +14,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"net/http"
+	"os"
+	"path"
 	"strings"
 )
 
@@ -51,8 +55,20 @@ func (i *InspectResult) ListInspectResult(gin *gin.Context) {
 		return
 	}
 	data := q.GetPageData(list.Items, i.compare, i.filter)
-
-	gin.JSON(http.StatusOK, data)
+	results := utils.MapToStruct[v1alpha2.InspectResult](data.Items...)
+	for k := range results {
+		file, err := os.ReadFile(path.Join(constant.ResultPath, results[k].Name))
+		if err != nil {
+			gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
+			return
+		}
+		err = json.Unmarshal(file, &results[k])
+		if err != nil {
+			gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
+			return
+		}
+	}
+	gin.JSON(http.StatusOK, results)
 }
 
 // GetInspectResult godoc
@@ -77,13 +93,23 @@ func (i *InspectResult) GetInspectResult(gin *gin.Context) {
 		}
 		gin.HTML(http.StatusOK, template.InspectResultTemplate, m)
 	default:
-		list, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(i.Ctx, name, metav1.GetOptions{})
+		result, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(i.Ctx, name, metav1.GetOptions{})
 		if err != nil {
 			klog.Error(err)
 			gin.JSON(http.StatusInternalServerError, err)
 			return
 		}
-		gin.JSON(http.StatusOK, list)
+		file, err := os.ReadFile(path.Join(constant.ResultPath, result.Name))
+		if err != nil {
+			gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
+			return
+		}
+		err = json.Unmarshal(file, &result)
+		if err != nil {
+			gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
+			return
+		}
+		gin.JSON(http.StatusOK, result)
 	}
 
 }
