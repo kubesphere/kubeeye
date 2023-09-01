@@ -684,24 +684,25 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: kubeeye-manager-role
+  name: kubeeye-kubeeye-manager-role
 rules:
 - apiGroups:
   - ""
   resources:
   - configmaps
   verbs:
-  - create
-  - delete
   - deletecollection
-  - get
-  - list
 - apiGroups:
   - ""
   resources:
-  - events
+  - namespaces
+  verbs:
+  - create
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
   - nodes
-  - pods
   - services
   verbs:
   - get
@@ -709,28 +710,17 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - namespaces
   - serviceaccounts
   verbs:
   - create
-  - get
-  - list
-- apiGroups:
-  - apps
-  resources:
-  - '*'
-  verbs:
-  - get
-  - list
+  - delete
 - apiGroups:
   - batch
   resources:
-  - '*'
+  - jobs
   verbs:
   - create
-  - delete
   - get
-  - list
 - apiGroups:
   - cluster.kubesphere.io
   resources:
@@ -844,10 +834,10 @@ rules:
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
-  - '*'
+  - clusterrolebindings
+  - clusterroles
   verbs:
-  - get
-  - list
+  - '*'
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -898,7 +888,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: kubeeye-manager-role
+  name: manager-role
 subjects:
 - kind: ServiceAccount
   name: kubeeye-controller-manager

@@ -75,7 +75,7 @@ func InspectJobsTemplate(jobConfig *conf.JobConfig, jobName string, inspectTask 
 					HostNetwork:        true,
 					HostPID:            true,
 					DNSPolicy:          corev1.DNSClusterFirstWithHostNet,
-					ServiceAccountName: "kubeeye-controller-manager",
+					ServiceAccountName: "kubeeye-inspect-job",
 					NodeName:           nodeName,
 					NodeSelector:       nodeSelector,
 					RestartPolicy:      corev1.RestartPolicyNever,

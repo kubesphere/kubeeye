@@ -25,7 +25,6 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
@@ -57,12 +56,12 @@ type InspectTaskReconciler struct {
 //+kubebuilder:rbac:groups=cluster.kubesphere.io,resources=clusters,verbs=get
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=create;delete;deletecollection;list;get
-//+kubebuilder:rbac:groups="",resources=nodes;services;pods;events,verbs=list;get
-//+kubebuilder:rbac:groups="",resources=namespaces;serviceaccounts,verbs=list;get;create
-//+kubebuilder:rbac:groups="apps",resources="*",verbs=get;list
-//+kubebuilder:rbac:groups="batch",resources="*",verbs=get;list;create;delete
-//+kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources="*",verbs=get;list
+//+kubebuilder:rbac:groups="",resources=nodes;namespaces;services,verbs=list;get
+//+kubebuilder:rbac:groups="",resources=namespaces,verbs=create
+//+kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=create;delete
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=deletecollection
+//+kubebuilder:rbac:groups="batch",resources=jobs,verbs=create;get
+//+kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources=clusterroles;clusterrolebindings,verbs="*"
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -117,7 +116,8 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			klog.Error("failed to get cluster info. ", err)
 			return ctrl.Result{}, err
 		}
-		kubeEyeConfig, err := kube.GetKubeEyeConfig(ctx, r.K8sClients)
+		var kubeEyeConfig conf.KubeEyeConfig
+		kubeEyeConfig, err = kube.GetKubeEyeConfig(ctx, r.K8sClients)
 		if err != nil {
 			klog.Error("Unable to get jobConfig")
 			return ctrl.Result{}, err
@@ -159,6 +159,11 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			}
 			wait.Wait()
 		} else {
+			err = r.initClusterInspect(ctx, r.K8sClients)
+			if err != nil {
+				klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", "default", err)
+				return ctrl.Result{}, err
+			}
 			err := r.CreateInspect(ctx, kubeeyev1alpha2.Cluster{Name: "default"}, inspectTask, getRules, r.K8sClients, kubeEyeConfig)
 			if err != nil {
 				return ctrl.Result{}, err
@@ -332,7 +337,7 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 	}
 	wg.Wait()
 
-	err := r.clearRule(ctx, clusterClient, inspectTask.Spec.ClusterName)
+	err := r.cleanConfig(ctx, clusterClient, inspectTask.Spec.ClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -473,87 +478,57 @@ func isTimeout(startTime metav1.Time, t string) bool {
 
 // InitClusterInspect Initialize the relevant configuration items required for multi-cluster inspection
 func (r *InspectTaskReconciler) initClusterInspect(ctx context.Context, clients *kube.KubernetesClient) error {
-	_, err := clients.ClientSet.CoreV1().Namespaces().Get(ctx, constant.DefaultNamespace, metav1.GetOptions{})
+
+	_, err := clients.ClientSet.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: constant.DefaultNamespace}}, metav1.CreateOptions{})
 	if err != nil {
-		if kubeErr.IsNotFound(err) {
-			_, err = clients.ClientSet.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: constant.DefaultNamespace}}, metav1.CreateOptions{})
-			if err != nil {
-				return err
-			}
-		} else {
+		if !kubeErr.IsAlreadyExists(err) {
 			return err
 		}
 	}
 
-	_, err = clients.ClientSet.RbacV1().ClusterRoles().Get(ctx, "kubeeye-manager-role", metav1.GetOptions{})
+	_, err = clients.ClientSet.RbacV1().ClusterRoles().Create(ctx, template.GetClusterRoleTemplate(), metav1.CreateOptions{})
 	if err != nil {
-		if kubeErr.IsNotFound(err) {
-			clusterRole, err := r.K8sClients.ClientSet.RbacV1().ClusterRoles().Get(ctx, "kubeeye-manager-role", metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-			_, err = clients.ClientSet.RbacV1().ClusterRoles().Create(ctx, &v1.ClusterRole{
-				ObjectMeta: metav1.ObjectMeta{Name: clusterRole.Name},
-				Rules:      clusterRole.Rules,
-			}, metav1.CreateOptions{})
-			if err != nil {
-				return err
-			}
-		} else {
+		if !kubeErr.IsAlreadyExists(err) {
 			return err
 		}
 	}
-	_, err = clients.ClientSet.RbacV1().ClusterRoleBindings().Get(ctx, "kubeeye-manager-rolebinding", metav1.GetOptions{})
+	_, err = clients.ClientSet.RbacV1().ClusterRoleBindings().Create(ctx, template.GetClusterRoleBindingTemplate(), metav1.CreateOptions{})
 	if err != nil {
-		if kubeErr.IsNotFound(err) {
-			clusterRoleBinding, err := r.K8sClients.ClientSet.RbacV1().ClusterRoleBindings().Get(ctx, "kubeeye-manager-rolebinding", metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-			_, err = clients.ClientSet.RbacV1().ClusterRoleBindings().Create(ctx, &v1.ClusterRoleBinding{
-				ObjectMeta: metav1.ObjectMeta{Name: clusterRoleBinding.Name},
-				Subjects:   clusterRoleBinding.Subjects,
-				RoleRef:    clusterRoleBinding.RoleRef,
-			}, metav1.CreateOptions{})
-			if err != nil {
-				return err
-			}
-		} else {
+		if !kubeErr.IsAlreadyExists(err) {
 			return err
 		}
 	}
 
-	_, err = clients.ClientSet.CoreV1().ServiceAccounts(constant.DefaultNamespace).Get(ctx, "kubeeye-controller-manager", metav1.GetOptions{})
-
+	_, err = clients.ClientSet.CoreV1().ServiceAccounts(constant.DefaultNamespace).Create(ctx, template.GetServiceAccountTemplate(), metav1.CreateOptions{})
 	if err != nil {
-		if kubeErr.IsNotFound(err) {
-			serviceAccount, err := r.K8sClients.ClientSet.CoreV1().ServiceAccounts(constant.DefaultNamespace).Get(ctx, "kubeeye-controller-manager", metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-			serviceAccountNew := &corev1.ServiceAccount{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      serviceAccount.Name,
-					Namespace: serviceAccount.Namespace,
-				},
-			}
-			_, err = clients.ClientSet.CoreV1().ServiceAccounts(constant.DefaultNamespace).Create(ctx, serviceAccountNew, metav1.CreateOptions{})
-			if err != nil {
-				return err
-			}
-		} else {
+		if !kubeErr.IsAlreadyExists(err) {
 			return err
 		}
-
 	}
 
 	return nil
 }
 
-func (r *InspectTaskReconciler) clearRule(ctx context.Context, clients *kube.KubernetesClient, clusterName []kubeeyev1alpha2.Cluster) error {
-	return clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
+func (r *InspectTaskReconciler) cleanConfig(ctx context.Context, clients *kube.KubernetesClient, clusterName []kubeeyev1alpha2.Cluster) error {
+	err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"}),
 	})
+	if err != nil {
+		return err
+	}
+	err = clients.ClientSet.CoreV1().ServiceAccounts(constant.DefaultNamespace).Delete(ctx, template.GetServiceAccountTemplate().Name, metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	err = clients.ClientSet.RbacV1().ClusterRoleBindings().Delete(ctx, template.GetClusterRoleBindingTemplate().Name, metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	err = clients.ClientSet.RbacV1().ClusterRoles().Delete(ctx, template.GetClusterRoleTemplate().Name, metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase kubeeyev1alpha2.Phase, planName string, taskName string) error {

@@ -5,4 +5,8 @@ metadata:
 spec:
   maxTasks: 10
   ruleNames:
+    - custom-command
+    - filter-system-log
+    - inspect-rule-sample
     - inspect-rules-sysctl
+    - prometheus-sample
