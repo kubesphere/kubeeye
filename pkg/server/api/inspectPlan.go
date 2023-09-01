@@ -4,10 +4,12 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	versionsv1alpha2 "github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/server/query"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"net/http"
 	"strings"
@@ -16,12 +18,14 @@ import (
 type InspectPlan struct {
 	Clients *kube.KubernetesClient
 	Ctx     context.Context
+	Factory versionsv1alpha2.InspectPlanInformer
 }
 
-func NewInspectPlan(ctx context.Context, clients *kube.KubernetesClient) *InspectPlan {
+func NewInspectPlan(ctx context.Context, clients *kube.KubernetesClient, f versionsv1alpha2.InspectPlanInformer) *InspectPlan {
 	return &InspectPlan{
 		Clients: clients,
 		Ctx:     ctx,
+		Factory: f,
 	}
 }
 
@@ -40,14 +44,18 @@ func NewInspectPlan(ctx context.Context, clients *kube.KubernetesClient) *Inspec
 // @Router       /inspectplans [get]
 func (i *InspectPlan) ListInspectPlan(gin *gin.Context) {
 	q := query.ParseQuery(gin)
-	list, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectPlans().List(i.Ctx, metav1.ListOptions{
-		LabelSelector: q.LabelSelector,
-	})
+
+	parse, err := labels.Parse(q.LabelSelector)
 	if err != nil {
 		gin.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	data := q.GetPageData(list.Items, i.compare, i.filter)
+	ret, err := i.Factory.Lister().List(parse)
+	if err != nil {
+		gin.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	data := q.GetPageData(ret, i.compare, i.filter)
 	gin.JSON(http.StatusOK, data)
 }
 
@@ -62,12 +70,12 @@ func (i *InspectPlan) ListInspectPlan(gin *gin.Context) {
 // @Router       /inspectplans/{name} [get]
 func (i *InspectPlan) GetInspectPlan(gin *gin.Context) {
 	name := gin.Param("name")
-	task, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectPlans().Get(i.Ctx, name, metav1.GetOptions{})
+	plan, err := i.Factory.Lister().Get(name)
 	if err != nil {
 		gin.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	gin.JSON(http.StatusOK, task)
+	gin.JSON(http.StatusOK, plan)
 }
 
 // CreateInspectPlan  godoc

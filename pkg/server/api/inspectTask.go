@@ -4,11 +4,13 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	versionsv1alpha2 "github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/controllers"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/server/query"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	"strings"
 )
@@ -16,12 +18,14 @@ import (
 type InspectTask struct {
 	Clients *kube.KubernetesClient
 	Ctx     context.Context
+	Factory versionsv1alpha2.InspectTaskInformer
 }
 
-func NewInspectTask(ctx context.Context, clients *kube.KubernetesClient) *InspectTask {
+func NewInspectTask(ctx context.Context, clients *kube.KubernetesClient, f versionsv1alpha2.InspectTaskInformer) *InspectTask {
 	return &InspectTask{
 		Clients: clients,
 		Ctx:     ctx,
+		Factory: f,
 	}
 }
 
@@ -40,14 +44,17 @@ func NewInspectTask(ctx context.Context, clients *kube.KubernetesClient) *Inspec
 // @Router       /inspecttasks [get]
 func (i *InspectTask) ListInspectTask(gin *gin.Context) {
 	q := query.ParseQuery(gin)
-	list, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks().List(i.Ctx, metav1.ListOptions{
-		LabelSelector: q.LabelSelector,
-	})
+	parse, err := labels.Parse(q.LabelSelector)
 	if err != nil {
 		gin.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	data := q.GetPageData(list.Items, i.compare, i.filter)
+	ret, err := i.Factory.Lister().List(parse)
+	if err != nil {
+		gin.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	data := q.GetPageData(ret, i.compare, i.filter)
 	gin.JSON(http.StatusOK, data)
 }
 
@@ -62,7 +69,7 @@ func (i *InspectTask) ListInspectTask(gin *gin.Context) {
 // @Router       /inspecttasks/{name} [get]
 func (i *InspectTask) GetInspectTask(gin *gin.Context) {
 	name := gin.Param("name")
-	task, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectTasks().Get(i.Ctx, name, metav1.GetOptions{})
+	task, err := i.Factory.Lister().Get(name)
 	if err != nil {
 		gin.JSON(http.StatusInternalServerError, err)
 		return

@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"github.com/gin-gonic/gin"
+	"github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/server/api"
 	"github.com/kubesphere/kubeeye/pkg/template"
@@ -16,11 +17,11 @@ type Router struct {
 	Ctx     context.Context
 }
 
-func RegisterRouter(ctx context.Context, r *gin.Engine, clients *kube.KubernetesClient) {
-	result := api.NewInspectResult(ctx, clients)
-	task := api.NewInspectTask(ctx, clients)
-	plan := api.NewInspectPlan(ctx, clients)
-	rule := api.NewInspectRule(ctx, clients)
+func RegisterRouter(ctx context.Context, r *gin.Engine, clients *kube.KubernetesClient, factory kubeeye.Interface) {
+	result := api.NewInspectResult(ctx, clients, factory.V1alpha2().InspectResults())
+	task := api.NewInspectTask(ctx, clients, factory.V1alpha2().InspectTasks())
+	plan := api.NewInspectPlan(ctx, clients, factory.V1alpha2().InspectPlans())
+	rule := api.NewInspectRule(ctx, clients, factory.V1alpha2().InspectRules())
 	htmlTemplate, err := template.GetInspectResultHtmlTemplate()
 	if err == nil {
 		r.SetHTMLTemplate(htmlTemplate)
@@ -49,7 +50,6 @@ func RegisterRouter(ctx context.Context, r *gin.Engine, clients *kube.Kubernetes
 		v1alpha1.POST("/inspectrules", rule.CreateInspectRule)
 		v1alpha1.DELETE("/inspectrules", rule.DeleteInspectRule)
 		v1alpha1.PUT("/inspectrules", rule.UpdateInspectRule)
-
 	}
 
 }

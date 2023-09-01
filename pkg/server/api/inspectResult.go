@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	versionsv1alpha2 "github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/output"
 	"github.com/kubesphere/kubeeye/pkg/server/query"
 	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
 	"net/http"
 	"os"
@@ -22,12 +23,14 @@ import (
 type InspectResult struct {
 	Clients *kube.KubernetesClient
 	Ctx     context.Context
+	Factory versionsv1alpha2.InspectResultInformer
 }
 
-func NewInspectResult(ctx context.Context, clients *kube.KubernetesClient) *InspectResult {
+func NewInspectResult(ctx context.Context, clients *kube.KubernetesClient, factory versionsv1alpha2.InspectResultInformer) *InspectResult {
 	return &InspectResult{
 		Clients: clients,
 		Ctx:     ctx,
+		Factory: factory,
 	}
 }
 
@@ -46,15 +49,17 @@ func NewInspectResult(ctx context.Context, clients *kube.KubernetesClient) *Insp
 // @Router       /inspectresults [get]
 func (i *InspectResult) ListInspectResult(gin *gin.Context) {
 	q := query.ParseQuery(gin)
-	list, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().List(i.Ctx, metav1.ListOptions{
-		LabelSelector: q.LabelSelector,
-	})
+	parse, err := labels.Parse(q.LabelSelector)
 	if err != nil {
-		klog.Error(err)
 		gin.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	data := q.GetPageData(list.Items, i.compare, i.filter)
+	ret, err := i.Factory.Lister().List(parse)
+	if err != nil {
+		gin.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	data := q.GetPageData(ret, i.compare, i.filter)
 	results := utils.MapToStruct[v1alpha2.InspectResult](data.Items...)
 	for k := range results {
 		file, err := os.ReadFile(path.Join(constant.ResultPath, results[k].Name))
@@ -93,7 +98,7 @@ func (i *InspectResult) GetInspectResult(gin *gin.Context) {
 		}
 		gin.HTML(http.StatusOK, template.InspectResultTemplate, m)
 	default:
-		result, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectResults().Get(i.Ctx, name, metav1.GetOptions{})
+		result, err := i.Factory.Lister().Get(name)
 		if err != nil {
 			klog.Error(err)
 			gin.JSON(http.StatusInternalServerError, err)
@@ -104,7 +109,7 @@ func (i *InspectResult) GetInspectResult(gin *gin.Context) {
 			gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
 			return
 		}
-		err = json.Unmarshal(file, &result)
+		err = json.Unmarshal(file, result)
 		if err != nil {
 			gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
 			return

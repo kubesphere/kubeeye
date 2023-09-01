@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	versionsv1alpha2 "github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/server/query"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	"strings"
 )
@@ -17,12 +19,14 @@ import (
 type InspectRule struct {
 	Clients *kube.KubernetesClient
 	Ctx     context.Context
+	Factory versionsv1alpha2.InspectRuleInformer
 }
 
-func NewInspectRule(ctx context.Context, clients *kube.KubernetesClient) *InspectRule {
+func NewInspectRule(ctx context.Context, clients *kube.KubernetesClient, f versionsv1alpha2.InspectRuleInformer) *InspectRule {
 	return &InspectRule{
 		Clients: clients,
 		Ctx:     ctx,
+		Factory: f,
 	}
 }
 
@@ -41,14 +45,18 @@ func NewInspectRule(ctx context.Context, clients *kube.KubernetesClient) *Inspec
 // @Router       /inspectrules [get]
 func (i *InspectRule) ListInspectRule(g *gin.Context) {
 	q := query.ParseQuery(g)
-	list, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(i.Ctx, metav1.ListOptions{
-		LabelSelector: q.LabelSelector,
-	})
+
+	parse, err := labels.Parse(q.LabelSelector)
 	if err != nil {
 		g.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	data := q.GetPageData(list.Items, nil, i.filter)
+	ret, err := i.Factory.Lister().List(parse)
+	if err != nil {
+		g.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	data := q.GetPageData(ret, nil, i.filter)
 
 	g.JSON(http.StatusOK, data)
 }
@@ -64,12 +72,12 @@ func (i *InspectRule) ListInspectRule(g *gin.Context) {
 // @Router       /inspectrules/{name} [get]
 func (i *InspectRule) GetInspectRule(gin *gin.Context) {
 	name := gin.Param("name")
-	task, err := i.Clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(i.Ctx, name, metav1.GetOptions{})
+	rule, err := i.Factory.Lister().Get(name)
 	if err != nil {
 		gin.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	gin.JSON(http.StatusOK, task)
+	gin.JSON(http.StatusOK, rule)
 }
 
 // CreateInspectRule  godoc

@@ -3,15 +3,19 @@ package main
 import (
 	"context"
 	"github.com/gin-gonic/gin"
+	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/clients/informers/externalversions"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/server/router"
 	_ "github.com/kubesphere/kubeeye/swaggerDocs"
 	"github.com/pkg/errors"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 	"net/http"
 	"os"
+	"time"
 )
 
 // @title           KubeEye API
@@ -51,8 +55,23 @@ func main() {
 		klog.Error(err)
 		errCh <- err
 	}
+	factory := externalversions.NewSharedInformerFactory(clients.VersionClientSet, 5*time.Second)
 
-	router.RegisterRouter(ctx, r, clients)
+	forResources := []string{"inspectrules", "inspectresults", "inspectplans", "inspecttasks"}
+
+	for _, resource := range forResources {
+		_, err = factory.ForResource(schema.GroupVersionResource{
+			Group:    kubeeyev1alpha2.GroupVersion.Group,
+			Version:  kubeeyev1alpha2.GroupVersion.Version,
+			Resource: resource,
+		})
+	}
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	factory.Start(stopCh)
+
+	router.RegisterRouter(ctx, r, clients, factory.Kubeeye())
 
 	srv := &http.Server{
 		Addr:    ":9090",
