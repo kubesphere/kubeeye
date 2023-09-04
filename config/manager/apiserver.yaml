@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: ke-apiserver
+  name: apiserver
   namespace: system
 spec:
   selector:
-    app: ke-apiserver
+    app: kubeeye-apiserver
   ports:
     - protocol: TCP
       port: 9090
@@ -17,24 +17,24 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ke-apiserver
+  name: apiserver
   namespace: system
   labels:
-    app: ke-apiserver
+    app: kubeeye-apiserver
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ke-apiserver
+      app: kubeeye-apiserver
   template:
     metadata:
-      name: ke-apiserver
+      name: kubeeye-apiserver
       labels:
-        app: ke-apiserver
+        app: kubeeye-apiserver
     spec:
       containers:
-        - name: ke-apiserver
-          image: jw008/kubeeye-apiserver:latest
+        - name: kubeeye-apiserver
+          image: kubespheredev/kubeeye-apiserver:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: GIN_MODE
@@ -45,10 +45,14 @@ spec:
             - mountPath: /hosts/result
               name: inspect-result
           livenessProbe:
+            initialDelaySeconds: 15
+            periodSeconds: 20
             httpGet:
               port: 9090
               path: /readyz
           readinessProbe:
+            periodSeconds: 10
+            initialDelaySeconds: 5
             httpGet:
               port: 9090
               path: /healthz

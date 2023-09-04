@@ -1,6 +1,64 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: {{ include "kubeeye.fullname" . }}-apiserver
+  labels:
+    app: kubeeye-apiserver
+  {{- include "kubeeye.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.apiserver.replicas }}
+  selector:
+    matchLabels:
+      app: kubeeye-apiserver
+    {{- include "kubeeye.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: kubeeye-apiserver
+      {{- include "kubeeye.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - env:
+        - name: GIN_MODE
+          value: {{ quote .Values.apiserver.kubeeyeApiserver.env.ginMode }}
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.apiserver.kubeeyeApiserver.image.repository }}:{{ .Values.apiserver.kubeeyeApiserver.image.tag
+          | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.apiserver.kubeeyeApiserver.imagePullPolicy }}
+        livenessProbe:
+          httpGet:
+            path: /readyz
+            port: 9090
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: kubeeye-apiserver
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 9090
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources: {{- toYaml .Values.apiserver.kubeeyeApiserver.resources | nindent 10
+          }}
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+        - mountPath: /hosts/result
+          name: inspect-result
+      restartPolicy: Always
+      serviceAccountName: {{ include "kubeeye.fullname" . }}-controller-manager
+      volumes:
+      - hostPath:
+          path: /etc/localtime
+        name: localtime
+      - name: inspect-result
+        persistentVolumeClaim:
+          claimName: {{ include "kubeeye.fullname" . }}-inspect-result
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: {{ include "kubeeye.fullname" . }}-controller-manager
   labels:
     control-plane: kubeeye-controller-manager
@@ -60,68 +118,11 @@ spec:
         volumeMounts:
         - mountPath: /hosts/result
           name: inspect-result
-        - mountPath: /etc/localtime
-          name: localtime
-          readOnly: true
       securityContext:
         runAsNonRoot: true
       serviceAccountName: {{ include "kubeeye.fullname" . }}-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
-      - name: inspect-result
-        persistentVolumeClaim:
-          claimName: {{ include "kubeeye.fullname" . }}-inspect-result
-      - hostPath:
-          path: /etc/localtime
-        name: localtime
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ include "kubeeye.fullname" . }}-ke-apiserver
-  labels:
-    app: ke-apiserver
-  {{- include "kubeeye.labels" . | nindent 4 }}
-spec:
-  replicas: {{ .Values.keApiserver.replicas }}
-  selector:
-    matchLabels:
-      app: ke-apiserver
-    {{- include "kubeeye.selectorLabels" . | nindent 6 }}
-  template:
-    metadata:
-      labels:
-        app: ke-apiserver
-      {{- include "kubeeye.selectorLabels" . | nindent 8 }}
-    spec:
-      containers:
-      - env:
-        - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ quote .Values.kubernetesClusterDomain }}
-        image: {{ .Values.keApiserver.keApiserver.image.repository }}:{{ .Values.keApiserver.keApiserver.image.tag
-          | default .Chart.AppVersion }}
-        imagePullPolicy: {{ .Values.keApiserver.keApiserver.imagePullPolicy }}
-        livenessProbe:
-          httpGet:
-            path: /readyz
-            port: 9090
-        name: ke-apiserver
-        readinessProbe:
-          httpGet:
-            path: /healthz
-            port: 9090
-        resources: {{- toYaml .Values.keApiserver.keApiserver.resources | nindent 10 }}
-        volumeMounts:
-        - mountPath: /etc/localtime
-          name: localtime
-        - mountPath: /hosts/result
-          name: inspect-result
-      restartPolicy: Always
-      serviceAccountName: {{ include "kubeeye.fullname" . }}-controller-manager
-      volumes:
-      - hostPath:
-          path: /etc/localtime
-        name: localtime
       - name: inspect-result
         persistentVolumeClaim:
           claimName: {{ include "kubeeye.fullname" . }}-inspect-result

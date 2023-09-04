@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "kubeeye.fullname" . }}-ke-apiserver
+  name: {{ include "kubeeye.fullname" . }}-apiserver
   labels:
   {{- include "kubeeye.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.keApiserver.type }}
+  type: {{ .Values.apiserver.type }}
   selector:
-    app: ke-apiserver
+    app: kubeeye-apiserver
   {{- include "kubeeye.selectorLabels" . | nindent 4 }}
   ports:
-	{{- .Values.keApiserver.ports | toYaml | nindent 2 -}}
+	{{- .Values.apiserver.ports | toYaml | nindent 2 -}}

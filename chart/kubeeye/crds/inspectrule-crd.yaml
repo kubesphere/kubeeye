@@ -36,6 +36,27 @@ spec:
             properties:
               component:
                 type: string
+              customCommand:
+                items:
+                  properties:
+                    command:
+                      type: string
+                    desc:
+                      type: string
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    rule:
+                      type: string
+                  type: object
+                type: array
               fileChange:
                 items:
                   properties:
@@ -74,6 +95,25 @@ spec:
                       type: object
                     path:
                       type: string
+                    rule:
+                      type: string
+                  type: object
+                type: array
+              nodeInfo:
+                items:
+                  properties:
+                    desc:
+                      type: string
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
                     rule:
                       type: string
                   type: object
@@ -155,8 +195,10 @@ spec:
               endImportTime:
                 format: date-time
                 type: string
-              ruleCount:
-                type: integer
+              levelCount:
+                additionalProperties:
+                  type: integer
+                type: object
               startImportTime:
                 format: date-time
                 type: string

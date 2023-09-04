@@ -39,21 +39,43 @@ spec:
                   properties:
                     endpoint:
                       type: string
+                    level:
+                      type: string
                     name:
                       type: string
                     namespace:
                       type: string
                   type: object
                 type: array
+              inspectCluster:
+                properties:
+                  name:
+                    type: string
+                  provider:
+                    type: string
+                type: object
               inspectRuleTotal:
                 additionalProperties:
                   type: integer
-                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                  Important: Run "make" to regenerate code after modifying this file'
                 type: object
               nodeInfoResult:
                 additionalProperties:
                   properties:
+                    commandResult:
+                      items:
+                        properties:
+                          assert:
+                            type: boolean
+                          command:
+                            type: string
+                          level:
+                            type: string
+                          name:
+                            type: string
+                          value:
+                            type: string
+                        type: object
+                      type: array
                     fileChangeResult:
                       items:
                         properties:
@@ -63,6 +85,8 @@ spec:
                             items:
                               type: string
                             type: array
+                          level:
+                            type: string
                           path:
                             type: string
                         type: object
@@ -76,6 +100,8 @@ spec:
                             items:
                               type: string
                             type: array
+                          level:
+                            type: string
                           path:
                             type: string
                         type: object
@@ -89,6 +115,8 @@ spec:
                         properties:
                           assert:
                             type: boolean
+                          level:
+                            type: string
                           name:
                             type: string
                           value:
@@ -100,6 +128,8 @@ spec:
                         properties:
                           assert:
                             type: boolean
+                          level:
+                            type: string
                           name:
                             type: string
                           value:

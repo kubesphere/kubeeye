@@ -36,10 +36,19 @@ spec:
             properties:
               clusterName:
                 items:
-                  type: string
+                  properties:
+                    name:
+                      type: string
+                    provider:
+                      type: string
+                  type: object
                 type: array
               inspectPolicy:
                 type: string
+              ruleNames:
+                items:
+                  type: string
+                type: array
               timeout:
                 type: string
             type: object
@@ -58,6 +67,8 @@ spec:
                   version:
                     type: string
                 type: object
+              duration:
+                type: string
               endTimestamp:
                 format: date-time
                 type: string

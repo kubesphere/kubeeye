@@ -36,12 +36,22 @@ spec:
             properties:
               clusterName:
                 items:
-                  type: string
+                  properties:
+                    name:
+                      type: string
+                    provider:
+                      type: string
+                  type: object
                 type: array
               kubeConfig:
                 type: string
               maxTasks:
                 type: integer
+              one:
+                format: date-time
+                type: string
+              ruleGroup:
+                type: string
               ruleNames:
                 items:
                   type: string
@@ -50,8 +60,6 @@ spec:
                 type: string
               suspend:
                 type: boolean
-              tag:
-                type: string
               timeout:
                 type: string
             type: object
@@ -70,7 +78,13 @@ spec:
               lastScheduleTime:
                 format: date-time
                 type: string
+              lastTaskEndTime:
+                format: date-time
+                type: string
               lastTaskName:
+                type: string
+              lastTaskStartTime:
+                format: date-time
                 type: string
               lastTaskStatus:
                 type: string

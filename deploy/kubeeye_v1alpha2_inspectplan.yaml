@@ -1,9 +1,11 @@
 apiVersion: kubeeye.kubesphere.io/v1alpha2
 kind: InspectPlan
 metadata:
-  name: inspectplan
+  name: inspectplan-test
 spec:
   maxTasks: 10
+  clusterName:
+    - name: member1
   ruleNames:
     - custom-command
     - filter-system-log

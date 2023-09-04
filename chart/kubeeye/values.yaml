@@ -1,3 +1,25 @@
+apiserver:
+  kubeeyeApiserver:
+    env:
+      ginMode: release
+    image:
+      repository: kubespheredev/kubeeye-apiserver
+      tag: v1.0.0-beta.4
+    imagePullPolicy: IfNotPresent
+    resources:
+      limits:
+        cpu: 10m
+        memory: 256Mi
+      requests:
+        cpu: 10m
+        memory: 100Mi
+  ports:
+  - nodePort: 30882
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+  replicas: 1
+  type: NodePort
 config:
   config: |-
     job:
@@ -50,26 +72,6 @@ controllerManager:
   replicas: 1
   serviceAccount:
     annotations: {}
-keApiserver:
-  keApiserver:
-    image:
-      repository: kubespheredev/kubeeye-apiserver
-      tag: v1.0.0-beta.4
-    imagePullPolicy: IfNotPresent
-    resources:
-      limits:
-        cpu: 10m
-        memory: 256Mi
-      requests:
-        cpu: 10m
-        memory: 100Mi
-  ports:
-  - nodePort: 30882
-    port: 9090
-    protocol: TCP
-    targetPort: 9090
-  replicas: 1
-  type: NodePort
 kubernetesClusterDomain: cluster.local
 managerConfig:
   controllerManagerConfigYaml: |-
