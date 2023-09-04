@@ -1,7 +1,6 @@
 package query
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"k8s.io/utils/strings/slices"
@@ -49,7 +48,7 @@ type Result struct {
 	// total number of items
 	TotalItems int `json:"totalItems,omitempty"`
 	// items
-	Items []map[string]interface{} `json:"items"`
+	Items interface{} `json:"items"`
 }
 
 type Pagination struct {
@@ -60,7 +59,6 @@ type Pagination struct {
 }
 
 func ParseQuery(g *gin.Context) *Query {
-	fmt.Println(g.Request.URL.Query())
 	q := NewQuery()
 	q.Pagination = ParsePagination(g.Request.URL.Query())
 	q.Filters = q.ParseFilter(g.Request.URL.Query())

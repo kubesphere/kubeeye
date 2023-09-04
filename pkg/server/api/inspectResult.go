@@ -60,7 +60,7 @@ func (i *InspectResult) ListInspectResult(gin *gin.Context) {
 		return
 	}
 	data := q.GetPageData(ret, i.compare, i.filter)
-	results := utils.MapToStruct[v1alpha2.InspectResult](data.Items...)
+	results := utils.MapToStruct[v1alpha2.InspectResult](data.Items.([]map[string]interface{})...)
 	for k := range results {
 		file, err := os.ReadFile(path.Join(constant.ResultPath, results[k].Name))
 		if err != nil {
@@ -73,7 +73,10 @@ func (i *InspectResult) ListInspectResult(gin *gin.Context) {
 			return
 		}
 	}
-	gin.JSON(http.StatusOK, results)
+	gin.JSON(http.StatusOK, query.Result{
+		TotalItems: data.TotalItems,
+		Items:      results,
+	})
 }
 
 // GetInspectResult godoc
