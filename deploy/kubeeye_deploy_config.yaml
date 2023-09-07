@@ -299,11 +299,12 @@ spec:
                 type: object
               prometheusResult:
                 items:
-                  items:
-                    additionalProperties:
+                  properties:
+                    level:
                       type: string
-                    type: object
-                  type: array
+                    result:
+                      type: string
+                  type: object
                 type: array
             type: object
           status:
@@ -684,7 +685,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: kubeeye-kubeeye-manager-role
+  name: kubeeye-manager-role
 rules:
 - apiGroups:
   - ""
@@ -888,7 +889,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: manager-role
+  name: kubeeye-manager-role
 subjects:
 - kind: ServiceAccount
   name: kubeeye-controller-manager
@@ -949,6 +950,20 @@ metadata:
 apiVersion: v1
 kind: Service
 metadata:
+  name: kubeeye-apiserver
+  namespace: kubeeye-system
+spec:
+  ports:
+  - port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: kubeeye-apiserver
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
   labels:
     control-plane: kubeeye-controller-manager
   name: kubeeye-controller-manager-metrics-service
@@ -963,21 +978,6 @@ spec:
     control-plane: kubeeye-controller-manager
 ---
 apiVersion: v1
-kind: Service
-metadata:
-  name: kubeeye-ke-apiserver
-  namespace: kubeeye-system
-spec:
-  ports:
-  - nodePort: 30882
-    port: 9090
-    protocol: TCP
-    targetPort: 9090
-  selector:
-    app: ke-apiserver
-  type: NodePort
----
-apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: kubeeye-inspect-result
@@ -989,6 +989,70 @@ spec:
     requests:
       storage: 1Gi
   volumeMode: Filesystem
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kubeeye-apiserver
+  name: kubeeye-apiserver
+  namespace: kubeeye-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubeeye-apiserver
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: kubeeye-apiserver
+      name: kubeeye-apiserver
+    spec:
+      containers:
+      - env:
+        - name: GIN_MODE
+          value: release
+        image: kubespheredev/kubeeye-apiserver:latest
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /readyz
+            port: 9090
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: kubeeye-apiserver
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 9090
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 10m
+            memory: 256Mi
+          requests:
+            cpu: 10m
+            memory: 100Mi
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+        - mountPath: /hosts/result
+          name: inspect-result
+      restartPolicy: Always
+      serviceAccountName: kubeeye-controller-manager
+      volumes:
+      - hostPath:
+          path: /etc/localtime
+        name: localtime
+      - name: inspect-result
+        persistentVolumeClaim:
+          claimName: kubeeye-inspect-result
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -1064,66 +1128,6 @@ spec:
       serviceAccountName: kubeeye-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
-      - name: inspect-result
-        persistentVolumeClaim:
-          claimName: kubeeye-inspect-result
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: ke-apiserver
-  name: kubeeye-ke-apiserver
-  namespace: kubeeye-system
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ke-apiserver
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
-  template:
-    metadata:
-      labels:
-        app: ke-apiserver
-      name: ke-apiserver
-    spec:
-      containers:
-      - env:
-        - name: GIN_MODE
-          value: release
-        image: jw008/kubeeye-apiserver:latest
-        imagePullPolicy: IfNotPresent
-        livenessProbe:
-          httpGet:
-            path: /readyz
-            port: 9090
-        name: ke-apiserver
-        readinessProbe:
-          httpGet:
-            path: /healthz
-            port: 9090
-        resources:
-          limits:
-            cpu: 10m
-            memory: 256Mi
-          requests:
-            cpu: 10m
-            memory: 100Mi
-        volumeMounts:
-        - mountPath: /etc/localtime
-          name: localtime
-        - mountPath: /hosts/result
-          name: inspect-result
-      restartPolicy: Always
-      serviceAccountName: kubeeye-controller-manager
-      volumes:
-      - hostPath:
-          path: /etc/localtime
-        name: localtime
       - name: inspect-result
         persistentVolumeClaim:
           claimName: kubeeye-inspect-result
