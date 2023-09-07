@@ -7,8 +7,8 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/kubesphere/kubeeye/pkg/template"
+	"github.com/kubesphere/kubeeye/pkg/utils"
 	"github.com/prometheus/client_golang/api"
 	apiprometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
@@ -39,28 +39,25 @@ func (o *prometheusInspect) CreateJobTask(ctx context.Context, clients *kube.Kub
 
 }
 
-func (o *prometheusInspect) RunInspect(ctx context.Context, ruless []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
+func (o *prometheusInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
 
-	//_, exist, phase := utils.ArrayFinds(ruless, func(m kubeeyev1alpha2.JobRule) bool {
-	//	return m.JobName == currentJobName
-	//})
-	//
-	//if !exist {
-	//	return nil, nil
-	//}
+	_, exist, phase := utils.ArrayFinds(rules, func(m kubeeyev1alpha2.JobRule) bool {
+		return m.JobName == currentJobName
+	})
 
-	get, _ := clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, "prometheus-sample", metav1.GetOptions{})
-	rule, _ := rules.MergeRule(*get)
+	if !exist {
+		return nil, nil
+	}
 
-	//var proRules []kubeeyev1alpha2.PrometheusRule
-	//err := json.Unmarshal(phase.RunRule, &proRules)
-	//if err != nil {
-	//	klog.Error(err, " Failed to marshal kubeeye result")
-	//	return nil, err
-	//}
+	var proRules []kubeeyev1alpha2.PrometheusRule
+	err := json.Unmarshal(phase.RunRule, &proRules)
+	if err != nil {
+		klog.Error(err, " Failed to marshal kubeeye result")
+		return nil, err
+	}
 
 	var proRuleResult []kubeeyev1alpha2.PrometheusResult
-	for _, proRule := range rule.Prometheus {
+	for _, proRule := range proRules {
 		proClient, err := api.NewClient(api.Config{
 			Address: proRule.Endpoint,
 		})
