@@ -66,29 +66,29 @@ func CSVOutput(clients *kube.KubernetesClient, outPath *string, taskName string,
 			}
 		}
 
-		if item.Spec.PrometheusResult != nil {
-			row := 1
-
-			for _, prometheus := range item.Spec.PrometheusResult {
-				var header []string
-				for _, val := range prometheus {
-					if len(header) == 0 {
-						for k := range val {
-							header = append(header, k)
-						}
-						_ = f.SetSheetRow("prometheus", fmt.Sprintf("A%d", row), &header)
-						row++
-					}
-					var value []string
-					for i := range header {
-						value = append(value, val[header[i]])
-					}
-					_ = f.SetSheetRow("prometheus", fmt.Sprintf("A%d", row), &value)
-					row++
-				}
-			}
-
-		}
+		//if item.Spec.PrometheusResult != nil {
+		//	row := 1
+		//
+		//	for _, prometheus := range item.Spec.PrometheusResult {
+		//		var header []string
+		//		for _, val := range prometheus {
+		//			if len(header) == 0 {
+		//				for k := range val {
+		//					header = append(header, k)
+		//				}
+		//				_ = f.SetSheetRow("prometheus", fmt.Sprintf("A%d", row), &header)
+		//				row++
+		//			}
+		//			var value []string
+		//			for i := range header {
+		//				value = append(value, val[header[i]])
+		//			}
+		//			_ = f.SetSheetRow("prometheus", fmt.Sprintf("A%d", row), &value)
+		//			row++
+		//		}
+		//	}
+		//
+		//}
 
 		if item.Spec.NodeInfoResult != nil {
 			row := 1

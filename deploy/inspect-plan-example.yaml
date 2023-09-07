@@ -1,8 +1,13 @@
 apiVersion: kubeeye.kubesphere.io/v1alpha2
 kind: InspectPlan
 metadata:
-  name: inspectplan
+  name: inspectplan-test
 spec:
-  schedule: "* 2 * *  ?"
-  maxTasks: 5
-  tag: inspectrule-sample
+  maxTasks: 10
+
+  ruleNames:
+    - custom-command
+    - filter-system-log
+    - inspect-rule-sample
+    - inspect-rules-sysctl
+    - prometheus-sample

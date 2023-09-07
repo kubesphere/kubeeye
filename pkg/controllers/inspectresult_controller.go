@@ -176,9 +176,9 @@ func (r *InspectResultReconciler) CountLevelNum(resultName string) (map[kubeeyev
 	levelTotal[kubeeyev1alpha2.WarningLevel] = &result.Spec.OpaResult.Warning
 	levelTotal[kubeeyev1alpha2.IgnoreLevel] = &result.Spec.OpaResult.Ignore
 	for _, item := range result.Spec.PrometheusResult {
-		for _, m := range item {
-			computeLevel(kubeeyev1alpha2.Level(m["level"]), levelTotal)
-		}
+
+		computeLevel(item.Level, levelTotal)
+
 	}
 
 	for _, item := range result.Spec.ComponentResult {

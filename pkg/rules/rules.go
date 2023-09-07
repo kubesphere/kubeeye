@@ -33,7 +33,7 @@ func GetRules(ctx context.Context, task types.NamespacedName, client versioned.I
 	return nil
 }
 
-func MergeRule(rules []kubeeyev1alpha2.InspectRule) (*kubeeyev1alpha2.InspectRuleSpec, error) {
+func MergeRule(rules ...kubeeyev1alpha2.InspectRule) (*kubeeyev1alpha2.InspectRuleSpec, error) {
 	ruleSpec := &kubeeyev1alpha2.InspectRuleSpec{}
 	for _, rule := range rules {
 		if rule.Spec.Opas != nil && len(rule.Spec.Opas) > 0 {
@@ -211,7 +211,7 @@ func mergeNodeRule(rule []map[string]interface{}) map[string][]map[string]interf
 func ParseRules(ctx context.Context, clients *kube.KubernetesClient, taskName string, ruleGroup []kubeeyev1alpha2.InspectRule) ([]kubeeyev1alpha2.JobRule, map[string]int, error) {
 
 	nodes := kube.GetNodes(ctx, clients.ClientSet)
-	ruleSpec, err := MergeRule(ruleGroup)
+	ruleSpec, err := MergeRule(ruleGroup...)
 	if err != nil {
 		return nil, nil, err
 	}

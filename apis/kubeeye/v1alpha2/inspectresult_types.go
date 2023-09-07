@@ -30,7 +30,7 @@ type InspectResultSpec struct {
 
 	InspectCluster   Cluster                   `json:"inspectCluster,omitempty"`
 	InspectRuleTotal map[string]int            `json:"inspectRuleTotal,omitempty"`
-	PrometheusResult [][]map[string]string     `json:"prometheusResult,omitempty"`
+	PrometheusResult []PrometheusResult        `json:"prometheusResult,omitempty"`
 	OpaResult        KubeeyeOpaResult          `json:"opaResult,omitempty"`
 	NodeInfoResult   map[string]NodeInfoResult `json:"nodeInfoResult,omitempty"`
 	ComponentResult  []ComponentResultItem     `json:"componentResult,omitempty"`
@@ -56,6 +56,11 @@ const (
 	WarningLevel Level = "warning"
 	IgnoreLevel  Level = "ignore"
 )
+
+type PrometheusResult struct {
+	Result string `json:"result,omitempty"`
+	Level  Level  `json:"level,omitempty"`
+}
 
 type NodeInfoResult struct {
 	NodeInfo         map[string]string      `json:"nodeInfo,omitempty"`

@@ -14,12 +14,11 @@ apiserver:
         cpu: 10m
         memory: 100Mi
   ports:
-  - nodePort: 30882
-    port: 9090
+  - port: 9090
     protocol: TCP
     targetPort: 9090
   replicas: 1
-  type: NodePort
+  type: ClusterIP
 config:
   config: |-
     job:

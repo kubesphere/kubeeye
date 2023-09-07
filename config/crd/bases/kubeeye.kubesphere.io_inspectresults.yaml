@@ -193,11 +193,12 @@ spec:
                 type: object
               prometheusResult:
                 items:
-                  items:
-                    additionalProperties:
+                  properties:
+                    level:
                       type: string
-                    type: object
-                  type: array
+                    result:
+                      type: string
+                  type: object
                 type: array
             type: object
           status:
