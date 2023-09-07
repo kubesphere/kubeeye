@@ -61,16 +61,19 @@ func (i *InspectResult) ListInspectResult(gin *gin.Context) {
 	}
 	data := q.GetPageData(ret, i.compare, i.filter)
 	results := utils.MapToStruct[v1alpha2.InspectResult](data.Items.([]map[string]interface{})...)
-	for k := range results {
-		file, err := os.ReadFile(path.Join(constant.ResultPath, results[k].Name))
-		if err != nil {
-			gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
-			return
-		}
-		err = json.Unmarshal(file, &results[k])
-		if err != nil {
-			gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
-			return
+	details := q.Filters.Get("details")
+	if utils.StringToBool(details) {
+		for k := range results {
+			file, err := os.ReadFile(path.Join(constant.ResultPath, results[k].Name))
+			if err != nil {
+				gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
+				return
+			}
+			err = json.Unmarshal(file, &results[k])
+			if err != nil {
+				gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
+				return
+			}
 		}
 	}
 	gin.JSON(http.StatusOK, query.Result{
@@ -91,7 +94,8 @@ func (i *InspectResult) ListInspectResult(gin *gin.Context) {
 // @Router       /inspectresults/{name} [get]
 func (i *InspectResult) GetInspectResult(gin *gin.Context) {
 	name := gin.Param("name")
-	outType := gin.Query("type")
+	q := query.ParseQuery(gin)
+	outType := q.Filters.Get("type")
 	switch outType {
 	case "html":
 		err, m := output.HtmlOut(gin.Param("name"))
@@ -107,15 +111,18 @@ func (i *InspectResult) GetInspectResult(gin *gin.Context) {
 			gin.JSON(http.StatusInternalServerError, err)
 			return
 		}
-		file, err := os.ReadFile(path.Join(constant.ResultPath, result.Name))
-		if err != nil {
-			gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
-			return
-		}
-		err = json.Unmarshal(file, result)
-		if err != nil {
-			gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
-			return
+		details := q.Filters.Get("details")
+		if utils.StringToBool(details) {
+			file, err := os.ReadFile(path.Join(constant.ResultPath, result.Name))
+			if err != nil {
+				gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
+				return
+			}
+			err = json.Unmarshal(file, result)
+			if err != nil {
+				gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
+				return
+			}
 		}
 		gin.JSON(http.StatusOK, result)
 	}

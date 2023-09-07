@@ -3,6 +3,7 @@ package inspect
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/constant"
@@ -15,6 +16,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
+	"sort"
 	"strings"
 	"time"
 )
@@ -44,7 +46,6 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 	_, exist, phase := utils.ArrayFinds(rules, func(m kubeeyev1alpha2.JobRule) bool {
 		return m.JobName == currentJobName
 	})
-
 	if !exist {
 		return nil, nil
 	}
@@ -71,35 +72,25 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 			klog.Errorf("failed to query rule:%s", *proRule.Rule)
 			return nil, err
 		}
-		//fmt.Println(query.String())
-		//marshal, err := json.Marshal(query)
-		//if err != nil {
-		//	klog.Error("marshal modal Samples failed", err)
-		//	continue
-		//}
-		//var queryResults model.Samples
-		//err = json.Unmarshal(marshal, &queryResults)
-		//if err != nil {
-		//	klog.Error("unmarshal modal Samples failed", err)
-		//	continue
-		//}
-		//if queryResults.Len() == 0 {
-		//	continue
-		//}
-		//var queryResultsMap []map[string]string
-		//for _, result := range queryResults {
-		//	temp := map[string]string{"value": result.Value.String(), "time": result.Timestamp.String(), "level": string(proRule.Level)}
-		//	for name, value := range result.Metric {
-		//		temp[formatName(name)] = string(value)
-		//	}
-		//	queryResultsMap = append(queryResultsMap, temp)
-		//
-		//}
+		marshal, err := json.Marshal(query)
+		if err != nil {
+			klog.Error("marshal modal Samples failed", err)
+			continue
+		}
+		var queryResults model.Samples
+		err = json.Unmarshal(marshal, &queryResults)
+		if err != nil {
+			klog.Error("unmarshal modal Samples failed", err)
+			continue
+		}
+		for _, result := range queryResults {
+			proRuleResult = append(proRuleResult, kubeeyev1alpha2.PrometheusResult{
+				Result: toString(result),
+				Level:  proRule.Level,
+			})
 
-		proRuleResult = append(proRuleResult, kubeeyev1alpha2.PrometheusResult{
-			Result: query.String(),
-			Level:  proRule.Level,
-		})
+		}
+
 	}
 
 	marshal, err := json.Marshal(proRuleResult)
@@ -127,4 +118,36 @@ func (o *prometheusInspect) GetResult(runNodeName string, resultCm *corev1.Confi
 
 func formatName(name model.LabelName) string {
 	return strings.Trim(string(name), "_")
+}
+
+func toString(val *model.Sample) string {
+	if val == nil {
+		return "{}"
+	}
+
+	metricName, hasName := val.Metric[model.MetricNameLabel]
+	numLabels := len(val.Metric) - 1
+	if !hasName {
+		numLabels = len(val.Metric)
+	}
+	labelStrings := make([]string, 0, numLabels)
+	for label, value := range val.Metric {
+		if label != model.MetricNameLabel {
+			labelStrings = append(labelStrings, fmt.Sprintf("%s=%q", label, value))
+		}
+	}
+	labelStrings = append(labelStrings, fmt.Sprintf("value=%q", val.Value))
+	labelStrings = append(labelStrings, fmt.Sprintf("timestamp=%q", val.Timestamp))
+
+	switch numLabels {
+	case 0:
+		if hasName {
+			return string(metricName)
+		}
+		return "{}"
+	default:
+		sort.Strings(labelStrings)
+		return fmt.Sprintf("%s{%s}", metricName, strings.Join(labelStrings, ", "))
+	}
+
 }

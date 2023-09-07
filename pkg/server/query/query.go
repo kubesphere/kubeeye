@@ -208,9 +208,10 @@ func (f *Filter) F(d []map[string]interface{}, fc filterC) []map[string]interfac
 }
 
 func (f *Filter) Get(key string) string {
-	if key == "" {
+	if key == "" || f == nil {
 		return ""
 	}
+
 	s, ok := (*f)[key]
 	if !ok {
 		return ""
@@ -219,6 +220,9 @@ func (f *Filter) Get(key string) string {
 }
 
 func (f *Filter) Keys() (keys []string) {
+	if f == nil {
+		return keys
+	}
 	for k := range *f {
 		keys = append(keys, k)
 	}
