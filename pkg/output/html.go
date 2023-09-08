@@ -81,18 +81,18 @@ func HtmlOut(resultName string) (error, map[string]interface{}) {
 
 func getOpaList(result []v1alpha2.ResourceResult) (opaList []renderNode) {
 	opaList = append(opaList, renderNode{Header: true, Children: []renderNode{
-		{Text: "NameSpace"}, {Text: "Kind"}, {Text: "Name"}, {Text: "Level"}, {Text: "Message"}, {Text: "Reason"},
+		{Text: "Name"}, {Text: "Kind"}, {Text: "NameSpace"}, {Text: "Message"}, {Text: "Reason"}, {Text: "Level"},
 	}})
 	for _, resourceResult := range result {
 
 		for _, item := range resourceResult.ResultItems {
 			items := []renderNode{
-				{Text: resourceResult.NameSpace},
-				{Text: resourceResult.ResourceType},
 				{Text: resourceResult.Name},
-				{Text: item.Level},
+				{Text: resourceResult.ResourceType},
+				{Text: resourceResult.NameSpace},
 				{Text: item.Message},
 				{Text: item.Reason},
+				{Text: item.Level},
 			}
 			opaList = append(opaList, renderNode{Children: items})
 		}
@@ -106,7 +106,6 @@ func getPrometheus(pro []v1alpha2.PrometheusResult) []renderNode {
 	for _, p := range pro {
 		value := renderNode{}
 		value.Children = append(value.Children, renderNode{Text: p.Result})
-		value.Children = append(value.Children, renderNode{Text: string(p.Level)})
 		prometheus = append(prometheus, value)
 	}
 	return prometheus
@@ -116,21 +115,23 @@ func getFileChange(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	var villeinage []renderNode
 	header := renderNode{Header: true,
 		Children: []renderNode{
-			{Text: "nodeName"},
-			{Text: "type"},
 			{Text: "name"},
-			{Text: "value"}}}
+			{Text: "path"},
+			{Text: "nodeName"},
+			{Text: "value"},
+			{Text: "level"},
+		}}
 	villeinage = append(villeinage, header)
 	for k, v := range infoResult {
 		for _, item := range v.FileChangeResult {
-
 			if item.Issues != nil && len(item.Issues) > 0 {
 				val := renderNode{
 					Children: []renderNode{
-						{Text: k},
-						{Text: constant.FileChange},
+						{Text: item.Path},
 						{Text: item.FileName},
+						{Text: k},
 						{Text: strings.Join(item.Issues, ",")},
+						{Text: string(item.Level)},
 					},
 				}
 				villeinage = append(villeinage, val)
@@ -145,17 +146,17 @@ func getFileChange(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 func getFileFilter(fileResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	var villeinage []renderNode
 	header := renderNode{Header: true, Children: []renderNode{
-		{Text: "nodeName"},
-		{Text: "FileName"},
+		{Text: "name"},
 		{Text: "Path"},
-		{Text: "Issues"}},
+		{Text: "nodeName"},
+		{Text: "Issues"},
+		{Text: "level"}},
 	}
 	villeinage = append(villeinage, header)
-
 	for k, v := range fileResult {
 		for _, result := range v.FileFilterResult {
 			for _, issue := range result.Issues {
-				content2 := []renderNode{{Text: k}, {Text: result.FileName}, {Text: result.Path}, {Text: issue}}
+				content2 := []renderNode{{Text: result.FileName}, {Text: result.Path}, {Text: k}, {Text: issue}, {Text: string(result.Level)}}
 				villeinage = append(villeinage, renderNode{Children: content2})
 			}
 
@@ -186,8 +187,8 @@ func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	var villeinage []renderNode
 	header := renderNode{Header: true,
 		Children: []renderNode{
+			{Text: "name"},
 			{Text: "nodeName"},
-			{Text: "type"}, {Text: "name"},
 			{Text: "value"},
 		}}
 	villeinage = append(villeinage, header)
@@ -198,9 +199,8 @@ func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 				val := renderNode{
 					Issues: item.Assert,
 					Children: []renderNode{
-						{Text: k},
-						{Text: constant.Sysctl},
 						{Text: item.Name},
+						{Text: k},
 						{Text: *item.Value},
 					}}
 				villeinage = append(villeinage, val)
@@ -216,9 +216,8 @@ func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	var villeinage []renderNode
 	header := renderNode{Header: true,
 		Children: []renderNode{
-			{Text: "nodeName"},
-			{Text: "type"},
 			{Text: "name"},
+			{Text: "nodeName"},
 			{Text: "value"},
 		},
 	}
@@ -229,9 +228,8 @@ func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 				val := renderNode{
 					Issues: item.Assert,
 					Children: []renderNode{
-						{Text: k},
-						{Text: constant.Systemd},
 						{Text: item.Name},
+						{Text: k},
 						{Text: *item.Value},
 					}}
 				villeinage = append(villeinage, val)
