@@ -210,7 +210,7 @@ func (i *InspectPlan) compare(a, b map[string]interface{}, orderBy string) bool 
 	case query.LastTaskStatus:
 		return strings.Compare(string(left[0].Status.LastTaskStatus), string(right[0].Status.LastTaskStatus)) < 0
 	case query.LastTaskStartTime:
-		return left[0].Status.LastTaskStartTime.Before(&right[0].Status.LastTaskStartTime)
+		return left[0].Status.LastTaskStartTime.Before(right[0].Status.LastTaskStartTime)
 	case query.InspectPolicy:
 		return true
 	default:

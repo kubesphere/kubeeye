@@ -86,7 +86,7 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	if inspectRules.Status.State == "" {
 		inspectRules.Status.State = kubeeyev1alpha2.StartImport
-		inspectRules.Status.StartImportTime = v1.Time{Time: time.Now()}
+		inspectRules.Status.StartImportTime = &v1.Time{Time: time.Now()}
 		err = r.Status().Update(ctx, inspectRules)
 		if err != nil {
 			klog.Error(err, "failed to update inspect ruleFiles")
@@ -131,7 +131,7 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		ComputeLevel(inspectRules.Spec.CustomCommand, levelCount)
 	}
 
-	inspectRules.Status.EndImportTime = v1.Time{Time: time.Now()}
+	inspectRules.Status.EndImportTime = &v1.Time{Time: time.Now()}
 	inspectRules.Status.State = kubeeyev1alpha2.ImportComplete
 	inspectRules.Status.LevelCount = levelCount
 	err = r.Status().Update(ctx, inspectRules)

@@ -39,10 +39,10 @@ type InspectTaskStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	ClusterInfo    `json:"clusterInfo,omitempty"`
-	JobPhase       []JobPhase  `json:"phase,omitempty"`
-	StartTimestamp metav1.Time `json:"startTimestamp,omitempty"`
-	EndTimestamp   metav1.Time `json:"endTimestamp,omitempty"`
-	Duration       string      `json:"duration,omitempty"`
+	JobPhase       []JobPhase   `json:"phase,omitempty"`
+	StartTimestamp *metav1.Time `json:"startTimestamp,omitempty"`
+	EndTimestamp   *metav1.Time `json:"endTimestamp,omitempty"`
+	Duration       string       `json:"duration,omitempty"`
 }
 
 type JobPhase struct {

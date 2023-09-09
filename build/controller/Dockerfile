@@ -1,8 +1,8 @@
 # Build the manager binary
 FROM  golang:1.19 as builder
 
-ARG goproxy=https://goproxy.cn,direct
-ENV GOPROXY=$goproxy
+#ARG goproxy=https://goproxy.cn,direct
+#ENV GOPROXY=$goproxy
 
 
 WORKDIR /workspace

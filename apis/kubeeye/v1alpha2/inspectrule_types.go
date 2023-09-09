@@ -99,8 +99,8 @@ type InspectRuleStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	StartImportTime metav1.Time    `json:"startImportTime,omitempty"`
-	EndImportTime   metav1.Time    `json:"endImportTime,omitempty"`
+	StartImportTime *metav1.Time   `json:"startImportTime,omitempty"`
+	EndImportTime   *metav1.Time   `json:"endImportTime,omitempty"`
 	State           State          `json:"state,omitempty"`
 	LevelCount      map[Level]*int `json:"levelCount,omitempty"`
 }

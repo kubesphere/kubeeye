@@ -110,7 +110,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if inspectTask.Status.StartTimestamp.IsZero() {
-		inspectTask.Status.StartTimestamp = metav1.Time{Time: time.Now()}
+		inspectTask.Status.StartTimestamp = &metav1.Time{Time: time.Now()}
 		inspectTask.Status.ClusterInfo, err = r.getClusterInfo(ctx)
 		if err != nil {
 			klog.Error("failed to get cluster info. ", err)
@@ -221,7 +221,7 @@ func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, cluster kubee
 		return err
 	}
 	task.Status.JobPhase = append(task.Status.JobPhase, JobPhase...)
-	task.Status.EndTimestamp = metav1.Time{Time: time.Now()}
+	task.Status.EndTimestamp = &metav1.Time{Time: time.Now()}
 	task.Status.Duration = task.Status.EndTimestamp.Sub(task.Status.StartTimestamp.Time).String()
 	err = r.GetInspectResultData(ctx, clients, task, cluster, inspectRuleNum)
 	if err != nil {
@@ -544,10 +544,11 @@ func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase kube
 			break
 		}
 	}
+	timeNow := metav1.Now()
 	if phase == kubeeyev1alpha2.PhaseRunning {
-		plan.Status.LastTaskStartTime = metav1.Now()
+		plan.Status.LastTaskStartTime = &timeNow
 	} else {
-		plan.Status.LastTaskEndTime = metav1.Now()
+		plan.Status.LastTaskEndTime = &timeNow
 	}
 	plan.Status.LastTaskStatus = phase
 	err = r.Status().Update(ctx, plan)

@@ -156,7 +156,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 
-		inspectPlan.Status.NextScheduleTime = metav1.Time{Time: schedule.Next(now)}
+		inspectPlan.Status.NextScheduleTime = &metav1.Time{Time: schedule.Next(now)}
 		if err = r.updateStatus(ctx, inspectPlan, now, taskName); err != nil {
 			return ctrl.Result{}, err
 		}
@@ -251,7 +251,7 @@ func (r *InspectPlanReconciler) removeTask(ctx context.Context, plan *kubeeyev1a
 	}
 }
 func (r *InspectPlanReconciler) updateStatus(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan, now time.Time, taskName string) error {
-	plan.Status.LastScheduleTime = metav1.Time{Time: now}
+	plan.Status.LastScheduleTime = &metav1.Time{Time: now}
 	plan.Status.LastTaskName = taskName
 	plan.Status.LastTaskStatus = kubeeyev1alpha2.PhasePending
 	plan.Status.TaskNames = append(plan.Status.TaskNames, kubeeyev1alpha2.TaskStatus{
