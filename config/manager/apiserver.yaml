@@ -42,26 +42,29 @@ spec:
             - mountPath: /etc/localtime
               name: localtime
             - mountPath: /hosts/result
+              readOnly: true
               name: inspect-result
           livenessProbe:
             initialDelaySeconds: 15
+            timeoutSeconds: 10
             periodSeconds: 20
             httpGet:
               port: 9090
               path: /readyz
           readinessProbe:
             periodSeconds: 10
+            timeoutSeconds: 10
             initialDelaySeconds: 5
             httpGet:
               port: 9090
               path: /healthz
           resources:
             limits:
-              cpu: 10m
+              cpu: 500m
               memory: 256Mi
             requests:
-              cpu: 10m
-              memory: 100Mi
+              cpu: 100m
+              memory: 128Mi
       serviceAccountName: controller-manager
       volumes:
         - name: localtime
