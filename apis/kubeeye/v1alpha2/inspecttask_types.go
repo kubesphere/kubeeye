@@ -38,11 +38,13 @@ type InspectTaskSpec struct {
 type InspectTaskStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	ClusterInfo    `json:"clusterInfo,omitempty"`
-	JobPhase       []JobPhase   `json:"phase,omitempty"`
-	StartTimestamp *metav1.Time `json:"startTimestamp,omitempty"`
-	EndTimestamp   *metav1.Time `json:"endTimestamp,omitempty"`
-	Duration       string       `json:"duration,omitempty"`
+
+	ClusterInfo    `json:"clusterInfo,omitempty" yaml:"clusterInfo"`
+	JobPhase       []JobPhase   `json:"jobPhase,omitempty" yaml:"jobPhase"`
+	StartTimestamp *metav1.Time `json:"startTimestamp,omitempty" yaml:"startTimestamp"`
+	EndTimestamp   *metav1.Time `json:"endTimestamp,omitempty" yaml:"endTimestamp"`
+	Duration       string       `json:"duration,omitempty" yaml:"duration"`
+	Status         Phase        `json:"status,omitempty" yaml:"status,omitempty"`
 }
 
 type JobPhase struct {
@@ -65,16 +67,6 @@ const (
 const (
 	InspectTypeTiming  Policy = "timing"
 	InspectTypeInstant Policy = "instant"
-)
-
-type Phase string
-
-const (
-	PhasePending   Phase = "Pending"
-	PhaseRunning   Phase = "Running"
-	PhaseSucceeded Phase = "Succeeded"
-	PhaseFailed    Phase = "Failed"
-	PhaseUnknown   Phase = "Unknown"
 )
 
 type ClusterInfo struct {
@@ -143,4 +135,33 @@ type ScoreInfo struct {
 type ExtraInfo struct {
 	WorkloadsCount int      `json:"workloadsCount,omitempty"`
 	NamespacesList []string `json:"namespacesList,omitempty"`
+}
+
+type Phase string
+
+const (
+	PhasePending   Phase = "Pending"
+	PhaseRunning   Phase = "Running"
+	PhaseSucceeded Phase = "Succeeded"
+	PhaseFailed    Phase = "Failed"
+	PhaseUnknown   Phase = "Unknown"
+)
+
+func (p Phase) IsEmpty() bool {
+	return p == ""
+}
+func (p Phase) IsPending() bool {
+	return p == PhasePending
+}
+func (p Phase) IsRunning() bool {
+	return p == PhaseRunning
+}
+func (p Phase) IsSucceeded() bool {
+	return p == PhaseSucceeded
+}
+func (p Phase) IsFailed() bool {
+	return p == PhaseFailed
+}
+func (p Phase) IsUnknown() bool {
+	return p == PhaseUnknown
 }

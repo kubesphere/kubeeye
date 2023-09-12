@@ -39,7 +39,7 @@ type InspectPlanSpec struct {
 	Once        *metav1.Time `json:"one,omitempty"`
 }
 
-type TaskStatus struct {
+type TaskNames struct {
 	Name       string `json:"name,omitempty"`
 	TaskStatus Phase  `json:"taskStatus,omitempty"`
 }
@@ -53,7 +53,7 @@ type InspectPlanStatus struct {
 	LastTaskStartTime *metav1.Time `json:"lastTaskStartTime,omitempty"`
 	LastTaskEndTime   *metav1.Time `json:"lastTaskEndTime,omitempty"`
 	LastTaskName      string       `json:"lastTaskName,omitempty"`
-	TaskNames         []TaskStatus `json:"TaskNames,omitempty"`
+	TaskNames         []TaskNames  `json:"TaskNames,omitempty"`
 	LastTaskStatus    Phase        `json:"lastTaskStatus,omitempty"`
 	NextScheduleTime  *metav1.Time `json:"nextScheduleTime,omitempty"`
 }

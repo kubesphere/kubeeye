@@ -189,7 +189,7 @@ func (i *InspectPlan) PatchInspectPlanStatus(g *gin.Context) {
 	if err != nil {
 		g.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectPlan"))
 	}
-	if plan.Status.LastTaskStatus == v1alpha2.PhasePending || plan.Status.LastTaskStatus == v1alpha2.PhaseRunning {
+	if plan.Status.LastTaskStatus.IsPending() || plan.Status.LastTaskStatus.IsRunning() {
 		g.JSON(http.StatusInternalServerError, NewErrors("Please do not repeat the execution", "InspectPlan"))
 		return
 	}

@@ -254,7 +254,7 @@ func (r *InspectPlanReconciler) updateStatus(ctx context.Context, plan *kubeeyev
 	plan.Status.LastScheduleTime = &metav1.Time{Time: now}
 	plan.Status.LastTaskName = taskName
 	plan.Status.LastTaskStatus = kubeeyev1alpha2.PhasePending
-	plan.Status.TaskNames = append(plan.Status.TaskNames, kubeeyev1alpha2.TaskStatus{
+	plan.Status.TaskNames = append(plan.Status.TaskNames, kubeeyev1alpha2.TaskNames{
 		Name:       taskName,
 		TaskStatus: kubeeyev1alpha2.PhasePending,
 	})
@@ -280,16 +280,16 @@ func (r *InspectPlanReconciler) getInspectTaskForLabel(ctx context.Context, plan
 	return list.Items, nil
 }
 
-func ConvertTaskStatus(tasks []kubeeyev1alpha2.InspectTask) (taskStatus []kubeeyev1alpha2.TaskStatus) {
+func ConvertTaskStatus(tasks []kubeeyev1alpha2.InspectTask) (taskStatus []kubeeyev1alpha2.TaskNames) {
 
 	for _, t := range tasks {
 		if t.Status.EndTimestamp.IsZero() {
-			taskStatus = append(taskStatus, kubeeyev1alpha2.TaskStatus{
+			taskStatus = append(taskStatus, kubeeyev1alpha2.TaskNames{
 				Name:       t.Name,
 				TaskStatus: kubeeyev1alpha2.PhasePending,
 			})
 		} else {
-			taskStatus = append(taskStatus, kubeeyev1alpha2.TaskStatus{
+			taskStatus = append(taskStatus, kubeeyev1alpha2.TaskNames{
 				Name:       t.Name,
 				TaskStatus: GetStatus(&t),
 			})
