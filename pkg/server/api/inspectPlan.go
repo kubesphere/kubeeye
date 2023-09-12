@@ -185,6 +185,15 @@ func (i *InspectPlan) PatchInspectPlan(g *gin.Context) {
 // @Router       /inspectplans/{name}/status [patch]
 func (i *InspectPlan) PatchInspectPlanStatus(g *gin.Context) {
 	name := g.Param("name")
+	plan, err := i.Factory.Lister().Get(name)
+	if err != nil {
+		g.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectPlan"))
+	}
+	if plan.Status.LastTaskStatus == v1alpha2.PhasePending || plan.Status.LastTaskStatus == v1alpha2.PhaseRunning {
+		g.JSON(http.StatusInternalServerError, NewErrors("Please do not repeat the execution", "InspectPlan"))
+		return
+	}
+
 	data, err := g.GetRawData()
 	if err != nil {
 		g.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectPlan"))

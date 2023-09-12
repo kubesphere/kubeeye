@@ -61,7 +61,7 @@ func (i *InspectResult) ListInspectResult(gin *gin.Context) {
 	}
 	data := q.GetPageData(ret, i.compare, i.filter)
 	results := utils.MapToStruct[v1alpha2.InspectResult](data.Items.([]map[string]interface{})...)
-	details := q.Filters.Get("details")
+	details, _ := gin.GetQuery("details")
 	if utils.StringToBool(details) {
 		for k := range results {
 			file, err := os.ReadFile(path.Join(constant.ResultPath, results[k].Name))
@@ -111,7 +111,7 @@ func (i *InspectResult) GetInspectResult(gin *gin.Context) {
 			gin.JSON(http.StatusInternalServerError, err)
 			return
 		}
-		details := q.Filters.Get("details")
+		details, _ := gin.GetQuery("details")
 		if utils.StringToBool(details) {
 			file, err := os.ReadFile(path.Join(constant.ResultPath, result.Name))
 			if err != nil {
