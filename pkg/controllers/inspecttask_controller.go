@@ -24,6 +24,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/rules"
 	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
+	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -84,7 +85,6 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		klog.Error("failed to get inspect task. ", err)
 		return ctrl.Result{}, err
 	}
-
 	if inspectTask.DeletionTimestamp.IsZero() {
 		if _, b := utils.ArrayFind(Finalizers, inspectTask.Finalizers); !b {
 			inspectTask.Finalizers = append(inspectTask.Finalizers, Finalizers)
@@ -95,7 +95,6 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			}
 			return ctrl.Result{}, nil
 		}
-
 	} else {
 		newFinalizers := utils.SliceRemove(Finalizers, inspectTask.Finalizers)
 		inspectTask.Finalizers = newFinalizers.([]string)
@@ -105,85 +104,96 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			klog.Error("Failed to inspect plan add finalizers. ", err)
 			return ctrl.Result{}, err
 		}
+		return ctrl.Result{}, nil
+	}
 
+	if inspectTask.Status.Status.IsSucceeded() || inspectTask.Status.Status.IsFailed() {
 		return ctrl.Result{}, nil
 	}
 
 	if inspectTask.Status.StartTimestamp.IsZero() {
 		inspectTask.Status.StartTimestamp = &metav1.Time{Time: time.Now()}
-		inspectTask.Status.ClusterInfo, err = r.getClusterInfo(ctx)
-		if err != nil {
-			klog.Error("failed to get cluster info. ", err)
-			return ctrl.Result{}, err
-		}
-		var kubeEyeConfig conf.KubeEyeConfig
-		kubeEyeConfig, err = kube.GetKubeEyeConfig(ctx, r.K8sClients)
-		if err != nil {
-			klog.Error("Unable to get jobConfig")
-			return ctrl.Result{}, err
-		}
-		err = r.updatePlanStatus(ctx, kubeeyev1alpha2.PhaseRunning, inspectTask.Labels[constant.LabelPlanName], inspectTask.Name)
+		inspectTask.Status.Status = kubeeyev1alpha2.PhaseRunning
+		err = r.Status().Update(ctx, inspectTask)
 		if err != nil {
 			klog.Error("Failed to update inspect plan status. ", err)
 			return ctrl.Result{}, err
 		}
-
-		getRules := r.getRules(ctx, inspectTask)
-
+		err = r.updatePlanStatus(ctx, kubeeyev1alpha2.PhaseRunning, inspectTask.Labels[constant.LabelPlanName], inspectTask.Name)
 		if err != nil {
-			klog.Error("failed get to inspectrules.", err)
-			return ctrl.Result{}, err
-		}
 
-		if inspectTask.Spec.ClusterName != nil {
-			var wait sync.WaitGroup
-			wait.Add(len(inspectTask.Spec.ClusterName))
-			for _, cluster := range inspectTask.Spec.ClusterName {
-				go func(v kubeeyev1alpha2.Cluster) {
-					defer wait.Done()
-					clusterClient, err := kube.GetMultiClusterClient(ctx, r.K8sClients, v.Name)
-					if err != nil {
-						klog.Error(err, "Failed to get multi-cluster client.")
-						return
-					}
-					err = r.initClusterInspect(ctx, clusterClient)
-					if err != nil {
-						klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", v, err)
-						return
-					}
-					err = r.CreateInspect(ctx, v, inspectTask, getRules, clusterClient, kubeEyeConfig)
-					if err != nil {
-						klog.Error("failed to create inspect. ", err)
-					}
-				}(cluster)
-			}
-			wait.Wait()
-		} else {
-			err = r.initClusterInspect(ctx, r.K8sClients)
-			if err != nil {
-				klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", "default", err)
-				return ctrl.Result{}, err
-			}
-			err := r.CreateInspect(ctx, kubeeyev1alpha2.Cluster{Name: "default"}, inspectTask, getRules, r.K8sClients, kubeEyeConfig)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
 		}
-		klog.Infof("all job finished for taskName:%s", inspectTask.Name)
-		err = r.Status().Update(ctx, inspectTask)
-		if err != nil {
-			klog.Error("failed to update inspect task. ", err)
-			return ctrl.Result{}, err
-		}
-		getStatus := GetStatus(inspectTask)
-		err = r.updatePlanStatus(ctx, getStatus, inspectTask.Labels[constant.LabelPlanName], inspectTask.Name)
-		if err != nil {
-			klog.Error("failed to update inspect plan comeToAnEnd status. ", err)
-		}
-
 		return ctrl.Result{}, nil
 	}
+	inspectTask.Status.ClusterInfo, err = r.getClusterInfo(ctx)
+	if err != nil {
+		klog.Error("failed to get cluster info. ", err)
+		return ctrl.Result{}, err
+	}
+	var kubeEyeConfig conf.KubeEyeConfig
+	kubeEyeConfig, err = kube.GetKubeEyeConfig(ctx, r.K8sClients)
+	if err != nil {
+		klog.Error("Unable to get jobConfig")
+		return ctrl.Result{}, err
+	}
+
+	getRules := r.getRules(ctx, inspectTask)
+	if err != nil {
+		klog.Error("failed get to inspectrules.", err)
+		return ctrl.Result{}, err
+	}
+
+	if inspectTask.Spec.ClusterName != nil {
+		var wait sync.WaitGroup
+		wait.Add(len(inspectTask.Spec.ClusterName))
+		for _, cluster := range inspectTask.Spec.ClusterName {
+			go func(v kubeeyev1alpha2.Cluster) {
+				defer wait.Done()
+				clusterClient, err := kube.GetMultiClusterClient(ctx, r.K8sClients, v.Name)
+				if err != nil {
+					klog.Error(err, "Failed to get multi-cluster client.")
+					return
+				}
+				err = r.initClusterInspect(ctx, clusterClient)
+				if err != nil {
+					klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", v, err)
+					return
+				}
+				err = r.CreateInspect(ctx, v, inspectTask, getRules, clusterClient, kubeEyeConfig)
+				if err != nil {
+					klog.Error("failed to create inspect. ", err)
+				}
+			}(cluster)
+		}
+		wait.Wait()
+	} else {
+		err = r.initClusterInspect(ctx, r.K8sClients)
+		if err != nil {
+			klog.Errorf("failed To Initialize Cluster Configuration for Cluster Name:%s,err:%s", "default", err)
+			return ctrl.Result{}, err
+		}
+		err = r.CreateInspect(ctx, kubeeyev1alpha2.Cluster{Name: "default"}, inspectTask, getRules, r.K8sClients, kubeEyeConfig)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
+	taskStatus := GetStatus(inspectTask)
+	inspectTask.Status.Status = taskStatus
+	err = r.Status().Update(ctx, inspectTask)
+	if err != nil {
+		klog.Error("failed to update inspect task. ", err)
+		return ctrl.Result{}, err
+	}
+	klog.Infof("all job finished for taskName:%s", inspectTask.Name)
+
+	err = r.updatePlanStatus(ctx, taskStatus, inspectTask.Labels[constant.LabelPlanName], inspectTask.Name)
+	if err != nil {
+		klog.Error("failed to update inspect plan comeToAnEnd status. ", err)
+	}
+
 	return ctrl.Result{}, nil
+
 }
 
 func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, ruleGroup []kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobRule, error) {
@@ -247,7 +257,7 @@ func GetStatus(task *kubeeyev1alpha2.InspectTask) kubeeyev1alpha2.Phase {
 		return kubeeyev1alpha2.PhaseFailed
 	}
 	_, ok, _ := utils.ArrayFinds(task.Status.JobPhase, func(m kubeeyev1alpha2.JobPhase) bool {
-		return m.Phase == kubeeyev1alpha2.PhaseFailed
+		return m.Phase.IsFailed()
 	})
 	if ok {
 		return kubeeyev1alpha2.PhaseFailed
@@ -314,7 +324,6 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 				mutex.Unlock()
 				return
 			}
-
 			inspectInterface, status := inspect.RuleOperatorMap[v.RuleType]
 			if status {
 				klog.Infof("Job %s created", v.JobName)
@@ -332,7 +341,6 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 			} else {
 				klog.Errorf("%s not found", v.RuleType)
 			}
-
 		}(rule)
 	}
 	wg.Wait()
@@ -354,26 +362,31 @@ func isExistsJob(ctx context.Context, clients *kube.KubernetesClient, jobName st
 }
 
 func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Context, clients *kube.KubernetesClient, jobName string, jobPhase *kubeeyev1alpha2.JobPhase, timeout string) *kubeeyev1alpha2.JobPhase {
-
 	for {
 		klog.Infof("wait job run complete for name:%s", jobName)
 		jobInfo, err := clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Get(ctx, jobName, metav1.GetOptions{})
 		if err != nil {
-			klog.Error(err)
+			klog.Infof("failed to get job info for name:%s,err:%s", jobName, err)
 			jobPhase.Phase = kubeeyev1alpha2.PhaseFailed
 			return jobPhase
 		}
 		if isTimeout(jobInfo.CreationTimestamp, timeout) {
-			klog.Infof("timeout for name:%s", jobName)
+			klog.Infof("job executed timeout for name:%s", jobName)
 			jobPhase.Phase = kubeeyev1alpha2.PhaseFailed
-			background := metav1.DeletePropagationBackground
-			_ = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Delete(ctx, jobName, metav1.DeleteOptions{PropagationPolicy: &background})
+			return jobPhase
+		}
+		if jobInfo.Status.Conditions != nil && jobInfo.Status.Conditions[0].Type == v1.JobFailed {
+			klog.Infof("failed to job executed successful for name:%s", jobName)
+			jobPhase.Phase = kubeeyev1alpha2.PhaseFailed
 			return jobPhase
 		}
 		if jobInfo.Status.CompletionTime != nil && !jobInfo.Status.CompletionTime.IsZero() && jobInfo.Status.Active == 0 {
 			jobPhase.Phase = kubeeyev1alpha2.PhaseSucceeded
+			background := metav1.DeletePropagationBackground
+			_ = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Delete(ctx, jobName, metav1.DeleteOptions{PropagationPolicy: &background})
 			return jobPhase
 		}
+
 		time.Sleep(10 * time.Second)
 	}
 
@@ -413,13 +426,13 @@ func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, client
 
 	resultData := inspectResult.DeepCopy()
 	for _, phase := range task.Status.JobPhase {
-		if phase.Phase == kubeeyev1alpha2.PhaseSucceeded {
+		if phase.Phase.IsSucceeded() {
 			_, exists, configMap := utils.ArrayFinds(configs.Items, func(m corev1.ConfigMap) bool {
 				return m.Name == phase.JobName
 			})
 			if exists {
-				ruleType := configMap.GetLabels()[constant.LabelRuleType]
-				nodeName := configMap.GetLabels()[constant.LabelNodeName]
+				ruleType := configMap.Labels[constant.LabelRuleType]
+				nodeName := configMap.Labels[constant.LabelNodeName]
 				inspectInterface, status := inspect.RuleOperatorMap[ruleType]
 				if status {
 					klog.Infof("starting get %s result data", phase.JobName)
@@ -545,7 +558,7 @@ func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase kube
 		}
 	}
 	timeNow := metav1.Now()
-	if phase == kubeeyev1alpha2.PhaseRunning {
+	if phase.IsRunning() {
 		plan.Status.LastTaskStartTime = &timeNow
 	} else {
 		plan.Status.LastTaskEndTime = &timeNow
@@ -560,9 +573,6 @@ func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase kube
 }
 
 func (r *InspectTaskReconciler) getRules(ctx context.Context, task *kubeeyev1alpha2.InspectTask) (rules []kubeeyev1alpha2.InspectRule) {
-	//ruleList, err := r.K8sClients.VersionClientSet.KubeeyeV1alpha2().InspectRules().List(ctx, metav1.ListOptions{
-	//	LabelSelector: labels.FormatLabels(map[string]string{constant.LabelRuleGroup: task.Labels[constant.LabelRuleGroup]}),
-	//})
 	for _, name := range task.Spec.RuleNames {
 		rule, err := r.K8sClients.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
