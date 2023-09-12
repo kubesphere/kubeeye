@@ -56,7 +56,7 @@ func (i *InspectRule) ListInspectRule(g *gin.Context) {
 		g.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	data := q.GetPageData(ret, nil, i.filter)
+	data := q.GetPageData(ret, i.compare, i.filter)
 
 	g.JSON(http.StatusOK, data)
 }
