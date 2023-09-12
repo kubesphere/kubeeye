@@ -83,10 +83,7 @@ func NewQuery() *Query {
 }
 
 func (q *Query) ParseAscending(b string) bool {
-	if b == "true" {
-		return true
-	}
-	return false
+	return b == "true"
 }
 
 func (q *Query) ParseFilter(values url.Values) *Filter {
