@@ -4,15 +4,15 @@ apiserver:
       ginMode: release
     image:
       repository: kubespheredev/kubeeye-apiserver
-      tag: v1.0.0-beta.4
+      tag: v1.0.0-beta.6
     imagePullPolicy: IfNotPresent
     resources:
       limits:
-        cpu: 10m
+        cpu: 500m
         memory: 256Mi
       requests:
-        cpu: 10m
-        memory: 100Mi
+        cpu: 100m
+        memory: 128Mi
   ports:
   - port: 9090
     protocol: TCP
@@ -24,7 +24,7 @@ config:
     job:
       autoDelTime: 30
       backLimit: 5
-      image: kubespheredev/kubeeye-job:v1.0.0-beta.4
+      image: kubespheredev/kubeeye-job:v1.0.0-beta.6
       imagePullPolicy: Always
       resources:
         limits:
@@ -59,7 +59,7 @@ controllerManager:
       allowPrivilegeEscalation: false
     image:
       repository: kubespheredev/kubeeye-controller
-      tag: v1.0.0-beta.4
+      tag: v1.0.0-beta.6
     imagePullPolicy: Always
     resources:
       limits:
@@ -94,4 +94,4 @@ metricsService:
   type: ClusterIP
 pvc:
   inspectResult:
-    storageRequest: 1Gi
+    storageRequest: 10Gi

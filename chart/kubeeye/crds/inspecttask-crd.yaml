@@ -56,9 +56,6 @@ spec:
             description: InspectTaskStatus defines the observed state of InspectTask
             properties:
               clusterInfo:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
                 properties:
                   namespacesCount:
                     type: integer
@@ -72,7 +69,7 @@ spec:
               endTimestamp:
                 format: date-time
                 type: string
-              phase:
+              jobPhase:
                 items:
                   properties:
                     jobName:
@@ -83,6 +80,8 @@ spec:
                 type: array
               startTimestamp:
                 format: date-time
+                type: string
+              status:
                 type: string
             type: object
         type: object

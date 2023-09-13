@@ -32,6 +32,7 @@ spec:
             port: 9090
           initialDelaySeconds: 15
           periodSeconds: 20
+          timeoutSeconds: 10
         name: kubeeye-apiserver
         readinessProbe:
           httpGet:
@@ -39,6 +40,7 @@ spec:
             port: 9090
           initialDelaySeconds: 5
           periodSeconds: 10
+          timeoutSeconds: 10
         resources: {{- toYaml .Values.apiserver.kubeeyeApiserver.resources | nindent 10
           }}
         volumeMounts:
@@ -46,6 +48,7 @@ spec:
           name: localtime
         - mountPath: /hosts/result
           name: inspect-result
+          readOnly: true
       restartPolicy: Always
       serviceAccountName: {{ include "kubeeye.fullname" . }}-controller-manager
       volumes:
