@@ -2,15 +2,13 @@ package output
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/constant"
-	"github.com/kubesphere/kubeeye/pkg/template"
+	"github.com/kubesphere/kubeeye/pkg/utils"
 	"io"
 	"os"
 	"path"
 	"strings"
-	"time"
 )
 
 type renderNode struct {
@@ -58,6 +56,8 @@ func HtmlOut(resultName string) (error, map[string]interface{}) {
 		resultCollection[constant.Systemd] = systemd
 		filter := getFileFilter(results.Spec.NodeInfoResult)
 		resultCollection[constant.FileFilter] = filter
+		command := getCommand(results.Spec.NodeInfoResult)
+		resultCollection[constant.CustomCommand] = command
 	}
 
 	if results.Spec.ComponentResult != nil {
@@ -74,7 +74,7 @@ func HtmlOut(resultName string) (error, map[string]interface{}) {
 		ruleNumber = append(ruleNumber, []interface{}{key, val, issues})
 	}
 
-	data := map[string]interface{}{"title": results.CreationTimestamp.Format("2006-01-02 15:04"), "overview": ruleNumber, "details": resultCollection}
+	data := map[string]interface{}{"title": results.Annotations[constant.AnnotationStartTime], "overview": ruleNumber, "details": resultCollection}
 
 	return nil, data
 }
@@ -239,32 +239,30 @@ func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 	}
 	return villeinage
 }
+func getCommand(commandResult map[string]v1alpha2.NodeInfoResult) []renderNode {
+	var villeinage []renderNode
+	header := renderNode{Header: true,
+		Children: []renderNode{
+			{Text: "name"},
+			{Text: "nodeName"},
+			{Text: "value"},
+		},
+	}
+	villeinage = append(villeinage, header)
+	for k, v := range commandResult {
+		for _, item := range v.CommandResult {
+			if item.Assert {
+				val := renderNode{
+					Issues: item.Assert,
+					Children: []renderNode{
+						{Text: item.Name},
+						{Text: k},
+						{Text: utils.BoolToString(item.Assert)},
+					}}
+				villeinage = append(villeinage, val)
+			}
+		}
 
-func renderView(data map[string]interface{}, p string) error {
-
-	htmlTemplate, err := template.GetInspectResultHtmlTemplate()
-	if err != nil {
-		return err
 	}
-	name := ParseFileName(p, fmt.Sprintf("inspectionReport(%s).html", time.Now().Format("2006-01-02 15:04")))
-	create, err := os.Create(name)
-	if err != nil {
-		return err
-	}
-	defer create.Close()
-	err = htmlTemplate.Execute(create, data)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func assertBoolBackBool(b *bool) bool {
-	if b == nil {
-		return false
-	}
-	if *b {
-		return false
-	}
-	return true
+	return villeinage
 }

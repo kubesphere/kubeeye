@@ -233,7 +233,7 @@ func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, cluster kubee
 	task.Status.JobPhase = append(task.Status.JobPhase, JobPhase...)
 	task.Status.EndTimestamp = &metav1.Time{Time: time.Now()}
 	task.Status.Duration = task.Status.EndTimestamp.Sub(task.Status.StartTimestamp.Time).String()
-	err = r.GetInspectResultData(ctx, clients, task, cluster, inspectRuleNum)
+	err = r.getInspectResultData(ctx, clients, task, cluster, inspectRuleNum)
 	if err != nil {
 		return err
 	}
@@ -392,7 +392,7 @@ func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Contex
 
 }
 
-func (r *InspectTaskReconciler) GetInspectResultData(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask, cluster kubeeyev1alpha2.Cluster, ruleNum map[string]int) error {
+func (r *InspectTaskReconciler) getInspectResultData(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask, cluster kubeeyev1alpha2.Cluster, ruleNum map[string]int) error {
 	configs, err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name}),
 	})
