@@ -22,12 +22,13 @@ const (
 	CreateTime        = "createTime"
 	Name              = "name"
 	InspectPolicy     = "inspectPolicy"
-	Phase             = "phase"
+	Status            = "status"
 	Duration          = "duration"
 	Suspend           = "suspend"
 	InspectType       = "inspectType"
 	LastTaskStatus    = "lastTaskStatus"
 	LastTaskStartTime = "lastTaskStartTime"
+	StartTimestamp    = "startTimestamp"
 )
 
 type SortBy string
