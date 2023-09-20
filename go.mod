@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/aquasecurity/kube-bench v0.6.7
-	github.com/go-logr/logr v1.2.2
+	github.com/go-logr/logr v1.2.3
 	github.com/golang/glog v1.0.0
 	github.com/lithammer/dedent v1.1.0
 	github.com/onsi/ginkgo v1.16.5
