@@ -1,0 +1,18 @@
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  labels:
+    app.kubernetes.io/name: inspectrule
+    app.kubernetes.io/instance: inspectrule-sample
+    app.kubernetes.io/part-of: kubeeye
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kubeeye
+    kubeeye.kubesphere.io/rule-group: kubeeye_workloads_rego
+  name: inspect-rule-systemd
+  namespace: kubeeye-system
+spec:
+  systemd:
+    - name: docker
+      rule: docker = "active"
+    - name: etcd
+      rule: etcd = "active"

@@ -36,7 +36,7 @@ func GetRules(ctx context.Context, task types.NamespacedName, client versioned.I
 func MergeRule(rules ...kubeeyev1alpha2.InspectRule) (*kubeeyev1alpha2.InspectRuleSpec, error) {
 	ruleSpec := &kubeeyev1alpha2.InspectRuleSpec{}
 	for _, rule := range rules {
-		if rule.Spec.Opas != nil && len(rule.Spec.Opas) > 0 {
+		if rule.Spec.Opas != nil {
 
 			opas, err := RuleArrayDeduplication[kubeeyev1alpha2.OpaRule](append(ruleSpec.Opas, rule.Spec.Opas...))
 			if err != nil {
@@ -65,7 +65,7 @@ func MergeRule(rules ...kubeeyev1alpha2.InspectRule) (*kubeeyev1alpha2.InspectRu
 			}
 			ruleSpec.FileChange = fileChange
 		}
-		if rule.Spec.Sysctl != nil && len(rule.Spec.Sysctl) > 0 {
+		if rule.Spec.Sysctl != nil {
 
 			sysctl, err := RuleArrayDeduplication[kubeeyev1alpha2.SysRule](append(ruleSpec.Sysctl, rule.Spec.Sysctl...))
 			if err != nil {
@@ -73,7 +73,15 @@ func MergeRule(rules ...kubeeyev1alpha2.InspectRule) (*kubeeyev1alpha2.InspectRu
 			}
 			ruleSpec.Sysctl = sysctl
 		}
-		if rule.Spec.Systemd != nil && len(rule.Spec.Systemd) > 0 {
+		if rule.Spec.NodeInfo != nil {
+
+			nodeInfo, err := RuleArrayDeduplication[kubeeyev1alpha2.NodeInfo](append(ruleSpec.NodeInfo, rule.Spec.NodeInfo...))
+			if err != nil {
+				return nil, err
+			}
+			ruleSpec.NodeInfo = nodeInfo
+		}
+		if rule.Spec.Systemd != nil {
 
 			systemd, err := RuleArrayDeduplication[kubeeyev1alpha2.SysRule](append(ruleSpec.Systemd, rule.Spec.Systemd...))
 			if err != nil {
@@ -81,7 +89,7 @@ func MergeRule(rules ...kubeeyev1alpha2.InspectRule) (*kubeeyev1alpha2.InspectRu
 			}
 			ruleSpec.Systemd = systemd
 		}
-		if rule.Spec.FileFilter != nil && len(rule.Spec.FileFilter) > 0 {
+		if rule.Spec.FileFilter != nil {
 			fileFilter, err := RuleArrayDeduplication[kubeeyev1alpha2.FileFilterRule](append(ruleSpec.FileFilter, rule.Spec.FileFilter...))
 			if err != nil {
 				return nil, err
@@ -250,6 +258,13 @@ func ParseRules(ctx context.Context, clients *kube.KubernetesClient, taskName st
 		}
 		executeRule = append(executeRule, sysctl...)
 		inspectRuleTotal[constant.Sysctl] = len(ruleSpec.Sysctl)
+
+		nodeInfo, err := AllocationRule(ruleSpec.NodeInfo, taskName, nodes, constant.NodeInfo)
+		if err != nil {
+			return nil, nil, err
+		}
+		executeRule = append(executeRule, nodeInfo...)
+		inspectRuleTotal[constant.NodeInfo] = len(ruleSpec.NodeInfo)
 
 		systemd, err := AllocationRule(ruleSpec.Systemd, taskName, nodes, constant.Systemd)
 		if err != nil {

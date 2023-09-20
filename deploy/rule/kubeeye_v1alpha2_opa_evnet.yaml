@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/name: inspectrules
     app.kubernetes.io/part-of: kubeeye
     kubeeye.kubesphere.io/rule-group: kubeeye_events_rego
-  name: kubeeye-inspectrules0-1680158867
+  name: inspect-rule-event
   namespace: kubeeye-system
 spec:
   opas:
@@ -39,5 +39,3 @@ spec:
               "Reason": sprintf("%v", [Reason]),
           }
       }
-status:
-  importTime: null

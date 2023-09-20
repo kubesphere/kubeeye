@@ -1,8 +1,10 @@
 apiVersion: kubeeye.kubesphere.io/v1alpha2
 kind: InspectPlan
 metadata:
-  name: inspectplan-test
+  name: inspectplan
 spec:
   maxTasks: 10
   ruleNames:
     - inspect-rules-sysctl
+    - inspect-rules-systemd
+    - inspect-rules-sbnormalpodstatus

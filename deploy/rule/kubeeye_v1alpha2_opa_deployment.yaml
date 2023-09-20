@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/name: inspectrules
     app.kubernetes.io/part-of: kubeeye
     kubeeye.kubesphere.io/rule-group: kubeeye_workloads_rego
-  name: kubeeye-inspectrules3-1680158867
+  name: inspect-rule-deployment
   namespace: kubeeye-system
 spec:
   opas:

@@ -98,15 +98,6 @@ func CSVOutput(clients *kube.KubernetesClient, outPath *string, taskName string,
 				fmt.Println(err)
 			}
 			for key, val := range item.Spec.NodeInfoResult {
-				if val.NodeInfo != nil {
-					for k, v := range val.NodeInfo {
-						err := f.SetSheetRow("nodeInfo", fmt.Sprintf("A%d", row), &[]string{key, "nodeInfo", k, v})
-						row++
-						if err != nil {
-							fmt.Println(err)
-						}
-					}
-				}
 				if val.SysctlResult != nil {
 					for _, resultItem := range val.SysctlResult {
 						err := f.SetSheetRow("nodeInfo", fmt.Sprintf("A%d", row), &[]string{key, "sysctl", resultItem.Name, *resultItem.Value, utils.BoolToString(resultItem.Assert)})

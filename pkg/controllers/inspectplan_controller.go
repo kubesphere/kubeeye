@@ -251,7 +251,7 @@ func (r *InspectPlanReconciler) removeTask(ctx context.Context, plan *kubeeyev1a
 	}
 }
 func (r *InspectPlanReconciler) updateStatus(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan, now time.Time, taskName string) error {
-	plan.Status.LastScheduleTime = &metav1.Time{Time: now}
+	plan.Status.LastScheduleTime = metav1.Time{Time: now}
 	plan.Status.LastTaskName = taskName
 	plan.Status.LastTaskStatus = kubeeyev1alpha2.PhasePending
 	plan.Status.TaskNames = append(plan.Status.TaskNames, kubeeyev1alpha2.TaskNames{
@@ -310,11 +310,16 @@ func (r *InspectPlanReconciler) updateAddRuleReferNum(ctx context.Context, plan 
 			continue
 		}
 		rule.Labels = utils.MergeMap(rule.Labels, map[string]string{fmt.Sprintf("%s/%s", "kubeeye.kubesphere.io", plan.Name): plan.Name})
-		num := 0
+		num := 1
 		n, ok := rule.Annotations[constant.AnnotationJoinPlanNum]
 		if ok {
-			num, _ = strconv.Atoi(n)
-			num++
+			num, err = strconv.Atoi(n)
+			if err != nil {
+				klog.Error(err, "Failed to strconv.Atoi")
+			} else {
+				num++
+			}
+
 		}
 		rule.Annotations = utils.MergeMap(rule.Annotations, map[string]string{constant.AnnotationJoinPlanNum: strconv.Itoa(num)})
 
@@ -338,8 +343,7 @@ func (r *InspectPlanReconciler) updateSubRuleReferNum(ctx context.Context, plan 
 			continue
 		}
 		delete(rule.Labels, fmt.Sprintf("%s/%s", "kubeeye.kubesphere.io", plan.Name))
-		//rule.Labels = utils.MergeMap(rule.Labels, map[string]string{fmt.Sprintf("%s/%s", "kubeeye.kubesphere.io", plan.Name): plan.Name})
-		num := 0
+		num := 1
 		n, ok := rule.Annotations[constant.AnnotationJoinPlanNum]
 		if ok {
 			num, _ = strconv.Atoi(n)

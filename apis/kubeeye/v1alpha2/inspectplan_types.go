@@ -49,7 +49,7 @@ type InspectPlanStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	LastScheduleTime  *metav1.Time `json:"lastScheduleTime,omitempty"`
+	LastScheduleTime  metav1.Time  `json:"lastScheduleTime,omitempty"`
 	LastTaskStartTime *metav1.Time `json:"lastTaskStartTime,omitempty"`
 	LastTaskEndTime   *metav1.Time `json:"lastTaskEndTime,omitempty"`
 	LastTaskName      string       `json:"lastTaskName,omitempty"`

@@ -1,0 +1,44 @@
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  labels:
+    app.kubernetes.io/name: inspectrule
+    app.kubernetes.io/instance: inspectrule-sample
+    app.kubernetes.io/part-of: kubeeye
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kubeeye
+    kubeeye.kubesphere.io/rule-group: kubeeye_workloads_rego
+  name: inspect-rule-sbnormalpodstatus
+  namespace: kubeeye-system
+spec:
+  opas:
+    - module: kubeeye_workloads_rego
+      name: AbnormalPodStatus
+      rule: |-
+        package kubeeye_workloads_rego
+
+        deny[msg] {
+            resource := input
+            type := resource.Object.kind
+            resourcename := resource.Object.metadata.name
+            resourcenamespace := resource.Object.metadata.namespace
+            type == "Pod"
+            level := "danger"
+
+            CheckPodPhase(resource)
+            CheckPodReady(resource)
+            msg := {
+                "Name": sprintf("%v", [resourcename]),
+                "Namespace": sprintf("%v", [resourcenamespace]),
+                "Type": sprintf("%v", [type]),
+                "Level": sprintf("%v", [level]),
+                "Message": sprintf("Pod Status is %v", [resource.Object.status.phase])
+            }
+        }
+
+        CheckPodPhase(resource) {
+            resource.Object.status.phase != "Running"; resource.Object.status.phase != "Succeeded"
+        }
+        CheckPodReady(resource) {
+            resource.Object.status.containerStatuses[_].ready != true
+        }

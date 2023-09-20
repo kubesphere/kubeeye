@@ -63,12 +63,25 @@ type PrometheusResult struct {
 }
 
 type NodeInfoResult struct {
-	NodeInfo         map[string]string      `json:"nodeInfo,omitempty"`
+	NodeInfo         []NodeInfoResultItem   `json:"nodeInfo,omitempty"`
 	FileChangeResult []FileChangeResultItem `json:"fileChangeResult,omitempty"`
 	FileFilterResult []FileChangeResultItem `json:"fileFilterResult,omitempty"`
 	SysctlResult     []NodeResultItem       `json:"sysctlResult,omitempty"`
 	SystemdResult    []NodeResultItem       `json:"systemdResult,omitempty"`
 	CommandResult    []CommandResultItem    `json:"commandResult,omitempty"`
+}
+
+type NodeInfoResultItem struct {
+	Name       string          `json:"name,omitempty"`
+	FileSystem FileSystemLabel `json:",inline"`
+	Value      string          `json:"value,omitempty"`
+	Assert     bool            `json:"assert,omitempty"`
+	Level      Level           `json:"level,omitempty"`
+}
+
+type FileSystemLabel struct {
+	Mount string `json:"mount,omitempty"`
+	Type  string `json:"type,omitempty"`
 }
 
 type FileChangeResultItem struct {

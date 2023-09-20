@@ -197,7 +197,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 }
 
 func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, ruleGroup []kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobRule, error) {
-	r := sortRuleOpaToAlter(ruleGroup)
+	r := sortRuleOpaToAtLast(ruleGroup)
 	marshal, err := json.Marshal(r)
 	if err != nil {
 		return nil, err
@@ -240,7 +240,7 @@ func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, cluster kubee
 	return nil
 }
 
-func sortRuleOpaToAlter(rule []kubeeyev1alpha2.JobRule) []kubeeyev1alpha2.JobRule {
+func sortRuleOpaToAtLast(rule []kubeeyev1alpha2.JobRule) []kubeeyev1alpha2.JobRule {
 
 	finds, b, OpaRule := utils.ArrayFinds(rule, func(i kubeeyev1alpha2.JobRule) bool {
 		return i.RuleType == constant.Opa

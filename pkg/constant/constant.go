@@ -22,6 +22,15 @@ const (
 	FileFilter    = "filefilter"
 	Component     = "component"
 	CustomCommand = "customcommand"
+	NodeInfo      = "nodeinfo"
+)
+
+const (
+	Cpu        = "cpu"
+	Memory     = "memory"
+	Filesystem = "filesystem"
+	LoadAvg    = "loadavg"
+	Inode      = "inode"
 )
 
 const (
@@ -48,5 +57,5 @@ const (
 const (
 	DefaultProcPath = "/hosts/proc"
 	RootPathPrefix  = "/hosts/root"
-	ResultPath      = "/hosts/result"
+	ResultPath      = "./"
 )

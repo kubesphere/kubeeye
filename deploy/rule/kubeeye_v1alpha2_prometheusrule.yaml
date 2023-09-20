@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kubeeye
     kubeeye.kubesphere.io/rule-group: kubeeye_workloads_rego
-  name: prometheus-sample
+  name: inspect-rule-prometheus
 spec:
   prometheusEndpoint: http://whizard-agent-proxy.kubesphere-monitoring-system.svc.cluster.local:9090
   prometheus:

@@ -107,6 +107,10 @@ spec:
                       type: string
                     level:
                       type: string
+                    mount:
+                      items:
+                        type: string
+                      type: array
                     name:
                       type: string
                     nodeName:

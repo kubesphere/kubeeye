@@ -74,7 +74,7 @@ func main() {
 	router.RegisterRouter(ctx, r, clients, factory.Kubeeye())
 
 	srv := &http.Server{
-		Addr:    ":9090",
+		Addr:    "0.0.0.0:9090",
 		Handler: r,
 	}
 

@@ -61,47 +61,13 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 		return nil, err
 	}
 
-	meminfo, err := fs.Meminfo()
-	if err != nil {
-		return nil, err
-	}
-	totalMemory := *meminfo.MemTotal
-	freeMemory := *meminfo.MemFree + *meminfo.Buffers + *meminfo.Cached
-	usedMemory := totalMemory - freeMemory
-	memoryUsage := float64(usedMemory) / float64(totalMemory)
-	memoryFree := float64(freeMemory) / float64(totalMemory)
-	nodeInfoResult.NodeInfo = map[string]string{"memoryUsage": fmt.Sprintf("%.2f", memoryUsage), "memoryIdle": fmt.Sprintf("%.2f", memoryFree)}
-	avg, err := fs.LoadAvg()
-	if err != nil {
-		klog.Errorf(" failed to get loadavg,err:%s", err)
-	} else {
-		nodeInfoResult.NodeInfo["load1"] = fmt.Sprintf("%.2f", avg.Load1)
-		nodeInfoResult.NodeInfo["load5"] = fmt.Sprintf("%.2f", avg.Load5)
-		nodeInfoResult.NodeInfo["load15"] = fmt.Sprintf("%.2f", avg.Load15)
-	}
-
-	stat, err := fs.Stat()
-	if err != nil {
-		klog.Error(err)
-	} else {
-		totalUsage := 0.0
-		totalIdle := 0.0
-		for _, cpuStat := range stat.CPU {
-			totalUsage += cpuStat.System + cpuStat.User + cpuStat.Nice
-			totalIdle += cpuStat.Idle
-		}
-		usage := totalUsage / (totalUsage + totalIdle)
-		idle := totalIdle / (totalUsage + totalIdle)
-		nodeInfoResult.NodeInfo["cpuUsage"] = fmt.Sprintf("%.2f", usage)
-		nodeInfoResult.NodeInfo["cpuIdle"] = fmt.Sprintf("%.2f", idle)
-	}
 	_, exist, phase := utils.ArrayFinds(rules, func(m kubeeyev1alpha2.JobRule) bool {
 		return m.JobName == currentJobName
 	})
 
 	if exist {
 		var sysctl []kubeeyev1alpha2.SysRule
-		err := json.Unmarshal(phase.RunRule, &sysctl)
+		err = json.Unmarshal(phase.RunRule, &sysctl)
 		if err != nil {
 			klog.Error(err, " Failed to marshal kubeeye result")
 			return nil, err
@@ -169,7 +135,6 @@ func (o *sysctlInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap
 
 	infoResult, ok := resultCr.Spec.NodeInfoResult[runNodeName]
 	if ok {
-		infoResult.NodeInfo = mergeMap(infoResult.NodeInfo, nodeInfoResult.NodeInfo)
 		infoResult.SysctlResult = append(infoResult.SysctlResult, nodeInfoResult.SysctlResult...)
 	} else {
 		infoResult = nodeInfoResult
@@ -179,16 +144,6 @@ func (o *sysctlInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap
 
 	return resultCr, nil
 
-}
-
-func mergeMap(map1 map[string]string, map2 map[string]string) map[string]string {
-	if map1 == nil {
-		return map2
-	}
-	for k, v := range map2 {
-		map1[k] = v
-	}
-	return map1
 }
 
 func parseSysctlVal(val []string) string {
