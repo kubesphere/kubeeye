@@ -5,12 +5,63 @@ on:
     branches:
       - "kubeeye-new"
 jobs:
-  docker:
+  kubeeye-apiserver:
+    concurrency: ci-${{ github.ref }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Switch to main branch
+        run: git checkout kubeeye-new
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: BuildApiServer and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: build/apiserver/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: jw008/kubeeye-apiserver:latest
+  kubeeye-controller:
+    concurrency: ci-${{ github.ref }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Switch to main branch
+        run: git checkout kubeeye-new
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: BuildController and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: build/controller/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: jw008/kubeeye-controller:latest
+  kubeeye-job:
+    concurrency: ci-${{ github.ref }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Switch to main branch
         run: git checkout kubeeye-new
       - name: Set up QEMU
@@ -30,19 +81,3 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: jw008/kubeeye:latest
-      - name: BuildController and push
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: build/controller/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: jw008/kubeeye-controller:latest
-      - name: BuildApiServer and push
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: build/apiserver/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: jw008/kubeeye-apiserver:latest
