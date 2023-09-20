@@ -16,6 +16,7 @@ func TriggerPluginsAudit(pluginList []string) {
 			err, _ := TriggerAudit(pluginName)
 			if err != nil {
 				klog.Errorf("trigger plugin %s audit failed", pluginName, err)
+				continue
 			}
 			klog.Infof("trigger plugin %s audit successful", pluginName)
 		} else {
