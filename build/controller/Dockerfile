@@ -25,16 +25,16 @@ RUN go mod tidy && go mod vendor
 ENV CGO_ENABLED=0
 
 # Build
-RUN go install -v ./cmd/...
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETPLATFORM} go build   -o /workspace/controller ./cmd/ke-manager/main.go
 
-FROM alpine:3.15 as ke-manager
+FROM alpine:3.18 as ke-manager
 
 WORKDIR /
 
-COPY --from=builder /go/bin/ke-manager .
+COPY --from=builder /workspace/controller .
 
 RUN addgroup -S kubeeye -g 1000 && adduser -S kubeeye -G kubeeye -u 1000
 
 USER 1000:1000
 
-ENTRYPOINT ["/ke-manager"]
+ENTRYPOINT ["/controller"]
