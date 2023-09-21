@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/clients/informers/externalversions"
@@ -12,6 +13,7 @@ import (
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	"net/http"
 	"os"
@@ -60,10 +62,24 @@ func main() {
 	forResources := []string{"inspectrules", "inspectresults", "inspectplans", "inspecttasks"}
 
 	for _, resource := range forResources {
-		_, err = factory.ForResource(schema.GroupVersionResource{
+		f, _ := factory.ForResource(schema.GroupVersionResource{
 			Group:    kubeeyev1alpha2.GroupVersion.Group,
 			Version:  kubeeyev1alpha2.GroupVersion.Version,
 			Resource: resource,
+		})
+		f.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				name := GetResourcesName(obj)
+				fmt.Println(fmt.Sprintf("add cr,name:%s", name))
+			},
+			UpdateFunc: func(oldObj, newObj interface{}) {
+				name := GetResourcesName(oldObj)
+				fmt.Println(fmt.Sprintf("update cr,name:%s", name))
+			},
+			DeleteFunc: func(obj interface{}) {
+				name := GetResourcesName(obj)
+				fmt.Println(fmt.Sprintf("delete cr,name:%s", name))
+			},
 		})
 	}
 
@@ -100,4 +116,22 @@ func main() {
 			os.Exit(1)
 		}
 	}
+}
+
+func GetResourcesName(obj interface{}) string {
+	switch obj.(type) {
+	case *kubeeyev1alpha2.InspectPlan:
+		plan := obj.(*kubeeyev1alpha2.InspectPlan)
+		return plan.Name
+	case *kubeeyev1alpha2.InspectResult:
+		result := obj.(*kubeeyev1alpha2.InspectResult)
+		return result.Name
+	case *kubeeyev1alpha2.InspectTask:
+		task := obj.(*kubeeyev1alpha2.InspectTask)
+		return task.Name
+	case *kubeeyev1alpha2.InspectRule:
+		rule := obj.(*kubeeyev1alpha2.InspectRule)
+		return rule.Name
+	}
+	return ""
 }

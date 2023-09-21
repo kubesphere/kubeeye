@@ -22,16 +22,16 @@ import (
 	"strings"
 )
 
-type NodeInfoInspect struct {
+type nodeInfoInspect struct {
 }
 
 func init() {
-	RuleOperatorMap[constant.NodeInfo] = &NodeInfoInspect{}
+	RuleOperatorMap[constant.NodeInfo] = &nodeInfoInspect{}
 }
 
 const excludePath = "/var/lib/docker|/var/lib/kubelet"
 
-func (o *NodeInfoInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask, config *conf.JobConfig) (*kubeeyev1alpha2.JobPhase, error) {
+func (o *nodeInfoInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask, config *conf.JobConfig) (*kubeeyev1alpha2.JobPhase, error) {
 
 	var nodeInfos []kubeeyev1alpha2.NodeInfo
 	err := json.Unmarshal(jobRule.RunRule, &nodeInfos)
@@ -60,7 +60,7 @@ func (o *NodeInfoInspect) CreateJobTask(ctx context.Context, clients *kube.Kuber
 
 }
 
-func (o *NodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
+func (o *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
 
 	var nodeInfoResult []kubeeyev1alpha2.NodeInfoResultItem
 
@@ -150,7 +150,7 @@ func (o *NodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 
 }
 
-func (o *NodeInfoInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) (*kubeeyev1alpha2.InspectResult, error) {
+func (o *nodeInfoInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) (*kubeeyev1alpha2.InspectResult, error) {
 
 	var nodeInfoResult []kubeeyev1alpha2.NodeInfoResultItem
 	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &nodeInfoResult)

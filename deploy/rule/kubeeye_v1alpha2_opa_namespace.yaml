@@ -1,0 +1,60 @@
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  labels:
+    app.kubernetes.io/name: inspectrule
+    app.kubernetes.io/instance: inspectrule-sample
+    app.kubernetes.io/part-of: kubeeye
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kubeeye
+    kubeeye.kubesphere.io/rule-group: kubeeye_workloads_rego
+  name: inspect-rule-namespace
+  namespace: kubeeye-system
+spec:
+  opas:
+    - module: kubeeye_workloads_rego
+      name: findNamespaceAnnotationKey
+      rule: |-
+        package kubeeye_workloads_rego
+        import future.keywords.in
+
+        deny[msg] {
+            resource := input
+            type := resource.Object.kind
+            resourcename := resource.Object.metadata.name
+            type == "Namespace"
+            level := "danger"
+
+            annotation := ["evercloud.io/creator", "evercloud.io/cluster","evercloud.io/ams_name","evercloud.io/ams_id"]
+            some k in annotation
+            not resource.Object.metadata.annotations[k]
+            msg := {
+                "Name": sprintf("%v", [resourcename]),
+                "Type": sprintf("%v", [type]),
+                "Level": sprintf("%v", [level]),
+                "Message": sprintf("annotations not exist key:%v", [k])
+            }
+        }
+    - module: kubeeye_workloads_rego
+      name: findNamespaceLabelKey
+      rule: |-
+        package kubeeye_workloads_rego
+        import future.keywords.in
+
+        deny[msg] {
+            resource := input
+            type := resource.Object.kind
+            resourcename := resource.Object.metadata.name
+            type == "Namespace"
+            level := "danger"
+
+            annotation := ["msmsapp","msmscluster""msmsenv""msmsloc"]
+            some k in annotation
+            not resource.Object.metadata.labels[k]
+            msg := {
+                "Name": sprintf("%v", [resourcename]),
+                "Type": sprintf("%v", [type]),
+                "Level": sprintf("%v", [level]),
+                "Message": sprintf("labels not exist key:%v", [k])
+            }
+        }

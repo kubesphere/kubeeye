@@ -69,6 +69,10 @@ spec:
               endTimestamp:
                 format: date-time
                 type: string
+              inspectRuleType:
+                items:
+                  type: string
+                type: array
               jobPhase:
                 items:
                   properties:

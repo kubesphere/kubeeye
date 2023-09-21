@@ -40,6 +40,13 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource, auditPercen
 	return func(ctx context.Context, regoRulesList []string) []v1alpha2.ResourceResult {
 		var auditResults []v1alpha2.ResourceResult
 
+		if queryRule == workloads && Resources.Namespaces != nil {
+			for _, resource := range Resources.Namespaces.Items {
+				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
+					auditResults = append(auditResults, auditResult)
+				}
+			}
+		}
 		if queryRule == workloads && Resources.Deployments != nil {
 			for _, resource := range Resources.Deployments.Items {
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {

@@ -34,6 +34,23 @@ spec:
           spec:
             description: InspectResultSpec defines the desired state of InspectResult
             properties:
+              commandResult:
+                items:
+                  properties:
+                    assert:
+                      type: boolean
+                    command:
+                      type: string
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    value:
+                      type: string
+                  type: object
+                type: array
               componentResult:
                 items:
                   properties:
@@ -44,6 +61,40 @@ spec:
                     name:
                       type: string
                     namespace:
+                      type: string
+                  type: object
+                type: array
+              fileChangeResult:
+                items:
+                  properties:
+                    fileName:
+                      type: string
+                    issues:
+                      items:
+                        type: string
+                      type: array
+                    level:
+                      type: string
+                    nodeName:
+                      type: string
+                    path:
+                      type: string
+                  type: object
+                type: array
+              fileFilterResult:
+                items:
+                  properties:
+                    fileName:
+                      type: string
+                    issues:
+                      items:
+                        type: string
+                      type: array
+                    level:
+                      type: string
+                    nodeName:
+                      type: string
+                    path:
                       type: string
                   type: object
                 type: array
@@ -58,86 +109,25 @@ spec:
                 additionalProperties:
                   type: integer
                 type: object
-              nodeInfoResult:
-                additionalProperties:
+              nodeInfo:
+                items:
                   properties:
-                    commandResult:
-                      items:
-                        properties:
-                          assert:
-                            type: boolean
-                          command:
-                            type: string
-                          level:
-                            type: string
-                          name:
-                            type: string
-                          value:
-                            type: string
-                        type: object
-                      type: array
-                    fileChangeResult:
-                      items:
-                        properties:
-                          fileName:
-                            type: string
-                          issues:
-                            items:
-                              type: string
-                            type: array
-                          level:
-                            type: string
-                          path:
-                            type: string
-                        type: object
-                      type: array
-                    fileFilterResult:
-                      items:
-                        properties:
-                          fileName:
-                            type: string
-                          issues:
-                            items:
-                              type: string
-                            type: array
-                          level:
-                            type: string
-                          path:
-                            type: string
-                        type: object
-                      type: array
-                    nodeInfo:
-                      additionalProperties:
-                        type: string
-                      type: object
-                    sysctlResult:
-                      items:
-                        properties:
-                          assert:
-                            type: boolean
-                          level:
-                            type: string
-                          name:
-                            type: string
-                          value:
-                            type: string
-                        type: object
-                      type: array
-                    systemdResult:
-                      items:
-                        properties:
-                          assert:
-                            type: boolean
-                          level:
-                            type: string
-                          name:
-                            type: string
-                          value:
-                            type: string
-                        type: object
-                      type: array
+                    assert:
+                      type: boolean
+                    level:
+                      type: string
+                    mount:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    type:
+                      type: string
+                    value:
+                      type: string
                   type: object
-                type: object
+                type: array
               opaResult:
                 description: kubeeye inspect result
                 properties:
@@ -196,6 +186,36 @@ spec:
                     level:
                       type: string
                     result:
+                      type: string
+                  type: object
+                type: array
+              sysctlResult:
+                items:
+                  properties:
+                    assert:
+                      type: boolean
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    value:
+                      type: string
+                  type: object
+                type: array
+              systemdResult:
+                items:
+                  properties:
+                    assert:
+                      type: boolean
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    value:
                       type: string
                   type: object
                 type: array
