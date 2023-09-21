@@ -48,7 +48,7 @@ spec:
             type == "Namespace"
             level := "danger"
 
-            annotation := ["msmsapp","msmscluster""msmsenv""msmsloc"]
+            annotation := ["msmsapp","msmscluster","msmsenv","msmsloc"]
             some k in annotation
             not resource.Object.metadata.labels[k]
             msg := {
