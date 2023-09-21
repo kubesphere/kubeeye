@@ -6,7 +6,6 @@ on:
       - "kubeeye-new"
 jobs:
   kubeeye-apiserver:
-    concurrency: ci-${{ github.ref }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,7 +30,6 @@ jobs:
           push: true
           tags: jw008/kubeeye-apiserver:latest
   kubeeye-controller:
-    concurrency: ci-${{ github.ref }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -57,7 +55,6 @@ jobs:
           push: true
           tags: jw008/kubeeye-controller:latest
   kubeeye-job:
-    concurrency: ci-${{ github.ref }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
