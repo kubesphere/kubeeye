@@ -3,11 +3,13 @@ package inspect
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/template"
+	"github.com/kubesphere/kubeeye/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -37,21 +39,21 @@ func (o *OpaInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.Job
 
 	klog.Info("getting  Rego rules")
 
-	//_, exist, phase := utils.ArrayFinds(rules, func(m kubeeyev1alpha2.JobRule) bool {
-	//	return m.JobName == currentJobName
-	//})
-	get, _ := clients.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, "inspect-rule-namespace", metav1.GetOptions{})
-	if true {
+	_, exist, phase := utils.ArrayFinds(rules, func(m kubeeyev1alpha2.JobRule) bool {
+		return m.JobName == currentJobName
+	})
+
+	if exist {
 		k8sResources := kube.GetK8SResources(ctx, clients)
-		//var opaRules []kubeeyev1alpha2.OpaRule
-		//err := json.Unmarshal(phase.RunRule, &opaRules)
-		//if err != nil {
-		//	fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
-		//	return nil, err
-		//}
+		var opaRules []kubeeyev1alpha2.OpaRule
+		err := json.Unmarshal(phase.RunRule, &opaRules)
+		if err != nil {
+			fmt.Printf("unmarshal opaRule failed,err:%s\n", err)
+			return nil, err
+		}
 		var RegoRules []string
-		for i := range get.Spec.Opas {
-			RegoRules = append(RegoRules, *get.Spec.Opas[i].Rule)
+		for i := range opaRules {
+			RegoRules = append(RegoRules, *opaRules[i].Rule)
 		}
 
 		result := VailOpaRulesResult(ctx, k8sResources, RegoRules)
