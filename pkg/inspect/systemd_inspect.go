@@ -53,7 +53,7 @@ func (o *systemdInspect) CreateJobTask(ctx context.Context, clients *kube.Kubern
 
 func (o *systemdInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
 
-	var nodeResult []kubeeyev1alpha2.NodeResultItem
+	var nodeResult []kubeeyev1alpha2.NodeMetricsResultItem
 
 	_, exist, phase := utils.ArrayFinds(rules, func(m kubeeyev1alpha2.JobRule) bool {
 		return m.JobName == currentJobName
@@ -76,7 +76,7 @@ func (o *systemdInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 			return nil, err
 		}
 		for _, r := range systemd {
-			ctl := kubeeyev1alpha2.NodeResultItem{
+			ctl := kubeeyev1alpha2.NodeMetricsResultItem{
 				Name:  r.Name,
 				Level: r.Level,
 			}
@@ -121,29 +121,18 @@ func (o *systemdInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 
 func (o *systemdInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) (*kubeeyev1alpha2.InspectResult, error) {
 
-	var systemdResult []kubeeyev1alpha2.NodeResultItem
+	var systemdResult []kubeeyev1alpha2.NodeMetricsResultItem
 	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &systemdResult)
 	if err != nil {
 		klog.Error("failed to get result", err)
 		return nil, err
 	}
 
-	if systemdResult == nil {
-		return resultCr, nil
-	}
-	if resultCr.Spec.NodeInfoResult == nil {
-		resultCr.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {SystemdResult: systemdResult}}
-		return resultCr, nil
-	}
+	for _, item := range systemdResult {
 
-	infoResult, ok := resultCr.Spec.NodeInfoResult[runNodeName]
-	if ok {
-		infoResult.SystemdResult = append(infoResult.SystemdResult, systemdResult...)
-	} else {
-		infoResult.SystemdResult = systemdResult
+		item.NodeName = runNodeName
+		resultCr.Spec.SystemdResult = append(resultCr.Spec.SystemdResult, item)
 	}
-
-	resultCr.Spec.NodeInfoResult[runNodeName] = infoResult
 
 	return resultCr, nil
 

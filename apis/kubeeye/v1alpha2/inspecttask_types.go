@@ -39,12 +39,13 @@ type InspectTaskStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	ClusterInfo    `json:"clusterInfo,omitempty" yaml:"clusterInfo"`
-	JobPhase       []JobPhase   `json:"jobPhase,omitempty" yaml:"jobPhase"`
-	StartTimestamp *metav1.Time `json:"startTimestamp,omitempty" yaml:"startTimestamp"`
-	EndTimestamp   *metav1.Time `json:"endTimestamp,omitempty" yaml:"endTimestamp"`
-	Duration       string       `json:"duration,omitempty" yaml:"duration"`
-	Status         Phase        `json:"status,omitempty" yaml:"status,omitempty"`
+	ClusterInfo     `json:"clusterInfo,omitempty" yaml:"clusterInfo"`
+	JobPhase        []JobPhase   `json:"jobPhase,omitempty" yaml:"jobPhase"`
+	StartTimestamp  *metav1.Time `json:"startTimestamp,omitempty" yaml:"startTimestamp"`
+	EndTimestamp    *metav1.Time `json:"endTimestamp,omitempty" yaml:"endTimestamp"`
+	Duration        string       `json:"duration,omitempty" yaml:"duration"`
+	Status          Phase        `json:"status,omitempty" yaml:"status,omitempty"`
+	InspectRuleType []string     `json:"inspectRuleType,omitempty" yaml:"inspectRuleType"`
 }
 
 type JobPhase struct {

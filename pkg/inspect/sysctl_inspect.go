@@ -54,7 +54,7 @@ func (o *sysctlInspect) CreateJobTask(ctx context.Context, clients *kube.Kuberne
 
 func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
 
-	var nodeInfoResult kubeeyev1alpha2.NodeInfoResult
+	var SysctlResult []kubeeyev1alpha2.NodeMetricsResultItem
 
 	fs, err := procfs.NewFS(constant.DefaultProcPath)
 	if err != nil {
@@ -76,7 +76,7 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 		for _, sysRule := range sysctl {
 			ctlRule, err := fs.SysctlStrings(sysRule.Name)
 			klog.Infof("name:%s,value:%s", sysRule.Name, ctlRule)
-			ctl := kubeeyev1alpha2.NodeResultItem{
+			ctl := kubeeyev1alpha2.NodeMetricsResultItem{
 				Name:  sysRule.Name,
 				Level: sysRule.Level,
 			}
@@ -106,12 +106,12 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 
 				}
 			}
-			nodeInfoResult.SysctlResult = append(nodeInfoResult.SysctlResult, ctl)
+			SysctlResult = append(SysctlResult, ctl)
 		}
 
 	}
 
-	marshal, err := json.Marshal(nodeInfoResult)
+	marshal, err := json.Marshal(SysctlResult)
 	if err != nil {
 		return nil, err
 	}
@@ -121,26 +121,17 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 
 func (o *sysctlInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) (*kubeeyev1alpha2.InspectResult, error) {
 
-	var nodeInfoResult kubeeyev1alpha2.NodeInfoResult
-	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &nodeInfoResult)
+	var SysctlResult []kubeeyev1alpha2.NodeMetricsResultItem
+	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &SysctlResult)
 	if err != nil {
 		klog.Error("failed to get result", err)
 		return nil, err
 	}
 
-	if resultCr.Spec.NodeInfoResult == nil {
-		resultCr.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: nodeInfoResult}
-		return resultCr, nil
+	for _, item := range SysctlResult {
+		item.NodeName = runNodeName
+		resultCr.Spec.SysctlResult = append(resultCr.Spec.SysctlResult, item)
 	}
-
-	infoResult, ok := resultCr.Spec.NodeInfoResult[runNodeName]
-	if ok {
-		infoResult.SysctlResult = append(infoResult.SysctlResult, nodeInfoResult.SysctlResult...)
-	} else {
-		infoResult = nodeInfoResult
-	}
-
-	resultCr.Spec.NodeInfoResult[runNodeName] = infoResult
 
 	return resultCr, nil
 

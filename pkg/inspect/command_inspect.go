@@ -108,22 +108,10 @@ func (o *commandInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMa
 		return nil, err
 	}
 
-	if commandResult == nil {
-		return resultCr, nil
+	for _, item := range commandResult {
+		item.NodeName = runNodeName
+		resultCr.Spec.CommandResult = append(resultCr.Spec.CommandResult, item)
 	}
-	if resultCr.Spec.NodeInfoResult == nil {
-		resultCr.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {CommandResult: commandResult}}
-		return resultCr, nil
-	}
-
-	infoResult, ok := resultCr.Spec.NodeInfoResult[runNodeName]
-	if ok {
-		infoResult.CommandResult = append(infoResult.CommandResult, commandResult...)
-	} else {
-		infoResult.CommandResult = commandResult
-	}
-
-	resultCr.Spec.NodeInfoResult[runNodeName] = infoResult
 
 	return resultCr, nil
 

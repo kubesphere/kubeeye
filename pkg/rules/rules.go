@@ -37,7 +37,6 @@ func MergeRule(rules ...kubeeyev1alpha2.InspectRule) (*kubeeyev1alpha2.InspectRu
 	ruleSpec := &kubeeyev1alpha2.InspectRuleSpec{}
 	for _, rule := range rules {
 		if rule.Spec.Opas != nil {
-
 			opas, err := RuleArrayDeduplication[kubeeyev1alpha2.OpaRule](append(ruleSpec.Opas, rule.Spec.Opas...))
 			if err != nil {
 				return nil, err
@@ -58,7 +57,6 @@ func MergeRule(rules ...kubeeyev1alpha2.InspectRule) (*kubeeyev1alpha2.InspectRu
 			}
 		}
 		if rule.Spec.FileChange != nil && len(rule.Spec.FileChange) > 0 {
-
 			fileChange, err := RuleArrayDeduplication[kubeeyev1alpha2.FileChangeRule](append(ruleSpec.FileChange, rule.Spec.FileChange...))
 			if err != nil {
 				return nil, err
@@ -66,7 +64,6 @@ func MergeRule(rules ...kubeeyev1alpha2.InspectRule) (*kubeeyev1alpha2.InspectRu
 			ruleSpec.FileChange = fileChange
 		}
 		if rule.Spec.Sysctl != nil {
-
 			sysctl, err := RuleArrayDeduplication[kubeeyev1alpha2.SysRule](append(ruleSpec.Sysctl, rule.Spec.Sysctl...))
 			if err != nil {
 				return nil, err
@@ -225,25 +222,21 @@ func ParseRules(ctx context.Context, clients *kube.KubernetesClient, taskName st
 	}
 	var inspectRuleTotal = make(map[string]int)
 	var executeRule []kubeeyev1alpha2.JobRule
-
 	component, err := Allocation(ruleSpec.Component, taskName, constant.Component)
 	if err == nil {
 		executeRule = append(executeRule, *component)
 		inspectRuleTotal[constant.Component] = TotalServiceNum(ctx, clients, ruleSpec.Component)
 	}
-
 	opa, err := Allocation(ruleSpec.Opas, taskName, constant.Opa)
 	if err == nil {
 		executeRule = append(executeRule, *opa)
 		inspectRuleTotal[constant.Opa] = len(ruleSpec.Opas)
 	}
-
 	prometheus, err := Allocation(ruleSpec.Prometheus, taskName, constant.Prometheus)
 	if err == nil {
 		executeRule = append(executeRule, *prometheus)
 		inspectRuleTotal[constant.Prometheus] = len(ruleSpec.Prometheus)
 	}
-
 	if len(nodes) > 0 {
 		change, err := AllocationRule(ruleSpec.FileChange, taskName, nodes, constant.FileChange)
 		if err != nil {

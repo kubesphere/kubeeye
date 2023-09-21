@@ -114,23 +114,10 @@ func (o *fileFilterInspect) GetResult(runNodeName string, resultCm *corev1.Confi
 		return nil, err
 	}
 
-	if fileFilterResult == nil {
-		return resultCr, nil
+	for _, item := range fileFilterResult {
+		item.NodeName = runNodeName
+		resultCr.Spec.FileFilterResult = append(resultCr.Spec.FileFilterResult, item)
 	}
-
-	if resultCr.Spec.NodeInfoResult == nil {
-		resultCr.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {FileFilterResult: fileFilterResult}}
-		return resultCr, nil
-	}
-
-	infoResult, ok := resultCr.Spec.NodeInfoResult[runNodeName]
-	if ok {
-		infoResult.FileFilterResult = append(infoResult.FileFilterResult, fileFilterResult...)
-	} else {
-		infoResult.FileFilterResult = fileFilterResult
-	}
-
-	resultCr.Spec.NodeInfoResult[runNodeName] = infoResult
 
 	return resultCr, nil
 

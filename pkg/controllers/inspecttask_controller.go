@@ -233,6 +233,14 @@ func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, cluster kubee
 	task.Status.JobPhase = append(task.Status.JobPhase, JobPhase...)
 	task.Status.EndTimestamp = &metav1.Time{Time: time.Now()}
 	task.Status.Duration = task.Status.EndTimestamp.Sub(task.Status.StartTimestamp.Time).String()
+	task.Status.InspectRuleType = func() (data []string) {
+		for k, v := range inspectRuleNum {
+			if v > 0 {
+				data = append(data, k)
+			}
+		}
+		return data
+	}()
 	err = r.getInspectResultData(ctx, clients, task, cluster, inspectRuleNum)
 	if err != nil {
 		return err

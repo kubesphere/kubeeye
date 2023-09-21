@@ -47,17 +47,27 @@ func HtmlOut(resultName string) (error, map[string]interface{}) {
 		prometheus := getPrometheus(results.Spec.PrometheusResult)
 		resultCollection[constant.Prometheus] = prometheus
 	}
-	if results.Spec.NodeInfoResult != nil {
-		fileChange := getFileChange(results.Spec.NodeInfoResult)
-		resultCollection[constant.FileChange] = fileChange
-		sysctl := getSysctl(results.Spec.NodeInfoResult)
-		resultCollection[constant.Sysctl] = sysctl
-		systemd := getSystemd(results.Spec.NodeInfoResult)
-		resultCollection[constant.Systemd] = systemd
-		filter := getFileFilter(results.Spec.NodeInfoResult)
-		resultCollection[constant.FileFilter] = filter
-		command := getCommand(results.Spec.NodeInfoResult)
-		resultCollection[constant.CustomCommand] = command
+
+	if results.Spec.FileChangeResult != nil {
+		resultCollection[constant.FileChange] = getFileChange(results.Spec.FileChangeResult)
+	}
+
+	if results.Spec.SysctlResult != nil {
+		resultCollection[constant.Sysctl] = getSysctl(results.Spec.SysctlResult)
+
+	}
+	if results.Spec.SystemdResult != nil {
+		resultCollection[constant.Systemd] = getSystemd(results.Spec.SystemdResult)
+
+	}
+	if results.Spec.FileFilterResult != nil {
+		resultCollection[constant.FileFilter] = getFileFilter(results.Spec.FileFilterResult)
+
+	}
+
+	if results.Spec.CommandResult != nil {
+		resultCollection[constant.CustomCommand] = getCommand(results.Spec.CommandResult)
+
 	}
 
 	if results.Spec.ComponentResult != nil {
@@ -111,7 +121,7 @@ func getPrometheus(pro []v1alpha2.PrometheusResult) []renderNode {
 	return prometheus
 }
 
-func getFileChange(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
+func getFileChange(fileChange []v1alpha2.FileChangeResultItem) []renderNode {
 	var villeinage []renderNode
 	header := renderNode{Header: true,
 		Children: []renderNode{
@@ -122,28 +132,27 @@ func getFileChange(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 			{Text: "level"},
 		}}
 	villeinage = append(villeinage, header)
-	for k, v := range infoResult {
-		for _, item := range v.FileChangeResult {
-			if item.Issues != nil && len(item.Issues) > 0 {
-				val := renderNode{
-					Children: []renderNode{
-						{Text: item.Path},
-						{Text: item.FileName},
-						{Text: k},
-						{Text: strings.Join(item.Issues, ",")},
-						{Text: string(item.Level)},
-					},
-				}
-				villeinage = append(villeinage, val)
-			}
 
+	for _, item := range fileChange {
+		if item.Issues != nil && len(item.Issues) > 0 {
+			val := renderNode{
+				Children: []renderNode{
+					{Text: item.Path},
+					{Text: item.FileName},
+					{Text: item.NodeName},
+					{Text: strings.Join(item.Issues, ",")},
+					{Text: string(item.Level)},
+				},
+			}
+			villeinage = append(villeinage, val)
 		}
 
 	}
+
 	return villeinage
 }
 
-func getFileFilter(fileResult map[string]v1alpha2.NodeInfoResult) []renderNode {
+func getFileFilter(fileResult []v1alpha2.FileChangeResultItem) []renderNode {
 	var villeinage []renderNode
 	header := renderNode{Header: true, Children: []renderNode{
 		{Text: "name"},
@@ -153,13 +162,11 @@ func getFileFilter(fileResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 		{Text: "level"}},
 	}
 	villeinage = append(villeinage, header)
-	for k, v := range fileResult {
-		for _, result := range v.FileFilterResult {
-			for _, issue := range result.Issues {
-				content2 := []renderNode{{Text: result.FileName}, {Text: result.Path}, {Text: k}, {Text: issue}, {Text: string(result.Level)}}
-				villeinage = append(villeinage, renderNode{Children: content2})
-			}
 
+	for _, result := range fileResult {
+		for _, issue := range result.Issues {
+			content2 := []renderNode{{Text: result.FileName}, {Text: result.Path}, {Text: result.NodeName}, {Text: issue}, {Text: string(result.Level)}}
+			villeinage = append(villeinage, renderNode{Children: content2})
 		}
 
 	}
@@ -183,7 +190,7 @@ func getComponent(component []v1alpha2.ComponentResultItem) []renderNode {
 	return villeinage
 }
 
-func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
+func getSysctl(sysctlResult []v1alpha2.NodeMetricsResultItem) []renderNode {
 	var villeinage []renderNode
 	header := renderNode{Header: true,
 		Children: []renderNode{
@@ -192,27 +199,25 @@ func getSysctl(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 			{Text: "value"},
 		}}
 	villeinage = append(villeinage, header)
-	for k, v := range infoResult {
 
-		for _, item := range v.SysctlResult {
-			if item.Assert {
-				val := renderNode{
-					Issues: item.Assert,
-					Children: []renderNode{
-						{Text: item.Name},
-						{Text: k},
-						{Text: *item.Value},
-					}}
-				villeinage = append(villeinage, val)
-			}
-
+	for _, item := range sysctlResult {
+		if item.Assert {
+			val := renderNode{
+				Issues: item.Assert,
+				Children: []renderNode{
+					{Text: item.Name},
+					{Text: item.NodeName},
+					{Text: *item.Value},
+				}}
+			villeinage = append(villeinage, val)
 		}
 
 	}
+
 	return villeinage
 }
 
-func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
+func getSystemd(systemdResult []v1alpha2.NodeMetricsResultItem) []renderNode {
 	var villeinage []renderNode
 	header := renderNode{Header: true,
 		Children: []renderNode{
@@ -222,24 +227,23 @@ func getSystemd(infoResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 		},
 	}
 	villeinage = append(villeinage, header)
-	for k, v := range infoResult {
-		for _, item := range v.SystemdResult {
-			if item.Assert {
-				val := renderNode{
-					Issues: item.Assert,
-					Children: []renderNode{
-						{Text: item.Name},
-						{Text: k},
-						{Text: *item.Value},
-					}}
-				villeinage = append(villeinage, val)
-			}
-		}
 
+	for _, item := range systemdResult {
+		if item.Assert {
+			val := renderNode{
+				Issues: item.Assert,
+				Children: []renderNode{
+					{Text: item.Name},
+					{Text: item.NodeName},
+					{Text: *item.Value},
+				}}
+			villeinage = append(villeinage, val)
+		}
 	}
+
 	return villeinage
 }
-func getCommand(commandResult map[string]v1alpha2.NodeInfoResult) []renderNode {
+func getCommand(commandResult []v1alpha2.CommandResultItem) []renderNode {
 	var villeinage []renderNode
 	header := renderNode{Header: true,
 		Children: []renderNode{
@@ -249,20 +253,19 @@ func getCommand(commandResult map[string]v1alpha2.NodeInfoResult) []renderNode {
 		},
 	}
 	villeinage = append(villeinage, header)
-	for k, v := range commandResult {
-		for _, item := range v.CommandResult {
-			if item.Assert {
-				val := renderNode{
-					Issues: item.Assert,
-					Children: []renderNode{
-						{Text: item.Name},
-						{Text: k},
-						{Text: utils.BoolToString(item.Assert)},
-					}}
-				villeinage = append(villeinage, val)
-			}
-		}
 
+	for _, item := range commandResult {
+		if item.Assert {
+			val := renderNode{
+				Issues: item.Assert,
+				Children: []renderNode{
+					{Text: item.Name},
+					{Text: item.NodeName},
+					{Text: utils.BoolToString(item.Assert)},
+				}}
+			villeinage = append(villeinage, val)
+		}
 	}
+
 	return villeinage
 }

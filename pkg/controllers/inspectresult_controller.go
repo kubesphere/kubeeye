@@ -157,21 +157,21 @@ func (r *InspectResultReconciler) CountLevelNum(resultName string) (map[kubeeyev
 	}
 
 	levelTotal := make(map[kubeeyev1alpha2.Level]*int)
-	for _, v := range result.Spec.NodeInfoResult {
-		for _, item := range v.FileChangeResult {
-			computeLevel(item.Level, levelTotal)
-		}
-		for _, item := range v.FileFilterResult {
-			computeLevel(item.Level, levelTotal)
-		}
-		for _, item := range v.SysctlResult {
-			computeLevel(item.Level, levelTotal)
-		}
 
-		for _, item := range v.SystemdResult {
-			computeLevel(item.Level, levelTotal)
-		}
+	for _, item := range result.Spec.FileChangeResult {
+		computeLevel(item.Level, levelTotal)
 	}
+	for _, item := range result.Spec.FileFilterResult {
+		computeLevel(item.Level, levelTotal)
+	}
+	for _, item := range result.Spec.SysctlResult {
+		computeLevel(item.Level, levelTotal)
+	}
+
+	for _, item := range result.Spec.SystemdResult {
+		computeLevel(item.Level, levelTotal)
+	}
+
 	levelTotal[kubeeyev1alpha2.DangerLevel] = &result.Spec.OpaResult.Dangerous
 	levelTotal[kubeeyev1alpha2.WarningLevel] = &result.Spec.OpaResult.Warning
 	levelTotal[kubeeyev1alpha2.IgnoreLevel] = &result.Spec.OpaResult.Ignore

@@ -28,12 +28,17 @@ type InspectResultSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	InspectCluster   Cluster                   `json:"inspectCluster,omitempty"`
-	InspectRuleTotal map[string]int            `json:"inspectRuleTotal,omitempty"`
-	PrometheusResult []PrometheusResult        `json:"prometheusResult,omitempty"`
-	OpaResult        KubeeyeOpaResult          `json:"opaResult,omitempty"`
-	NodeInfoResult   map[string]NodeInfoResult `json:"nodeInfoResult,omitempty"`
-	ComponentResult  []ComponentResultItem     `json:"componentResult,omitempty"`
+	InspectCluster   Cluster                 `json:"inspectCluster,omitempty"`
+	InspectRuleTotal map[string]int          `json:"inspectRuleTotal,omitempty"`
+	PrometheusResult []PrometheusResult      `json:"prometheusResult,omitempty"`
+	OpaResult        KubeeyeOpaResult        `json:"opaResult,omitempty"`
+	NodeInfo         []NodeInfoResultItem    `json:"nodeInfo,omitempty"`
+	FileChangeResult []FileChangeResultItem  `json:"fileChangeResult,omitempty"`
+	FileFilterResult []FileChangeResultItem  `json:"fileFilterResult,omitempty"`
+	SysctlResult     []NodeMetricsResultItem `json:"sysctlResult,omitempty"`
+	SystemdResult    []NodeMetricsResultItem `json:"systemdResult,omitempty"`
+	CommandResult    []CommandResultItem     `json:"commandResult,omitempty"`
+	ComponentResult  []ComponentResultItem   `json:"componentResult,omitempty"`
 }
 
 // InspectResultStatus defines the observed state of InspectResult
@@ -62,21 +67,13 @@ type PrometheusResult struct {
 	Level  Level  `json:"level,omitempty"`
 }
 
-type NodeInfoResult struct {
-	NodeInfo         []NodeInfoResultItem   `json:"nodeInfo,omitempty"`
-	FileChangeResult []FileChangeResultItem `json:"fileChangeResult,omitempty"`
-	FileFilterResult []FileChangeResultItem `json:"fileFilterResult,omitempty"`
-	SysctlResult     []NodeResultItem       `json:"sysctlResult,omitempty"`
-	SystemdResult    []NodeResultItem       `json:"systemdResult,omitempty"`
-	CommandResult    []CommandResultItem    `json:"commandResult,omitempty"`
-}
-
 type NodeInfoResultItem struct {
 	Name       string          `json:"name,omitempty"`
 	FileSystem FileSystemLabel `json:",inline"`
 	Value      string          `json:"value,omitempty"`
 	Assert     bool            `json:"assert,omitempty"`
 	Level      Level           `json:"level,omitempty"`
+	NodeName   string          `json:"nodeName,omitempty"`
 }
 
 type FileSystemLabel struct {
@@ -89,12 +86,14 @@ type FileChangeResultItem struct {
 	Issues   []string `json:"issues,omitempty"`
 	Path     string   `json:"path,omitempty"`
 	Level    Level    `json:"level,omitempty"`
+	NodeName string   `json:"nodeName,omitempty"`
 }
-type NodeResultItem struct {
-	Name   string  `json:"name,omitempty"`
-	Assert bool    `json:"assert,omitempty"`
-	Value  *string `json:"value,omitempty"`
-	Level  Level   `json:"level,omitempty"`
+type NodeMetricsResultItem struct {
+	Name     string  `json:"name,omitempty"`
+	Assert   bool    `json:"assert,omitempty"`
+	Value    *string `json:"value,omitempty"`
+	Level    Level   `json:"level,omitempty"`
+	NodeName string  `json:"nodeName,omitempty"`
 }
 type ComponentResultItem struct {
 	Name      string `json:"name,omitempty"`
@@ -103,11 +102,12 @@ type ComponentResultItem struct {
 	Level     Level  `json:"level,omitempty"`
 }
 type CommandResultItem struct {
-	Name    string `json:"name,omitempty"`
-	Command string `json:"command,omitempty"`
-	Level   Level  `json:"level,omitempty"`
-	Assert  bool   `json:"assert,omitempty"`
-	Value   string `json:"value,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Command  string `json:"command,omitempty"`
+	Level    Level  `json:"level,omitempty"`
+	Assert   bool   `json:"assert,omitempty"`
+	Value    string `json:"value,omitempty"`
+	NodeName string `json:"nodeName,omitempty"`
 }
 
 // +genclient

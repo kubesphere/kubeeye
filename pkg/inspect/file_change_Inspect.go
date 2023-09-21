@@ -128,22 +128,11 @@ func (o *fileChangeInspect) GetResult(runNodeName string, resultCm *corev1.Confi
 		klog.Error("failed to get result", jsonErr)
 		return nil, jsonErr
 	}
-	if fileChangeResult == nil {
-		return resultCr, nil
-	}
-	if resultCr.Spec.NodeInfoResult == nil {
-		resultCr.Spec.NodeInfoResult = map[string]kubeeyev1alpha2.NodeInfoResult{runNodeName: {FileChangeResult: fileChangeResult}}
-		return resultCr, nil
-	}
 
-	infoResult, ok := resultCr.Spec.NodeInfoResult[runNodeName]
-	if ok {
-		infoResult.FileChangeResult = append(infoResult.FileChangeResult, fileChangeResult...)
-	} else {
-		infoResult.FileChangeResult = fileChangeResult
+	for _, item := range fileChangeResult {
+		item.NodeName = runNodeName
+		resultCr.Spec.FileChangeResult = append(resultCr.Spec.FileChangeResult, item)
 	}
-
-	resultCr.Spec.NodeInfoResult[runNodeName] = infoResult
 
 	return resultCr, nil
 

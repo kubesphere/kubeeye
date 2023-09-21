@@ -25,9 +25,7 @@ func JsonOut(ctx context.Context, clients *kube.KubernetesClient, outPath string
 	if results.Spec.PrometheusResult != nil {
 		result[constant.Prometheus] = results.Spec.PrometheusResult
 	}
-	if results.Spec.NodeInfoResult != nil {
-		result["nodeInfo"] = results.Spec.NodeInfoResult
-	}
+
 	if results.Spec.ComponentResult != nil {
 		result[constant.Component] = results.Spec.ComponentResult
 	}
