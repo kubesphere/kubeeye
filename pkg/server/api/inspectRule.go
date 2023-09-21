@@ -175,7 +175,8 @@ func (i *InspectRule) compare(a, b map[string]interface{}, orderBy string) bool 
 
 	switch orderBy {
 	case query.CreateTime:
-		if left[0].CreationTimestamp.Compare(right[0].CreationTimestamp.Time) == 0 {
+
+		if left[0].CreationTimestamp.Equal(&right[0].CreationTimestamp) {
 			return strings.Compare(left[0].Name, right[0].Name) < 0
 		}
 		return left[0].CreationTimestamp.Before(&right[0].CreationTimestamp)
