@@ -171,6 +171,9 @@ func (r *InspectResultReconciler) CountLevelNum(resultName string) (map[kubeeyev
 	for _, item := range result.Spec.SystemdResult {
 		computeLevel(item.Level, levelTotal)
 	}
+	for _, item := range result.Spec.NodeInfo {
+		computeLevel(item.Level, levelTotal)
+	}
 
 	levelTotal[kubeeyev1alpha2.DangerLevel] = &result.Spec.OpaResult.Dangerous
 	levelTotal[kubeeyev1alpha2.WarningLevel] = &result.Spec.OpaResult.Warning

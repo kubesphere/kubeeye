@@ -88,14 +88,14 @@ func (o *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 			switch strings.ToLower(info.Name) {
 			case constant.Cpu:
 				data := GetCpu(fs)
-				resultItem.Value = fmt.Sprintf("%.0f%", data)
+				resultItem.Value = fmt.Sprintf("%.0f%%", data)
 				err, ok = visitor.EventRuleEvaluate(map[string]interface{}{constant.Cpu: data}, *info.Rule)
 				if err != nil {
 					resultItem.Value = err.Error()
 				}
 			case constant.Memory:
 				data := GetMemory(fs)
-				resultItem.Value = fmt.Sprintf("%.0f%", data)
+				resultItem.Value = fmt.Sprintf("%.0f%%", data)
 				err, ok = visitor.EventRuleEvaluate(map[string]interface{}{constant.Memory: data}, *info.Rule)
 				if err != nil {
 					resultItem.Value = err.Error()
@@ -107,7 +107,7 @@ func (o *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 				for _, m := range info.Mount {
 					resultItem.FileSystem.Mount = m
 					storage, inode := GetFileSystem(m)
-					resultItem.Value = fmt.Sprintf("%.0f%", storage)
+					resultItem.Value = fmt.Sprintf("%.0f%%", storage)
 					err, ok = visitor.EventRuleEvaluate(map[string]interface{}{constant.Filesystem: storage}, *info.Rule)
 					if err != nil {
 						resultItem.Value = err.Error()
@@ -115,7 +115,7 @@ func (o *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 					resultItem.Assert = ok
 					resultItem.FileSystem.Type = constant.Filesystem
 					nodeInfoResult = append(nodeInfoResult, resultItem)
-					resultItem.Value = fmt.Sprintf("%.0f%", inode)
+					resultItem.Value = fmt.Sprintf("%.0f%%", inode)
 					err, ok = visitor.EventRuleEvaluate(map[string]interface{}{constant.Inode: inode}, *info.Rule)
 					if err != nil {
 						resultItem.Value = err.Error()
