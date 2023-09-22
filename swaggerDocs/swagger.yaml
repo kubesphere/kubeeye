@@ -318,6 +318,8 @@ definitions:
         $ref: '#/definitions/v1alpha2.Level'
       name:
         type: string
+      nodeName:
+        type: string
       value:
         type: string
     type: object
@@ -370,6 +372,8 @@ definitions:
         type: array
       level:
         $ref: '#/definitions/v1alpha2.Level'
+      nodeName:
+        type: string
       path:
         type: string
     type: object
@@ -409,6 +413,13 @@ definitions:
       path:
         type: string
       rule:
+        type: string
+    type: object
+  v1alpha2.FileSystemLabel:
+    properties:
+      mount:
+        type: string
+      type:
         type: string
     type: object
   v1alpha2.InspectPlan:
@@ -466,7 +477,7 @@ definitions:
     properties:
       TaskNames:
         items:
-          $ref: '#/definitions/v1alpha2.TaskStatus'
+          $ref: '#/definitions/v1alpha2.TaskNames'
         type: array
       lastScheduleTime:
         type: string
@@ -509,9 +520,21 @@ definitions:
     type: object
   v1alpha2.InspectResultSpec:
     properties:
+      commandResult:
+        items:
+          $ref: '#/definitions/v1alpha2.CommandResultItem'
+        type: array
       componentResult:
         items:
           $ref: '#/definitions/v1alpha2.ComponentResultItem'
+        type: array
+      fileChangeResult:
+        items:
+          $ref: '#/definitions/v1alpha2.FileChangeResultItem'
+        type: array
+      fileFilterResult:
+        items:
+          $ref: '#/definitions/v1alpha2.FileChangeResultItem'
         type: array
       inspectCluster:
         $ref: '#/definitions/v1alpha2.Cluster'
@@ -519,19 +542,23 @@ definitions:
         additionalProperties:
           type: integer
         type: object
-      nodeInfoResult:
-        additionalProperties:
-          $ref: '#/definitions/v1alpha2.NodeInfoResult'
-        type: object
+      nodeInfo:
+        items:
+          $ref: '#/definitions/v1alpha2.NodeInfoResultItem'
+        type: array
       opaResult:
         $ref: '#/definitions/v1alpha2.KubeeyeOpaResult'
       prometheusResult:
         items:
-          items:
-            additionalProperties:
-              type: string
-            type: object
-          type: array
+          $ref: '#/definitions/v1alpha2.PrometheusResult'
+        type: array
+      sysctlResult:
+        items:
+          $ref: '#/definitions/v1alpha2.NodeMetricsResultItem'
+        type: array
+      systemdResult:
+        items:
+          $ref: '#/definitions/v1alpha2.NodeMetricsResultItem'
         type: array
     type: object
   v1alpha2.InspectResultStatus:
@@ -673,21 +700,23 @@ definitions:
   v1alpha2.InspectTaskStatus:
     properties:
       clusterInfo:
-        allOf:
-        - $ref: '#/definitions/v1alpha2.ClusterInfo'
-        description: |-
-          INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-          Important: Run "make" to regenerate code after modifying this file
+        $ref: '#/definitions/v1alpha2.ClusterInfo'
       duration:
         type: string
       endTimestamp:
         type: string
-      phase:
+      inspectRuleType:
+        items:
+          type: string
+        type: array
+      jobPhase:
         items:
           $ref: '#/definitions/v1alpha2.JobPhase'
         type: array
       startTimestamp:
         type: string
+      status:
+        $ref: '#/definitions/v1alpha2.Phase'
     type: object
   v1alpha2.JobPhase:
     properties:
@@ -725,6 +754,10 @@ definitions:
         type: string
       level:
         $ref: '#/definitions/v1alpha2.Level'
+      mount:
+        items:
+          type: string
+        type: array
       name:
         type: string
       nodeName:
@@ -736,40 +769,30 @@ definitions:
       rule:
         type: string
     type: object
-  v1alpha2.NodeInfoResult:
+  v1alpha2.NodeInfoResultItem:
     properties:
-      commandResult:
-        items:
-          $ref: '#/definitions/v1alpha2.CommandResultItem'
-        type: array
-      fileChangeResult:
-        items:
-          $ref: '#/definitions/v1alpha2.FileChangeResultItem'
-        type: array
-      fileFilterResult:
-        items:
-          $ref: '#/definitions/v1alpha2.FileChangeResultItem'
-        type: array
-      nodeInfo:
-        additionalProperties:
-          type: string
-        type: object
-      sysctlResult:
-        items:
-          $ref: '#/definitions/v1alpha2.NodeResultItem'
-        type: array
-      systemdResult:
-        items:
-          $ref: '#/definitions/v1alpha2.NodeResultItem'
-        type: array
+      assert:
+        type: boolean
+      fileSystem:
+        $ref: '#/definitions/v1alpha2.FileSystemLabel'
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
+      name:
+        type: string
+      nodeName:
+        type: string
+      value:
+        type: string
     type: object
-  v1alpha2.NodeResultItem:
+  v1alpha2.NodeMetricsResultItem:
     properties:
       assert:
         type: boolean
       level:
         $ref: '#/definitions/v1alpha2.Level'
       name:
+        type: string
+      nodeName:
         type: string
       value:
         type: string
@@ -813,6 +836,13 @@ definitions:
     - SinglePolicy
     - InspectTypeTiming
     - InspectTypeInstant
+  v1alpha2.PrometheusResult:
+    properties:
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
+      result:
+        type: string
+    type: object
   v1alpha2.PrometheusRule:
     properties:
       desc:
@@ -888,7 +918,7 @@ definitions:
       rule:
         type: string
     type: object
-  v1alpha2.TaskStatus:
+  v1alpha2.TaskNames:
     properties:
       name:
         type: string

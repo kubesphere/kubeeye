@@ -894,6 +894,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "nodeName": {
+                    "type": "string"
+                },
                 "value": {
                     "type": "string"
                 }
@@ -974,6 +977,9 @@ const docTemplate = `{
                 "level": {
                     "$ref": "#/definitions/v1alpha2.Level"
                 },
+                "nodeName": {
+                    "type": "string"
+                },
                 "path": {
                     "type": "string"
                 }
@@ -1033,6 +1039,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "rule": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1alpha2.FileSystemLabel": {
+            "type": "object",
+            "properties": {
+                "mount": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -1103,7 +1120,7 @@ const docTemplate = `{
                 "TaskNames": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1alpha2.TaskStatus"
+                        "$ref": "#/definitions/v1alpha2.TaskNames"
                     }
                 },
                 "lastScheduleTime": {
@@ -1151,10 +1168,28 @@ const docTemplate = `{
         "v1alpha2.InspectResultSpec": {
             "type": "object",
             "properties": {
+                "commandResult": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha2.CommandResultItem"
+                    }
+                },
                 "componentResult": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1alpha2.ComponentResultItem"
+                    }
+                },
+                "fileChangeResult": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha2.FileChangeResultItem"
+                    }
+                },
+                "fileFilterResult": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha2.FileChangeResultItem"
                     }
                 },
                 "inspectCluster": {
@@ -1166,10 +1201,10 @@ const docTemplate = `{
                         "type": "integer"
                     }
                 },
-                "nodeInfoResult": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/v1alpha2.NodeInfoResult"
+                "nodeInfo": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha2.NodeInfoResultItem"
                     }
                 },
                 "opaResult": {
@@ -1178,13 +1213,19 @@ const docTemplate = `{
                 "prometheusResult": {
                     "type": "array",
                     "items": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
+                        "$ref": "#/definitions/v1alpha2.PrometheusResult"
+                    }
+                },
+                "sysctlResult": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha2.NodeMetricsResultItem"
+                    }
+                },
+                "systemdResult": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha2.NodeMetricsResultItem"
                     }
                 }
             }
@@ -1365,12 +1406,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "clusterInfo": {
-                    "description": "INSERT ADDITIONAL STATUS FIELD - define observed state of cluster\nImportant: Run \"make\" to regenerate code after modifying this file",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/v1alpha2.ClusterInfo"
-                        }
-                    ]
+                    "$ref": "#/definitions/v1alpha2.ClusterInfo"
                 },
                 "duration": {
                     "type": "string"
@@ -1378,7 +1414,13 @@ const docTemplate = `{
                 "endTimestamp": {
                     "type": "string"
                 },
-                "phase": {
+                "inspectRuleType": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "jobPhase": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1alpha2.JobPhase"
@@ -1386,6 +1428,9 @@ const docTemplate = `{
                 },
                 "startTimestamp": {
                     "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/v1alpha2.Phase"
                 }
             }
         },
@@ -1442,6 +1487,12 @@ const docTemplate = `{
                 "level": {
                     "$ref": "#/definitions/v1alpha2.Level"
                 },
+                "mount": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "name": {
                     "type": "string"
                 },
@@ -1459,48 +1510,30 @@ const docTemplate = `{
                 }
             }
         },
-        "v1alpha2.NodeInfoResult": {
+        "v1alpha2.NodeInfoResultItem": {
             "type": "object",
             "properties": {
-                "commandResult": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1alpha2.CommandResultItem"
-                    }
+                "assert": {
+                    "type": "boolean"
                 },
-                "fileChangeResult": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1alpha2.FileChangeResultItem"
-                    }
+                "fileSystem": {
+                    "$ref": "#/definitions/v1alpha2.FileSystemLabel"
                 },
-                "fileFilterResult": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1alpha2.FileChangeResultItem"
-                    }
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
                 },
-                "nodeInfo": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
+                "name": {
+                    "type": "string"
                 },
-                "sysctlResult": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1alpha2.NodeResultItem"
-                    }
+                "nodeName": {
+                    "type": "string"
                 },
-                "systemdResult": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1alpha2.NodeResultItem"
-                    }
+                "value": {
+                    "type": "string"
                 }
             }
         },
-        "v1alpha2.NodeResultItem": {
+        "v1alpha2.NodeMetricsResultItem": {
             "type": "object",
             "properties": {
                 "assert": {
@@ -1510,6 +1543,9 @@ const docTemplate = `{
                     "$ref": "#/definitions/v1alpha2.Level"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "nodeName": {
                     "type": "string"
                 },
                 "value": {
@@ -1568,6 +1604,17 @@ const docTemplate = `{
                 "InspectTypeTiming",
                 "InspectTypeInstant"
             ]
+        },
+        "v1alpha2.PrometheusResult": {
+            "type": "object",
+            "properties": {
+                "level": {
+                    "$ref": "#/definitions/v1alpha2.Level"
+                },
+                "result": {
+                    "type": "string"
+                }
+            }
         },
         "v1alpha2.PrometheusRule": {
             "type": "object",
@@ -1683,7 +1730,7 @@ const docTemplate = `{
                 }
             }
         },
-        "v1alpha2.TaskStatus": {
+        "v1alpha2.TaskNames": {
             "type": "object",
             "properties": {
                 "name": {

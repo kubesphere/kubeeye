@@ -158,50 +158,23 @@ func (r *InspectResultReconciler) CountLevelNum(resultName string) (map[kubeeyev
 
 	levelTotal := make(map[kubeeyev1alpha2.Level]*int)
 
-	for _, item := range result.Spec.FileChangeResult {
-		computeLevel(item.Level, levelTotal)
-	}
-	for _, item := range result.Spec.FileFilterResult {
-		computeLevel(item.Level, levelTotal)
-	}
-	for _, item := range result.Spec.SysctlResult {
-		computeLevel(item.Level, levelTotal)
-	}
+	ComputeLevel(result.Spec.FileChangeResult, levelTotal)
 
-	for _, item := range result.Spec.SystemdResult {
-		computeLevel(item.Level, levelTotal)
-	}
-	for _, item := range result.Spec.NodeInfo {
-		computeLevel(item.Level, levelTotal)
-	}
+	ComputeLevel(result.Spec.FileFilterResult, levelTotal)
+
+	ComputeLevel(result.Spec.SysctlResult, levelTotal)
+
+	ComputeLevel(result.Spec.SystemdResult, levelTotal)
+
+	ComputeLevel(result.Spec.NodeInfo, levelTotal)
+
+	ComputeLevel(result.Spec.PrometheusResult, levelTotal)
+
+	ComputeLevel(result.Spec.ComponentResult, levelTotal)
 
 	levelTotal[kubeeyev1alpha2.DangerLevel] = &result.Spec.OpaResult.Dangerous
 	levelTotal[kubeeyev1alpha2.WarningLevel] = &result.Spec.OpaResult.Warning
 	levelTotal[kubeeyev1alpha2.IgnoreLevel] = &result.Spec.OpaResult.Ignore
-	for _, item := range result.Spec.PrometheusResult {
 
-		computeLevel(item.Level, levelTotal)
-
-	}
-
-	for _, item := range result.Spec.ComponentResult {
-		computeLevel(item.Level, levelTotal)
-	}
 	return levelTotal, nil
-}
-
-func computeLevel(v kubeeyev1alpha2.Level, m map[kubeeyev1alpha2.Level]*int) {
-	Autoincrement := func(level kubeeyev1alpha2.Level) *int {
-		if m[level] == nil {
-			m[level] = new(int)
-		}
-		*m[level]++
-		return m[level]
-	}
-	if v == "" {
-		m[kubeeyev1alpha2.DangerLevel] = Autoincrement(kubeeyev1alpha2.DangerLevel)
-	} else {
-		m[v] = Autoincrement(v)
-	}
-
 }
