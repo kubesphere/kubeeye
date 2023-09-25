@@ -173,6 +173,7 @@ func (r *InspectResultReconciler) CountLevelNum(resultName string) (map[kubeeyev
 	ComputeLevel(result.Spec.PrometheusResult, levelTotal)
 
 	ComputeLevel(result.Spec.ComponentResult, levelTotal)
+	ComputeLevel(result.Spec.CommandResult, levelTotal)
 
 	return levelTotal, nil
 }

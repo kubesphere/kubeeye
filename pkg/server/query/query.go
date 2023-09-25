@@ -73,7 +73,7 @@ func ParseQuery(g *gin.Context) *Query {
 func NewQuery() *Query {
 	return &Query{
 		Pagination: &Pagination{
-			Limit:  10,
+			Limit:  0,
 			Offset: 0,
 		},
 		SortBy:        "",
@@ -123,7 +123,7 @@ func ParsePagination(values url.Values) *Pagination {
 	if limit != "" {
 		atoi, err := strconv.Atoi(limit)
 		if err != nil || atoi < 1 {
-			atoi = 10
+			atoi = 0
 		}
 		pagination.Limit = atoi
 	}
@@ -170,7 +170,7 @@ func (p *Pagination) computeIndex(total int) (int, int) {
 	startIndex = p.Offset
 	endIndex = startIndex + p.Limit
 
-	if endIndex > total {
+	if endIndex > total || endIndex == 0 {
 		endIndex = total
 	}
 	if startIndex > total {

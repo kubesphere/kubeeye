@@ -159,11 +159,10 @@ func (o *nodeInfoInspect) GetResult(runNodeName string, resultCm *corev1.ConfigM
 		return nil, err
 	}
 
-	for _, item := range nodeInfoResult {
-		item.NodeName = runNodeName
-		resultCr.Spec.NodeInfo = append(resultCr.Spec.NodeInfo, item)
+	for i := range nodeInfoResult {
+		nodeInfoResult[i].NodeName = runNodeName
 	}
-
+	resultCr.Spec.NodeInfo = nodeInfoResult
 	return resultCr, nil
 
 }
