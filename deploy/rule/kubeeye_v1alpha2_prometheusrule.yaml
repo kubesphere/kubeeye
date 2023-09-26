@@ -14,7 +14,7 @@ spec:
   prometheus:
     - name: filesystem-less-20
       desc: Filesystem inode where less 20 %
-      rule: (node_filesystem_files_free{fstype!="",job="node-exporter"} / node_filesystem_files{fstype!="",job="node-exporter"} * 100 > 20 and node_filesystem_readonly{fstype!="",job="node-exporter"} == 0)
+      rule: (node_filesystem_files_free{fstype!="",job="node-exporter"} / node_filesystem_files{fstype!="",job="node-exporter"} * 100 < 20 and node_filesystem_readonly{fstype!="",job="node-exporter"} == 0)
     - name: NodeFilesystemSpaceFillingUp
       desc: Filesystem is predicted to run out of space within the next 24 hours.
       rule: (node_filesystem_avail_bytes{fstype!="",job="node-exporter"} / node_filesystem_size_bytes{fstype!="",job="node-exporter"} * 100 < 20 and predict_linear(node_filesystem_avail_bytes{fstype!="",job="node-exporter"}[6h], 24 * 60 * 60) < 0 and node_filesystem_readonly{fstype!="",job="node-exporter"} == 0)
