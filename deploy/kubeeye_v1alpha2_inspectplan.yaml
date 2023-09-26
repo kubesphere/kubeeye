@@ -5,6 +5,4 @@ metadata:
 spec:
   maxTasks: 10
   ruleNames:
-    - inspect-rules-sysctl
-    - inspect-rules-systemd
-    - inspect-rules-sbnormalpodstatus
+    - inspect-rule-namespace

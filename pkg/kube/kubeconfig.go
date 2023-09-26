@@ -156,16 +156,17 @@ func GetMultiClusterClient(ctx context.Context, clients *KubernetesClient, clust
 
 	return sClients, nil
 }
-func GetKubeEyeConfig(ctx context.Context, client *KubernetesClient) (conf.KubeEyeConfig, error) {
-	var kc conf.KubeEyeConfig
+
+func GetKubeEyeConfig(ctx context.Context, client *KubernetesClient) (kc conf.KubeEyeConfig, err error) {
+
 	kubeeyeCm, err := client.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, "kubeeye-config", metav1.GetOptions{})
 	if err != nil {
 		klog.Errorf("failed to get kubeeye config, kubeeye config file do not exist. err:%s", err)
 		return kc, err
 	}
-	config := kubeeyeCm.Data["config"]
+	dataConfig := kubeeyeCm.Data["config"]
 
-	err = yaml.Unmarshal([]byte(config), &kc)
+	err = yaml.Unmarshal([]byte(dataConfig), &kc)
 	if err != nil {
 		klog.Errorf("failed to unmarshal kubeeye config. err:%s ", err)
 		return kc, err

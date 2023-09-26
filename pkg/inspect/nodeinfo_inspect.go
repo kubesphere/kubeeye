@@ -34,10 +34,8 @@ const excludePath = "/var/lib/docker|/var/lib/kubelet"
 func (o *nodeInfoInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask, config *conf.JobConfig) (*kubeeyev1alpha2.JobPhase, error) {
 
 	var nodeInfos []kubeeyev1alpha2.NodeInfo
-	err := json.Unmarshal(jobRule.RunRule, &nodeInfos)
-	if err != nil {
-		return nil, err
-	}
+	_ = json.Unmarshal(jobRule.RunRule, &nodeInfos)
+
 	if nodeInfos == nil {
 		return nil, fmt.Errorf("node info rule is empty")
 	}
@@ -51,7 +49,7 @@ func (o *nodeInfoInspect) CreateJobTask(ctx context.Context, clients *kube.Kuber
 		jobTemplate = template.InspectJobsTemplate(config, jobRule.JobName, task, "", nil, constant.NodeInfo)
 	}
 
-	_, err = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Create(ctx, jobTemplate, metav1.CreateOptions{})
+	_, err := clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Create(ctx, jobTemplate, metav1.CreateOptions{})
 	if err != nil {
 		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
 		return nil, err

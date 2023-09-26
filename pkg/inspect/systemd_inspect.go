@@ -30,7 +30,7 @@ func (o *systemdInspect) CreateJobTask(ctx context.Context, clients *kube.Kubern
 	var systemdRules []kubeeyev1alpha2.SysRule
 	_ = json.Unmarshal(jobRule.RunRule, &systemdRules)
 
-	if systemdRules == nil && len(systemdRules) == 0 {
+	if systemdRules == nil {
 		return nil, fmt.Errorf("systemdRules is empty")
 	}
 	var jobTemplate *v1.Job
@@ -128,12 +128,10 @@ func (o *systemdInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMa
 		return nil, err
 	}
 
-	for _, item := range systemdResult {
-
-		item.NodeName = runNodeName
-		resultCr.Spec.SystemdResult = append(resultCr.Spec.SystemdResult, item)
+	for i := range systemdResult {
+		systemdResult[i].NodeName = runNodeName
 	}
-
+	resultCr.Spec.SystemdResult = systemdResult
 	return resultCr, nil
 
 }

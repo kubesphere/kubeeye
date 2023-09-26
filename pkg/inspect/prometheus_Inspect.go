@@ -116,10 +116,6 @@ func (o *prometheusInspect) GetResult(runNodeName string, resultCm *corev1.Confi
 	return resultCr, nil
 }
 
-func formatName(name model.LabelName) string {
-	return strings.Trim(string(name), "_")
-}
-
 func toString(val *model.Sample) string {
 	if val == nil {
 		return "{}"

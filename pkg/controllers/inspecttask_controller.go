@@ -226,7 +226,8 @@ func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, cluster kubee
 	if err != nil {
 		return err
 	}
-	JobPhase, err := r.createJobsInspect(ctx, task, clients, kubeEyeConfig.Job, rule)
+	jobConfig := kubeEyeConfig.GetJobConfig(cluster.Name)
+	JobPhase, err := r.createJobsInspect(ctx, task, clients, jobConfig, rule)
 	if err != nil {
 		return err
 	}

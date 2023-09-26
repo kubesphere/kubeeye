@@ -13,12 +13,9 @@ spec:
     - name: Cpu
       rule: cpu > 20
       desc: CPU usage greater than 20%
-      level: waring
     - name: Memory
       rule: memory > 20
       desc: memory usage greater than 20%
-      level: waring
     - name: filesystem
       rule: filesystem > 20 or inode > 20
       desc: filesystem usage greater than 20% and inode usage greater than 20%
-      level: waring

@@ -32,7 +32,7 @@ func (o *fileFilterInspect) CreateJobTask(ctx context.Context, clients *kube.Kub
 	var filterRules []kubeeyev1alpha2.FileFilterRule
 	_ = json.Unmarshal(jobRule.RunRule, &filterRules)
 
-	if filterRules == nil && len(filterRules) == 0 {
+	if filterRules == nil {
 		return nil, fmt.Errorf("file filter rule is empty")
 	}
 	var jobTemplate *v1.Job
@@ -114,11 +114,10 @@ func (o *fileFilterInspect) GetResult(runNodeName string, resultCm *corev1.Confi
 		return nil, err
 	}
 
-	for _, item := range fileFilterResult {
-		item.NodeName = runNodeName
-		resultCr.Spec.FileFilterResult = append(resultCr.Spec.FileFilterResult, item)
+	for i := range fileFilterResult {
+		fileFilterResult[i].NodeName = runNodeName
 	}
-
+	resultCr.Spec.FileFilterResult = fileFilterResult
 	return resultCr, nil
 
 }

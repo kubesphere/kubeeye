@@ -30,7 +30,7 @@ func (o *sysctlInspect) CreateJobTask(ctx context.Context, clients *kube.Kuberne
 	var sysRules []kubeeyev1alpha2.SysRule
 	_ = json.Unmarshal(jobRule.RunRule, &sysRules)
 
-	if sysRules == nil && len(sysRules) == 0 {
+	if sysRules == nil {
 		return nil, fmt.Errorf("sysctl rule is empty")
 	}
 
@@ -128,11 +128,11 @@ func (o *sysctlInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap
 		return nil, err
 	}
 
-	for _, item := range SysctlResult {
-		item.NodeName = runNodeName
-		resultCr.Spec.SysctlResult = append(resultCr.Spec.SysctlResult, item)
-	}
+	for i := range SysctlResult {
+		SysctlResult[i].NodeName = runNodeName
 
+	}
+	resultCr.Spec.SysctlResult = SysctlResult
 	return resultCr, nil
 
 }

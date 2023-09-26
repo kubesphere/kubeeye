@@ -34,7 +34,7 @@ func (o *fileChangeInspect) CreateJobTask(ctx context.Context, clients *kube.Kub
 	var fileRule []kubeeyev1alpha2.FileChangeRule
 	_ = json.Unmarshal(jobRule.RunRule, &fileRule)
 
-	if fileRule == nil && len(fileRule) == 0 {
+	if fileRule == nil {
 		return nil, fmt.Errorf("file change rule is empty")
 	}
 	var jobTemplate *v1.Job
@@ -129,11 +129,10 @@ func (o *fileChangeInspect) GetResult(runNodeName string, resultCm *corev1.Confi
 		return nil, jsonErr
 	}
 
-	for _, item := range fileChangeResult {
-		item.NodeName = runNodeName
-		resultCr.Spec.FileChangeResult = append(resultCr.Spec.FileChangeResult, item)
+	for i := range fileChangeResult {
+		fileChangeResult[i].NodeName = runNodeName
 	}
-
+	resultCr.Spec.FileChangeResult = fileChangeResult
 	return resultCr, nil
 
 }

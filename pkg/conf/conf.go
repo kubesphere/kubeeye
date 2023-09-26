@@ -36,9 +36,33 @@ type KubeEyeConfig struct {
 }
 
 type JobConfig struct {
-	Image           string                      `json:"image,omitempty"`
-	ImagePullPolicy string                      `json:"imagePullPolicy,omitempty"`
-	BackLimit       *int32                      `json:"backLimit,omitempty"`
-	Resources       corev1.ResourceRequirements `json:"resources,omitempty"`
-	AutoDelTime     *int32                      `json:"autoDelTime,omitempty"`
+	ImageConfig  `json:",inline"`
+	BackLimit    *int32                      `json:"backLimit,omitempty"`
+	Resources    corev1.ResourceRequirements `json:"resources,omitempty"`
+	AutoDelTime  *int32                      `json:"autoDelTime,omitempty"`
+	MultiCluster map[string]ImageConfig      `json:"multiCluster,omitempty"`
+}
+type ImageConfig struct {
+	Image           string `json:"image,omitempty"`
+	ImagePullPolicy string `json:"imagePullPolicy,omitempty"`
+}
+
+func (k *KubeEyeConfig) GetJobConfig(clusterName string) *JobConfig {
+	if clusterName == "default" || k.Job.MultiCluster == nil {
+		return k.Job
+	}
+	deepConfig := k.Job.DeepCopy()
+	multiCluster, ok := k.Job.MultiCluster[clusterName]
+	if !ok {
+		return k.Job
+	}
+	deepConfig.Image = multiCluster.Image
+	deepConfig.ImagePullPolicy = multiCluster.ImagePullPolicy
+	return deepConfig
+}
+
+func (j *JobConfig) DeepCopy() *JobConfig {
+	j2 := new(JobConfig)
+	*j2 = *j
+	return j2
 }

@@ -30,7 +30,7 @@ func (o *commandInspect) CreateJobTask(ctx context.Context, clients *kube.Kubern
 	var commandRules []kubeeyev1alpha2.CustomCommandRule
 	_ = json.Unmarshal(jobRule.RunRule, &commandRules)
 
-	if commandRules == nil && len(commandRules) == 0 {
+	if commandRules == nil {
 		return nil, fmt.Errorf("commandRules is empty")
 	}
 	var jobTemplate *v1.Job
@@ -108,11 +108,10 @@ func (o *commandInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMa
 		return nil, err
 	}
 
-	for _, item := range commandResult {
-		item.NodeName = runNodeName
-		resultCr.Spec.CommandResult = append(resultCr.Spec.CommandResult, item)
+	for i := range commandResult {
+		commandResult[i].NodeName = runNodeName
 	}
-
+	resultCr.Spec.CommandResult = commandResult
 	return resultCr, nil
 
 }
