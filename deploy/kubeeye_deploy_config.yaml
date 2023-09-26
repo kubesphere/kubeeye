@@ -141,6 +141,23 @@ spec:
           spec:
             description: InspectResultSpec defines the desired state of InspectResult
             properties:
+              commandResult:
+                items:
+                  properties:
+                    assert:
+                      type: boolean
+                    command:
+                      type: string
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    value:
+                      type: string
+                  type: object
+                type: array
               componentResult:
                 items:
                   properties:
@@ -151,6 +168,40 @@ spec:
                     name:
                       type: string
                     namespace:
+                      type: string
+                  type: object
+                type: array
+              fileChangeResult:
+                items:
+                  properties:
+                    fileName:
+                      type: string
+                    issues:
+                      items:
+                        type: string
+                      type: array
+                    level:
+                      type: string
+                    nodeName:
+                      type: string
+                    path:
+                      type: string
+                  type: object
+                type: array
+              fileFilterResult:
+                items:
+                  properties:
+                    fileName:
+                      type: string
+                    issues:
+                      items:
+                        type: string
+                      type: array
+                    level:
+                      type: string
+                    nodeName:
+                      type: string
+                    path:
                       type: string
                   type: object
                 type: array
@@ -165,86 +216,25 @@ spec:
                 additionalProperties:
                   type: integer
                 type: object
-              nodeInfoResult:
-                additionalProperties:
+              nodeInfo:
+                items:
                   properties:
-                    commandResult:
-                      items:
-                        properties:
-                          assert:
-                            type: boolean
-                          command:
-                            type: string
-                          level:
-                            type: string
-                          name:
-                            type: string
-                          value:
-                            type: string
-                        type: object
-                      type: array
-                    fileChangeResult:
-                      items:
-                        properties:
-                          fileName:
-                            type: string
-                          issues:
-                            items:
-                              type: string
-                            type: array
-                          level:
-                            type: string
-                          path:
-                            type: string
-                        type: object
-                      type: array
-                    fileFilterResult:
-                      items:
-                        properties:
-                          fileName:
-                            type: string
-                          issues:
-                            items:
-                              type: string
-                            type: array
-                          level:
-                            type: string
-                          path:
-                            type: string
-                        type: object
-                      type: array
-                    nodeInfo:
-                      additionalProperties:
-                        type: string
-                      type: object
-                    sysctlResult:
-                      items:
-                        properties:
-                          assert:
-                            type: boolean
-                          level:
-                            type: string
-                          name:
-                            type: string
-                          value:
-                            type: string
-                        type: object
-                      type: array
-                    systemdResult:
-                      items:
-                        properties:
-                          assert:
-                            type: boolean
-                          level:
-                            type: string
-                          name:
-                            type: string
-                          value:
-                            type: string
-                        type: object
-                      type: array
+                    assert:
+                      type: boolean
+                    level:
+                      type: string
+                    mount:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    type:
+                      type: string
+                    value:
+                      type: string
                   type: object
-                type: object
+                type: array
               opaResult:
                 description: kubeeye inspect result
                 properties:
@@ -303,6 +293,36 @@ spec:
                     level:
                       type: string
                     result:
+                      type: string
+                  type: object
+                type: array
+              sysctlResult:
+                items:
+                  properties:
+                    assert:
+                      type: boolean
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    value:
+                      type: string
+                  type: object
+                type: array
+              systemdResult:
+                items:
+                  properties:
+                    assert:
+                      type: boolean
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    value:
                       type: string
                   type: object
                 type: array
@@ -439,6 +459,10 @@ spec:
                       type: string
                     level:
                       type: string
+                    mount:
+                      items:
+                        type: string
+                      type: array
                     name:
                       type: string
                     nodeName:
@@ -602,9 +626,6 @@ spec:
             description: InspectTaskStatus defines the observed state of InspectTask
             properties:
               clusterInfo:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
                 properties:
                   namespacesCount:
                     type: integer
@@ -618,7 +639,11 @@ spec:
               endTimestamp:
                 format: date-time
                 type: string
-              phase:
+              inspectRuleType:
+                items:
+                  type: string
+                type: array
+              jobPhase:
                 items:
                   properties:
                     jobName:
@@ -629,6 +654,8 @@ spec:
                 type: array
               startTimestamp:
                 format: date-time
+                type: string
+              status:
                 type: string
             type: object
         type: object
@@ -910,19 +937,11 @@ subjects:
 ---
 apiVersion: v1
 data:
-  config: |-
-    job:
-      autoDelTime: 30
-      backLimit: 5
-      image: kubespheredev/kubeeye:latest
-      imagePullPolicy: Always
-      resources:
-        limits:
-          cpu: 1000m
-          memory: 512Mi
-        requests:
-          cpu: 50m
-          memory: 256Mi
+  config: "job:\n  autoDelTime: 30\n  backLimit: 5\n  image: kubespheredev/kubeeye-job:latest\n
+    \ imagePullPolicy: Always\n  resources:\n    limits:\n      cpu: 1000m\n      memory:
+    512Mi\n    requests:\n      cpu: 50m\n      memory: 256Mi\n  multiCluster:\n    member1:
+    \n      image: kubespheredev/kubeeye-job:v1.0.0-beta.8\n      imagePullPolicy:
+    Always"
 kind: ConfigMap
 metadata:
   name: kubeeye-config
@@ -987,7 +1006,7 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: 10Gi
   volumeMode: Filesystem
 ---
 apiVersion: apps/v1
@@ -1025,6 +1044,7 @@ spec:
             port: 9090
           initialDelaySeconds: 15
           periodSeconds: 20
+          timeoutSeconds: 10
         name: kubeeye-apiserver
         readinessProbe:
           httpGet:
@@ -1032,18 +1052,20 @@ spec:
             port: 9090
           initialDelaySeconds: 5
           periodSeconds: 10
+          timeoutSeconds: 10
         resources:
           limits:
-            cpu: 10m
+            cpu: 500m
             memory: 256Mi
           requests:
-            cpu: 10m
-            memory: 100Mi
+            cpu: 100m
+            memory: 128Mi
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
         - mountPath: /hosts/result
           name: inspect-result
+          readOnly: true
       restartPolicy: Always
       serviceAccountName: kubeeye-controller-manager
       volumes:

@@ -4,7 +4,7 @@ apiserver:
       ginMode: release
     image:
       repository: kubespheredev/kubeeye-apiserver
-      tag: v1.0.0-beta.8
+      tag: v1.0.0-beta.9
     imagePullPolicy: IfNotPresent
     resources:
       limits:
@@ -24,7 +24,7 @@ config:
     job:
       autoDelTime: 30
       backLimit: 5
-      image: kubespheredev/kubeeye-job:v1.0.0-beta.8
+      image: kubespheredev/kubeeye-job:v1.0.0-beta.9
       imagePullPolicy: Always
       resources:
         limits:
@@ -33,6 +33,10 @@ config:
         requests:
           cpu: 50m
           memory: 256Mi
+#      multiCluster:
+#        member1:
+#          image: kubespheredev/kubeeye-job:v1.0.0-beta.9
+#          imagePullPolicy: Always
 controllerManager:
   kubeRbacProxy:
     args:
@@ -59,7 +63,7 @@ controllerManager:
       allowPrivilegeEscalation: false
     image:
       repository: kubespheredev/kubeeye-controller
-      tag: v1.0.0-beta.8
+      tag: v1.0.0-beta.9
     imagePullPolicy: Always
     resources:
       limits:
