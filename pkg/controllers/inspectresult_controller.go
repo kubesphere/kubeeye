@@ -160,20 +160,50 @@ func (r *InspectResultReconciler) CountLevelNum(resultName string) (map[kubeeyev
 	levelTotal[kubeeyev1alpha2.DangerLevel] = &result.Spec.OpaResult.Dangerous
 	levelTotal[kubeeyev1alpha2.WarningLevel] = &result.Spec.OpaResult.Warning
 	levelTotal[kubeeyev1alpha2.IgnoreLevel] = &result.Spec.OpaResult.Ignore
-	ComputeLevel(result.Spec.FileChangeResult, levelTotal)
+	totalResultLevel(result.Spec.FileChangeResult, levelTotal)
 
-	ComputeLevel(result.Spec.FileFilterResult, levelTotal)
+	totalResultLevel(result.Spec.FileFilterResult, levelTotal)
 
-	ComputeLevel(result.Spec.SysctlResult, levelTotal)
+	totalResultLevel(result.Spec.SysctlResult, levelTotal)
 
-	ComputeLevel(result.Spec.SystemdResult, levelTotal)
+	totalResultLevel(result.Spec.SystemdResult, levelTotal)
 
-	ComputeLevel(result.Spec.NodeInfo, levelTotal)
+	totalResultLevel(result.Spec.NodeInfo, levelTotal)
 
-	ComputeLevel(result.Spec.PrometheusResult, levelTotal)
+	totalResultLevel(result.Spec.PrometheusResult, levelTotal)
 
-	ComputeLevel(result.Spec.ComponentResult, levelTotal)
-	ComputeLevel(result.Spec.CommandResult, levelTotal)
+	totalResultLevel(result.Spec.ComponentResult, levelTotal)
+
+	totalResultLevel(result.Spec.CommandResult, levelTotal)
 
 	return levelTotal, nil
+}
+func totalResultLevel(data interface{}, mapLevel map[kubeeyev1alpha2.Level]*int) {
+
+	maps, err := utils.StructToMap(data)
+	if err != nil {
+		return
+	}
+	Autoincrement := func(level kubeeyev1alpha2.Level) *int {
+		if mapLevel[level] == nil {
+			mapLevel[level] = new(int)
+		}
+		*mapLevel[level]++
+		return mapLevel[level]
+	}
+	for _, m := range maps {
+		_, exist := m["assert"]
+		if !exist {
+			continue
+		}
+		v, ok := m["level"]
+		if !ok {
+			mapLevel[kubeeyev1alpha2.DangerLevel] = Autoincrement(kubeeyev1alpha2.DangerLevel)
+		} else {
+			l := v.(string)
+			mapLevel[kubeeyev1alpha2.Level(l)] = Autoincrement(kubeeyev1alpha2.Level(l))
+		}
+
+	}
+
 }
