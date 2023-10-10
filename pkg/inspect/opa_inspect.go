@@ -45,6 +45,7 @@ func (o *OpaInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.Job
 
 	if exist {
 		k8sResources := kube.GetK8SResources(ctx, clients)
+
 		var opaRules []kubeeyev1alpha2.OpaRule
 		err := json.Unmarshal(phase.RunRule, &opaRules)
 		if err != nil {
@@ -59,6 +60,7 @@ func (o *OpaInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.Job
 		result := VailOpaRulesResult(ctx, k8sResources, RegoRules)
 		marshal, err := json.Marshal(result)
 		if err != nil {
+			klog.Error("marshal opaRule failed,err:%s\n", err)
 			return nil, err
 		}
 

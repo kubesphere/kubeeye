@@ -70,7 +70,8 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) K8
 
 	versionInfo, err := clientSet.Discovery().ServerVersion()
 	if err != nil {
-		fmt.Printf("Failed to get Kubernetes serverVersion.\n")
+		klog.Error("Failed to get Kubernetes serverVersion.\n", err)
+
 	}
 	if versionInfo != nil {
 		serverVersion = versionInfo.Major + "." + versionInfo.Minor
@@ -78,32 +79,73 @@ func GetK8SResources(ctx context.Context, kubernetesClient *KubernetesClient) K8
 
 	nodes, nodesCount, err := GetObjectCounts(ctx, kubernetesClient, conf.Nodes, conf.NoGroup)
 	if err != nil {
-		klog.Error("failed to get nodes and nodesCount")
+		klog.Error("failed to get nodes and nodesCount", err)
+
 	}
 
-	namespaces, namespacesCount, _ := GetObjectCounts(ctx, kubernetesClient, conf.Namespaces, conf.NoGroup)
+	namespaces, namespacesCount, err := GetObjectCounts(ctx, kubernetesClient, conf.Namespaces, conf.NoGroup)
+	if err != nil {
+		klog.Error("failed to get namespaces and namespacesCount", err)
+
+	}
 	for _, namespacesItem := range namespaces.Items {
 		namespacesList = append(namespacesList, namespacesItem.GetName())
 	}
 
-	deployments, deploymentsCount, _ := GetObjectCounts(ctx, kubernetesClient, conf.Deployments, conf.AppsGroup)
-	pods, podsCount, _ := GetObjectCounts(ctx, kubernetesClient, conf.Pods, conf.NoGroup)
+	deployments, deploymentsCount, err := GetObjectCounts(ctx, kubernetesClient, conf.Deployments, conf.AppsGroup)
+	if err != nil {
+		klog.Error("failed to get deployments and deploymentsCount", err)
 
-	daemonSets, daemonSetsCount, _ := GetObjectCounts(ctx, kubernetesClient, conf.Daemonsets, conf.AppsGroup)
+	}
+	pods, podsCount, err := GetObjectCounts(ctx, kubernetesClient, conf.Pods, conf.NoGroup)
+	if err != nil {
+		klog.Error("failed to get pods and podsCount", err)
 
-	statefulSets, statefulSetsCount, _ := GetObjectCounts(ctx, kubernetesClient, conf.Statefulsets, conf.AppsGroup)
+	}
+
+	daemonSets, daemonSetsCount, err := GetObjectCounts(ctx, kubernetesClient, conf.Daemonsets, conf.AppsGroup)
+	if err != nil {
+		klog.Error("failed to get daemonsets and daemonsetsCount", err)
+
+	}
+
+	statefulSets, statefulSetsCount, err := GetObjectCounts(ctx, kubernetesClient, conf.Statefulsets, conf.AppsGroup)
+	if err != nil {
+		klog.Error("failed to get statefulsets and statefulsetsCount", err)
+
+	}
 
 	workloadsCount := deploymentsCount + daemonSetsCount + statefulSetsCount + podsCount
 
-	jobs, _, _ := GetObjectCounts(ctx, kubernetesClient, conf.Jobs, conf.BatchGroup)
+	jobs, _, err := GetObjectCounts(ctx, kubernetesClient, conf.Jobs, conf.BatchGroup)
+	if err != nil {
+		klog.Error("failed to get jobs and jobsCount", err)
 
-	cronjobs, _, _ := GetObjectCounts(ctx, kubernetesClient, conf.Cronjobs, conf.BatchGroup)
+	}
 
-	events, _, _ := GetObjectCounts(ctx, kubernetesClient, conf.Events, conf.NoGroup)
+	cronjobs, _, err := GetObjectCounts(ctx, kubernetesClient, conf.Cronjobs, conf.BatchGroup)
+	if err != nil {
+		klog.Error("failed to get cronjobs and cronjobsCount", err)
 
-	roles, _, _ := GetObjectCounts(ctx, kubernetesClient, conf.Roles, conf.RoleGroup)
+	}
 
-	clusterRoles, _, _ := GetObjectCounts(ctx, kubernetesClient, conf.Clusterroles, conf.RoleGroup)
+	events, _, err := GetObjectCounts(ctx, kubernetesClient, conf.Events, conf.NoGroup)
+	if err != nil {
+		klog.Error("failed to get events and eventsCount", err)
+
+	}
+
+	roles, _, err := GetObjectCounts(ctx, kubernetesClient, conf.Roles, conf.RoleGroup)
+	if err != nil {
+		klog.Error("failed to get roles and rolesCount", err)
+
+	}
+
+	clusterRoles, _, err := GetObjectCounts(ctx, kubernetesClient, conf.Clusterroles, conf.RoleGroup)
+	if err != nil {
+		klog.Error("failed to get clusterroles and clusterrolesCount", err)
+
+	}
 
 	return K8SResource{
 		ServerVersion:    serverVersion,

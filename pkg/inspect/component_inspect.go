@@ -94,8 +94,11 @@ func (o *componentInspect) GetResult(runNodeName string, resultCm *corev1.Config
 
 func checkConnection(address string) bool {
 	conn, err := net.DialTimeout("tcp", address, 3*time.Second)
+	if err != nil {
+		return false
+	}
 	defer conn.Close()
-	return err == nil
+	return true
 }
 
 func GetInspectComponent(ctx context.Context, clients *kube.KubernetesClient, components string) ([]corev1.Service, error) {

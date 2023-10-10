@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 )
@@ -285,15 +284,15 @@ func validateK8SResource(ctx context.Context, resource unstructured.Unstructured
 	for _, regoRule := range regoRulesList {
 		query, err := rego.New(rego.Query(queryRule), rego.Module("examples.rego", regoRule)).PrepareForEval(ctx)
 		if err != nil {
-			err := fmt.Errorf("failed to parse rego input: %s", err.Error())
-			fmt.Println(err)
-			os.Exit(1)
+
+			klog.Errorf("failed to parse rego input: %s", err.Error())
+			return v1alpha2.ResourceResult{}, false
 		}
 		regoResults, err := query.Eval(ctx, rego.EvalInput(resource))
 		if err != nil {
-			err := fmt.Errorf("failed to validate resource: %s", err.Error())
-			fmt.Println(err)
-			os.Exit(1)
+			klog.Errorf("failed to validate resource: %s", err.Error())
+
+			return v1alpha2.ResourceResult{}, false
 		}
 		for _, regoResult := range regoResults {
 			for key := range regoResult.Expressions {
@@ -301,12 +300,12 @@ func validateK8SResource(ctx context.Context, resource unstructured.Unstructured
 					var results []kube.ValidateResult
 					jsonresult, err := json.Marshal(validateResult)
 					if err != nil {
-						fmt.Println(err)
-						os.Exit(1)
+						klog.Error(err)
+						return v1alpha2.ResourceResult{}, false
 					}
 					if err := json.Unmarshal(jsonresult, &results); err != nil {
-						fmt.Println(err)
-						os.Exit(1)
+						klog.Error(err)
+						return v1alpha2.ResourceResult{}, false
 					}
 					for _, result := range results {
 						find = true

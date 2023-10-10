@@ -139,6 +139,15 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 	if inspectPlan.Spec.Suspend {
+		if !inspectPlan.Status.LastTaskStatus.IsPending() {
+			inspectPlan.Status.LastTaskStatus = kubeeyev1alpha2.PhasePending
+			err = r.Status().Update(ctx, inspectPlan)
+			if err != nil {
+				klog.Error("failed to update InspectPlan  last task status.", err)
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
+		}
 		klog.Info("inspect plan suspend")
 		return ctrl.Result{}, nil
 	}
@@ -148,8 +157,8 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 	now := time.Now()
-	scheduledTime := nextScheduledTimeDuration(schedule, inspectPlan.Status.LastScheduleTime.Time)
-	if inspectPlan.Status.LastScheduleTime.Add(*scheduledTime).Before(now) {
+	scheduledTime := nextScheduledTimeDuration(schedule, inspectPlan.Status.LastScheduleTime)
+	if inspectPlan.Status.LastScheduleTime == nil || inspectPlan.Status.LastScheduleTime.Add(*scheduledTime).Before(now) {
 		taskName, err := r.createInspectTask(inspectPlan, ctx)
 		if err != nil {
 			klog.Error("failed to create InspectTask.", err)
@@ -162,7 +171,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 		return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
 	} else {
-		nextScheduledTime := nextScheduledTimeDuration(schedule, now)
+		nextScheduledTime := nextScheduledTimeDuration(schedule, &metav1.Time{Time: now})
 		return ctrl.Result{RequeueAfter: *nextScheduledTime}, nil
 	}
 }
@@ -177,8 +186,12 @@ func (r *InspectPlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // nextScheduledTimeDuration returns the time duration to requeue based on
 // the schedule and given time. It adds a 100ms padding to the next requeue to account
 // for Network Time Protocol(NTP) time skews.
-func nextScheduledTimeDuration(sched cron.Schedule, now time.Time) *time.Duration {
-	nextTime := sched.Next(now).Add(100 * time.Millisecond).Sub(now)
+func nextScheduledTimeDuration(sched cron.Schedule, now *metav1.Time) *time.Duration {
+	LastScheduleTime := time.Time{}
+	if now != nil {
+		LastScheduleTime = now.Time
+	}
+	nextTime := sched.Next(LastScheduleTime).Add(100 * time.Millisecond).Sub(LastScheduleTime)
 	return &nextTime
 }
 
@@ -251,7 +264,7 @@ func (r *InspectPlanReconciler) removeTask(ctx context.Context, plan *kubeeyev1a
 	}
 }
 func (r *InspectPlanReconciler) updateStatus(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan, now time.Time, taskName string) error {
-	plan.Status.LastScheduleTime = metav1.Time{Time: now}
+	plan.Status.LastScheduleTime = &metav1.Time{Time: now}
 	plan.Status.LastTaskName = taskName
 	plan.Status.LastTaskStatus = kubeeyev1alpha2.PhasePending
 	plan.Status.TaskNames = append(plan.Status.TaskNames, kubeeyev1alpha2.TaskNames{
