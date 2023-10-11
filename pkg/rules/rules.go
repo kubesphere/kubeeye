@@ -14,9 +14,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/klog/v2"
 	"strings"
-	"time"
 )
 
 func GetRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) map[string][]byte {
@@ -141,7 +141,7 @@ func Allocation(rule interface{}, taskName string, ruleType string) (*kubeeyev1a
 	}
 
 	return &kubeeyev1alpha2.JobRule{
-		JobName:  fmt.Sprintf("%s-%s", taskName, ruleType),
+		JobName:  fmt.Sprintf("%s-%s-%s", taskName, ruleType, rand.String(5)),
 		RuleType: ruleType,
 		RunRule:  marshalRule,
 	}, nil
@@ -163,7 +163,7 @@ func AllocationRule(rule interface{}, taskName string, allNode []corev1.Node, ct
 
 	for _, v := range nodeNameMergeMap {
 		jobRule := kubeeyev1alpha2.JobRule{
-			JobName:  fmt.Sprintf("%s-%s-%d", taskName, ctlOrTem, time.Now().Unix()),
+			JobName:  fmt.Sprintf("%s-%s-%s", taskName, ctlOrTem, rand.String(5)),
 			RuleType: ctlOrTem,
 		}
 		fileChange, err := json.Marshal(v)
@@ -178,7 +178,7 @@ func AllocationRule(rule interface{}, taskName string, allNode []corev1.Node, ct
 	if len(filterData) > 0 {
 		for _, item := range allNode {
 			jobRule := kubeeyev1alpha2.JobRule{
-				JobName:  fmt.Sprintf("%s-%s-%s", taskName, ctlOrTem, item.Name),
+				JobName:  fmt.Sprintf("%s-%s-%s", taskName, ctlOrTem, rand.String(5)),
 				RuleType: ctlOrTem,
 			}
 
