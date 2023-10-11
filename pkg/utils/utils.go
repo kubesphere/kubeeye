@@ -73,14 +73,7 @@ func StringToBool(b string) bool {
 }
 
 func IsEmptyString(s string) bool {
-	if strings.TrimSpace(s) == "" {
-		return true
-	}
-	if len(s) == 0 {
-		return true
-	}
-
-	return false
+	return len(strings.TrimSpace(s)) == 0
 }
 
 func StructToMap(obj interface{}) ([]map[string]interface{}, error) {

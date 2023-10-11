@@ -392,7 +392,10 @@ func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Contex
 		if jobInfo.Status.CompletionTime != nil && !jobInfo.Status.CompletionTime.IsZero() && jobInfo.Status.Active == 0 {
 			jobPhase.Phase = kubeeyev1alpha2.PhaseSucceeded
 			background := metav1.DeletePropagationBackground
-			_ = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Delete(ctx, jobName, metav1.DeleteOptions{PropagationPolicy: &background})
+			err = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Delete(ctx, jobName, metav1.DeleteOptions{PropagationPolicy: &background})
+			if err != nil {
+				klog.Infof("failed to delete job:%s", jobName)
+			}
 			return jobPhase
 		}
 

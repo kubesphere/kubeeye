@@ -66,8 +66,6 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	inspectPlan := &kubeeyev1alpha2.InspectPlan{}
 	err := r.Get(ctx, req.NamespacedName, inspectPlan)
-	// Every time a plan operation is triggered, it checks how many plans are associated with the rule
-
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -100,6 +98,21 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 
+		return ctrl.Result{}, nil
+	}
+
+	if inspectPlan.Status.LastTaskStatus.IsEmpty() {
+		inspectPlan.Status.LastTaskStatus = kubeeyev1alpha2.PhasePending
+		err = r.Status().Update(ctx, inspectPlan)
+		if err != nil {
+			klog.Error("failed to update InspectPlan  last task status.", err)
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
+
+	if inspectPlan.Spec.Suspend {
+		klog.Info("inspect plan suspend")
 		return ctrl.Result{}, nil
 	}
 
@@ -138,19 +151,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 		return ctrl.Result{}, nil
 	}
-	if inspectPlan.Spec.Suspend {
-		if !inspectPlan.Status.LastTaskStatus.IsPending() {
-			inspectPlan.Status.LastTaskStatus = kubeeyev1alpha2.PhasePending
-			err = r.Status().Update(ctx, inspectPlan)
-			if err != nil {
-				klog.Error("failed to update InspectPlan  last task status.", err)
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{}, nil
-		}
-		klog.Info("inspect plan suspend")
-		return ctrl.Result{}, nil
-	}
+
 	schedule, err := cron.ParseStandard(*inspectPlan.Spec.Schedule)
 	if err != nil {
 		klog.Error("Unparseable schedule.\n", err)
