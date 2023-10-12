@@ -39,6 +39,7 @@ rules:
   - jobs
   verbs:
   - create
+  - delete
   - get
 - apiGroups:
   - cluster.kubesphere.io

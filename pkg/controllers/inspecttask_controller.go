@@ -61,7 +61,7 @@ type InspectTaskReconciler struct {
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=create
 //+kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=create;delete
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=deletecollection
-//+kubebuilder:rbac:groups="batch",resources=jobs,verbs=create;get
+//+kubebuilder:rbac:groups="batch",resources=jobs,verbs=create;get;delete
 //+kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources=clusterroles;clusterrolebindings,verbs="*"
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -394,7 +394,7 @@ func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Contex
 			background := metav1.DeletePropagationBackground
 			err = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Delete(ctx, jobName, metav1.DeleteOptions{PropagationPolicy: &background})
 			if err != nil {
-				klog.Infof("failed to delete job:%s", jobName)
+				klog.Infof("failed to delete job:%s , err:%s", jobName, err)
 			}
 			return jobPhase
 		}
