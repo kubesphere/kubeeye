@@ -142,12 +142,11 @@ func (i *InspectResult) compare(a, b map[string]interface{}, orderBy string) boo
 
 func (i *InspectResult) filter(data map[string]interface{}, f *query.Filter) bool {
 	result := utils.MapToStruct[v1alpha2.InspectResult](data)[0]
+
 	for k, v := range *f {
 		switch k {
 		case query.Name:
 			return strings.Contains(result.Name, v)
-		default:
-			return false
 		}
 	}
 	return false

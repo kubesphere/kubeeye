@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	versionsv1alpha2 "github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/server/query"
 	"github.com/kubesphere/kubeeye/pkg/utils"
@@ -118,16 +119,18 @@ func (i *InspectTask) compare(a, b map[string]interface{}, orderBy string) bool 
 
 func (i *InspectTask) filter(data map[string]interface{}, f *query.Filter) bool {
 	result := utils.MapToStruct[v1alpha2.InspectTask](data)[0]
+	isTag := false
 	for k, v := range *f {
 		switch k {
 		case query.Status:
-			return result.Status.Status == v1alpha2.Phase(v)
-
-		case query.InspectPolicy:
-			return result.Spec.InspectPolicy == v1alpha2.Policy(v)
-		default:
+			isTag = result.Status.Status == v1alpha2.Phase(v)
+		case query.InspectType:
+			t := result.Annotations[constant.AnnotationInspectType]
+			isTag = v == t
+		}
+		if !isTag {
 			return false
 		}
 	}
-	return false
+	return true
 }

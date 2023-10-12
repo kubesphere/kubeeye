@@ -194,8 +194,6 @@ func (i *InspectRule) filter(data map[string]interface{}, f *query.Filter) bool 
 		switch k {
 		case query.Name:
 			return strings.Contains(result.Name, v)
-		default:
-			return false
 		}
 	}
 	return false

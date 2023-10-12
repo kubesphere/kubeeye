@@ -22,6 +22,7 @@ const (
 	CreateTime        = "createTime"
 	Name              = "name"
 	InspectPolicy     = "inspectPolicy"
+	Strategy          = "strategy"
 	Status            = "status"
 	Duration          = "duration"
 	Suspend           = "suspend"

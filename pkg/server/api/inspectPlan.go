@@ -230,27 +230,31 @@ func (i *InspectPlan) compare(a, b map[string]interface{}, orderBy string) bool 
 
 func (i *InspectPlan) filter(data map[string]interface{}, f *query.Filter) bool {
 	result := utils.MapToStruct[v1alpha2.InspectPlan](data)[0]
+	isTag := false
 	for k, v := range *f {
 		switch k {
 		case query.Suspend:
-			return result.Spec.Suspend == utils.StringToBool(v)
+			isTag = result.Spec.Suspend == utils.StringToBool(v)
 		case query.LastTaskStatus:
-			return result.Status.LastTaskStatus == v1alpha2.Phase(v)
-		case query.InspectPolicy:
-			if v1alpha2.Policy(v) == v1alpha2.SinglePolicy {
-				return result.Spec.Once != nil
+			isTag = result.Status.LastTaskStatus == v1alpha2.Phase(v)
+		case query.Strategy:
+			if v1alpha2.Policy(v) == v1alpha2.CyclePolicy {
+				isTag = result.Spec.Once == nil && result.Spec.Schedule != nil
+			} else {
+				isTag = result.Spec.Once != nil
 			}
-			return result.Spec.Once == nil && result.Spec.Schedule != nil
 		case query.InspectType:
 			if v1alpha2.Policy(v) == v1alpha2.InspectTypeInstant {
-				return result.Spec.Schedule == nil && result.Spec.Once == nil
+				isTag = result.Spec.Schedule == nil && result.Spec.Once == nil
+			} else {
+				isTag = result.Spec.Schedule != nil || result.Spec.Once != nil
 			}
-			return result.Spec.Schedule != nil || result.Spec.Once != nil
 		case query.Name:
-			return strings.Contains(result.Name, v)
-		default:
+			isTag = strings.Contains(result.Name, v)
+		}
+		if !isTag {
 			return false
 		}
 	}
-	return false
+	return true
 }
