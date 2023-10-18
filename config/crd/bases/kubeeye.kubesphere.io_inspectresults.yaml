@@ -55,6 +55,8 @@ spec:
               componentResult:
                 items:
                   properties:
+                    assert:
+                      type: boolean
                     endpoint:
                       type: string
                     level:
@@ -184,6 +186,8 @@ spec:
               prometheusResult:
                 items:
                   properties:
+                    assert:
+                      type: boolean
                     level:
                       type: string
                     result:

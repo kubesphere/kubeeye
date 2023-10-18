@@ -16,7 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/klog/v2"
-	"strings"
 )
 
 func GetRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) map[string][]byte {
@@ -284,17 +283,23 @@ func ParseRules(ctx context.Context, clients *kube.KubernetesClient, taskName st
 	return executeRule, inspectRuleTotal, nil
 }
 
-func TotalServiceNum(ctx context.Context, clients *kube.KubernetesClient, component *string) int {
-	componentRuleNumber := 0
-	if component == nil {
-		services, err := clients.ClientSet.CoreV1().Services(corev1.NamespaceAll).List(ctx, metav1.ListOptions{})
-		if err != nil {
-			klog.Errorf("Failed to list services. err:%s", err)
-			return componentRuleNumber
-		}
-		componentRuleNumber = len(services.Items)
-	} else {
-		componentRuleNumber = len(strings.Split(*component, "|"))
+func TotalServiceNum(ctx context.Context, clients *kube.KubernetesClient, component *kubeeyev1alpha2.ComponentRule) (componentRuleNumber int) {
+
+	if component != nil && component.IncludeComponent != nil {
+		componentRuleNumber = len(component.IncludeComponent)
+		return componentRuleNumber
 	}
+
+	services, err := clients.ClientSet.CoreV1().Services(corev1.NamespaceAll).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		klog.Errorf("Failed to list services. err:%s", err)
+		return componentRuleNumber
+	}
+	inspectData, _ := utils.ArrayFilter(services.Items, func(v corev1.Service) bool {
+		_, isExist := utils.ArrayFind(v.Name, component.ExcludeComponent)
+		return !isExist && v.Spec.ClusterIP != "None"
+	})
+	componentRuleNumber = len(inspectData)
+
 	return componentRuleNumber
 }

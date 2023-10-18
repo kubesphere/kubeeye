@@ -32,7 +32,20 @@ const (
 )
 
 type KubeEyeConfig struct {
-	Job *JobConfig `json:"job,omitempty"`
+	Job     *JobConfig     `json:"job,omitempty"`
+	Message *MessageConfig `json:"message,omitempty"`
+}
+
+type MessageType string
+
+const (
+	AlarmMessage MessageType = "alarm"
+)
+
+type MessageConfig struct {
+	Enable bool        `json:"enable,omitempty"`
+	Type   MessageType `json:"type,omitempty"`
+	Url    string      `json:"url,omitempty"`
 }
 
 type JobConfig struct {
@@ -47,7 +60,7 @@ type ImageConfig struct {
 	ImagePullPolicy string `json:"imagePullPolicy,omitempty"`
 }
 
-func (k *KubeEyeConfig) GetJobConfig(clusterName string) *JobConfig {
+func (k *KubeEyeConfig) GetClusterJobConfig(clusterName string) *JobConfig {
 	if clusterName == "default" || k.Job.MultiCluster == nil {
 		return k.Job
 	}

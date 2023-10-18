@@ -17,10 +17,16 @@ limitations under the License.
 package controllers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/constant"
+	"github.com/kubesphere/kubeeye/pkg/kube"
+	"github.com/kubesphere/kubeeye/pkg/message"
+	"github.com/kubesphere/kubeeye/pkg/message/conf"
+	"github.com/kubesphere/kubeeye/pkg/output"
+	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
@@ -133,6 +139,8 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		klog.Error("Failed to update inspect result status", err)
 		return ctrl.Result{}, err
 	}
+
+	r.SendMessage(ctx, result.Name)
 	return ctrl.Result{}, nil
 }
 
@@ -206,4 +214,47 @@ func totalResultLevel(data interface{}, mapLevel map[kubeeyev1alpha2.Level]*int)
 
 	}
 
+}
+
+func (r *InspectResultReconciler) SendMessage(ctx context.Context, name string) {
+	kc, err := kube.GetKubeEyeConfig(ctx, r.Client)
+	if err != nil {
+		klog.Error("GetKubeEyeConfig error", err)
+		return
+	}
+	if !kc.Message.Enable {
+		return
+	}
+
+	htmlTemplate, err := template.GetInspectResultHtmlTemplate()
+	if err != nil {
+		klog.Error("GetInspectResultHtmlTemplate error", err)
+		return
+	}
+	err, m := output.HtmlOut(name)
+	if err != nil {
+		klog.Error("get html render data error", err)
+		return
+	}
+	data := bytes.NewBufferString("")
+	err = htmlTemplate.Execute(data, m)
+	if err != nil {
+		klog.Error("render html template error", err)
+		return
+	}
+
+	if kc.Message.Url == "" {
+		klog.Error("message request url is empty")
+		return
+	}
+
+	messageHandler := &message.AlarmMessageHandler{
+		RequestUrl: kc.Message.Url,
+	}
+	event := &conf.MessageEvent{
+		Content: data.String(),
+	}
+
+	dispatcher := message.RegisterHandler(messageHandler)
+	dispatcher.DispatchMessageEvent(event)
 }

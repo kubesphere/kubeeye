@@ -13,6 +13,8 @@ metadata:
 spec:
   systemd:
     - name: docker
-      rule: docker = "active"
+      rule: docker == "active"
     - name: etcd
-      rule: etcd = "active"
+      rule: etcd == "active"
+    - name: kubelet
+      rule: kubelet == "active"

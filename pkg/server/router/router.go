@@ -18,14 +18,14 @@ type Router struct {
 }
 
 func RegisterRouter(ctx context.Context, r *gin.Engine, clients *kube.KubernetesClient, factory kubeeye.Interface) {
-	result := api.NewInspectResult(ctx, clients, factory.V1alpha2().InspectResults())
-	task := api.NewInspectTask(ctx, clients, factory.V1alpha2().InspectTasks())
-	plan := api.NewInspectPlan(ctx, clients, factory.V1alpha2().InspectPlans())
-	rule := api.NewInspectRule(ctx, clients, factory.V1alpha2().InspectRules())
 	htmlTemplate, err := template.GetInspectResultHtmlTemplate()
 	if err == nil {
 		r.SetHTMLTemplate(htmlTemplate)
 	}
+	result := api.NewInspectResult(ctx, clients, factory.V1alpha2().InspectResults())
+	task := api.NewInspectTask(ctx, clients, factory.V1alpha2().InspectTasks())
+	plan := api.NewInspectPlan(ctx, clients, factory.V1alpha2().InspectPlans())
+	rule := api.NewInspectRule(ctx, clients, factory.V1alpha2().InspectRules())
 
 	v1alpha1 := r.Group(groupPath)
 	{

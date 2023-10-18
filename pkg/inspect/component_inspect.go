@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"net"
-	"strings"
 	"time"
 )
 
@@ -44,13 +43,13 @@ func (o *componentInspect) RunInspect(ctx context.Context, rules []kubeeyev1alph
 		return m.JobName == currentJobName
 	})
 
-	if exist {
-		var components string
+	if !exist {
+		var components kubeeyev1alpha2.ComponentRule
 		err := json.Unmarshal(phase.RunRule, &components)
 		if err != nil {
 			return nil, err
 		}
-		component, err := GetInspectComponent(ctx, clients, components)
+		component, err := GetInspectComponent(ctx, clients, &components)
 		if err != nil {
 			return nil, err
 		}
@@ -58,13 +57,19 @@ func (o *componentInspect) RunInspect(ctx context.Context, rules []kubeeyev1alph
 		for _, item := range component {
 			endpoint := fmt.Sprintf("%s.%s.svc.cluster.local:%d", item.Name, item.Namespace, item.Spec.Ports[0].Port)
 			isConnected := checkConnection(endpoint)
+			componentResultItem := kubeeyev1alpha2.ComponentResultItem{
+				Name:      item.Name,
+				Namespace: item.Namespace,
+				Endpoint:  endpoint,
+				Assert:    !isConnected,
+			}
 			if isConnected {
 				klog.Infof("success connect to：%s\n", endpoint)
 			} else {
 				klog.Infof("Unable to connect to: %s \n", endpoint)
-				componentResult = append(componentResult, kubeeyev1alpha2.ComponentResultItem{Name: item.Name, Namespace: item.Namespace, Endpoint: endpoint})
+				componentResultItem.Level = kubeeyev1alpha2.WarningLevel
 			}
-
+			componentResult = append(componentResult, componentResultItem)
 		}
 
 		marshal, err := json.Marshal(componentResult)
@@ -101,28 +106,24 @@ func checkConnection(address string) bool {
 	return true
 }
 
-func GetInspectComponent(ctx context.Context, clients *kube.KubernetesClient, components string) ([]corev1.Service, error) {
-	var filterComponents []string
-	if components != "" {
-		filterComponents = strings.Split(components, "|")
-	}
+func GetInspectComponent(ctx context.Context, clients *kube.KubernetesClient, components *kubeeyev1alpha2.ComponentRule) ([]corev1.Service, error) {
+
 	services, err := clients.ClientSet.CoreV1().Services(corev1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
-	var component []corev1.Service
-	for _, item := range services.Items {
-		if len(filterComponents) > 0 {
-			_, b := utils.ArrayFind(item.Name, filterComponents)
-			if !b {
-				continue
-			}
-		}
-		if item.Spec.ClusterIP != "None" {
-			component = append(component, item)
-		}
 
-	}
+	component, _ := utils.ArrayFilter(services.Items, func(v corev1.Service) bool {
+		if v.Spec.ClusterIP == "None" {
+			return false
+		}
+		if components.IncludeComponent != nil {
+			_, isExist := utils.ArrayFind(v.Name, components.IncludeComponent)
+			return isExist
+		}
+		_, excludeExist := utils.ArrayFind(v.Name, components.ExcludeComponent)
+		return !excludeExist
+	})
 
-	return component, err
+	return component, nil
 }

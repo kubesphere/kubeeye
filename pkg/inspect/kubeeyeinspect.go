@@ -67,7 +67,6 @@ func JobInspect(ctx context.Context, taskName string, resultName string, clients
 	var jobRule []kubeeyev1alpha2.JobRule
 
 	rule, err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).List(ctx, v1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})})
-	err = nil
 	if err != nil {
 		klog.Errorf("Failed to get  inspect Rule. err:%s", err)
 		return err

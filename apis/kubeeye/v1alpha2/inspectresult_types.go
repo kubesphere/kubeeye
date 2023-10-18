@@ -64,6 +64,7 @@ const (
 
 type PrometheusResult struct {
 	Result string `json:"result,omitempty"`
+	Assert bool   `json:"assert,omitempty"`
 	Level  Level  `json:"level,omitempty"`
 }
 
@@ -100,6 +101,7 @@ type ComponentResultItem struct {
 	Namespace string `json:"namespace,omitempty"`
 	Endpoint  string `json:"endpoint,omitempty"`
 	Level     Level  `json:"level,omitempty"`
+	Assert    bool   `json:"assert,omitempty"`
 }
 type CommandResultItem struct {
 	Name     string `json:"name,omitempty"`

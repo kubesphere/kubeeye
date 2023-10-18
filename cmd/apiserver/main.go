@@ -34,13 +34,6 @@ func main() {
 
 	r := gin.Default()
 
-	r.GET("/readyz", func(c *gin.Context) {
-		c.String(http.StatusOK, "pong")
-	})
-	r.GET("/healthz", func(c *gin.Context) {
-		c.String(http.StatusOK, "pong")
-	})
-
 	ctx, cancelFunc := context.WithCancel(context.TODO())
 	errCh := make(chan error)
 	defer close(errCh)
@@ -70,15 +63,15 @@ func main() {
 		f.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				name := GetResourcesName(obj)
-				fmt.Println(fmt.Sprintf("add cr,name:%s", name))
+				fmt.Printf("add cr,name:%s\n", name)
 			},
 			UpdateFunc: func(oldObj, newObj interface{}) {
 				name := GetResourcesName(oldObj)
-				fmt.Println(fmt.Sprintf("update cr,name:%s", name))
+				fmt.Printf("update cr,name:%s\n", name)
 			},
 			DeleteFunc: func(obj interface{}) {
 				name := GetResourcesName(obj)
-				fmt.Println(fmt.Sprintf("delete cr,name:%s", name))
+				fmt.Printf("delete cr,name:%s\n", name)
 			},
 		})
 	}
@@ -94,15 +87,19 @@ func main() {
 		Handler: r,
 	}
 
+	r.GET("/readyz", func(c *gin.Context) {
+		c.String(http.StatusOK, "pong")
+	})
+	r.GET("/healthz", func(c *gin.Context) {
+		c.String(http.StatusOK, "pong")
+	})
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	go func() {
-		// 服务连接
-		if err = srv.ListenAndServe(); err != nil && !errors.Is(http.ErrServerClosed, err) {
-			klog.Errorf("listen: %s\n", err)
-			errCh <- err
-		}
-	}()
+	// 服务连接
+	if err = srv.ListenAndServe(); err != nil && !errors.Is(http.ErrServerClosed, err) {
+		klog.Errorf("listen: %s\n", err)
+		errCh <- err
+	}
 
 	for {
 		select {
@@ -119,19 +116,15 @@ func main() {
 }
 
 func GetResourcesName(obj interface{}) string {
-	switch obj.(type) {
+	switch o := obj.(type) {
 	case *kubeeyev1alpha2.InspectPlan:
-		plan := obj.(*kubeeyev1alpha2.InspectPlan)
-		return plan.Name
+		return o.Name
 	case *kubeeyev1alpha2.InspectResult:
-		result := obj.(*kubeeyev1alpha2.InspectResult)
-		return result.Name
+		return o.Name
 	case *kubeeyev1alpha2.InspectTask:
-		task := obj.(*kubeeyev1alpha2.InspectTask)
-		return task.Name
+		return o.Name
 	case *kubeeyev1alpha2.InspectRule:
-		rule := obj.(*kubeeyev1alpha2.InspectRule)
-		return rule.Name
+		return o.Name
 	}
 	return ""
 }

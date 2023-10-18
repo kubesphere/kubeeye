@@ -132,7 +132,9 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			}
 			return ctrl.Result{}, nil
 		}
-		nextScheduledTime := inspectPlan.Spec.Once.Sub(time.Now())
+		//nextScheduledTime := inspectPlan.Spec.Once.Sub(time.Now())
+		nextScheduledTime := time.Until(inspectPlan.Spec.Once.Time)
+
 		return ctrl.Result{RequeueAfter: nextScheduledTime}, nil
 	}
 

@@ -121,7 +121,8 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 		err = r.updatePlanStatus(ctx, kubeeyev1alpha2.PhaseRunning, inspectTask.Labels[constant.LabelPlanName], inspectTask.Name)
 		if err != nil {
-
+			klog.Error("Failed to update plan status. ", err)
+			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil
 	}
@@ -131,7 +132,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 	var kubeEyeConfig conf.KubeEyeConfig
-	kubeEyeConfig, err = kube.GetKubeEyeConfig(ctx, r.K8sClients)
+	kubeEyeConfig, err = kube.GetKubeEyeConfig(ctx, r.Client)
 	if err != nil {
 		klog.Error("Unable to get jobConfig")
 		return ctrl.Result{}, err
@@ -226,7 +227,7 @@ func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, cluster kubee
 	if err != nil {
 		return err
 	}
-	jobConfig := kubeEyeConfig.GetJobConfig(cluster.Name)
+	jobConfig := kubeEyeConfig.GetClusterJobConfig(cluster.Name)
 	JobPhase, err := r.createJobsInspect(ctx, task, clients, jobConfig, rule)
 	if err != nil {
 		return err

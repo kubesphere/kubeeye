@@ -37,13 +37,18 @@ type InspectRuleSpec struct {
 	FileFilter         []FileFilterRule    `json:"fileFilter,omitempty"`
 	CustomCommand      []CustomCommandRule `json:"customCommand,omitempty"`
 	NodeInfo           []NodeInfo          `json:"nodeInfo,omitempty"`
-	Component          *string             `json:"component,omitempty"`
+	Component          *ComponentRule      `json:"component,omitempty"`
 }
 type RuleItemBases struct {
 	Name  string  `json:"name,omitempty"`
 	Rule  *string `json:"rule,omitempty"`
 	Desc  string  `json:"desc,omitempty"`
 	Level Level   `json:"level,omitempty"`
+}
+
+type ComponentRule struct {
+	ExcludeComponent []string `json:"excludeComponent,omitempty"`
+	IncludeComponent []string `json:"includeComponent,omitempty"`
 }
 
 type Node struct {
@@ -75,6 +80,7 @@ type OpaRule struct {
 type PrometheusRule struct {
 	RuleItemBases `json:",inline"`
 	Endpoint      string `json:"endpoint,omitempty"`
+	SpecialRule   string `json:"rule,omitempty"`
 }
 
 type FileChangeRule struct {

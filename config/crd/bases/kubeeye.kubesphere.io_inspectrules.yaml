@@ -36,7 +36,16 @@ spec:
             description: InspectRuleSpec defines the desired state of InspectRule
             properties:
               component:
-                type: string
+                properties:
+                  excludeComponent:
+                    items:
+                      type: string
+                    type: array
+                  includeComponent:
+                    items:
+                      type: string
+                    type: array
+                type: object
               customCommand:
                 items:
                   properties:

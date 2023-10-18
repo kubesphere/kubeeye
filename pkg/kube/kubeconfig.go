@@ -23,13 +23,14 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
@@ -157,14 +158,15 @@ func GetMultiClusterClient(ctx context.Context, clients *KubernetesClient, clust
 	return sClients, nil
 }
 
-func GetKubeEyeConfig(ctx context.Context, client *KubernetesClient) (kc conf.KubeEyeConfig, err error) {
-
-	kubeeyeCm, err := client.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, "kubeeye-config", metav1.GetOptions{})
+func GetKubeEyeConfig(ctx context.Context, c client.Client) (kc conf.KubeEyeConfig, err error) {
+	kubeEyeCm := v1.ConfigMap{}
+	err = c.Get(ctx, client.ObjectKey{Name: "kubeeye-config", Namespace: constant.DefaultNamespace}, &kubeEyeCm)
+	//kubeeyeCm, err := client.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, "kubeeye-config", metav1.GetOptions{})
 	if err != nil {
 		klog.Errorf("failed to get kubeeye config, kubeeye config file do not exist. err:%s", err)
 		return kc, err
 	}
-	dataConfig := kubeeyeCm.Data["config"]
+	dataConfig := kubeEyeCm.Data["config"]
 
 	err = yaml.Unmarshal([]byte(dataConfig), &kc)
 	if err != nil {

@@ -29,8 +29,6 @@ func init() {
 	RuleOperatorMap[constant.NodeInfo] = &nodeInfoInspect{}
 }
 
-const excludePath = "/var/lib/docker|/var/lib/kubelet"
-
 func (o *nodeInfoInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask, config *conf.JobConfig) (*kubeeyev1alpha2.JobPhase, error) {
 
 	var nodeInfos []kubeeyev1alpha2.NodeInfo

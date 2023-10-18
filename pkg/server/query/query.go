@@ -162,7 +162,7 @@ func (q *Query) GetPageData(data interface{}, c compare, f filterC) Result {
 }
 
 func (p *Pagination) computeIndex(total int) (int, int) {
-	var startIndex, endIndex = 0, 0
+	startIndex, endIndex := 0, 0
 
 	if p.Limit < 0 || p.Offset < 0 || p.Offset > total {
 		return 0, 0
