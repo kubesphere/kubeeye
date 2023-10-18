@@ -222,7 +222,7 @@ func (r *InspectResultReconciler) SendMessage(ctx context.Context, name string) 
 		klog.Error("GetKubeEyeConfig error", err)
 		return
 	}
-	if !kc.Message.Enable {
+	if kc.Message == nil || !kc.Message.Enable {
 		return
 	}
 

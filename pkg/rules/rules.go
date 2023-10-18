@@ -296,6 +296,9 @@ func TotalServiceNum(ctx context.Context, clients *kube.KubernetesClient, compon
 		return componentRuleNumber
 	}
 	inspectData, _ := utils.ArrayFilter(services.Items, func(v corev1.Service) bool {
+		if component == nil {
+			return v.Spec.ClusterIP != "None"
+		}
 		_, isExist := utils.ArrayFind(v.Name, component.ExcludeComponent)
 		return !isExist && v.Spec.ClusterIP != "None"
 	})

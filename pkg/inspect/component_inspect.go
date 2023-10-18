@@ -43,7 +43,7 @@ func (o *componentInspect) RunInspect(ctx context.Context, rules []kubeeyev1alph
 		return m.JobName == currentJobName
 	})
 
-	if !exist {
+	if exist {
 		var components kubeeyev1alpha2.ComponentRule
 		err := json.Unmarshal(phase.RunRule, &components)
 		if err != nil {
