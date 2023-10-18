@@ -11,7 +11,9 @@ rules:
   - configmaps
   verbs:
   - deletecollection
+  - get
   - list
+  - watch
 - apiGroups:
   - ""
   resources:

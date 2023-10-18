@@ -161,6 +161,8 @@ spec:
               componentResult:
                 items:
                   properties:
+                    assert:
+                      type: boolean
                     endpoint:
                       type: string
                     level:
@@ -290,6 +292,8 @@ spec:
               prometheusResult:
                 items:
                   properties:
+                    assert:
+                      type: boolean
                     level:
                       type: string
                     result:
@@ -388,7 +392,16 @@ spec:
             description: InspectRuleSpec defines the desired state of InspectRule
             properties:
               component:
-                type: string
+                properties:
+                  excludeComponent:
+                    items:
+                      type: string
+                    type: array
+                  includeComponent:
+                    items:
+                      type: string
+                    type: array
+                type: object
               customCommand:
                 items:
                   properties:
@@ -720,6 +733,9 @@ rules:
   - configmaps
   verbs:
   - deletecollection
+  - get
+  - list
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -748,6 +764,7 @@ rules:
   - jobs
   verbs:
   - create
+  - delete
   - get
 - apiGroups:
   - cluster.kubesphere.io

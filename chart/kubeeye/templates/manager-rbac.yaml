@@ -11,6 +11,9 @@ rules:
   - configmaps
   verbs:
   - deletecollection
+  - get
+  - list
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -39,6 +42,7 @@ rules:
   - jobs
   verbs:
   - create
+  - delete
   - get
 - apiGroups:
   - cluster.kubesphere.io

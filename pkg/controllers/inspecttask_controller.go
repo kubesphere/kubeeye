@@ -60,7 +60,7 @@ type InspectTaskReconciler struct {
 //+kubebuilder:rbac:groups="",resources=nodes;namespaces;services,verbs=list;get
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=create
 //+kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=create;delete
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=deletecollection
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=deletecollection;list;get;watch
 //+kubebuilder:rbac:groups="batch",resources=jobs,verbs=create;get;delete
 //+kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources=clusterroles;clusterrolebindings,verbs="*"
 
