@@ -84,10 +84,14 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 			continue
 		}
 		for _, result := range queryResults {
-			proRuleResult = append(proRuleResult, kubeeyev1alpha2.PrometheusResult{
+			pR := kubeeyev1alpha2.PrometheusResult{
 				Result: toString(result),
-				Level:  proRule.Level,
-			})
+			}
+			if proRule.SpecialRule == nil {
+				pR.Assert = true
+				pR.Level = proRule.Level
+			}
+			proRuleResult = append(proRuleResult, pR)
 
 		}
 

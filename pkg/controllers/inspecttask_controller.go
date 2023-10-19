@@ -208,7 +208,7 @@ func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, rule
 	if err == nil {
 		_ = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Delete(ctx, task.Name, metav1.DeleteOptions{})
 	}
-
+	// create temp inspect rule
 	configMapTemplate := template.BinaryConfigMapTemplate(task.Name, constant.DefaultNamespace, marshal, true, map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})
 	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, configMapTemplate, metav1.CreateOptions{})
 	if err != nil {
@@ -355,7 +355,7 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 	}
 	wg.Wait()
 
-	err := r.cleanConfig(ctx, clusterClient, inspectTask.Spec.ClusterName)
+	err := r.cleanConfig(ctx, clusterClient, inspectTask)
 	if err != nil {
 		return nil, err
 	}
@@ -467,11 +467,6 @@ func (r *InspectTaskReconciler) getInspectResultData(ctx context.Context, client
 		return err
 	}
 
-	err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name})})
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -535,10 +530,17 @@ func (r *InspectTaskReconciler) initClusterInspect(ctx context.Context, clients 
 	return nil
 }
 
-func (r *InspectTaskReconciler) cleanConfig(ctx context.Context, clients *kube.KubernetesClient, clusterName []kubeeyev1alpha2.Cluster) error {
+func (r *InspectTaskReconciler) cleanConfig(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask) error {
+	// clean temp inspect rule
 	err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"}),
 	})
+	if err != nil {
+		return err
+	}
+
+	err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
+		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name})})
 	if err != nil {
 		return err
 	}
