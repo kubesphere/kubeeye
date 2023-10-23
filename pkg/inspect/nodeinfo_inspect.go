@@ -17,6 +17,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
+	"path"
 
 	"math"
 	"strings"
@@ -107,16 +108,30 @@ func (o *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 					err, ok = visitor.EventRuleEvaluate(map[string]interface{}{constant.Filesystem: storage}, *info.Rule)
 					if err != nil {
 						resultItem.Value = err.Error()
+						resultItem.Assert = true
+						resultItem.Level = info.Level
+					} else {
+						if ok {
+							resultItem.Level = info.Level
+						}
+						resultItem.Assert = ok
 					}
-					resultItem.Assert = ok
+
 					resultItem.FileSystem.Type = constant.Filesystem
 					nodeInfoResult = append(nodeInfoResult, resultItem)
 					resultItem.Value = fmt.Sprintf("%.0f%%", inode)
 					err, ok = visitor.EventRuleEvaluate(map[string]interface{}{constant.Inode: inode}, *info.Rule)
 					if err != nil {
 						resultItem.Value = err.Error()
+						resultItem.Assert = true
+						resultItem.Level = info.Level
+					} else {
+						if ok {
+							resultItem.Level = info.Level
+						}
+						resultItem.Assert = ok
 					}
-					resultItem.Assert = ok
+
 					resultItem.FileSystem.Type = constant.Inode
 					nodeInfoResult = append(nodeInfoResult, resultItem)
 				}
@@ -133,7 +148,11 @@ func (o *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 					resultItem.Value = err.Error()
 				}
 			}
+			if ok {
+				resultItem.Level = info.Level
+			}
 			resultItem.Assert = ok
+
 			nodeInfoResult = append(nodeInfoResult, resultItem)
 		}
 	}
@@ -158,7 +177,7 @@ func (o *nodeInfoInspect) GetResult(runNodeName string, resultCm *corev1.ConfigM
 	for i := range nodeInfoResult {
 		nodeInfoResult[i].NodeName = runNodeName
 	}
-	resultCr.Spec.NodeInfo = nodeInfoResult
+	resultCr.Spec.NodeInfo = append(resultCr.Spec.NodeInfo, nodeInfoResult...)
 	return resultCr, nil
 
 }
@@ -206,7 +225,7 @@ func GetLoadAvg(fs procfs.FS) (float64, float64, float64) {
 }
 func GetFileSystem(p string) (float64, float64) {
 	u := new(unix.Statfs_t)
-	err := unix.Statfs(constant.RootPathPrefix, u)
+	err := unix.Statfs(path.Join(constant.RootPathPrefix, p), u)
 	if err != nil {
 		klog.Error("failed to get filesystem info")
 		return 0, 0

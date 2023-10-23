@@ -73,11 +73,11 @@ func (o *fileFilterInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 			filterR := kubeeyev1alpha2.FileChangeResultItem{
 				FileName: rule.Name,
 				Path:     rule.Path,
-				Level:    rule.Level,
 			}
 			if err != nil {
 				klog.Errorf(" Failed to open file . err:%s", err)
 				filterR.Issues = append(filterR.Issues, fmt.Sprintf("Failed to open file for %s.", rule.Name))
+				filterR.Level = rule.Level
 				filterResult = append(filterResult, filterR)
 				continue
 			}
@@ -92,6 +92,9 @@ func (o *fileFilterInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 				if matched && len(filterR.Issues) < 1000 {
 					filterR.Issues = append(filterR.Issues, reader.Text())
 				}
+			}
+			if len(filterR.Issues) > 0 {
+				filterR.Level = rule.Level
 			}
 			filterResult = append(filterResult, filterR)
 		}
@@ -117,7 +120,7 @@ func (o *fileFilterInspect) GetResult(runNodeName string, resultCm *corev1.Confi
 	for i := range fileFilterResult {
 		fileFilterResult[i].NodeName = runNodeName
 	}
-	resultCr.Spec.FileFilterResult = fileFilterResult
+	resultCr.Spec.FileFilterResult = append(resultCr.Spec.FileFilterResult, fileFilterResult...)
 	return resultCr, nil
 
 }

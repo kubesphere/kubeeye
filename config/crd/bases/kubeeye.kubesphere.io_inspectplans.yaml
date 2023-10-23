@@ -51,11 +51,18 @@ spec:
               one:
                 format: date-time
                 type: string
-              ruleGroup:
-                type: string
               ruleNames:
                 items:
-                  type: string
+                  properties:
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
                 type: array
               schedule:
                 type: string

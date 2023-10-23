@@ -132,7 +132,7 @@ func ParsePagination(values url.Values) *Pagination {
 }
 
 func (q *Query) GetPageData(data interface{}, c compare, f filterC) Result {
-	toMap, err := utils.StructToMap(data)
+	toMap, err := utils.ArrayStructToArrayMap(data)
 	if err != nil {
 		return Result{
 			TotalItems: 0,

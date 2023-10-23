@@ -16,5 +16,8 @@ spec:
       rule: docker == "active"
     - name: etcd
       rule: etcd == "active"
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
     - name: kubelet
       rule: kubelet == "active"
+      nodeName: master

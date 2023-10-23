@@ -73,6 +73,14 @@ func InspectJobsTemplate(jobConfig *conf.JobConfig, jobName string, inspectTask 
 					NodeName:           nodeName,
 					NodeSelector:       nodeSelector,
 					RestartPolicy:      corev1.RestartPolicyNever,
+					Tolerations: []corev1.Toleration{
+						{
+							Key:      "",
+							Operator: corev1.TolerationOpExists,
+							Value:    "",
+							Effect:   "",
+						},
+					},
 					Volumes: []corev1.Volume{{
 						Name: "root",
 						VolumeSource: corev1.VolumeSource{

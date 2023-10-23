@@ -2,6 +2,7 @@ package conf
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"time"
 )
 
 const (
@@ -40,12 +41,28 @@ type MessageType string
 
 const (
 	AlarmMessage MessageType = "alarm"
+	EmailMessage MessageType = "email"
+)
+
+type Mode string
+
+const (
+	CompleteMode Mode = "complete"
+	AbnormalMode Mode = "abnormal"
 )
 
 type MessageConfig struct {
 	Enable bool        `json:"enable,omitempty"`
 	Type   MessageType `json:"type,omitempty"`
-	Url    string      `json:"url,omitempty"`
+	Mode   Mode        `json:"mode,omitempty"`
+	Email  EmailConfig `json:"email,omitempty"`
+}
+type EmailConfig struct {
+	Address   string   `json:"address,omitempty"`
+	Port      int32    `json:"port,omitempty"`
+	Fo        string   `json:"form,omitempty"`
+	To        []string `json:"to,omitempty"`
+	SecretKey string   `json:"secretKey,omitempty"`
 }
 
 type JobConfig struct {
@@ -78,4 +95,15 @@ func (j *JobConfig) DeepCopy() *JobConfig {
 	j2 := new(JobConfig)
 	*j2 = *j
 	return j2
+}
+
+type MessageEvent struct {
+	Content   []byte
+	Target    string
+	Sender    string
+	Timestamp time.Time
+}
+
+type EventHandler interface {
+	HandleMessageEvent(event *MessageEvent)
 }

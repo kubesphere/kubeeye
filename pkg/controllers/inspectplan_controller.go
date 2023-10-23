@@ -198,39 +198,39 @@ func nextScheduledTimeDuration(sched cron.Schedule, now *metav1.Time) *time.Dura
 	return &nextTime
 }
 
-func (r *InspectPlanReconciler) createInspectTask(inspectPlan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (string, error) {
+func (r *InspectPlanReconciler) createInspectTask(plan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (string, error) {
 	ownerController := true
-	r.removeTask(ctx, inspectPlan)
+	r.removeTask(ctx, plan)
 	inspectTask := kubeeyev1alpha2.InspectTask{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   fmt.Sprintf("%s-%s", inspectPlan.Name, time.Now().Format("20060102-15-04")),
-			Labels: map[string]string{constant.LabelPlanName: inspectPlan.Name},
+			Name:   fmt.Sprintf("%s-%s", plan.Name, time.Now().Format("20060102-15-04")),
+			Labels: map[string]string{constant.LabelPlanName: plan.Name},
 			Annotations: map[string]string{constant.AnnotationInspectType: func() string {
-				if inspectPlan.Spec.Schedule == nil {
+				if plan.Spec.Schedule == nil {
 					return string(kubeeyev1alpha2.InspectTypeInstant)
 				}
 				return string(kubeeyev1alpha2.InspectTypeTiming)
 			}()},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         inspectPlan.APIVersion,
-				Kind:               inspectPlan.Kind,
-				Name:               inspectPlan.Name,
-				UID:                inspectPlan.UID,
+				APIVersion:         plan.APIVersion,
+				Kind:               plan.Kind,
+				Name:               plan.Name,
+				UID:                plan.UID,
 				Controller:         &ownerController,
 				BlockOwnerDeletion: &ownerController,
 			}},
 		},
 		Spec: kubeeyev1alpha2.InspectTaskSpec{
-			RuleNames:   inspectPlan.Spec.RuleNames,
-			ClusterName: inspectPlan.Spec.ClusterName,
+			RuleNames:   plan.Spec.RuleNames,
+			ClusterName: plan.Spec.ClusterName,
 			Timeout: func() string {
-				if inspectPlan.Spec.Timeout == "" {
+				if plan.Spec.Timeout == "" {
 					return "10m"
 				}
-				return inspectPlan.Spec.Timeout
+				return plan.Spec.Timeout
 			}(),
 			InspectPolicy: func() kubeeyev1alpha2.Policy {
-				if inspectPlan.Spec.Once == nil && inspectPlan.Spec.Schedule != nil {
+				if plan.Spec.Once == nil && plan.Spec.Schedule != nil {
 					return kubeeyev1alpha2.CyclePolicy
 				}
 				return kubeeyev1alpha2.SinglePolicy
@@ -320,7 +320,7 @@ func ConvertTaskStatus(tasks []kubeeyev1alpha2.InspectTask) (taskStatus []kubeey
 func (r *InspectPlanReconciler) updateAddRuleReferNum(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan) {
 
 	for _, v := range plan.Spec.RuleNames {
-		rule, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, v, metav1.GetOptions{})
+		rule, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, v.Name, metav1.GetOptions{})
 		if err != nil {
 			klog.Error(err, "Failed to get inspectRules")
 			continue
@@ -344,7 +344,7 @@ func (r *InspectPlanReconciler) updateAddRuleReferNum(ctx context.Context, plan 
 			klog.Error(err, "Failed to update inspectRules")
 			continue
 		}
-		plan.Labels = utils.MergeMap(plan.Labels, map[string]string{fmt.Sprintf("%s/%s", "kubeeye.kubesphere.io", v): v})
+		plan.Labels = utils.MergeMap(plan.Labels, map[string]string{fmt.Sprintf("%s/%s", "kubeeye.kubesphere.io", v.Name): v.Name})
 
 	}
 
@@ -353,7 +353,7 @@ func (r *InspectPlanReconciler) updateAddRuleReferNum(ctx context.Context, plan 
 func (r *InspectPlanReconciler) updateSubRuleReferNum(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan) {
 
 	for _, v := range plan.Spec.RuleNames {
-		rule, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, v, metav1.GetOptions{})
+		rule, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, v.Name, metav1.GetOptions{})
 		if err != nil {
 			klog.Error(err, "Failed to get inspectRules")
 			continue

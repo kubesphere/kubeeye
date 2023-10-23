@@ -77,26 +77,23 @@ func (o *systemdInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 		}
 		for _, r := range systemd {
 			ctl := kubeeyev1alpha2.NodeMetricsResultItem{
-				Name:  r.Name,
-				Level: r.Level,
+				Name: r.Name,
 			}
 			for _, status := range unitsContext {
 				if status.Name == fmt.Sprintf("%s.service", r.Name) {
 					ctl.Value = &status.ActiveState
-
 					if r.Rule != nil {
-						if _, err := visitor.CheckRule(*r.Rule); err != nil {
-							sprintf := fmt.Sprintf("rule condition is not correct, %s", err.Error())
-							klog.Error(sprintf)
+						err, res := visitor.EventRuleEvaluate(map[string]interface{}{r.Name: status.ActiveState}, *r.Rule)
+						if err != nil {
+							sprintf := fmt.Sprintf("err:%s", err.Error())
 							ctl.Value = &sprintf
+							ctl.Assert = true
+							ctl.Level = r.Level
 						} else {
-							err, res := visitor.EventRuleEvaluate(map[string]interface{}{r.Name: status.ActiveState}, *r.Rule)
-							if err != nil {
-								sprintf := fmt.Sprintf("err:%s", err.Error())
-								ctl.Value = &sprintf
-							} else {
-								ctl.Assert = !res
+							if !res {
+								ctl.Level = r.Level
 							}
+							ctl.Assert = !res
 						}
 					}
 					break
@@ -105,6 +102,7 @@ func (o *systemdInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 			if ctl.Value == nil {
 				errVal := fmt.Sprintf("name:%s to does not exist", r.Name)
 				ctl.Assert = true
+				ctl.Level = r.Level
 				ctl.Value = &errVal
 			}
 			nodeResult = append(nodeResult, ctl)
@@ -131,7 +129,7 @@ func (o *systemdInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMa
 	for i := range systemdResult {
 		systemdResult[i].NodeName = runNodeName
 	}
-	resultCr.Spec.SystemdResult = systemdResult
+	resultCr.Spec.SystemdResult = append(resultCr.Spec.SystemdResult, systemdResult...)
 	return resultCr, nil
 
 }

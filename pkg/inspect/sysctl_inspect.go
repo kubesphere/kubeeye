@@ -77,31 +77,28 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 			ctlRule, err := fs.SysctlStrings(sysRule.Name)
 			klog.Infof("name:%s,value:%s", sysRule.Name, ctlRule)
 			ctl := kubeeyev1alpha2.NodeMetricsResultItem{
-				Name:  sysRule.Name,
-				Level: sysRule.Level,
+				Name: sysRule.Name,
 			}
 			if err != nil {
 				errVal := fmt.Sprintf("name:%s to does not exist", sysRule.Name)
 				ctl.Value = &errVal
+				ctl.Level = sysRule.Level
 				ctl.Assert = true
 			} else {
 				val := parseSysctlVal(ctlRule)
 				ctl.Value = &val
 				if sysRule.Rule != nil {
-					if _, err := visitor.CheckRule(*sysRule.Rule); err != nil {
-						checkErr := fmt.Sprintf("rule condition is not correct, %s", err.Error())
-						ctl.Value = &checkErr
+					err, res := visitor.EventRuleEvaluate(map[string]interface{}{sysRule.Name: val}, *sysRule.Rule)
+					if err != nil {
+						evalErr := fmt.Sprintf("event rule evaluate to failed err:%s", err)
 						ctl.Assert = true
+						ctl.Value = &evalErr
+						ctl.Level = sysRule.Level
 					} else {
-						err, res := visitor.EventRuleEvaluate(map[string]interface{}{sysRule.Name: val}, *sysRule.Rule)
-						if err != nil {
-							evalErr := fmt.Sprintf("event rule evaluate to failed err:%s", err)
-							ctl.Assert = true
-							ctl.Value = &evalErr
-						} else {
-							ctl.Assert = !res
+						if !res {
+							ctl.Level = sysRule.Level
 						}
-
+						ctl.Assert = !res
 					}
 
 				}
@@ -132,7 +129,7 @@ func (o *sysctlInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap
 		SysctlResult[i].NodeName = runNodeName
 
 	}
-	resultCr.Spec.SysctlResult = SysctlResult
+	resultCr.Spec.SysctlResult = append(resultCr.Spec.SysctlResult, SysctlResult...)
 	return resultCr, nil
 
 }

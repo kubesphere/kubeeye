@@ -76,7 +76,7 @@ func IsEmptyString(s string) bool {
 	return len(strings.TrimSpace(s)) == 0
 }
 
-func StructToMap(obj interface{}) ([]map[string]interface{}, error) {
+func ArrayStructToArrayMap(obj interface{}) ([]map[string]interface{}, error) {
 	marshal, err := json.Marshal(obj)
 	if err != nil {
 		return nil, err
@@ -87,6 +87,19 @@ func StructToMap(obj interface{}) ([]map[string]interface{}, error) {
 		return nil, err
 	}
 	return result, nil
+}
+
+func StructToMap(obj interface{}) map[string]interface{} {
+	marshal, err := json.Marshal(obj)
+	if err != nil {
+		return nil
+	}
+	var result map[string]interface{}
+	err = json.Unmarshal(marshal, &result)
+	if err != nil {
+		return nil
+	}
+	return result
 }
 
 func MapToStruct[T any](maps ...map[string]interface{}) []T {
@@ -120,4 +133,11 @@ func MergeMap[T any](maps ...map[string]T) map[string]T {
 		}
 	}
 	return result
+}
+func MapValConvert[T any](mapV1 map[string]interface{}) map[string]T {
+	var newMap = make(map[string]T)
+	for k, v := range mapV1 {
+		newMap[k] = v.(T)
+	}
+	return newMap
 }

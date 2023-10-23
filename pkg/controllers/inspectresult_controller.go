@@ -21,10 +21,10 @@ import (
 	"context"
 	"encoding/json"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/message"
-	"github.com/kubesphere/kubeeye/pkg/message/conf"
 	"github.com/kubesphere/kubeeye/pkg/output"
 	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
@@ -188,7 +188,7 @@ func (r *InspectResultReconciler) CountLevelNum(resultName string) (map[kubeeyev
 }
 func totalResultLevel(data interface{}, mapLevel map[kubeeyev1alpha2.Level]*int) {
 
-	maps, err := utils.StructToMap(data)
+	maps, err := utils.ArrayStructToArrayMap(data)
 	if err != nil {
 		return
 	}
@@ -242,19 +242,17 @@ func (r *InspectResultReconciler) SendMessage(ctx context.Context, name string) 
 		klog.Error("render html template error", err)
 		return
 	}
-
-	if kc.Message.Url == "" {
-		klog.Error("message request url is empty")
+	var messageHandler conf.EventHandler
+	switch kc.Message.Type {
+	case conf.EmailMessage:
+		messageHandler = message.NewEmailMessageOptions(&kc.Message.Email, r.Client)
+	default:
+		klog.Error("unable identify send message type")
 		return
 	}
 
-	messageHandler := &message.AlarmMessageHandler{
-		RequestUrl: kc.Message.Url,
-	}
-	event := &conf.MessageEvent{
-		Content: data.String(),
-	}
-
 	dispatcher := message.RegisterHandler(messageHandler)
-	dispatcher.DispatchMessageEvent(event)
+	dispatcher.DispatchMessageEvent(&conf.MessageEvent{
+		Content: data.Bytes(),
+	})
 }

@@ -147,7 +147,7 @@ func (r *InspectRulesReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func ComputeLevel(data interface{}, mapLevel map[kubeeyev1alpha2.Level]*int) {
 
-	maps, err := utils.StructToMap(data)
+	maps, err := utils.ArrayStructToArrayMap(data)
 	if err != nil {
 		return
 	}

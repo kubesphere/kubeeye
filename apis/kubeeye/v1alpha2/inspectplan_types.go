@@ -28,15 +28,14 @@ type InspectPlanSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Schedule    *string      `json:"schedule,omitempty"`
-	Suspend     bool         `json:"suspend,omitempty"`
-	Timeout     string       `json:"timeout,omitempty"`
-	RuleGroup   string       `json:"ruleGroup,omitempty"`
-	RuleNames   []string     `json:"ruleNames,omitempty"`
-	MaxTasks    int          `json:"maxTasks,omitempty"`
-	ClusterName []Cluster    `json:"clusterName,omitempty"`
-	KubeConfig  string       `json:"kubeConfig,omitempty"`
-	Once        *metav1.Time `json:"one,omitempty"`
+	Schedule    *string            `json:"schedule,omitempty"`
+	Suspend     bool               `json:"suspend,omitempty"`
+	Timeout     string             `json:"timeout,omitempty"`
+	RuleNames   []InspectRuleNames `json:"ruleNames,omitempty"`
+	MaxTasks    int                `json:"maxTasks,omitempty"`
+	ClusterName []Cluster          `json:"clusterName,omitempty"`
+	KubeConfig  string             `json:"kubeConfig,omitempty"`
+	Once        *metav1.Time       `json:"one,omitempty"`
 }
 
 type TaskNames struct {

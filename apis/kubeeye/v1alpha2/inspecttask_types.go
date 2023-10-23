@@ -28,10 +28,10 @@ type InspectTaskSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	ClusterName   []Cluster `json:"clusterName,omitempty"`
-	RuleNames     []string  `json:"ruleNames,omitempty"`
-	Timeout       string    `json:"timeout,omitempty"`
-	InspectPolicy Policy    `json:"inspectPolicy,omitempty"`
+	ClusterName   []Cluster          `json:"clusterName,omitempty"`
+	RuleNames     []InspectRuleNames `json:"ruleNames,omitempty"`
+	Timeout       string             `json:"timeout,omitempty"`
+	InspectPolicy Policy             `json:"inspectPolicy,omitempty"`
 }
 
 // InspectTaskStatus defines the observed state of InspectTask
@@ -46,6 +46,12 @@ type InspectTaskStatus struct {
 	Duration        string       `json:"duration,omitempty" yaml:"duration"`
 	Status          Phase        `json:"status,omitempty" yaml:"status,omitempty"`
 	InspectRuleType []string     `json:"inspectRuleType,omitempty" yaml:"inspectRuleType"`
+}
+
+type InspectRuleNames struct {
+	Name         string            `json:"name,omitempty"`
+	NodeName     string            `json:"nodeName,omitempty"`
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 }
 
 type JobPhase struct {

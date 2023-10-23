@@ -197,38 +197,20 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 }
 
-func createInspectRule(ctx context.Context, clients *kube.KubernetesClient, ruleGroup []kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask) ([]kubeeyev1alpha2.JobRule, error) {
-	r := sortRuleOpaToAtLast(ruleGroup)
-	marshal, err := json.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, task.Name, metav1.GetOptions{})
-	if err == nil {
-		_ = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Delete(ctx, task.Name, metav1.DeleteOptions{})
-	}
-	// create temp inspect rule
-	configMapTemplate := template.BinaryConfigMapTemplate(task.Name, constant.DefaultNamespace, marshal, true, map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})
-	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, configMapTemplate, metav1.CreateOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
 func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, cluster kubeeyev1alpha2.Cluster, task *kubeeyev1alpha2.InspectTask, ruleLists []kubeeyev1alpha2.InspectRule, clients *kube.KubernetesClient, kubeEyeConfig conf.KubeEyeConfig) error {
+	e := rules.NewExecuteRuleOptions(clients, task)
 
-	inspectRule, inspectRuleNum, err := rules.ParseRules(ctx, clients, task.Name, ruleLists)
+	mergeRule, err := e.MergeRule(ruleLists)
 	if err != nil {
 		return err
 	}
-	rule, err := createInspectRule(ctx, clients, inspectRule, task)
+
+	createInspectRule, err := e.CreateInspectRule(ctx, e.GenerateJob(ctx, mergeRule))
 	if err != nil {
 		return err
 	}
 	jobConfig := kubeEyeConfig.GetClusterJobConfig(cluster.Name)
-	JobPhase, err := r.createJobsInspect(ctx, task, clients, jobConfig, rule)
+	JobPhase, err := r.createJobsInspect(ctx, task, clients, jobConfig, createInspectRule)
 	if err != nil {
 		return err
 	}
@@ -236,32 +218,25 @@ func (r *InspectTaskReconciler) CreateInspect(ctx context.Context, cluster kubee
 	task.Status.EndTimestamp = &metav1.Time{Time: time.Now()}
 	task.Status.Duration = task.Status.EndTimestamp.Sub(task.Status.StartTimestamp.Time).String()
 	task.Status.InspectRuleType = func() (data []string) {
-		for k, v := range inspectRuleNum {
+		for k, v := range e.GetRuleTotal() {
 			if v > 0 {
 				data = append(data, k)
 			}
 		}
 		return data
 	}()
-	err = r.getInspectResultData(ctx, clients, task, cluster, inspectRuleNum)
+	err = r.getInspectResultData(ctx, clients, task, cluster, e.GetRuleTotal())
+	if err != nil {
+		return err
+	}
+
+	err = r.cleanConfig(ctx, clients, task)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func sortRuleOpaToAtLast(rule []kubeeyev1alpha2.JobRule) []kubeeyev1alpha2.JobRule {
-
-	finds, b, OpaRule := utils.ArrayFinds(rule, func(i kubeeyev1alpha2.JobRule) bool {
-		return i.RuleType == constant.Opa
-	})
-	if b {
-		rule = append(rule[:finds], rule[finds+1:]...)
-		rule = append(rule, OpaRule)
-	}
-
-	return rule
-}
 func GetStatus(task *kubeeyev1alpha2.InspectTask) kubeeyev1alpha2.Phase {
 	if task.Status.JobPhase == nil {
 		return kubeeyev1alpha2.PhaseFailed
@@ -305,18 +280,18 @@ func (r *InspectTaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTask *kubeeyev1alpha2.InspectTask, clusterClient *kube.KubernetesClient, config *conf.JobConfig, inspectRule []kubeeyev1alpha2.JobRule) ([]kubeeyev1alpha2.JobPhase, error) {
+func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, task *kubeeyev1alpha2.InspectTask, kubeClient *kube.KubernetesClient, config *conf.JobConfig, jobRules []kubeeyev1alpha2.JobRule) ([]kubeeyev1alpha2.JobPhase, error) {
 	var jobNames []kubeeyev1alpha2.JobPhase
-	nodes := kube.GetNodes(ctx, clusterClient.ClientSet)
-	concurrency := 5
-	runNumber := math.Round(float64(len(nodes)) + float64(len(inspectRule))*0.1)
-	if runNumber > 5 {
+	nodes := kube.GetNodes(ctx, kubeClient.ClientSet)
+	concurrency := 4
+	runNumber := math.Round(float64(len(nodes)) + float64(len(jobRules))*0.1)
+	if runNumber > 4 {
 		concurrency = int(runNumber)
 	}
 	var wg sync.WaitGroup
 	var mutex sync.Mutex
 	semaphore := make(chan struct{}, concurrency)
-	for _, rule := range inspectRule {
+	for _, rule := range jobRules {
 		wg.Add(1)
 		semaphore <- struct{}{}
 		go func(v kubeeyev1alpha2.JobRule) {
@@ -324,11 +299,11 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 				wg.Done()
 				<-semaphore
 			}()
-			if isTimeout(inspectTask.CreationTimestamp, inspectTask.Spec.Timeout) {
+			if isTimeout(task.CreationTimestamp, task.Spec.Timeout) {
 				jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: v.JobName, Phase: kubeeyev1alpha2.PhaseFailed})
 				return
 			}
-			if err := isExistsJob(ctx, clusterClient, v.JobName); err != nil {
+			if err := isExistsJob(ctx, kubeClient, v.JobName); err != nil {
 				mutex.Lock()
 				jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: v.JobName, Phase: kubeeyev1alpha2.PhaseSucceeded})
 				mutex.Unlock()
@@ -337,13 +312,13 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 			inspectInterface, status := inspect.RuleOperatorMap[v.RuleType]
 			if status {
 				klog.Infof("Job %s created", v.JobName)
-				jobTask, err := inspectInterface.CreateJobTask(ctx, clusterClient, &v, inspectTask, config)
+				jobTask, err := inspectInterface.CreateJobTask(ctx, kubeClient, &v, task, config)
 				if err != nil {
 					klog.Errorf("create job error. error:%s", err)
 					jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: v.JobName, Phase: kubeeyev1alpha2.PhaseFailed})
 					return
 				}
-				resultJob := r.waitForJobCompletionGetResult(ctx, clusterClient, v.JobName, jobTask, inspectTask.Spec.Timeout)
+				resultJob := r.waitForJobCompletionGetResult(ctx, kubeClient, v.JobName, jobTask, task.Spec.Timeout)
 				mutex.Lock()
 				jobNames = append(jobNames, *resultJob)
 				mutex.Unlock()
@@ -355,10 +330,6 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, inspectTa
 	}
 	wg.Wait()
 
-	err := r.cleanConfig(ctx, clusterClient, inspectTask)
-	if err != nil {
-		return nil, err
-	}
 	return jobNames, nil
 }
 
@@ -588,8 +559,8 @@ func (r *InspectTaskReconciler) updatePlanStatus(ctx context.Context, phase kube
 }
 
 func (r *InspectTaskReconciler) getRules(ctx context.Context, task *kubeeyev1alpha2.InspectTask) (rules []kubeeyev1alpha2.InspectRule) {
-	for _, name := range task.Spec.RuleNames {
-		rule, err := r.K8sClients.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, name, metav1.GetOptions{})
+	for _, v := range task.Spec.RuleNames {
+		rule, err := r.K8sClients.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, v.Name, metav1.GetOptions{})
 		if err != nil {
 			klog.Error(err, "get rule error")
 			continue

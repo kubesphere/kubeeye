@@ -68,25 +68,29 @@ func (o *commandInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 			ctl := kubeeyev1alpha2.CommandResultItem{
 				Name:    r.Name,
 				Command: r.Command,
-				Level:   r.Level,
 			}
 			command := exec.Command("sh", "-c", r.Command)
 			outputResult, err := command.Output()
 			if err != nil {
 				fmt.Println(err)
 				ctl.Value = fmt.Sprintf("command execute failed, %s", err)
+				ctl.Level = r.Level
+				ctl.Assert = true
 				continue
 			}
-			if _, err = visitor.CheckRule(*r.Rule); err != nil {
-				ctl.Value = fmt.Sprintf("rule condition is not correct, %s", err)
+
+			err, res := visitor.EventRuleEvaluate(map[string]interface{}{"result": string(outputResult)}, *r.Rule)
+			if err != nil {
+				ctl.Value = fmt.Sprintf("rule evaluate failed err:%s", err)
+				ctl.Level = r.Level
+				ctl.Assert = true
 			} else {
-				err, res := visitor.EventRuleEvaluate(map[string]interface{}{"result": string(outputResult)}, *r.Rule)
-				if err != nil {
-					ctl.Value = fmt.Sprintf("rule evaluate failed err:%s", err)
-				} else {
-					ctl.Assert = res
+				if res {
+					ctl.Level = r.Level
 				}
+				ctl.Assert = res
 			}
+
 			commandResult = append(commandResult, ctl)
 		}
 	}

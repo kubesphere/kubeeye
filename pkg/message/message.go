@@ -1,6 +1,6 @@
 package message
 
-import "github.com/kubesphere/kubeeye/pkg/message/conf"
+import "github.com/kubesphere/kubeeye/pkg/conf"
 
 type EventDispatcher struct {
 	handlers conf.EventHandler

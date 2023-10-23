@@ -75,13 +75,13 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 		resultItem := kubeeyev1alpha2.FileChangeResultItem{
 			FileName: file.Name,
 			Path:     file.Path,
-			Level:    file.Level,
 		}
 
 		baseFile, fileErr := os.ReadFile(path.Join(constant.RootPathPrefix, file.Path))
 		if fileErr != nil {
 			klog.Errorf("Failed to open base file path:%s,error:%s", baseFile, fileErr)
 			resultItem.Issues = []string{fmt.Sprintf("%s:The file does not exist", file.Name)}
+			resultItem.Level = file.Level
 			fileResults = append(fileResults, resultItem)
 			continue
 		}
@@ -94,8 +94,9 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 				_, createErr := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, mapTemplate, metav1.CreateOptions{})
 				if createErr != nil {
 					resultItem.Issues = []string{fmt.Sprintf("%s:create configMap failed", file.Name)}
+					resultItem.Level = file.Level
+					fileResults = append(fileResults, resultItem)
 				}
-				fileResults = append(fileResults, resultItem)
 				continue
 			}
 		}
@@ -109,6 +110,9 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 			diffResult[i] = strings.ReplaceAll(diffResult[i], "\x1b[0m", "")
 		}
 		resultItem.Issues = diffResult
+		if len(resultItem.Issues) > 0 {
+			resultItem.Level = file.Level
+		}
 		fileResults = append(fileResults, resultItem)
 	}
 
@@ -132,7 +136,7 @@ func (o *fileChangeInspect) GetResult(runNodeName string, resultCm *corev1.Confi
 	for i := range fileChangeResult {
 		fileChangeResult[i].NodeName = runNodeName
 	}
-	resultCr.Spec.FileChangeResult = fileChangeResult
+	resultCr.Spec.FileChangeResult = append(resultCr.Spec.FileChangeResult, fileChangeResult...)
 	return resultCr, nil
 
 }

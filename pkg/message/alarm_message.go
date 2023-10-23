@@ -1,12 +1,13 @@
 package message
 
 import (
+	"bytes"
 	"fmt"
-	"github.com/kubesphere/kubeeye/pkg/message/conf"
+	"github.com/kubesphere/kubeeye/pkg/conf"
+
 	"io"
 	"k8s.io/klog/v2"
 	"net/http"
-	"strings"
 )
 
 type AlarmMessageHandler struct {
@@ -19,7 +20,7 @@ func (h *AlarmMessageHandler) HandleMessageEvent(event *conf.MessageEvent) {
 	// 例如，发送消息给目标
 
 	fmt.Printf("Message sent to %s by %s: %s\n", event.Target, event.Sender, event.Content)
-	resp, err := http.Post(h.RequestUrl, "application/json", strings.NewReader(event.Content))
+	resp, err := http.Post(h.RequestUrl, "application/json", bytes.NewReader(event.Content))
 	if err != nil {
 		klog.Error(err)
 		return
