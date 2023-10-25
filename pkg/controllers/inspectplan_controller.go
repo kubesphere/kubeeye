@@ -117,7 +117,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if inspectPlan.Spec.Once != nil {
-		if !utils.IsEmptyString(inspectPlan.Status.LastTaskName) {
+		if !utils.IsEmptyValue(inspectPlan.Status.LastTaskName) {
 			return ctrl.Result{}, nil
 		}
 		if !inspectPlan.Spec.Once.After(time.Now()) {
@@ -139,7 +139,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if inspectPlan.Spec.Schedule == nil {
-		if !utils.IsEmptyString(inspectPlan.Status.LastTaskName) {
+		if !utils.IsEmptyValue(inspectPlan.Status.LastTaskName) {
 			return ctrl.Result{}, nil
 		}
 		taskName, err := r.createInspectTask(inspectPlan, ctx)

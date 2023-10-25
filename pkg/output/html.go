@@ -183,8 +183,10 @@ func getComponent(component []v1alpha2.ComponentResultItem) []renderNode {
 	villeinage = append(villeinage, header)
 
 	for _, c := range component {
-		value := []renderNode{{Text: c.Name}, {Text: c.Namespace}, {Text: c.Endpoint}}
-		villeinage = append(villeinage, renderNode{Children: value})
+		if c.Assert {
+			value := []renderNode{{Text: c.Name}, {Text: c.Namespace}, {Text: c.Endpoint}}
+			villeinage = append(villeinage, renderNode{Children: value})
+		}
 	}
 
 	return villeinage

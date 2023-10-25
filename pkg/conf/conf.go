@@ -60,7 +60,7 @@ type MessageConfig struct {
 type EmailConfig struct {
 	Address   string   `json:"address,omitempty"`
 	Port      int32    `json:"port,omitempty"`
-	Fo        string   `json:"form,omitempty"`
+	Fo        string   `json:"fo,omitempty"`
 	To        []string `json:"to,omitempty"`
 	SecretKey string   `json:"secretKey,omitempty"`
 }
@@ -98,9 +98,8 @@ func (j *JobConfig) DeepCopy() *JobConfig {
 }
 
 type MessageEvent struct {
+	Title     string
 	Content   []byte
-	Target    string
-	Sender    string
 	Timestamp time.Time
 }
 

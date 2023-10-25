@@ -33,10 +33,20 @@ config:
         requests:
           cpu: 50m
           memory: 256Mi
-      multiCluster:
-        member1:
-          image: kubespheredev/kubeeye-job:v1.0.0-beta.8
-          imagePullPolicy: Always
+#      multiCluster:
+#        member1:
+#          image: kubespheredev/kubeeye-job:v1.0.0-beta.8
+#          imagePullPolicy: Always
+#      message:
+#        enable: false
+#        mode:  发送模式（完成complete或异常abnormal） ，默认是异常
+#        email:
+#          address: 邮箱服务器地址
+#          port: 25
+#          fo: 发送人邮箱
+#          to:
+#          - 接受人邮箱
+#          secretKey: 存储用户名(username)密码(password)的secret的Name
 controllerManager:
   kubeRbacProxy:
     args:

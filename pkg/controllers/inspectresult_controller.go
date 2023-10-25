@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/constant"
@@ -139,8 +140,7 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		klog.Error("Failed to update inspect result status", err)
 		return ctrl.Result{}, err
 	}
-
-	r.SendMessage(ctx, result.Name)
+	go r.SendMessage(ctx, result)
 	return ctrl.Result{}, nil
 }
 
@@ -201,22 +201,20 @@ func totalResultLevel(data interface{}, mapLevel map[kubeeyev1alpha2.Level]*int)
 	}
 	for _, m := range maps {
 		_, exist := m["assert"]
-		if !exist {
-			continue
+		if exist {
+			v, ok := m["level"]
+			if !ok {
+				mapLevel[kubeeyev1alpha2.DangerLevel] = Autoincrement(kubeeyev1alpha2.DangerLevel)
+			} else {
+				l := v.(string)
+				mapLevel[kubeeyev1alpha2.Level(l)] = Autoincrement(kubeeyev1alpha2.Level(l))
+			}
 		}
-		v, ok := m["level"]
-		if !ok {
-			mapLevel[kubeeyev1alpha2.DangerLevel] = Autoincrement(kubeeyev1alpha2.DangerLevel)
-		} else {
-			l := v.(string)
-			mapLevel[kubeeyev1alpha2.Level(l)] = Autoincrement(kubeeyev1alpha2.Level(l))
-		}
-
 	}
-
 }
 
-func (r *InspectResultReconciler) SendMessage(ctx context.Context, name string) {
+func (r *InspectResultReconciler) SendMessage(ctx context.Context, result *kubeeyev1alpha2.InspectResult) {
+
 	kc, err := kube.GetKubeEyeConfig(ctx, r.Client)
 	if err != nil {
 		klog.Error("GetKubeEyeConfig error", err)
@@ -226,12 +224,19 @@ func (r *InspectResultReconciler) SendMessage(ctx context.Context, name string) 
 		return
 	}
 
+	n := GetIssuesNumber(result)
+	if kc.Message.Mode == "" || kc.Message.Mode == conf.AbnormalMode {
+		if n == 0 {
+			return
+		}
+	}
+	klog.Info("sending email")
 	htmlTemplate, err := template.GetInspectResultHtmlTemplate()
 	if err != nil {
 		klog.Error("GetInspectResultHtmlTemplate error", err)
 		return
 	}
-	err, m := output.HtmlOut(name)
+	err, m := output.HtmlOut(result.Name)
 	if err != nil {
 		klog.Error("get html render data error", err)
 		return
@@ -242,17 +247,21 @@ func (r *InspectResultReconciler) SendMessage(ctx context.Context, name string) 
 		klog.Error("render html template error", err)
 		return
 	}
-	var messageHandler conf.EventHandler
-	switch kc.Message.Type {
-	case conf.EmailMessage:
-		messageHandler = message.NewEmailMessageOptions(&kc.Message.Email, r.Client)
-	default:
-		klog.Error("unable identify send message type")
-		return
-	}
 
+	messageHandler := message.NewEmailMessageOptions(&kc.Message.Email, r.Client)
 	dispatcher := message.RegisterHandler(messageHandler)
 	dispatcher.DispatchMessageEvent(&conf.MessageEvent{
-		Content: data.Bytes(),
+		Title:     fmt.Sprintf("巡检完成,共发现%d个问题", n),
+		Timestamp: time.Now(),
+		Content:   data.Bytes(),
 	})
+}
+
+func GetIssuesNumber(result *kubeeyev1alpha2.InspectResult) (n int) {
+	for _, l := range result.Status.Level {
+		if l != nil {
+			n += *l
+		}
+	}
+	return n
 }

@@ -72,8 +72,16 @@ func StringToBool(b string) bool {
 	return b == "true"
 }
 
-func IsEmptyString(s string) bool {
-	return len(strings.TrimSpace(s)) == 0
+func IsEmptyValue(val interface{}) bool {
+	switch v := val.(type) {
+	case string:
+		return len(strings.TrimSpace(v)) == 0
+	case *string:
+		return v == nil
+	case []string:
+		return v == nil
+	}
+	return false
 }
 
 func ArrayStructToArrayMap(obj interface{}) ([]map[string]interface{}, error) {

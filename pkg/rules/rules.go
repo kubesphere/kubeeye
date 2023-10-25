@@ -344,7 +344,7 @@ func (e *ExecuteRule) SetRuleSchedule(rules []kubeeyev1alpha2.InspectRule) (newR
 			return r.Name == m.Name
 		})
 		if isExist {
-			if !utils.IsEmptyString(r.NodeName) || r.NodeSelector != nil {
+			if !utils.IsEmptyValue(r.NodeName) || r.NodeSelector != nil {
 				toMap := utils.StructToMap(rule.Spec)
 				if toMap != nil {
 					for _, v := range toMap {
@@ -373,9 +373,9 @@ func (e *ExecuteRule) SetRuleSchedule(rules []kubeeyev1alpha2.InspectRule) (newR
 
 func (e *ExecuteRule) SetPrometheusEndpoint(allRule []kubeeyev1alpha2.InspectRule) []kubeeyev1alpha2.InspectRule {
 	for i := range allRule {
-		if !utils.IsEmptyString(allRule[i].Spec.PrometheusEndpoint) && allRule[i].Spec.Prometheus != nil {
+		if !utils.IsEmptyValue(allRule[i].Spec.PrometheusEndpoint) && allRule[i].Spec.Prometheus != nil {
 			for p := range allRule[i].Spec.Prometheus {
-				if utils.IsEmptyString(allRule[i].Spec.Prometheus[p].Endpoint) {
+				if utils.IsEmptyValue(allRule[i].Spec.Prometheus[p].Endpoint) {
 					allRule[i].Spec.Prometheus[p].Endpoint = allRule[i].Spec.PrometheusEndpoint
 				}
 			}

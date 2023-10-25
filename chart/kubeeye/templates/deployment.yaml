@@ -121,6 +121,8 @@ spec:
         volumeMounts:
         - mountPath: /hosts/result
           name: inspect-result
+        - mountPath: /etc/localtime
+          name: localtime
       securityContext:
         runAsNonRoot: true
       serviceAccountName: {{ include "kubeeye.fullname" . }}-controller-manager
@@ -129,3 +131,6 @@ spec:
       - name: inspect-result
         persistentVolumeClaim:
           claimName: {{ include "kubeeye.fullname" . }}-inspect-result
+      - hostPath:
+          path: /etc/localtime
+        name: localtime

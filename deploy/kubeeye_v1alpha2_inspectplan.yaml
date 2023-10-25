@@ -6,7 +6,4 @@ spec:
   maxTasks: 10
   ruleNames:
     - name: inspect-rule-namespace
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
     - name: inspect-rule-systemd
-      nodeName: node1
