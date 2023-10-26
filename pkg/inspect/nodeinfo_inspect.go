@@ -92,7 +92,7 @@ func (o *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 				}
 			case constant.Memory:
 				data := GetMemory(fs)
-				resultItem.Value = fmt.Sprintf("%.0f%%", data[constant.Cpu])
+				resultItem.Value = fmt.Sprintf("%.0f%%", data[constant.Memory])
 				resultItem.ResourcesType.Type = constant.Memory
 				err, ok = visitor.EventRuleEvaluate(data, *info.Rule)
 				if err != nil {

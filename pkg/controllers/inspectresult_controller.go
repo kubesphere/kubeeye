@@ -75,7 +75,7 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			result.Finalizers = append(result.Finalizers, Finalizers)
 			err = r.Client.Update(ctx, result)
 			if err != nil {
-				klog.Error("Failed to inspect plan add finalizers", err)
+				klog.Error("Failed to inspect result add finalizers", err)
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{}, nil
@@ -203,13 +203,20 @@ func totalResultLevel(data interface{}, mapLevel map[kubeeyev1alpha2.Level]*int)
 	for _, m := range maps {
 		_, exist := m["assert"]
 		if exist {
-			v, ok := m["level"]
-			if !ok {
-				mapLevel[kubeeyev1alpha2.DangerLevel] = Autoincrement(kubeeyev1alpha2.DangerLevel)
-			} else {
-				l := v.(string)
-				mapLevel[kubeeyev1alpha2.Level(l)] = Autoincrement(kubeeyev1alpha2.Level(l))
+			s, isOk := m["issues"]
+			a := 1
+			if isOk {
+				a = len(s.([]interface{}))
 			}
+			v, ok := m["level"]
+			for i := 0; i < a; i++ {
+				if !ok {
+					Autoincrement(kubeeyev1alpha2.DangerLevel)
+				} else {
+					Autoincrement(kubeeyev1alpha2.Level(v.(string)))
+				}
+			}
+
 		}
 	}
 }

@@ -71,7 +71,6 @@ func HtmlOut(resultName string) (error, map[string]interface{}) {
 	}
 	if results.Spec.NodeInfo != nil {
 		resultCollection[constant.NodeInfo] = getNodeInfo(results.Spec.NodeInfo)
-
 	}
 
 	if results.Spec.ComponentResult != nil {
