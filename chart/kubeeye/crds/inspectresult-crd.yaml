@@ -69,6 +69,8 @@ spec:
               fileChangeResult:
                 items:
                   properties:
+                    assert:
+                      type: boolean
                     fileName:
                       type: string
                     issues:
@@ -86,6 +88,8 @@ spec:
               fileFilterResult:
                 items:
                   properties:
+                    assert:
+                      type: boolean
                     fileName:
                       type: string
                     issues:
