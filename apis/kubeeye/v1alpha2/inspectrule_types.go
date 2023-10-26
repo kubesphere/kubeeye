@@ -59,7 +59,8 @@ type Node struct {
 type NodeInfo struct {
 	RuleItemBases `json:",inline"`
 	Node          `json:",inline"`
-	Mount         []string `json:"mount,omitempty"`
+	ResourcesType string `json:"resourcesType,omitempty"`
+	Mount         string `json:"mount,omitempty"`
 }
 
 type FileFilterRule struct {

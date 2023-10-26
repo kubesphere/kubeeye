@@ -82,6 +82,7 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 			klog.Errorf("Failed to open base file path:%s,error:%s", baseFile, fileErr)
 			resultItem.Issues = []string{fmt.Sprintf("%s:The file does not exist", file.Name)}
 			resultItem.Level = file.Level
+			resultItem.Assert = true
 			fileResults = append(fileResults, resultItem)
 			continue
 		}
@@ -95,6 +96,7 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 				if createErr != nil {
 					resultItem.Issues = []string{fmt.Sprintf("%s:create configMap failed", file.Name)}
 					resultItem.Level = file.Level
+					resultItem.Assert = true
 					fileResults = append(fileResults, resultItem)
 				}
 				continue
@@ -112,6 +114,7 @@ func (o *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 		resultItem.Issues = diffResult
 		if len(resultItem.Issues) > 0 {
 			resultItem.Level = file.Level
+			resultItem.Assert = true
 		}
 		fileResults = append(fileResults, resultItem)
 	}

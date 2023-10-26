@@ -69,6 +69,10 @@ func HtmlOut(resultName string) (error, map[string]interface{}) {
 		resultCollection[constant.CustomCommand] = getCommand(results.Spec.CommandResult)
 
 	}
+	if results.Spec.NodeInfo != nil {
+		resultCollection[constant.NodeInfo] = getNodeInfo(results.Spec.NodeInfo)
+
+	}
 
 	if results.Spec.ComponentResult != nil {
 		component := getComponent(results.Spec.ComponentResult)
@@ -210,6 +214,37 @@ func getSysctl(sysctlResult []v1alpha2.NodeMetricsResultItem) []renderNode {
 					{Text: item.Name},
 					{Text: item.NodeName},
 					{Text: *item.Value},
+				}}
+			villeinage = append(villeinage, val)
+		}
+
+	}
+
+	return villeinage
+}
+
+func getNodeInfo(nodeInfo []v1alpha2.NodeInfoResultItem) []renderNode {
+	var villeinage []renderNode
+	header := renderNode{Header: true,
+		Children: []renderNode{
+			{Text: "name"},
+			{Text: "nodeName"},
+			{Text: "resourcesType"},
+			{Text: "mount"},
+			{Text: "value"},
+		}}
+	villeinage = append(villeinage, header)
+
+	for _, item := range nodeInfo {
+		if item.Assert {
+			val := renderNode{
+				Issues: item.Assert,
+				Children: []renderNode{
+					{Text: item.Name},
+					{Text: item.NodeName},
+					{Text: item.ResourcesType.Type},
+					{Text: item.ResourcesType.Mount},
+					{Text: item.Value},
 				}}
 			villeinage = append(villeinage, val)
 		}

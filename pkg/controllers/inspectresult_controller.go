@@ -140,6 +140,7 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		klog.Error("Failed to update inspect result status", err)
 		return ctrl.Result{}, err
 	}
+
 	go r.SendMessage(ctx, result)
 	return ctrl.Result{}, nil
 }
@@ -251,7 +252,7 @@ func (r *InspectResultReconciler) SendMessage(ctx context.Context, result *kubee
 	messageHandler := message.NewEmailMessageOptions(&kc.Message.Email, r.Client)
 	dispatcher := message.RegisterHandler(messageHandler)
 	dispatcher.DispatchMessageEvent(&conf.MessageEvent{
-		Title:     fmt.Sprintf("巡检完成,共发现%d个问题", n),
+		Title:     fmt.Sprintf("%s集群巡检完成,共发现%d个问题", result.Spec.InspectCluster.Name, n),
 		Timestamp: time.Now(),
 		Content:   data.Bytes(),
 	})

@@ -19,7 +19,6 @@ import (
 	"k8s.io/klog/v2"
 	"path"
 
-	"math"
 	"strings"
 )
 
@@ -79,80 +78,66 @@ func (o *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 		for _, info := range nodeInfo {
 			ok := false
 			resultItem := kubeeyev1alpha2.NodeInfoResultItem{
-				Name:  info.Name,
-				Level: info.Level,
+				Name: info.Name,
 			}
-			switch strings.ToLower(info.Name) {
+			switch strings.ToLower(info.ResourcesType) {
 			case constant.Cpu:
 				data := GetCpu(fs)
-				resultItem.Value = fmt.Sprintf("%.0f%%", data)
-				err, ok = visitor.EventRuleEvaluate(map[string]interface{}{constant.Cpu: data}, *info.Rule)
-				if err != nil {
-					resultItem.Value = err.Error()
-				}
-			case constant.Memory:
-				data := GetMemory(fs)
-				resultItem.Value = fmt.Sprintf("%.0f%%", data)
-				err, ok = visitor.EventRuleEvaluate(map[string]interface{}{constant.Memory: data}, *info.Rule)
-				if err != nil {
-					resultItem.Value = err.Error()
-				}
-			case constant.Filesystem:
-				if info.Mount == nil {
-					info.Mount = append(info.Mount, "/")
-				}
-				for _, m := range info.Mount {
-					resultItem.FileSystem.Mount = m
-					storage, inode := GetFileSystem(m)
-					resultItem.Value = fmt.Sprintf("%.0f%%", storage)
-					err, ok = visitor.EventRuleEvaluate(map[string]interface{}{constant.Filesystem: storage}, *info.Rule)
-					if err != nil {
-						resultItem.Value = err.Error()
-						resultItem.Assert = true
-						resultItem.Level = info.Level
-					} else {
-						if ok {
-							resultItem.Level = info.Level
-						}
-						resultItem.Assert = ok
-					}
-
-					resultItem.FileSystem.Type = constant.Filesystem
-					nodeInfoResult = append(nodeInfoResult, resultItem)
-					resultItem.Value = fmt.Sprintf("%.0f%%", inode)
-					err, ok = visitor.EventRuleEvaluate(map[string]interface{}{constant.Inode: inode}, *info.Rule)
-					if err != nil {
-						resultItem.Value = err.Error()
-						resultItem.Assert = true
-						resultItem.Level = info.Level
-					} else {
-						if ok {
-							resultItem.Level = info.Level
-						}
-						resultItem.Assert = ok
-					}
-
-					resultItem.FileSystem.Type = constant.Inode
-					nodeInfoResult = append(nodeInfoResult, resultItem)
-				}
-				continue
-			case constant.LoadAvg:
-				a, b, c := GetLoadAvg(fs)
-				resultItem.Value = fmt.Sprintf("load1:%.0f,load5:%.0f,load15:%.0f", a, b, c)
-				var data = make(map[string]interface{})
-				data["load1"] = a
-				data["load5"] = b
-				data["load15"] = c
+				resultItem.Value = fmt.Sprintf("%.0f%%", data[constant.Cpu])
+				resultItem.ResourcesType.Type = constant.Cpu
 				err, ok = visitor.EventRuleEvaluate(data, *info.Rule)
 				if err != nil {
 					resultItem.Value = err.Error()
+					resultItem.Assert = true
+				}
+			case constant.Memory:
+				data := GetMemory(fs)
+				resultItem.Value = fmt.Sprintf("%.0f%%", data[constant.Cpu])
+				resultItem.ResourcesType.Type = constant.Memory
+				err, ok = visitor.EventRuleEvaluate(data, *info.Rule)
+				if err != nil {
+					resultItem.Value = err.Error()
+					resultItem.Assert = true
+				}
+			case constant.Filesystem:
+				if utils.IsEmptyValue(info.Mount) {
+					info.Mount = "/"
+				}
+				storage := GetFileSystem(info.Mount)
+				resultItem.ResourcesType.Type = constant.Filesystem
+				resultItem.ResourcesType.Mount = info.Mount
+				resultItem.Value = fmt.Sprintf("%.0f%%", storage[constant.Filesystem])
+				err, ok = visitor.EventRuleEvaluate(storage, *info.Rule)
+				if err != nil {
+					resultItem.Value = err.Error()
+					resultItem.Assert = true
+				}
+			case constant.Inode:
+				if utils.IsEmptyValue(info.Mount) {
+					info.Mount = "/"
+				}
+				inodes := GetInodes(info.Mount)
+				resultItem.ResourcesType.Type = constant.Inode
+				resultItem.ResourcesType.Mount = info.Mount
+				resultItem.Value = fmt.Sprintf("%.0f%%", inodes[constant.Inode])
+				err, ok = visitor.EventRuleEvaluate(inodes, *info.Rule)
+				if err != nil {
+					resultItem.Value = err.Error()
+					resultItem.Assert = true
+				}
+			case constant.LoadAvg:
+				loadAvg := GetLoadAvg(fs)
+				resultItem.Value = fmt.Sprintf("load1:%.0f,load5:%.0f,load15:%.0f", loadAvg["load1"], loadAvg["load5"], loadAvg["load15"])
+				err, ok = visitor.EventRuleEvaluate(loadAvg, *info.Rule)
+				if err != nil {
+					resultItem.Value = err.Error()
+					resultItem.Assert = true
 				}
 			}
-			if ok {
+			if ok || resultItem.Assert {
 				resultItem.Level = info.Level
+				resultItem.Assert = true
 			}
-			resultItem.Assert = ok
-
 			nodeInfoResult = append(nodeInfoResult, resultItem)
 		}
 	}
@@ -182,11 +167,11 @@ func (o *nodeInfoInspect) GetResult(runNodeName string, resultCm *corev1.ConfigM
 
 }
 
-func GetCpu(fs procfs.FS) float64 {
+func GetCpu(fs procfs.FS) map[string]interface{} {
 	stat, err := fs.Stat()
 	if err != nil {
 		klog.Error("failed to get pu info")
-		return 0
+		return nil
 	}
 	totalUsage := 0.0
 	totalIdle := 0.0
@@ -195,47 +180,56 @@ func GetCpu(fs procfs.FS) float64 {
 		totalIdle += cpuStat.Idle
 	}
 	usage := totalUsage / (totalUsage + totalIdle)
-	return math.Round(usage * 100)
+	return map[string]interface{}{constant.Cpu: usage * 100}
 
 }
 
-func GetMemory(fs procfs.FS) float64 {
+func GetMemory(fs procfs.FS) map[string]interface{} {
 
 	meminfo, err := fs.Meminfo()
 	if err != nil {
 		klog.Error("failed to get meminfo")
-		return 0
+		return nil
 	}
 	totalMemory := *meminfo.MemTotal
 	freeMemory := *meminfo.MemFree + *meminfo.Buffers + *meminfo.Cached
 	usedMemory := totalMemory - freeMemory
 	memoryUsage := float64(usedMemory) / float64(totalMemory)
-	return math.Round(memoryUsage * 100)
+	return map[string]interface{}{constant.Memory: memoryUsage * 100}
 
 }
-func GetLoadAvg(fs procfs.FS) (float64, float64, float64) {
-
+func GetLoadAvg(fs procfs.FS) map[string]interface{} {
 	avg, err := fs.LoadAvg()
 	if err != nil {
 		klog.Error("failed to loadavg")
-		return 0, 0, 0
+		return nil
 	}
-
-	return avg.Load1, avg.Load5, avg.Load15
+	return map[string]interface{}{"load1": avg.Load1, "load5": avg.Load5, "load15": avg.Load15}
 }
-func GetFileSystem(p string) (float64, float64) {
+func GetFileSystem(p string) map[string]interface{} {
 	u := new(unix.Statfs_t)
 	err := unix.Statfs(path.Join(constant.RootPathPrefix, p), u)
 	if err != nil {
 		klog.Error("failed to get filesystem info")
-		return 0, 0
+		return nil
 	}
 
 	total := float64(u.Blocks) * float64(u.Bsize)
 	useBy := float64(u.Bavail) * float64(u.Bsize)
 	storageUse := (total - useBy) / total
 
+	return map[string]interface{}{constant.Filesystem: storageUse * 100}
+}
+
+func GetInodes(p string) map[string]interface{} {
+	u := new(unix.Statfs_t)
+	err := unix.Statfs(path.Join(constant.RootPathPrefix, p), u)
+	if err != nil {
+		klog.Error("failed to get filesystem info")
+		return nil
+	}
+
 	inodeUse := u.Files - u.Ffree
 	inodeUseRate := float64(inodeUse) / float64(u.Files)
-	return math.Round(storageUse * 100), math.Round(inodeUseRate * 100)
+	return map[string]interface{}{constant.Inode: inodeUseRate * 100}
 }

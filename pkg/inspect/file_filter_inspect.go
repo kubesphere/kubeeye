@@ -78,6 +78,7 @@ func (o *fileFilterInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 				klog.Errorf(" Failed to open file . err:%s", err)
 				filterR.Issues = append(filterR.Issues, fmt.Sprintf("Failed to open file for %s.", rule.Name))
 				filterR.Level = rule.Level
+				filterR.Assert = true
 				filterResult = append(filterResult, filterR)
 				continue
 			}
@@ -94,6 +95,7 @@ func (o *fileFilterInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 				}
 			}
 			if len(filterR.Issues) > 0 {
+				filterR.Assert = true
 				filterR.Level = rule.Level
 			}
 			filterResult = append(filterResult, filterR)

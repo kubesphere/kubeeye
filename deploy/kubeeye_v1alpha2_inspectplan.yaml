@@ -7,3 +7,11 @@ spec:
   ruleNames:
     - name: inspect-rule-namespace
     - name: inspect-rule-systemd
+    - name: inspect-rule-filechange
+    - name: inspect-rule-filter-file
+    - name: inspect-rule-node-info
+    - name: inspect-rule-prometheus
+    - name: inspect-rule-sbnormalpodstatus
+    - name: inspect-rule-sysctl
+  timeout: 30m
+

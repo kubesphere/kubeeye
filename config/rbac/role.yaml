@@ -25,6 +25,7 @@ rules:
   resources:
   - namespaces
   - nodes
+  - secrets
   - services
   verbs:
   - get

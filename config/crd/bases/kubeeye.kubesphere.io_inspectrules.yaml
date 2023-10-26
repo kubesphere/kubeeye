@@ -117,9 +117,7 @@ spec:
                     level:
                       type: string
                     mount:
-                      items:
-                        type: string
-                      type: array
+                      type: string
                     name:
                       type: string
                     nodeName:
@@ -128,6 +126,8 @@ spec:
                       additionalProperties:
                         type: string
                       type: object
+                    resourcesType:
+                      type: string
                     rule:
                       type: string
                   type: object

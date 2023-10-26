@@ -69,15 +69,15 @@ type PrometheusResult struct {
 }
 
 type NodeInfoResultItem struct {
-	Name       string          `json:"name,omitempty"`
-	FileSystem FileSystemLabel `json:",inline"`
-	Value      string          `json:"value,omitempty"`
-	Assert     bool            `json:"assert,omitempty"`
-	Level      Level           `json:"level,omitempty"`
-	NodeName   string          `json:"nodeName,omitempty"`
+	Name          string        `json:"name,omitempty"`
+	ResourcesType ResourcesType `json:",inline"`
+	Value         string        `json:"value,omitempty"`
+	Assert        bool          `json:"assert,omitempty"`
+	Level         Level         `json:"level,omitempty"`
+	NodeName      string        `json:"nodeName,omitempty"`
 }
 
-type FileSystemLabel struct {
+type ResourcesType struct {
 	Mount string `json:"mount,omitempty"`
 	Type  string `json:"type,omitempty"`
 }
@@ -88,6 +88,7 @@ type FileChangeResultItem struct {
 	Path     string   `json:"path,omitempty"`
 	Level    Level    `json:"level,omitempty"`
 	NodeName string   `json:"nodeName,omitempty"`
+	Assert   bool     `json:"assert,omitempty"`
 }
 type NodeMetricsResultItem struct {
 	Name     string  `json:"name,omitempty"`
