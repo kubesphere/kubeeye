@@ -1,19 +1,9 @@
 package inspect
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/options"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/template"
-	"github.com/pkg/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/klog/v2"
 )
 
 var (
@@ -61,47 +51,4 @@ func CalculateScore(fmResultss []kubeeyev1alpha2.ResourceResult, k8sResources ku
 	scoreInfo.Passing = countSuccess
 
 	return scoreInfo
-}
-
-func JobInspect(ctx context.Context, taskName string, resultName string, clients *kube.KubernetesClient, ruleType string) error {
-	var jobRule []kubeeyev1alpha2.JobRule
-
-	rule, err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).List(ctx, v1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})})
-	if err != nil {
-		klog.Errorf("Failed to get  inspect Rule. err:%s", err)
-		return err
-	}
-	for _, item := range rule.Items {
-		var tempRule []kubeeyev1alpha2.JobRule
-		data := item.BinaryData[constant.Data]
-		err = json.Unmarshal(data, &tempRule)
-		jobRule = append(jobRule, tempRule...)
-	}
-
-	var result []byte
-	inspectInterface, status := RuleOperatorMap[ruleType]
-	if status {
-		result, err = inspectInterface.RunInspect(ctx, jobRule, clients, resultName)
-	}
-	if err != nil {
-		return err
-	}
-	node := findJobRunNode(ctx, resultName, clients.ClientSet)
-	resultConfigMap := template.BinaryConfigMapTemplate(resultName, constant.DefaultNamespace, result, true, map[string]string{constant.LabelTaskName: taskName, constant.LabelNodeName: node, constant.LabelRuleType: ruleType})
-	_, err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, resultConfigMap, v1.CreateOptions{})
-	if err != nil {
-		return errors.New(fmt.Sprintf("create configMap failed. err:%s", err))
-	}
-
-	return nil
-}
-
-func findJobRunNode(ctx context.Context, jobName string, c kubernetes.Interface) string {
-	pods, err := c.CoreV1().Pods(constant.DefaultNamespace).List(ctx, v1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{"job-name": jobName})})
-	if err != nil {
-		klog.Error(err)
-		return ""
-	}
-
-	return pods.Items[0].Spec.NodeName
 }

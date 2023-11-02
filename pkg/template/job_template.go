@@ -44,7 +44,7 @@ func InspectJobsTemplate(jobConfig *conf.JobConfig, jobName string, inspectTask 
 						Name:    "inspect-task-kubeeye",
 						Image:   jobConfig.Image,
 						Command: []string{"ke"},
-						Args:    []string{"create", "job", taskType, "--task-name", inspectTask.Name, "--result-name", jobName},
+						Args:    []string{"create", "job", "--job-type", taskType, "--task-name", inspectTask.Name, "--result-name", jobName},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      "proc",
 							ReadOnly:  true,
