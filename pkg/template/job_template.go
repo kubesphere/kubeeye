@@ -1,37 +1,32 @@
 package template
 
 import (
-	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func InspectJobsTemplate(jobConfig *conf.JobConfig, jobName string, inspectTask *kubeeyev1alpha2.InspectTask, nodeName string, nodeSelector map[string]string, taskType string) *v1.Job {
-
+func GeneratorJobTemplate(Job JobTemplateOptions) *v1.Job {
 	var ownerController = true
-	ownerRef := metav1.OwnerReference{
-		APIVersion:         inspectTask.APIVersion,
-		Kind:               inspectTask.Kind,
-		Name:               inspectTask.Name,
-		UID:                inspectTask.UID,
-		Controller:         &ownerController,
-		BlockOwnerDeletion: &ownerController,
-	}
-
-	var mountPropagation = corev1.MountPropagationHostToContainer
-	inspectJob := &v1.Job{
+	mountPropagation := corev1.MountPropagationHostToContainer
+	return &v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            jobName,
-			Namespace:       constant.DefaultNamespace,
-			OwnerReferences: []metav1.OwnerReference{ownerRef},
-			Labels:          map[string]string{constant.LabelRuleType: taskType},
+			Name:      Job.JobName,
+			Namespace: constant.DefaultNamespace,
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         Job.Task.APIVersion,
+				Kind:               Job.Task.Kind,
+				Name:               Job.Task.Name,
+				UID:                Job.Task.UID,
+				Controller:         &ownerController,
+				BlockOwnerDeletion: &ownerController,
+			}},
+			Labels: map[string]string{constant.LabelRuleType: Job.RuleType},
 		},
 		Spec: v1.JobSpec{
-			BackoffLimit:            jobConfig.BackLimit,
-			TTLSecondsAfterFinished: jobConfig.AutoDelTime,
+			BackoffLimit:            Job.JobConfig.BackLimit,
+			TTLSecondsAfterFinished: Job.JobConfig.AutoDelTime,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "inspect-job-pod",
@@ -42,9 +37,9 @@ func InspectJobsTemplate(jobConfig *conf.JobConfig, jobName string, inspectTask 
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Name:    "inspect-task-kubeeye",
-						Image:   jobConfig.Image,
+						Image:   Job.JobConfig.Image,
 						Command: []string{"ke"},
-						Args:    []string{"create", "job", "--job-type", taskType, "--task-name", inspectTask.Name, "--result-name", jobName},
+						Args:    []string{"create", "job", "--job-type", Job.RuleType, "--task-name", Job.Task.Name, "--result-name", Job.JobName},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      "proc",
 							ReadOnly:  true,
@@ -63,15 +58,15 @@ func InspectJobsTemplate(jobConfig *conf.JobConfig, jobName string, inspectTask 
 							ReadOnly:  true,
 							MountPath: "/var/run/dbus/system_bus_socket",
 						}},
-						ImagePullPolicy: corev1.PullPolicy(jobConfig.ImagePullPolicy),
-						Resources:       jobConfig.Resources,
+						ImagePullPolicy: corev1.PullPolicy(Job.JobConfig.ImagePullPolicy),
+						Resources:       Job.JobConfig.Resources,
 					}},
 					HostNetwork:        true,
 					HostPID:            true,
 					DNSPolicy:          corev1.DNSClusterFirstWithHostNet,
 					ServiceAccountName: "kubeeye-inspect-job",
-					NodeName:           nodeName,
-					NodeSelector:       nodeSelector,
+					NodeName:           Job.NodeName,
+					NodeSelector:       Job.NodeSelector,
 					RestartPolicy:      corev1.RestartPolicyNever,
 					Tolerations: []corev1.Toleration{
 						{
@@ -115,5 +110,4 @@ func InspectJobsTemplate(jobConfig *conf.JobConfig, jobName string, inspectTask 
 		},
 	}
 
-	return inspectJob
 }

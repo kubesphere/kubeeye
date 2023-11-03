@@ -81,7 +81,7 @@ func IsEmptyValue(val interface{}) bool {
 	case []string:
 		return v == nil
 	}
-	return false
+	return true
 }
 
 func ArrayStructToArrayMap(obj interface{}) ([]map[string]interface{}, error) {

@@ -6,12 +6,9 @@ import (
 	"fmt"
 	"github.com/kubesphere/event-rule-engine/visitor"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
-	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -25,31 +22,7 @@ func init() {
 	RuleOperatorMap[constant.CustomCommand] = &commandInspect{}
 }
 
-func (o *commandInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask, config *conf.JobConfig) (*kubeeyev1alpha2.JobPhase, error) {
-
-	var commandRules []kubeeyev1alpha2.CustomCommandRule
-	_ = json.Unmarshal(jobRule.RunRule, &commandRules)
-
-	if commandRules == nil {
-		return nil, fmt.Errorf("commandRules is empty")
-	}
-	var jobTemplate *v1.Job
-	if commandRules[0].NodeName != nil {
-		jobTemplate = template.InspectJobsTemplate(config, jobRule.JobName, task, *commandRules[0].NodeName, nil, constant.CustomCommand)
-	} else {
-		jobTemplate = template.InspectJobsTemplate(config, jobRule.JobName, task, "", commandRules[0].NodeSelector, constant.CustomCommand)
-	}
-
-	_, err := clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Create(ctx, jobTemplate, metav1.CreateOptions{})
-	if err != nil {
-		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
-		return nil, err
-	}
-	return &kubeeyev1alpha2.JobPhase{JobName: jobRule.JobName, Phase: kubeeyev1alpha2.PhaseRunning}, err
-
-}
-
-func (o *commandInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
+func (c *commandInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
 
 	var commandResult []kubeeyev1alpha2.CommandResultItem
 
@@ -103,7 +76,7 @@ func (o *commandInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 
 }
 
-func (o *commandInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) (*kubeeyev1alpha2.InspectResult, error) {
+func (c *commandInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap, resultCr *kubeeyev1alpha2.InspectResult) (*kubeeyev1alpha2.InspectResult, error) {
 
 	var commandResult []kubeeyev1alpha2.CommandResultItem
 	err := json.Unmarshal(resultCm.BinaryData[constant.Data], &commandResult)

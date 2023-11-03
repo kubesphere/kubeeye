@@ -74,7 +74,7 @@ type InspectTaskReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
 func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	//logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
+
 
 	inspectTask := &kubeeyev1alpha2.InspectTask{}
 	err := r.Get(ctx, req.NamespacedName, inspectTask)
@@ -112,6 +112,11 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if inspectTask.Status.StartTimestamp.IsZero() {
+		err = r.updatePlanStatus(ctx, kubeeyev1alpha2.PhaseRunning, inspectTask.Labels[constant.LabelPlanName], inspectTask.Name)
+		if err != nil {
+			klog.Error("Failed to update plan status. ", err)
+			return ctrl.Result{}, err
+		}
 		inspectTask.Status.StartTimestamp = &metav1.Time{Time: time.Now()}
 		inspectTask.Status.Status = kubeeyev1alpha2.PhaseRunning
 		err = r.Status().Update(ctx, inspectTask)
@@ -119,11 +124,7 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			klog.Error("Failed to update inspect plan status. ", err)
 			return ctrl.Result{}, err
 		}
-		err = r.updatePlanStatus(ctx, kubeeyev1alpha2.PhaseRunning, inspectTask.Labels[constant.LabelPlanName], inspectTask.Name)
-		if err != nil {
-			klog.Error("Failed to update plan status. ", err)
-			return ctrl.Result{}, err
-		}
+
 		return ctrl.Result{}, nil
 	}
 	inspectTask.Status.ClusterInfo, err = r.getClusterInfo(ctx)
@@ -309,10 +310,10 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, task *kub
 				mutex.Unlock()
 				return
 			}
-			inspectInterface, status := inspect.RuleOperatorMap[v.RuleType]
+			_, status := inspect.RuleOperatorMap[v.RuleType]
 			if status {
 				klog.Infof("Job %s created", v.JobName)
-				jobTask, err := inspectInterface.CreateJobTask(ctx, kubeClient, &v, task, config)
+				jobTask, err := createInspectJob(ctx, kubeClient, &v, task, config, v.RuleType)
 				if err != nil {
 					klog.Errorf("create job error. error:%s", err)
 					jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: v.JobName, Phase: kubeeyev1alpha2.PhaseFailed})
@@ -569,4 +570,47 @@ func (r *InspectTaskReconciler) getRules(ctx context.Context, task *kubeeyev1alp
 	}
 
 	return rules
+}
+
+func createInspectJob(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask, config *conf.JobConfig, ruleType string) (*kubeeyev1alpha2.JobPhase, error) {
+
+	nodeName, nodeSelector, err := GetDeploySchedule(jobRule.RunRule)
+	if err != nil && ruleType != constant.Component {
+		return nil, fmt.Errorf("%s:%s", ruleType, err.Error())
+	}
+
+	o := template.JobTemplateOptions{
+		JobConfig:    config,
+		JobName:      jobRule.JobName,
+		Task:         task,
+		NodeName:     nodeName,
+		NodeSelector: nodeSelector,
+		RuleType:     ruleType,
+	}
+
+	_, err = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Create(ctx, template.GeneratorJobTemplate(o), metav1.CreateOptions{})
+	if err != nil {
+		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
+		return nil, err
+	}
+	return &kubeeyev1alpha2.JobPhase{JobName: jobRule.JobName, Phase: kubeeyev1alpha2.PhaseRunning}, nil
+}
+
+func GetDeploySchedule(r []byte) (string, map[string]string, error) {
+
+	var data []map[string]interface{}
+	err := json.Unmarshal(r, &data)
+	if len(data) == 0 || err != nil {
+		return "", nil, fmt.Errorf("rule is empty")
+	}
+	v := data[0]["nodeName"]
+	ns := data[0]["nodeSelector"]
+	if v == nil && ns == nil {
+		return "", nil, nil
+	}
+	if !utils.IsEmptyValue(v) {
+		return v.(string), nil, nil
+	}
+
+	return "", utils.MapValConvert[string](ns.(map[string]interface{})), nil
 }

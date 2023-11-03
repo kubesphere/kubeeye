@@ -6,13 +6,10 @@ import (
 	"fmt"
 	"github.com/kubesphere/event-rule-engine/visitor"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"github.com/prometheus/procfs"
-	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -23,33 +20,6 @@ type sysctlInspect struct {
 
 func init() {
 	RuleOperatorMap[constant.Sysctl] = &sysctlInspect{}
-}
-
-func (o *sysctlInspect) CreateJobTask(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask, config *conf.JobConfig) (*kubeeyev1alpha2.JobPhase, error) {
-
-	var sysRules []kubeeyev1alpha2.SysRule
-	_ = json.Unmarshal(jobRule.RunRule, &sysRules)
-
-	if sysRules == nil {
-		return nil, fmt.Errorf("sysctl rule is empty")
-	}
-
-	var jobTemplate *v1.Job
-	if sysRules[0].NodeName != nil {
-		jobTemplate = template.InspectJobsTemplate(config, jobRule.JobName, task, *sysRules[0].NodeName, nil, constant.Sysctl)
-	} else if sysRules[0].NodeSelector != nil {
-		jobTemplate = template.InspectJobsTemplate(config, jobRule.JobName, task, "", sysRules[0].NodeSelector, constant.Sysctl)
-	} else {
-		jobTemplate = template.InspectJobsTemplate(config, jobRule.JobName, task, "", nil, constant.Sysctl)
-	}
-
-	_, err := clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Create(ctx, jobTemplate, metav1.CreateOptions{})
-	if err != nil {
-		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
-		return nil, err
-	}
-	return &kubeeyev1alpha2.JobPhase{JobName: jobRule.JobName, Phase: kubeeyev1alpha2.PhaseRunning}, err
-
 }
 
 func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
