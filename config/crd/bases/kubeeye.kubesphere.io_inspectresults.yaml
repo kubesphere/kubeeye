@@ -72,13 +72,13 @@ spec:
                   properties:
                     assert:
                       type: boolean
-                    fileName:
-                      type: string
                     issues:
                       items:
                         type: string
                       type: array
                     level:
+                      type: string
+                    name:
                       type: string
                     nodeName:
                       type: string
@@ -91,13 +91,13 @@ spec:
                   properties:
                     assert:
                       type: boolean
-                    fileName:
-                      type: string
                     issues:
                       items:
                         type: string
                       type: array
                     level:
+                      type: string
+                    name:
                       type: string
                     nodeName:
                       type: string
@@ -193,6 +193,8 @@ spec:
                     assert:
                       type: boolean
                     level:
+                      type: string
+                    name:
                       type: string
                     result:
                       type: string

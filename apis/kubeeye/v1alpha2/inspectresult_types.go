@@ -62,18 +62,21 @@ const (
 	IgnoreLevel  Level = "ignore"
 )
 
-type PrometheusResult struct {
-	Result string `json:"result,omitempty"`
+type BaseResult struct {
+	Name   string `json:"name,omitempty"`
 	Assert bool   `json:"assert,omitempty"`
 	Level  Level  `json:"level,omitempty"`
 }
 
+type PrometheusResult struct {
+	BaseResult `json:",inline"`
+	Result     string `json:"result,omitempty"`
+}
+
 type NodeInfoResultItem struct {
-	Name          string        `json:"name,omitempty"`
+	BaseResult    `json:",inline"`
 	ResourcesType ResourcesType `json:",inline"`
 	Value         string        `json:"value,omitempty"`
-	Assert        bool          `json:"assert,omitempty"`
-	Level         Level         `json:"level,omitempty"`
 	NodeName      string        `json:"nodeName,omitempty"`
 }
 
@@ -83,34 +86,26 @@ type ResourcesType struct {
 }
 
 type FileChangeResultItem struct {
-	FileName string   `json:"fileName,omitempty"`
-	Issues   []string `json:"issues,omitempty"`
-	Path     string   `json:"path,omitempty"`
-	Level    Level    `json:"level,omitempty"`
-	NodeName string   `json:"nodeName,omitempty"`
-	Assert   bool     `json:"assert,omitempty"`
+	BaseResult `json:",inline"`
+	Issues     []string `json:"issues,omitempty"`
+	Path       string   `json:"path,omitempty"`
+	NodeName   string   `json:"nodeName,omitempty"`
 }
 type NodeMetricsResultItem struct {
-	Name     string  `json:"name,omitempty"`
-	Assert   bool    `json:"assert,omitempty"`
-	Value    *string `json:"value,omitempty"`
-	Level    Level   `json:"level,omitempty"`
-	NodeName string  `json:"nodeName,omitempty"`
+	BaseResult `json:",inline"`
+	Value      *string `json:"value,omitempty"`
+	NodeName   string  `json:"nodeName,omitempty"`
 }
 type ComponentResultItem struct {
-	Name      string `json:"name,omitempty"`
-	Namespace string `json:"namespace,omitempty"`
-	Endpoint  string `json:"endpoint,omitempty"`
-	Level     Level  `json:"level,omitempty"`
-	Assert    bool   `json:"assert,omitempty"`
+	BaseResult `json:",inline"`
+	Namespace  string `json:"namespace,omitempty"`
+	Endpoint   string `json:"endpoint,omitempty"`
 }
 type CommandResultItem struct {
-	Name     string `json:"name,omitempty"`
-	Command  string `json:"command,omitempty"`
-	Level    Level  `json:"level,omitempty"`
-	Assert   bool   `json:"assert,omitempty"`
-	Value    string `json:"value,omitempty"`
-	NodeName string `json:"nodeName,omitempty"`
+	BaseResult `json:",inline"`
+	Command    string `json:"command,omitempty"`
+	Value      string `json:"value,omitempty"`
+	NodeName   string `json:"nodeName,omitempty"`
 }
 
 // +genclient

@@ -39,8 +39,8 @@ func (c *commandInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 		}
 		for _, r := range commandRules {
 			ctl := kubeeyev1alpha2.CommandResultItem{
-				Name:    r.Name,
-				Command: r.Command,
+				BaseResult: kubeeyev1alpha2.BaseResult{Name: r.Name},
+				Command:    r.Command,
 			}
 			command := exec.Command("sh", "-c", r.Command)
 			outputResult, err := command.Output()

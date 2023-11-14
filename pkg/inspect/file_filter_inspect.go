@@ -42,8 +42,8 @@ func (f *fileFilterInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 		for _, rule := range filter {
 			file, err := os.OpenFile(path.Join(constant.RootPathPrefix, rule.Path), os.O_RDONLY, 0222)
 			filterR := kubeeyev1alpha2.FileChangeResultItem{
-				FileName: rule.Name,
-				Path:     rule.Path,
+				Path:       rule.Path,
+				BaseResult: kubeeyev1alpha2.BaseResult{Name: rule.Name},
 			}
 			if err != nil {
 				klog.Errorf(" Failed to open file . err:%s", err)

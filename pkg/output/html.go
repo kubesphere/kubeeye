@@ -141,7 +141,7 @@ func getFileChange(fileChange []v1alpha2.FileChangeResultItem) []renderNode {
 			val := renderNode{
 				Children: []renderNode{
 					{Text: item.Path},
-					{Text: item.FileName},
+					{Text: item.Name},
 					{Text: item.NodeName},
 					{Text: strings.Join(item.Issues, ",")},
 					{Text: string(item.Level)},
@@ -168,7 +168,7 @@ func getFileFilter(fileResult []v1alpha2.FileChangeResultItem) []renderNode {
 
 	for _, result := range fileResult {
 		for _, issue := range result.Issues {
-			content2 := []renderNode{{Text: result.FileName}, {Text: result.Path}, {Text: result.NodeName}, {Text: issue}, {Text: string(result.Level)}}
+			content2 := []renderNode{{Text: result.Name}, {Text: result.Path}, {Text: result.NodeName}, {Text: issue}, {Text: string(result.Level)}}
 			villeinage = append(villeinage, renderNode{Children: content2})
 		}
 

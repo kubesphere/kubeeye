@@ -45,8 +45,8 @@ func (f *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 
 	for _, file := range fileRule {
 		resultItem := kubeeyev1alpha2.FileChangeResultItem{
-			FileName: file.Name,
-			Path:     file.Path,
+			BaseResult: kubeeyev1alpha2.BaseResult{Name: file.Name},
+			Path:       file.Path,
 		}
 
 		baseFile, fileErr := os.ReadFile(path.Join(constant.RootPathPrefix, file.Path))

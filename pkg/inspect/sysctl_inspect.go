@@ -47,7 +47,7 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 			ctlRule, err := fs.SysctlStrings(sysRule.Name)
 			klog.Infof("name:%s,value:%s", sysRule.Name, ctlRule)
 			ctl := kubeeyev1alpha2.NodeMetricsResultItem{
-				Name: sysRule.Name,
+				BaseResult: kubeeyev1alpha2.BaseResult{Name: sysRule.Name},
 			}
 			if err != nil {
 				errVal := fmt.Sprintf("name:%s to does not exist", sysRule.Name)

@@ -43,10 +43,9 @@ func (c *componentInspect) RunInspect(ctx context.Context, rules []kubeeyev1alph
 			endpoint := fmt.Sprintf("%s.%s.svc.cluster.local:%d", item.Name, item.Namespace, item.Spec.Ports[0].Port)
 			isConnected := checkConnection(endpoint)
 			componentResultItem := kubeeyev1alpha2.ComponentResultItem{
-				Name:      item.Name,
-				Namespace: item.Namespace,
-				Endpoint:  endpoint,
-				Assert:    !isConnected,
+				Namespace:  item.Namespace,
+				Endpoint:   endpoint,
+				BaseResult: kubeeyev1alpha2.BaseResult{Name: item.Name, Assert: !isConnected},
 			}
 			if isConnected {
 				klog.Infof("success connect to：%s\n", endpoint)

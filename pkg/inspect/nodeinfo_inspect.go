@@ -48,7 +48,7 @@ func (n *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 		for _, info := range nodeInfo {
 			ok := false
 			resultItem := kubeeyev1alpha2.NodeInfoResultItem{
-				Name: info.Name,
+				BaseResult: kubeeyev1alpha2.BaseResult{Name: info.Name},
 			}
 			switch strings.ToLower(info.ResourcesType) {
 			case constant.Cpu:

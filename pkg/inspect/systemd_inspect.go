@@ -48,7 +48,7 @@ func (o *systemdInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 		}
 		for _, r := range systemd {
 			ctl := kubeeyev1alpha2.NodeMetricsResultItem{
-				Name: r.Name,
+				BaseResult: kubeeyev1alpha2.BaseResult{Name: r.Name},
 			}
 			for _, status := range unitsContext {
 				if status.Name == fmt.Sprintf("%s.service", r.Name) {
