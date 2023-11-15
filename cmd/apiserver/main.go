@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/clients/informers/externalversions"
@@ -13,7 +12,6 @@ import (
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	"net/http"
 	"os"
@@ -41,13 +39,12 @@ func main() {
 	var kc kube.KubernetesClient
 	kubeConfig, err := kube.GetKubeConfigInCluster()
 	if err != nil {
-		klog.Error(err)
+
 		errCh <- err
 	}
 
 	clients, err := kc.K8SClients(kubeConfig)
 	if err != nil {
-		klog.Error(err)
 		errCh <- err
 	}
 	factory := externalversions.NewSharedInformerFactory(clients.VersionClientSet, 5*time.Second)
@@ -55,25 +52,14 @@ func main() {
 	forResources := []string{"inspectrules", "inspectresults", "inspectplans", "inspecttasks"}
 
 	for _, resource := range forResources {
-		f, _ := factory.ForResource(schema.GroupVersionResource{
+		_, err = factory.ForResource(schema.GroupVersionResource{
 			Group:    kubeeyev1alpha2.GroupVersion.Group,
 			Version:  kubeeyev1alpha2.GroupVersion.Version,
 			Resource: resource,
 		})
-		f.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				name := GetResourcesName(obj)
-				fmt.Printf("add cr,name:%s\n", name)
-			},
-			UpdateFunc: func(oldObj, newObj interface{}) {
-				name := GetResourcesName(oldObj)
-				fmt.Printf("update cr,name:%s\n", name)
-			},
-			DeleteFunc: func(obj interface{}) {
-				name := GetResourcesName(obj)
-				fmt.Printf("delete cr,name:%s\n", name)
-			},
-		})
+		if err != nil {
+			errCh <- err
+		}
 	}
 
 	stopCh := make(chan struct{})

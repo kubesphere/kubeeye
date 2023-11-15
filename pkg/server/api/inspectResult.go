@@ -98,12 +98,21 @@ func (i *InspectResult) GetInspectResult(gin *gin.Context) {
 	outType := q.Filters.Get("type")
 	switch outType {
 	case "html":
-		err, m := output.HtmlOut(gin.Param("name"))
+		err, m := output.HtmlOut(name)
 		if err != nil {
 			gin.JSON(http.StatusInternalServerError, err)
 			return
 		}
 		gin.HTML(http.StatusOK, template.InspectResultTemplate, m)
+	case "customized":
+		data, err := i.GetFileResultData(name)
+		if err != nil {
+			gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
+			return
+		}
+		customizedStruct := output.ParseCustomizedStruct(data)
+		gin.JSON(http.StatusOK, customizedStruct)
+
 	default:
 		result, err := i.Factory.Lister().Get(name)
 		if err != nil {
@@ -150,4 +159,17 @@ func (i *InspectResult) filter(data map[string]interface{}, f *query.Filter) boo
 		}
 	}
 	return false
+}
+
+func (i *InspectResult) GetFileResultData(name string) (*v1alpha2.InspectResult, error) {
+	var results v1alpha2.InspectResult
+	file, err := os.ReadFile(path.Join(constant.ResultPath, name))
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(file, &results)
+	if err != nil {
+		return nil, err
+	}
+	return &results, nil
 }
