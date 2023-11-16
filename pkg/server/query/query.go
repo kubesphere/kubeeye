@@ -17,6 +17,7 @@ const (
 	Page          = "page"
 	LabelSelector = "labelSelector"
 	Details       = "details"
+	Type          = "type"
 )
 const (
 	CreateTime        = "createTime"
@@ -90,7 +91,7 @@ func (q *Query) ParseAscending(b string) bool {
 
 func (q *Query) ParseFilter(values url.Values) *Filter {
 	var filters *Filter
-	continues := []string{Limit, Page, OrderBy, Ascending, LabelSelector, Details}
+	continues := []string{Limit, Page, OrderBy, Ascending, LabelSelector, Details, Type}
 	for key, value := range values {
 		if !slices.Contains(continues, key) {
 			if filters == nil {

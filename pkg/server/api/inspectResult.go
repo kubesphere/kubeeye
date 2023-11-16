@@ -60,7 +60,24 @@ func (i *InspectResult) ListInspectResult(gin *gin.Context) {
 		return
 	}
 	data := q.GetPageData(ret, i.compare, i.filter)
+	outType, _ := gin.GetQuery("type")
 	results := utils.MapToStruct[v1alpha2.InspectResult](data.Items.([]map[string]interface{})...)
+	if outType == "customized" {
+		var resultCustomized []map[string]interface{}
+		for _, result := range results {
+			d, e := i.GetFileResultData(result.Name)
+			if e != nil {
+				gin.JSON(http.StatusInternalServerError, NewErrors(e.Error(), "InspectResult"))
+				return
+			}
+
+			resultCustomized = append(resultCustomized, output.ParseCustomizedStruct(d))
+
+		}
+		gin.JSON(http.StatusOK, resultCustomized)
+		return
+	}
+
 	details, _ := gin.GetQuery("details")
 	if utils.StringToBool(details) {
 		for k := range results {
@@ -94,8 +111,8 @@ func (i *InspectResult) ListInspectResult(gin *gin.Context) {
 // @Router       /inspectresults/{name} [get]
 func (i *InspectResult) GetInspectResult(gin *gin.Context) {
 	name := gin.Param("name")
-	q := query.ParseQuery(gin)
-	outType := q.Filters.Get("type")
+	query.ParseQuery(gin)
+	outType, _ := gin.GetQuery("type")
 	switch outType {
 	case "html":
 		err, m := output.HtmlOut(name)

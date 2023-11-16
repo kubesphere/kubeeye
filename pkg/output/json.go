@@ -58,7 +58,8 @@ func ParseCustomizedStruct(data *kubeeyev1alpha2.InspectResult) map[string]inter
 	resources := ParseResources(data.Spec.PrometheusResult)
 	top := ParseResourcesTop(data.Spec.PrometheusResult)
 	metric := ParseOtherMetric(data.Spec.PrometheusResult)
-	return map[string]interface{}{"api_status": status, "resources_usage": resources, "resources_usage_top": top, "metric": metric}
+
+	return map[string]interface{}{"name": data.Name, "cluster": data.Spec.InspectCluster.Name, "component_status": data.Spec.ComponentResult, "api_status": status, "resources_usage": resources, "resources_usage_top": top, "metric": metric}
 }
 
 func ParseApiStatus(result []kubeeyev1alpha2.PrometheusResult) map[string]string {
