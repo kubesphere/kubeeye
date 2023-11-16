@@ -101,7 +101,7 @@ func MergeRule(task *kubeeyev1alpha2.InspectTask, rules ...kubeeyev1alpha2.Inspe
 	//		ruleSpec.CustomCommand = command
 	//	}
 	//
-	//	ruleSpec.Component = rule.Spec.Component
+	//	ruleSpec.ServiceConnect = rule.Spec.ServiceConnect
 	//}
 	return ruleSpec, nil
 }
@@ -131,7 +131,7 @@ func Allocation(rule interface{}, taskName string, ruleType string) (*kubeeyev1a
 		klog.Errorf("Failed to convert rule to map. err:%s", err)
 		return nil, err
 	}
-	if toMap == nil && ruleType != constant.Component {
+	if toMap == nil && ruleType != constant.ServiceConnect {
 		return nil, fmt.Errorf("failed to Allocation rule for empty")
 	}
 
@@ -223,10 +223,10 @@ func ParseRules(ctx context.Context, clients *kube.KubernetesClient, task *kubee
 	}
 	var inspectRuleTotal = make(map[string]int)
 	var executeRule []kubeeyev1alpha2.JobRule
-	component, err := Allocation(ruleSpec.Component, task.Name, constant.Component)
+	component, err := Allocation(ruleSpec.ServiceConnect, task.Name, constant.ServiceConnect)
 	if err == nil {
 		executeRule = append(executeRule, *component)
-		inspectRuleTotal[constant.Component] = TotalServiceNum(ctx, clients, ruleSpec.Component)
+		inspectRuleTotal[constant.ServiceConnect] = TotalServiceNum(ctx, clients, ruleSpec.ServiceConnect)
 	}
 	opa, err := Allocation(ruleSpec.Opas, task.Name, constant.Opa)
 	if err == nil {
@@ -285,10 +285,10 @@ func ParseRules(ctx context.Context, clients *kube.KubernetesClient, task *kubee
 	return executeRule, inspectRuleTotal, nil
 }
 
-func TotalServiceNum(ctx context.Context, clients *kube.KubernetesClient, component *kubeeyev1alpha2.ComponentRule) (componentRuleNumber int) {
+func TotalServiceNum(ctx context.Context, clients *kube.KubernetesClient, component *kubeeyev1alpha2.ServiceConnectRule) (componentRuleNumber int) {
 
-	if component != nil && component.IncludeComponent != nil {
-		componentRuleNumber = len(component.IncludeComponent)
+	if component != nil && component.IncludeService != nil {
+		componentRuleNumber = len(component.IncludeService)
 		return componentRuleNumber
 	}
 
@@ -301,7 +301,7 @@ func TotalServiceNum(ctx context.Context, clients *kube.KubernetesClient, compon
 		if component == nil {
 			return v.Spec.ClusterIP != "None"
 		}
-		_, isExist := utils.ArrayFind(v.Name, component.ExcludeComponent)
+		_, isExist := utils.ArrayFind(v.Name, component.ExcludeService)
 		return !isExist && v.Spec.ClusterIP != "None"
 	})
 	componentRuleNumber = len(inspectData)
@@ -318,11 +318,11 @@ type ExecuteRule struct {
 }
 
 func NewExecuteRuleOptions(clients *kube.KubernetesClient, Task *kubeeyev1alpha2.InspectTask) *ExecuteRule {
-	clusterInspectRuleNames := []string{constant.Opa, constant.Prometheus, constant.Component}
+	clusterInspectRuleNames := []string{constant.Opa, constant.Prometheus, constant.ServiceConnect}
 	clusterInspectRuleMap := map[string]string{
 		"opas":          constant.Opa,
 		"prometheus":    constant.Prometheus,
-		"component":     constant.Component,
+		"component":     constant.ServiceConnect,
 		"fileChange":    constant.FileChange,
 		"sysctl":        constant.Sysctl,
 		"systemd":       constant.Systemd,
@@ -387,10 +387,10 @@ func (e *ExecuteRule) SetPrometheusEndpoint(allRule []kubeeyev1alpha2.InspectRul
 func (e *ExecuteRule) MergeRule(allRule []kubeeyev1alpha2.InspectRule) (kubeeyev1alpha2.InspectRuleSpec, error) {
 	var newRuleSpec kubeeyev1alpha2.InspectRuleSpec
 	var newSpec = make(map[string][]interface{})
-	ruleTotal := map[string]int{constant.Component: 0}
+	ruleTotal := map[string]int{constant.ServiceConnect: 0}
 	for _, rule := range e.SetPrometheusEndpoint(e.SetRuleSchedule(allRule)) {
-		if rule.Spec.Component != nil && newRuleSpec.Component == nil {
-			newRuleSpec.Component = rule.Spec.Component
+		if rule.Spec.ServiceConnect != nil && newRuleSpec.ServiceConnect == nil {
+			newRuleSpec.ServiceConnect = rule.Spec.ServiceConnect
 		}
 		toMap := utils.StructToMap(rule.Spec)
 		for k, v := range toMap {
@@ -401,7 +401,7 @@ func (e *ExecuteRule) MergeRule(allRule []kubeeyev1alpha2.InspectRule) (kubeeyev
 			}
 		}
 	}
-	ruleTotal[constant.Component] = TotalServiceNum(context.TODO(), e.KubeClient, newRuleSpec.Component)
+	ruleTotal[constant.ServiceConnect] = TotalServiceNum(context.TODO(), e.KubeClient, newRuleSpec.ServiceConnect)
 
 	marshal, err := json.Marshal(newSpec)
 	if err != nil {
@@ -437,13 +437,17 @@ func (e *ExecuteRule) GenerateJob(ctx context.Context, rulesSpec kubeeyev1alpha2
 		}
 	}
 	_, exist, _ := utils.ArrayFinds(jobs, func(m kubeeyev1alpha2.JobRule) bool {
-		return m.RuleType == constant.Component
+		return m.RuleType == constant.ServiceConnect
 	})
 	if !exist {
-		component, err := Allocation(nil, e.Task.Name, constant.Component)
+		service, err := Allocation(nil, e.Task.Name, constant.ServiceConnect)
 		if err == nil {
-			jobs = append(jobs, *component)
+			jobs = append(jobs, *service)
 		}
+	}
+	component, err := Allocation(nil, e.Task.Name, constant.Component)
+	if err == nil {
+		jobs = append(jobs, *component)
 	}
 
 	return jobs

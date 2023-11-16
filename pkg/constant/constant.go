@@ -10,19 +10,22 @@ const DefaultTimeout = 10 * time.Minute
 
 const DefaultNamespace = "kubeeye-system"
 
+var SystemNamespaces = []string{"kubesphere-system", "kubesphere-logging-system", "kubesphere-monitoring-system", "openpitrix-system", "kube-system", "istio-system", "kubesphere-devops-system", "porter-system"}
+
 const BaseFilePrefix = "kubeeye-base-file"
 const (
-	Opa           = "opa"
-	FileChange    = "filechange"
-	Prometheus    = "prometheus"
-	BaseFile      = "basefile"
-	Data          = "data"
-	Sysctl        = "sysctl"
-	Systemd       = "systemd"
-	FileFilter    = "filefilter"
-	Component     = "component"
-	CustomCommand = "customcommand"
-	NodeInfo      = "nodeinfo"
+	Opa            = "opa"
+	FileChange     = "filechange"
+	Prometheus     = "prometheus"
+	BaseFile       = "basefile"
+	Data           = "data"
+	Sysctl         = "sysctl"
+	Systemd        = "systemd"
+	FileFilter     = "filefilter"
+	ServiceConnect = "serviceconnect"
+	Component      = "component"
+	CustomCommand  = "customcommand"
+	NodeInfo       = "nodeinfo"
 )
 
 const (

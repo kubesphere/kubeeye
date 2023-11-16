@@ -30,8 +30,8 @@ func JsonOut(ctx context.Context, clients *kube.KubernetesClient, outPath string
 		result[constant.Prometheus] = results.Spec.PrometheusResult
 	}
 
-	if results.Spec.ComponentResult != nil {
-		result[constant.Component] = results.Spec.ComponentResult
+	if results.Spec.ServiceConnectResult != nil {
+		result[constant.ServiceConnect] = results.Spec.ServiceConnectResult
 	}
 
 	marshal, err := json.Marshal(result)

@@ -57,13 +57,9 @@ spec:
                   properties:
                     assert:
                       type: boolean
-                    endpoint:
-                      type: string
                     level:
                       type: string
                     name:
-                      type: string
-                    namespace:
                       type: string
                   type: object
                 type: array
@@ -197,6 +193,21 @@ spec:
                     name:
                       type: string
                     result:
+                      type: string
+                  type: object
+                type: array
+              serviceConnectResult:
+                items:
+                  properties:
+                    assert:
+                      type: boolean
+                    endpoint:
+                      type: string
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
                       type: string
                   type: object
                 type: array

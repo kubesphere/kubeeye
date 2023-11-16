@@ -73,9 +73,9 @@ func HtmlOut(resultName string) (error, map[string]interface{}) {
 		resultCollection[constant.NodeInfo] = getNodeInfo(results.Spec.NodeInfo)
 	}
 
-	if results.Spec.ComponentResult != nil {
-		component := getComponent(results.Spec.ComponentResult)
-		resultCollection[constant.Component] = component
+	if results.Spec.ServiceConnectResult != nil {
+		component := getServiceConnect(results.Spec.ServiceConnectResult)
+		resultCollection[constant.ServiceConnect] = component
 	}
 
 	var ruleNumber [][]interface{}
@@ -176,7 +176,7 @@ func getFileFilter(fileResult []v1alpha2.FileChangeResultItem) []renderNode {
 
 	return villeinage
 }
-func getComponent(component []v1alpha2.ComponentResultItem) []renderNode {
+func getServiceConnect(component []v1alpha2.ServiceConnectResultItem) []renderNode {
 	var villeinage []renderNode
 	header := renderNode{Header: true, Children: []renderNode{
 		{Text: "name"},

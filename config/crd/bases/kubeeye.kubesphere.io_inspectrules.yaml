@@ -35,17 +35,6 @@ spec:
           spec:
             description: InspectRuleSpec defines the desired state of InspectRule
             properties:
-              component:
-                properties:
-                  excludeComponent:
-                    items:
-                      type: string
-                    type: array
-                  includeComponent:
-                    items:
-                      type: string
-                    type: array
-                type: object
               customCommand:
                 items:
                   properties:
@@ -164,6 +153,17 @@ spec:
                 type: array
               prometheusEndpoint:
                 type: string
+              serviceConnect:
+                properties:
+                  excludeComponent:
+                    items:
+                      type: string
+                    type: array
+                  includeComponent:
+                    items:
+                      type: string
+                    type: array
+                type: object
               sysctl:
                 items:
                   properties:

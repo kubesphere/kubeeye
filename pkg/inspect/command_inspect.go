@@ -11,6 +11,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/informers"
 	"k8s.io/klog/v2"
 	"os/exec"
 )
@@ -22,7 +23,7 @@ func init() {
 	RuleOperatorMap[constant.CustomCommand] = &commandInspect{}
 }
 
-func (c *commandInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
+func (c *commandInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, informers informers.SharedInformerFactory, ownerRef ...metav1.OwnerReference) ([]byte, error) {
 
 	var commandResult []kubeeyev1alpha2.CommandResultItem
 

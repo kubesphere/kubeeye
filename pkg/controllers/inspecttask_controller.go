@@ -75,7 +75,6 @@ type InspectTaskReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
 func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
-
 	inspectTask := &kubeeyev1alpha2.InspectTask{}
 	err := r.Get(ctx, req.NamespacedName, inspectTask)
 	if err != nil {
@@ -575,7 +574,7 @@ func (r *InspectTaskReconciler) getRules(ctx context.Context, task *kubeeyev1alp
 func createInspectJob(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask, config *conf.JobConfig, ruleType string) (*kubeeyev1alpha2.JobPhase, error) {
 
 	nodeName, nodeSelector, err := GetDeploySchedule(jobRule.RunRule)
-	if err != nil && ruleType != constant.Component {
+	if err != nil && ruleType != constant.ServiceConnect && ruleType != constant.Component {
 		return nil, fmt.Errorf("%s:%s", ruleType, err.Error())
 	}
 

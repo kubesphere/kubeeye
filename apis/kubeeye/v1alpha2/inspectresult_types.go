@@ -30,17 +30,18 @@ type InspectResultSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	InspectCluster   Cluster                 `json:"inspectCluster,omitempty"`
-	InspectRuleTotal map[string]int          `json:"inspectRuleTotal,omitempty"`
-	PrometheusResult []PrometheusResult      `json:"prometheusResult,omitempty"`
-	OpaResult        KubeeyeOpaResult        `json:"opaResult,omitempty"`
-	NodeInfo         []NodeInfoResultItem    `json:"nodeInfo,omitempty"`
-	FileChangeResult []FileChangeResultItem  `json:"fileChangeResult,omitempty"`
-	FileFilterResult []FileChangeResultItem  `json:"fileFilterResult,omitempty"`
-	SysctlResult     []NodeMetricsResultItem `json:"sysctlResult,omitempty"`
-	SystemdResult    []NodeMetricsResultItem `json:"systemdResult,omitempty"`
-	CommandResult    []CommandResultItem     `json:"commandResult,omitempty"`
-	ComponentResult  []ComponentResultItem   `json:"componentResult,omitempty"`
+	InspectCluster       Cluster                    `json:"inspectCluster,omitempty"`
+	InspectRuleTotal     map[string]int             `json:"inspectRuleTotal,omitempty"`
+	PrometheusResult     []PrometheusResult         `json:"prometheusResult,omitempty"`
+	OpaResult            KubeeyeOpaResult           `json:"opaResult,omitempty"`
+	NodeInfo             []NodeInfoResultItem       `json:"nodeInfo,omitempty"`
+	FileChangeResult     []FileChangeResultItem     `json:"fileChangeResult,omitempty"`
+	FileFilterResult     []FileChangeResultItem     `json:"fileFilterResult,omitempty"`
+	SysctlResult         []NodeMetricsResultItem    `json:"sysctlResult,omitempty"`
+	SystemdResult        []NodeMetricsResultItem    `json:"systemdResult,omitempty"`
+	CommandResult        []CommandResultItem        `json:"commandResult,omitempty"`
+	ComponentResult      []ComponentResultItem      `json:"componentResult,omitempty"`
+	ServiceConnectResult []ServiceConnectResultItem `json:"serviceConnectResult,omitempty"`
 }
 
 // InspectResultStatus defines the observed state of InspectResult
@@ -99,6 +100,10 @@ type NodeMetricsResultItem struct {
 	NodeName   string  `json:"nodeName,omitempty"`
 }
 type ComponentResultItem struct {
+	BaseResult `json:",inline"`
+}
+
+type ServiceConnectResultItem struct {
 	BaseResult `json:",inline"`
 	Namespace  string `json:"namespace,omitempty"`
 	Endpoint   string `json:"endpoint,omitempty"`

@@ -13,6 +13,7 @@ import (
 	"golang.org/x/sys/unix"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/informers"
 	"k8s.io/klog/v2"
 	"path"
 
@@ -26,7 +27,7 @@ func init() {
 	RuleOperatorMap[constant.NodeInfo] = &nodeInfoInspect{}
 }
 
-func (n *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, ownerRef ...metav1.OwnerReference) ([]byte, error) {
+func (n *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.JobRule, clients *kube.KubernetesClient, currentJobName string, informers informers.SharedInformerFactory, ownerRef ...metav1.OwnerReference) ([]byte, error) {
 
 	var nodeInfoResult []kubeeyev1alpha2.NodeInfoResultItem
 

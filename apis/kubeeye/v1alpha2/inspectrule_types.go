@@ -37,7 +37,7 @@ type InspectRuleSpec struct {
 	FileFilter         []FileFilterRule    `json:"fileFilter,omitempty"`
 	CustomCommand      []CustomCommandRule `json:"customCommand,omitempty"`
 	NodeInfo           []NodeInfo          `json:"nodeInfo,omitempty"`
-	Component          *ComponentRule      `json:"component,omitempty"`
+	ServiceConnect     *ServiceConnectRule `json:"serviceConnect,omitempty"`
 }
 type RuleItemBases struct {
 	Name  string  `json:"name,omitempty"`
@@ -46,9 +46,9 @@ type RuleItemBases struct {
 	Level Level   `json:"level,omitempty"`
 }
 
-type ComponentRule struct {
-	ExcludeComponent []string `json:"excludeComponent,omitempty"`
-	IncludeComponent []string `json:"includeComponent,omitempty"`
+type ServiceConnectRule struct {
+	ExcludeService []string `json:"excludeService,omitempty"`
+	IncludeService []string `json:"includeService,omitempty"`
 }
 
 type Node struct {

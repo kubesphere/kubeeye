@@ -5,17 +5,9 @@ metadata:
 spec:
   maxTasks: 10
   ruleNames:
-    - name: inspect-rule-namespace
-    - name: inspect-rule-systemd
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
-    - name: inspect-rule-filechange
-    - name: inspect-rule-filter-file
-    - name: inspect-rule-node-info
-    - name: inspect-rule-prometheus
-    - name: inspect-rule-sbnormalpodstatus
-    - name: inspect-rule-sysctl
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
+    - name: resourcesuse
+    - name: noderesourceusetop
+    - name: nodeinfo
+    - name: apistatus
   timeout: 30m
 
