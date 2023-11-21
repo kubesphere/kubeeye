@@ -122,15 +122,6 @@ func toString(val *model.Sample) string {
 	labelStrings = append(labelStrings, fmt.Sprintf("%q=%q", "timestamp", val.Timestamp))
 	labelStrings = append(labelStrings, fmt.Sprintf("%q=%q", "metricName", metricName))
 
-	switch numLabels {
-	case 0:
-		if hasName {
-			return string(metricName)
-		}
-		return "{}"
-	default:
-		sort.Strings(labelStrings)
-		return fmt.Sprintf("{%s}", strings.Join(labelStrings, ", "))
-	}
-
+	sort.Strings(labelStrings)
+	return fmt.Sprintf("{%s}", strings.Join(labelStrings, ", "))
 }
