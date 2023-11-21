@@ -41,22 +41,24 @@ func (c *serviceConnectInspect) RunInspect(ctx context.Context, rules []kubeeyev
 		}
 		var componentResult []kubeeyev1alpha2.ServiceConnectResultItem
 		for _, item := range component {
-			endpoint := fmt.Sprintf("%s.%s.svc.cluster.local:%d", item.Name, item.Namespace, item.Spec.Ports[0].Port)
-			isConnected := c.checkConnection(endpoint)
-			componentResultItem := kubeeyev1alpha2.ServiceConnectResultItem{
-				Namespace:  item.Namespace,
-				Endpoint:   endpoint,
-				BaseResult: kubeeyev1alpha2.BaseResult{Name: item.Name, Assert: !isConnected},
-			}
-			if isConnected {
-				klog.Infof("success connect to：%s\n", endpoint)
-			} else {
-				klog.Infof("Unable to connect to: %s \n", endpoint)
-				componentResultItem.Level = kubeeyev1alpha2.WarningLevel
-			}
-			componentResult = append(componentResult, componentResultItem)
-		}
 
+			if item.Spec.Type != corev1.ServiceTypeExternalName {
+				endpoint := fmt.Sprintf("%s.%s.svc.cluster.local:%d", item.Name, item.Namespace, item.Spec.Ports[0].Port)
+				isConnected := c.checkConnection(endpoint)
+				componentResultItem := kubeeyev1alpha2.ServiceConnectResultItem{
+					Namespace:  item.Namespace,
+					Endpoint:   endpoint,
+					BaseResult: kubeeyev1alpha2.BaseResult{Name: item.Name, Assert: !isConnected},
+				}
+				if isConnected {
+					klog.Infof("success connect to：%s\n", endpoint)
+				} else {
+					klog.Infof("Unable to connect to: %s \n", endpoint)
+					componentResultItem.Level = kubeeyev1alpha2.WarningLevel
+				}
+				componentResult = append(componentResult, componentResultItem)
+			}
+		}
 		marshal, err := json.Marshal(componentResult)
 		if err != nil {
 			return nil, err
