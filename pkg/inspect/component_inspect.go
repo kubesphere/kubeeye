@@ -25,21 +25,24 @@ func (c *componentInspect) RunInspect(ctx context.Context, rules []kubeeyev1alph
 		services, err := clients.ClientSet.CoreV1().Services(namespace).List(ctx, metav1.ListOptions{})
 		if err == nil {
 			for _, service := range services.Items {
+				item := kubeeyev1alpha2.ComponentResultItem{BaseResult: kubeeyev1alpha2.BaseResult{
+					Name: service.Name,
+				}}
 				if len(service.Spec.Selector) > 0 {
 					pods, err := clients.ClientSet.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: labels.FormatLabels(service.Spec.Selector)})
 					if err == nil {
 						for _, pod := range pods.Items {
-							item := kubeeyev1alpha2.ComponentResultItem{BaseResult: kubeeyev1alpha2.BaseResult{
-								Name:   service.Name,
-								Assert: !(pod.Status.Phase == corev1.PodRunning && isAllContainersReady(&pod)),
-							}}
-							if item.Assert {
-								item.Level = kubeeyev1alpha2.DangerLevel
+							if pod.Status.Phase != corev1.PodRunning || !isAllContainersReady(&pod) {
+								item.Assert = true
 							}
-							componentResult = append(componentResult, item)
 						}
-
+					} else {
+						item.Assert = true
 					}
+					if item.Assert {
+						item.Level = kubeeyev1alpha2.DangerLevel
+					}
+					componentResult = append(componentResult, item)
 				}
 
 			}
@@ -70,9 +73,9 @@ func (c *componentInspect) GetResult(runNodeName string, resultCm *corev1.Config
 
 func isAllContainersReady(pod *corev1.Pod) bool {
 	for _, c := range pod.Status.ContainerStatuses {
-		if !c.Ready {
-			return false
+		if c.Ready {
+			return true
 		}
 	}
-	return true
+	return false
 }
