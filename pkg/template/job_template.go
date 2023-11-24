@@ -22,15 +22,17 @@ func GeneratorJobTemplate(Job JobTemplateOptions) *v1.Job {
 				Controller:         &ownerController,
 				BlockOwnerDeletion: &ownerController,
 			}},
-			Labels: map[string]string{constant.LabelRuleType: Job.RuleType},
+			Labels: map[string]string{constant.LabelRuleType: Job.RuleType, constant.LabelPlanName: Job.Task.Labels[constant.LabelPlanName]},
 		},
 		Spec: v1.JobSpec{
 			BackoffLimit:            Job.JobConfig.BackLimit,
 			TTLSecondsAfterFinished: Job.JobConfig.AutoDelTime,
+
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "inspect-job-pod",
 					Namespace:   constant.DefaultNamespace,
+					Labels:      map[string]string{constant.LabelPlanName: Job.Task.Labels[constant.LabelPlanName]},
 					Annotations: map[string]string{"container.apparmor.security.beta.kubernetes.io/inspect-task-kubeeye": "unconfined"},
 				},
 
@@ -66,16 +68,7 @@ func GeneratorJobTemplate(Job JobTemplateOptions) *v1.Job {
 					DNSPolicy:          corev1.DNSClusterFirstWithHostNet,
 					ServiceAccountName: "kubeeye-inspect-job",
 					NodeName:           Job.NodeName,
-					NodeSelector:       Job.NodeSelector,
 					RestartPolicy:      corev1.RestartPolicyNever,
-					Tolerations: []corev1.Toleration{
-						{
-							Key:      "",
-							Operator: corev1.TolerationOpExists,
-							Value:    "",
-							Effect:   "",
-						},
-					},
 					Volumes: []corev1.Volume{{
 						Name: "root",
 						VolumeSource: corev1.VolumeSource{

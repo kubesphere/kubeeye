@@ -177,3 +177,12 @@ func GetNodes(ctx context.Context, clients kubernetes.Interface) []corev1.Node {
 	}
 	return nodeAll.Items
 }
+
+func IsNodesReady(node corev1.Node) bool {
+	for _, condition := range node.Status.Conditions {
+		if condition.Type == corev1.NodeReady && condition.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}

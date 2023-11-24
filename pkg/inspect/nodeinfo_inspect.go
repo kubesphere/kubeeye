@@ -56,7 +56,7 @@ func (n *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 				data := GetCpu(fs)
 				resultItem.Value = fmt.Sprintf("%.0f%%", data[constant.Cpu])
 				resultItem.ResourcesType.Type = constant.Cpu
-				err, ok = visitor.EventRuleEvaluate(data, *info.Rule)
+				err, ok = visitor.EventRuleEvaluate(data, info.Rule)
 				if err != nil {
 					resultItem.Value = err.Error()
 					resultItem.Assert = true
@@ -65,7 +65,7 @@ func (n *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 				data := GetMemory(fs)
 				resultItem.Value = fmt.Sprintf("%.0f%%", data[constant.Memory])
 				resultItem.ResourcesType.Type = constant.Memory
-				err, ok = visitor.EventRuleEvaluate(data, *info.Rule)
+				err, ok = visitor.EventRuleEvaluate(data, info.Rule)
 				if err != nil {
 					resultItem.Value = err.Error()
 					resultItem.Assert = true
@@ -78,7 +78,7 @@ func (n *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 				resultItem.ResourcesType.Type = constant.Filesystem
 				resultItem.ResourcesType.Mount = info.Mount
 				resultItem.Value = fmt.Sprintf("%.0f%%", storage[constant.Filesystem])
-				err, ok = visitor.EventRuleEvaluate(storage, *info.Rule)
+				err, ok = visitor.EventRuleEvaluate(storage, info.Rule)
 				if err != nil {
 					resultItem.Value = err.Error()
 					resultItem.Assert = true
@@ -91,7 +91,7 @@ func (n *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 				resultItem.ResourcesType.Type = constant.Inode
 				resultItem.ResourcesType.Mount = info.Mount
 				resultItem.Value = fmt.Sprintf("%.0f%%", inodes[constant.Inode])
-				err, ok = visitor.EventRuleEvaluate(inodes, *info.Rule)
+				err, ok = visitor.EventRuleEvaluate(inodes, info.Rule)
 				if err != nil {
 					resultItem.Value = err.Error()
 					resultItem.Assert = true
@@ -99,7 +99,7 @@ func (n *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 			case constant.LoadAvg:
 				loadAvg := GetLoadAvg(fs)
 				resultItem.Value = fmt.Sprintf("load1:%.0f,load5:%.0f,load15:%.0f", loadAvg["load1"], loadAvg["load5"], loadAvg["load15"])
-				err, ok = visitor.EventRuleEvaluate(loadAvg, *info.Rule)
+				err, ok = visitor.EventRuleEvaluate(loadAvg, info.Rule)
 				if err != nil {
 					resultItem.Value = err.Error()
 					resultItem.Assert = true

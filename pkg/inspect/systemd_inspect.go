@@ -54,8 +54,8 @@ func (o *systemdInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 			for _, status := range unitsContext {
 				if status.Name == fmt.Sprintf("%s.service", r.Name) {
 					ctl.Value = &status.ActiveState
-					if r.Rule != nil {
-						err, res := visitor.EventRuleEvaluate(map[string]interface{}{r.Name: status.ActiveState}, *r.Rule)
+					if !utils.IsEmptyValue(r.Rule) {
+						err, res := visitor.EventRuleEvaluate(map[string]interface{}{r.Name: status.ActiveState}, r.Rule)
 						if err != nil {
 							sprintf := fmt.Sprintf("err:%s", err.Error())
 							ctl.Value = &sprintf

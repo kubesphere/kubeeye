@@ -50,9 +50,9 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 				continue
 			}
 			queryApi := apiprometheusv1.NewAPI(proClient)
-			query, _, err := queryApi.Query(ctx, *proRule.Rule, time.Now())
+			query, _, err := queryApi.Query(ctx, proRule.Rule, time.Now())
 			if err != nil {
-				klog.Errorf("failed to query rule:%s", *proRule.Rule)
+				klog.Errorf("failed to query rule:%s", proRule.Rule)
 				return nil, err
 			}
 			marshal, err := json.Marshal(query)

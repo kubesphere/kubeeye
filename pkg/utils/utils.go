@@ -149,3 +149,14 @@ func MapValConvert[T any](mapV1 map[string]interface{}) map[string]T {
 	}
 	return newMap
 }
+
+func DeepCopyMap[T any](obj map[string]T) map[string]T {
+	if obj == nil {
+		return nil
+	}
+	result := make(map[string]T, len(obj))
+	for k, v := range obj {
+		result[k] = v
+	}
+	return result
+}

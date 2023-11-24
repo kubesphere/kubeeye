@@ -40,7 +40,7 @@ func (o *OpaInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.Job
 		}
 		var RegoRules []string
 		for i := range opaRules {
-			RegoRules = append(RegoRules, *opaRules[i].Rule)
+			RegoRules = append(RegoRules, opaRules[i].Rule)
 		}
 
 		result := VailOpaRulesResult(ctx, k8sResources, RegoRules)

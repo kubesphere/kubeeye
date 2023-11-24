@@ -56,13 +56,9 @@ spec:
                   properties:
                     assert:
                       type: boolean
-                    endpoint:
-                      type: string
                     level:
                       type: string
                     name:
-                      type: string
-                    namespace:
                       type: string
                   type: object
                 type: array
@@ -71,13 +67,13 @@ spec:
                   properties:
                     assert:
                       type: boolean
-                    fileName:
-                      type: string
                     issues:
                       items:
                         type: string
                       type: array
                     level:
+                      type: string
+                    name:
                       type: string
                     nodeName:
                       type: string
@@ -90,13 +86,13 @@ spec:
                   properties:
                     assert:
                       type: boolean
-                    fileName:
-                      type: string
                     issues:
                       items:
                         type: string
                       type: array
                     level:
+                      type: string
+                    name:
                       type: string
                     nodeName:
                       type: string
@@ -193,7 +189,24 @@ spec:
                       type: boolean
                     level:
                       type: string
+                    name:
+                      type: string
                     result:
+                      type: string
+                  type: object
+                type: array
+              serviceConnectResult:
+                items:
+                  properties:
+                    assert:
+                      type: boolean
+                    endpoint:
+                      type: string
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
                       type: string
                   type: object
                 type: array

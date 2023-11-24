@@ -53,7 +53,7 @@ func (c *commandInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2
 				continue
 			}
 
-			err, res := visitor.EventRuleEvaluate(map[string]interface{}{"result": string(outputResult)}, *r.Rule)
+			err, res := visitor.EventRuleEvaluate(map[string]interface{}{"result": string(outputResult)}, r.Rule)
 			if err != nil {
 				ctl.Value = fmt.Sprintf("rule evaluate failed err:%s", err)
 				ctl.Level = r.Level

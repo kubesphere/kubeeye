@@ -283,6 +283,7 @@ func (r *InspectTaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, task *kubeeyev1alpha2.InspectTask, kubeClient *kube.KubernetesClient, config *conf.JobConfig, jobRules []kubeeyev1alpha2.JobRule) ([]kubeeyev1alpha2.JobPhase, error) {
 	var jobNames []kubeeyev1alpha2.JobPhase
 	nodes := kube.GetNodes(ctx, kubeClient.ClientSet)
+	pods := getIncompleteJob(ctx, kubeClient, task)
 	concurrency := 4
 	runNumber := math.Round(float64(len(nodes)) + float64(len(jobRules))*0.1)
 	if runNumber > 4 {
@@ -294,7 +295,7 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, task *kub
 	for _, rule := range jobRules {
 		wg.Add(1)
 		semaphore <- struct{}{}
-		go func(v kubeeyev1alpha2.JobRule) {
+		func(v kubeeyev1alpha2.JobRule) {
 			defer func() {
 				wg.Done()
 				<-semaphore
@@ -311,17 +312,21 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, task *kub
 			}
 			_, status := inspect.RuleOperatorMap[v.RuleType]
 			if status {
-				klog.Infof("Job %s created", v.JobName)
-				jobTask, err := createInspectJob(ctx, kubeClient, &v, task, config, v.RuleType)
-				if err != nil {
-					klog.Errorf("create job error. error:%s", err)
+				if checkJobIsDeploy(nodes, pods, v) {
+					jobTask, err := createInspectJob(ctx, kubeClient, &v, task, config, v.RuleType)
+					if err != nil {
+						klog.Errorf("create job error. error:%s", err)
+						jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: v.JobName, Phase: kubeeyev1alpha2.PhaseFailed})
+						return
+					}
+					klog.Infof("Job %s starting created", v.JobName)
+					resultJob := r.waitForJobCompletionGetResult(ctx, kubeClient, v.JobName, jobTask, task.Spec.Timeout)
+					mutex.Lock()
+					jobNames = append(jobNames, *resultJob)
+					mutex.Unlock()
+				} else {
 					jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: v.JobName, Phase: kubeeyev1alpha2.PhaseFailed})
-					return
 				}
-				resultJob := r.waitForJobCompletionGetResult(ctx, kubeClient, v.JobName, jobTask, task.Spec.Timeout)
-				mutex.Lock()
-				jobNames = append(jobNames, *resultJob)
-				mutex.Unlock()
 				klog.Infof("Job %s completed", v.JobName)
 			} else {
 				klog.Errorf("%s not found", v.RuleType)
@@ -573,18 +578,17 @@ func (r *InspectTaskReconciler) getRules(ctx context.Context, task *kubeeyev1alp
 
 func createInspectJob(ctx context.Context, clients *kube.KubernetesClient, jobRule *kubeeyev1alpha2.JobRule, task *kubeeyev1alpha2.InspectTask, config *conf.JobConfig, ruleType string) (*kubeeyev1alpha2.JobPhase, error) {
 
-	nodeName, nodeSelector, err := GetDeploySchedule(jobRule.RunRule)
+	nodeName, err := GetDeploySchedule(jobRule.RunRule)
 	if err != nil && ruleType != constant.ServiceConnect && ruleType != constant.Component {
 		return nil, fmt.Errorf("%s:%s", ruleType, err.Error())
 	}
 
 	o := template.JobTemplateOptions{
-		JobConfig:    config,
-		JobName:      jobRule.JobName,
-		Task:         task,
-		NodeName:     nodeName,
-		NodeSelector: nodeSelector,
-		RuleType:     ruleType,
+		JobConfig: config,
+		JobName:   jobRule.JobName,
+		Task:      task,
+		NodeName:  nodeName,
+		RuleType:  ruleType,
 	}
 
 	_, err = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Create(ctx, template.GeneratorJobTemplate(o), metav1.CreateOptions{})
@@ -595,21 +599,56 @@ func createInspectJob(ctx context.Context, clients *kube.KubernetesClient, jobRu
 	return &kubeeyev1alpha2.JobPhase{JobName: jobRule.JobName, Phase: kubeeyev1alpha2.PhaseRunning}, nil
 }
 
-func GetDeploySchedule(r []byte) (string, map[string]string, error) {
+func GetDeploySchedule(r []byte) (string, error) {
 
 	var data []map[string]interface{}
 	err := json.Unmarshal(r, &data)
 	if len(data) == 0 || err != nil {
-		return "", nil, fmt.Errorf("rule is empty")
+		return "", fmt.Errorf("rule is empty")
 	}
 	v := data[0]["nodeName"]
-	ns := data[0]["nodeSelector"]
-	if v == nil && ns == nil {
-		return "", nil, nil
-	}
+
 	if !utils.IsEmptyValue(v) {
-		return v.(string), nil, nil
+		return v.(string), nil
 	}
 
-	return "", utils.MapValConvert[string](ns.(map[string]interface{})), nil
+	return "", nil
+}
+
+func checkJobIsDeploy(allNode []corev1.Node, inComplete []corev1.Pod, job kubeeyev1alpha2.JobRule) bool {
+	nodeName, err := GetDeploySchedule(job.RunRule)
+	if err != nil || utils.IsEmptyValue(nodeName) {
+		return true
+	}
+	nodeStatus := make(map[string]bool, len(allNode))
+	for _, n := range allNode {
+		if kube.IsNodesReady(n) {
+			nodeStatus[n.Name] = kube.IsNodesReady(n)
+		}
+	}
+	if len(nodeStatus) == len(allNode) {
+		return false
+	}
+	_, isDeploy := nodeStatus[nodeName]
+	if !isDeploy {
+		return false
+	}
+
+	_, exist, _ := utils.ArrayFinds(inComplete, func(m corev1.Pod) bool {
+		return nodeName == m.Spec.NodeName
+	})
+	if exist {
+		return false
+	}
+
+	return true
+}
+
+func getIncompleteJob(ctx context.Context, kubeClient *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask) []corev1.Pod {
+	list, err := kubeClient.ClientSet.CoreV1().Pods(constant.DefaultNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelPlanName: task.Labels[constant.LabelPlanName]})})
+	if err != nil {
+		klog.Error("failed to getIncompleteJob ")
+		return nil
+	}
+	return list.Items
 }

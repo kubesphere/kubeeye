@@ -10,6 +10,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/informers"
 	"k8s.io/klog/v2"
 	"net"
@@ -30,34 +31,30 @@ func (c *serviceConnectInspect) RunInspect(ctx context.Context, rules []kubeeyev
 	})
 
 	if exist {
-		var components kubeeyev1alpha2.ServiceConnectRule
+		var components []kubeeyev1alpha2.ServiceConnectRuleItem
 		err := json.Unmarshal(phase.RunRule, &components)
 		if err != nil {
 			return nil, err
 		}
-		component, err := c.GetInspectComponent(ctx, clients, &components)
+		component, err := c.GetInspectComponent(ctx, clients, components)
 		if err != nil {
 			return nil, err
 		}
 		var componentResult []kubeeyev1alpha2.ServiceConnectResultItem
 		for _, item := range component {
-
-			if item.Spec.Type != corev1.ServiceTypeExternalName {
-				endpoint := fmt.Sprintf("%s.%s.svc.cluster.local:%d", item.Name, item.Namespace, item.Spec.Ports[0].Port)
-				isConnected := c.checkConnection(endpoint)
-				componentResultItem := kubeeyev1alpha2.ServiceConnectResultItem{
-					Namespace:  item.Namespace,
-					Endpoint:   endpoint,
-					BaseResult: kubeeyev1alpha2.BaseResult{Name: item.Name, Assert: !isConnected},
-				}
-				if isConnected {
-					klog.Infof("success connect to：%s\n", endpoint)
-				} else {
-					klog.Infof("Unable to connect to: %s \n", endpoint)
-					componentResultItem.Level = kubeeyev1alpha2.WarningLevel
-				}
-				componentResult = append(componentResult, componentResultItem)
+			isConnected := c.checkConnection(item.Rule)
+			componentResultItem := kubeeyev1alpha2.ServiceConnectResultItem{
+				Endpoint:   item.Rule,
+				BaseResult: kubeeyev1alpha2.BaseResult{Name: item.Name, Assert: !isConnected},
 			}
+			if isConnected {
+				klog.Infof("success connect to：%s\n", item.Rule)
+			} else {
+				klog.Infof("Unable to connect to: %s \n", item.Rule)
+				componentResultItem.Level = item.Level
+			}
+			componentResult = append(componentResult, componentResultItem)
+
 		}
 		marshal, err := json.Marshal(componentResult)
 		if err != nil {
@@ -93,24 +90,79 @@ func (c *serviceConnectInspect) checkConnection(address string) bool {
 	return true
 }
 
-func (c *serviceConnectInspect) GetInspectComponent(ctx context.Context, clients *kube.KubernetesClient, components *kubeeyev1alpha2.ServiceConnectRule) ([]corev1.Service, error) {
-
-	services, err := clients.ClientSet.CoreV1().Services(corev1.NamespaceAll).List(ctx, metav1.ListOptions{})
+func (c *serviceConnectInspect) GetInspectComponent(ctx context.Context, clients *kube.KubernetesClient, serviceConnectRule []kubeeyev1alpha2.ServiceConnectRuleItem) ([]kubeeyev1alpha2.ServiceConnectRuleItem, error) {
+	var inspectService []kubeeyev1alpha2.ServiceConnectRuleItem
+	if serviceConnectRule == nil {
+		return nil, fmt.Errorf("rule is empty")
+	}
+	list, err := clients.ClientSet.CoreV1().Services(corev1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
+	for _, service := range serviceConnectRule {
+		if !utils.IsEmptyValue(service.WorkSpaces) {
+			namespaces := GetNameSpacesForWorkSpace(ctx, clients, service.WorkSpaces)
+			for _, namespace := range namespaces {
+				for _, s := range GetServicesForNameSpace(list.Items, namespace.Name) {
+					inspectService = append(inspectService, kubeeyev1alpha2.ServiceConnectRuleItem{
+						RuleItemBases: kubeeyev1alpha2.RuleItemBases{
+							Name:  s.Name,
+							Rule:  fmt.Sprintf("%s.%s.svc.cluster.local:%d", s.Name, s.Namespace, s.Spec.Ports[0].Port),
+							Level: service.Level,
+						},
+					})
 
-	component, _ := utils.ArrayFilter(services.Items, func(v corev1.Service) bool {
-		if v.Spec.ClusterIP == "None" {
-			return false
+				}
+			}
+		} else if !utils.IsEmptyValue(service.Namespace) {
+			for _, s := range GetServicesForNameSpace(list.Items, service.Namespace) {
+
+				inspectService = append(inspectService, kubeeyev1alpha2.ServiceConnectRuleItem{
+					RuleItemBases: kubeeyev1alpha2.RuleItemBases{
+						Name:  s.Name,
+						Rule:  fmt.Sprintf("%s.%s.svc.cluster.local:%d", s.Name, s.Namespace, s.Spec.Ports[0].Port),
+						Level: service.Level,
+					},
+				})
+
+			}
+		} else {
+			if s, ok := GetServices(list.Items, service.Name); ok {
+				inspectService = append(inspectService, kubeeyev1alpha2.ServiceConnectRuleItem{
+					RuleItemBases: kubeeyev1alpha2.RuleItemBases{
+						Name:  s.Name,
+						Rule:  fmt.Sprintf("%s.%s.svc.cluster.local:%d", s.Name, s.Namespace, s.Spec.Ports[0].Port),
+						Level: service.Level,
+					},
+				})
+			}
 		}
-		if components.IncludeService != nil {
-			_, isExist := utils.ArrayFind(v.Name, components.IncludeService)
-			return isExist
-		}
-		_, excludeExist := utils.ArrayFind(v.Name, components.ExcludeService)
-		return !excludeExist
+	}
+	return inspectService, nil
+}
+
+func GetNameSpacesForWorkSpace(ctx context.Context, clients *kube.KubernetesClient, workspace string) []corev1.Namespace {
+	var namespaces []corev1.Namespace
+	list, err := clients.ClientSet.CoreV1().Namespaces().List(ctx, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelSystemWorkspace: workspace})})
+	if err != nil {
+		return namespaces
+	}
+	namespaces = append(namespaces, list.Items...)
+	return namespaces
+}
+
+func GetServicesForNameSpace(services []corev1.Service, namespace string) []corev1.Service {
+
+	filter, _ := utils.ArrayFilter(services, func(v corev1.Service) bool {
+		return namespace == v.Namespace && v.Spec.Type != corev1.ServiceTypeExternalName && v.Spec.ClusterIP != "None"
 	})
 
-	return component, nil
+	return filter
+}
+
+func GetServices(services []corev1.Service, name string) (corev1.Service, bool) {
+	_, ok, service := utils.ArrayFinds(services, func(v corev1.Service) bool {
+		return name == v.Namespace && v.Spec.Type != corev1.ServiceTypeExternalName && v.Spec.ClusterIP != "None"
+	})
+	return service, ok
 }

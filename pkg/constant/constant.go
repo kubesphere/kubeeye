@@ -8,7 +8,9 @@ const AuditorServiceAddrConfigMap = "auditor-service-addr"
 
 const DefaultTimeout = 10 * time.Minute
 
-const DefaultNamespace = "kubeeye-system"
+const (
+	DefaultNamespace = "kubeeye-system"
+)
 
 var SystemNamespaces = []string{"kubesphere-system", "kubesphere-logging-system", "kubesphere-monitoring-system", "openpitrix-system", "kube-system", "istio-system", "kubesphere-devops-system", "porter-system"}
 
@@ -45,6 +47,7 @@ const (
 	LabelConfigType       = "kubeeye.kubesphere.io/config-type"
 	LabelRuleGroup        = "kubeeye.kubesphere.io/rule-group"
 	LabelInspectRuleGroup = "kubeeye.kubesphere.io/inspect-rule-group"
+	LabelSystemWorkspace  = "kubesphere.io/workspace"
 )
 
 const (

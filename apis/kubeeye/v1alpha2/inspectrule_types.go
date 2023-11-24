@@ -28,27 +28,28 @@ type InspectRuleSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	PrometheusEndpoint string              `json:"prometheusEndpoint,omitempty"`
-	Opas               []OpaRule           `json:"opas,omitempty"`
-	Prometheus         []PrometheusRule    `json:"prometheus,omitempty"`
-	FileChange         []FileChangeRule    `json:"fileChange,omitempty" `
-	Sysctl             []SysRule           `json:"sysctl,omitempty"`
-	Systemd            []SysRule           `json:"systemd,omitempty"`
-	FileFilter         []FileFilterRule    `json:"fileFilter,omitempty"`
-	CustomCommand      []CustomCommandRule `json:"customCommand,omitempty"`
-	NodeInfo           []NodeInfo          `json:"nodeInfo,omitempty"`
-	ServiceConnect     *ServiceConnectRule `json:"serviceConnect,omitempty"`
+	PrometheusEndpoint string                   `json:"prometheusEndpoint,omitempty"`
+	Opas               []OpaRule                `json:"opas,omitempty"`
+	Prometheus         []PrometheusRule         `json:"prometheus,omitempty"`
+	FileChange         []FileChangeRule         `json:"fileChange,omitempty" `
+	Sysctl             []SysRule                `json:"sysctl,omitempty"`
+	Systemd            []SysRule                `json:"systemd,omitempty"`
+	FileFilter         []FileFilterRule         `json:"fileFilter,omitempty"`
+	CustomCommand      []CustomCommandRule      `json:"customCommand,omitempty"`
+	NodeInfo           []NodeInfo               `json:"nodeInfo,omitempty"`
+	ServiceConnect     []ServiceConnectRuleItem `json:"serviceConnect,omitempty"`
 }
 type RuleItemBases struct {
-	Name  string  `json:"name,omitempty"`
-	Rule  *string `json:"rule,omitempty"`
-	Desc  string  `json:"desc,omitempty"`
-	Level Level   `json:"level,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Rule  string `json:"rule,omitempty"`
+	Desc  string `json:"desc,omitempty"`
+	Level Level  `json:"level,omitempty"`
 }
 
-type ServiceConnectRule struct {
-	ExcludeService []string `json:"excludeService,omitempty"`
-	IncludeService []string `json:"includeService,omitempty"`
+type ServiceConnectRuleItem struct {
+	RuleItemBases `json:",inline"`
+	Namespace     string `json:"namespace,omitempty"`
+	WorkSpaces    string `json:"workSpaces,omitempty"`
 }
 
 type Node struct {

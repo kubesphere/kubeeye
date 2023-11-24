@@ -58,8 +58,8 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 			} else {
 				val := parseSysctlVal(ctlRule)
 				ctl.Value = &val
-				if sysRule.Rule != nil {
-					err, res := visitor.EventRuleEvaluate(map[string]interface{}{sysRule.Name: val}, *sysRule.Rule)
+				if !utils.IsEmptyValue(sysRule.Rule) {
+					err, res := visitor.EventRuleEvaluate(map[string]interface{}{sysRule.Name: val}, sysRule.Rule)
 					if err != nil {
 						evalErr := fmt.Sprintf("event rule evaluate to failed err:%s", err)
 						ctl.Assert = true
