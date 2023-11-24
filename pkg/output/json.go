@@ -78,7 +78,19 @@ func ParseApiStatus(result *kubeeyev1alpha2.InspectResult) map[string]string {
 }
 func ParseResources(result *kubeeyev1alpha2.InspectResult) map[string]map[string]float64 {
 	metricData := make(map[string]float64)
-	metrics := []string{"cluster_cpu_usage", "cluster_cpu_total", "cluster_memory_usage_wo_cache", "cluster_memory_total", "cluster_disk_size_usage", "cluster_disk_size_capacity", "cluster_pod_running_count", "cluster_pod_quota"}
+	metrics := []string{
+		"cluster_cpu_usage",
+		"cluster_cpu_total",
+		"cluster_memory_usage_wo_cache",
+		"cluster_memory_total",
+		"cluster_disk_size_usage",
+		"cluster_disk_size_capacity",
+		"cluster_pod_running_count",
+		"cluster_pod_quota",
+		"cluster_pod_memory_requests_total",
+		"cluster_pod_memory_limits_total",
+		"cluster_pod_cpu_requests_total",
+		"cluster_pod_cpu_limits_total"}
 	for _, pro := range result.Spec.PrometheusResult {
 		if slices.Contains(metrics, strings.ToLower(pro.Name)) {
 			float, err := strconv.ParseFloat(pro.ParseString()["value"], 64)
@@ -91,8 +103,8 @@ func ParseResources(result *kubeeyev1alpha2.InspectResult) map[string]map[string
 
 	resourcesData := make(map[string]map[string]float64)
 	if len(metricData) > 0 {
-		resourcesData["cpu"] = map[string]float64{"total": metricData["cluster_cpu_total"], "usage": metricData["cluster_cpu_usage"], "percent": metricComputed(metricData["cluster_cpu_usage"], metricData["cluster_cpu_total"])}
-		resourcesData["memory"] = map[string]float64{"total": metricData["cluster_memory_total"], "usage": metricData["cluster_memory_usage_wo_cache"], "percent": metricComputed(metricData["cluster_memory_usage_wo_cache"], metricData["cluster_memory_total"])}
+		resourcesData["cpu"] = map[string]float64{"total": metricData["cluster_cpu_total"], "usage": metricData["cluster_cpu_usage"], "cluster_pod_cpu_limits_total": metricData["cluster_pod_cpu_limits_total"], "cluster_pod_cpu_requests_total": metricData["cluster_pod_cpu_requests_total"], "percent": metricComputed(metricData["cluster_cpu_usage"], metricData["cluster_cpu_total"])}
+		resourcesData["memory"] = map[string]float64{"total": metricData["cluster_memory_total"], "usage": metricData["cluster_memory_usage_wo_cache"], "cluster_pod_memory_requests_total": metricData["cluster_pod_memory_requests_total"], "cluster_pod_memory_limits_total": metricData["cluster_pod_memory_limits_total"], "percent": metricComputed(metricData["cluster_memory_usage_wo_cache"], metricData["cluster_memory_total"])}
 		resourcesData["disk"] = map[string]float64{"total": metricData["cluster_disk_size_capacity"], "usage": metricData["cluster_disk_size_usage"], "percent": metricComputed(metricData["cluster_disk_size_usage"], metricData["cluster_disk_size_capacity"])}
 		resourcesData["pod"] = map[string]float64{"total": metricData["cluster_pod_quota"], "usage": metricData["cluster_pod_running_count"], "percent": metricComputed(metricData["cluster_pod_running_count"], metricData["cluster_pod_quota"])}
 	}
