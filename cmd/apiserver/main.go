@@ -30,13 +30,12 @@ func main() {
 	r := gin.Default()
 
 	ctx, cancelFunc := context.WithCancel(context.TODO())
-	errCh := make(chan error)
+	errCh := make(chan error, 1)
 	defer close(errCh)
 
 	var kc kube.KubernetesClient
 	kubeConfig, err := kube.GetKubeConfigInCluster()
 	if err != nil {
-
 		errCh <- err
 	}
 
@@ -71,22 +70,25 @@ func main() {
 	})
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				cancelFunc()
+				klog.Info("It's over！！！")
+				os.Exit(1)
+			case errCtx := <-errCh:
+				cancelFunc()
+				klog.Infof("Oh ho, error le ！！！ err:%s", errCtx)
+				os.Exit(1)
+			}
+		}
+	}()
+
 	// 服务连接
 	if err = srv.ListenAndServe(); err != nil && !errors.Is(http.ErrServerClosed, err) {
 		klog.Errorf("listen: %s\n", err)
 		errCh <- err
 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			cancelFunc()
-			klog.Info("结束咯！！！")
-			os.Exit(1)
-		case errCtx := <-errCh:
-			cancelFunc()
-			klog.Infof("哦何，出错了！！！ err:%s", errCtx)
-			os.Exit(1)
-		}
-	}
 }

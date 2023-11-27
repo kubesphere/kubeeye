@@ -13,10 +13,8 @@ import (
 	"github.com/spf13/cobra"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
 	"k8s.io/klog/v2"
-	"os"
 )
 
 type Options struct {
@@ -77,36 +75,7 @@ func (o *Options) Run(cmd context.Context) error {
 		klog.Error(err, ",Failed to load cluster clients")
 		return err
 	}
-	factory := informers.NewSharedInformerFactory(o.Clients.ClientSet, 0)
 
-	k8sGVRs := map[schema.GroupVersion][]string{
-		{Group: "", Version: "v1"}: {
-			"namespaces",
-			"nodes",
-			"pods",
-			"services",
-			"configmaps",
-		},
-	}
-	for groupVersion, resourcesNames := range k8sGVRs {
-		resource := schema.GroupVersionResource{
-			Group:   groupVersion.Group,
-			Version: groupVersion.Version,
-		}
-		for i := range resourcesNames {
-			resource.Resource = resourcesNames[i]
-			_, err = factory.ForResource(resource)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-		}
-
-	}
-
-	factory.Start(cmd.Done())
-
-	o.k8sInformers = factory
 
 	err = o.jobInspect(cmd)
 	if err != nil {

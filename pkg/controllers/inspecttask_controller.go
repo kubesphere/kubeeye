@@ -60,10 +60,10 @@ type InspectTaskReconciler struct {
 //+kubebuilder:rbac:groups=cluster.kubesphere.io,resources=clusters,verbs=get
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspecttasks/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=nodes;namespaces;services;secrets,verbs=list;get
+//+kubebuilder:rbac:groups="",resources=nodes;namespaces;services;secrets;configmaps;pods,verbs=list;get;watch
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=create
 //+kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=create;delete
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=deletecollection;list;get;watch
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=deletecollection
 //+kubebuilder:rbac:groups="batch",resources=jobs,verbs=create;get;delete
 //+kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources=clusterroles;clusterrolebindings,verbs="*"
 
@@ -616,19 +616,18 @@ func checkJobIsDeploy(allNode []corev1.Node, inComplete []corev1.Pod, job kubeey
 	}
 
 	if len(nodeStatus) == 0 {
-		klog.Error("暂无可部署的节点", job.JobName)
+		klog.Error("There are currently no nodes to deploy.", job.JobName)
 		return false
 	}
 
 	nodeName, err := GetDeploySchedule(job.RunRule)
 	if err != nil || utils.IsEmptyValue(nodeName) {
-		klog.Info("空Node,正常部署")
 		return true
 	}
 
 	_, isDeploy := nodeStatus[nodeName]
 	if !isDeploy {
-		klog.Errorf("找不到可部署的节点：%s,jobName:%s", nodeName, job.JobName)
+		klog.Errorf("Deployable node not found: %s, jobName: %s", nodeName, job.JobName)
 		return false
 	}
 
@@ -636,10 +635,9 @@ func checkJobIsDeploy(allNode []corev1.Node, inComplete []corev1.Pod, job kubeey
 		return nodeName == m.Spec.NodeName
 	})
 	if exist {
-		klog.Errorf("节点：%s存在未完成的任务,jobName:%s", nodeName, job.JobName)
+		klog.Errorf("Node: %s has unfinished tasks, jobName: %s", nodeName, job.JobName)
 		return false
 	}
-	klog.Infof("正常部署%s", nodeName)
 	return true
 }
 
