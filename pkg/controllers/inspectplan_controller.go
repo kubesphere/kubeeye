@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	kubeeyeInformers "github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/utils"
@@ -42,8 +43,9 @@ import (
 // InspectPlanReconciler reconciles a InspectPlan object
 type InspectPlanReconciler struct {
 	client.Client
-	K8sClient *kube.KubernetesClient
-	Scheme    *runtime.Scheme
+	K8sClient      *kube.KubernetesClient
+	Scheme         *runtime.Scheme
+	KubeEyeFactory kubeeyeInformers.Interface
 }
 
 const Finalizers = "kubeeye.finalizers.kubesphere.io"
@@ -62,7 +64,6 @@ const Finalizers = "kubeeye.finalizers.kubesphere.io"
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
 func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-
 	plan := &kubeeyev1alpha2.InspectPlan{}
 	err := r.Get(ctx, req.NamespacedName, plan)
 	if err != nil {
@@ -261,7 +262,7 @@ func (r *InspectPlanReconciler) createInspectTask(plan *kubeeyev1alpha2.InspectP
 
 func (r *InspectPlanReconciler) removeTask(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan) {
 	if plan.Spec.MaxTasks > 0 {
-		tasks, err := r.getInspectTaskForLabel(ctx, plan.Name)
+		tasks, err := r.getInspectTaskForLabel(plan.Name)
 		if err != nil {
 			klog.Error("Failed to get inspect task for label", err)
 		}
@@ -295,21 +296,19 @@ func (r *InspectPlanReconciler) updateStatus(ctx context.Context, plan *kubeeyev
 	return nil
 }
 
-func (r *InspectPlanReconciler) getInspectTaskForLabel(ctx context.Context, planName string) ([]kubeeyev1alpha2.InspectTask, error) {
-	list, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks().List(ctx, metav1.ListOptions{
-		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelPlanName: planName}),
-	})
+func (r *InspectPlanReconciler) getInspectTaskForLabel(planName string) ([]*kubeeyev1alpha2.InspectTask, error) {
+	list, err := r.KubeEyeFactory.V1alpha2().InspectTasks().Lister().List(labels.SelectorFromSet(map[string]string{constant.LabelPlanName: planName}))
 
 	if err != nil {
 		return nil, err
 	}
-	sort.Slice(list.Items, func(i, j int) bool {
-		return list.Items[i].CreationTimestamp.Before(&list.Items[j].CreationTimestamp)
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].CreationTimestamp.Before(&list[j].CreationTimestamp)
 	})
-	return list.Items, nil
+	return list, nil
 }
 
-func ConvertTaskStatus(tasks []kubeeyev1alpha2.InspectTask) (taskStatus []kubeeyev1alpha2.TaskNames) {
+func ConvertTaskStatus(tasks []*kubeeyev1alpha2.InspectTask) (taskStatus []kubeeyev1alpha2.TaskNames) {
 
 	for _, t := range tasks {
 		if t.Status.EndTimestamp.IsZero() {
@@ -320,7 +319,7 @@ func ConvertTaskStatus(tasks []kubeeyev1alpha2.InspectTask) (taskStatus []kubeey
 		} else {
 			taskStatus = append(taskStatus, kubeeyev1alpha2.TaskNames{
 				Name:       t.Name,
-				TaskStatus: GetStatus(&t),
+				TaskStatus: GetStatus(t),
 			})
 		}
 
@@ -333,7 +332,7 @@ func ConvertTaskStatus(tasks []kubeeyev1alpha2.InspectTask) (taskStatus []kubeey
 func (r *InspectPlanReconciler) updateAddRuleReferNum(ctx context.Context, ruleNames []kubeeyev1alpha2.InspectRuleNames, plan *kubeeyev1alpha2.InspectPlan) {
 
 	for _, v := range ruleNames {
-		rule, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, v.Name, metav1.GetOptions{})
+		rule, err := r.KubeEyeFactory.V1alpha2().InspectRules().Lister().Get(v.Name)
 		if err != nil {
 			klog.Error(err, "Failed to get inspectRules")
 			continue
@@ -366,7 +365,7 @@ func (r *InspectPlanReconciler) updateAddRuleReferNum(ctx context.Context, ruleN
 func (r *InspectPlanReconciler) updateSubRuleReferNum(ctx context.Context, ruleNames []kubeeyev1alpha2.InspectRuleNames, plan *kubeeyev1alpha2.InspectPlan) {
 
 	for _, v := range ruleNames {
-		rule, err := r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectRules().Get(ctx, v.Name, metav1.GetOptions{})
+		rule, err := r.KubeEyeFactory.V1alpha2().InspectRules().Lister().Get(v.Name)
 		if err != nil {
 			klog.Error(err, "Failed to get inspectRules")
 			continue

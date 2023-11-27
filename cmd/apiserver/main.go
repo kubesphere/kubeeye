@@ -3,19 +3,16 @@ package main
 import (
 	"context"
 	"github.com/gin-gonic/gin"
-	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/clients/informers/externalversions"
+	"github.com/kubesphere/kubeeye/pkg/informers"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/server/router"
 	_ "github.com/kubesphere/kubeeye/swaggerDocs"
 	"github.com/pkg/errors"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 	"net/http"
 	"os"
-	"time"
 )
 
 // @title           KubeEye API
@@ -47,26 +44,19 @@ func main() {
 	if err != nil {
 		errCh <- err
 	}
-	factory := externalversions.NewSharedInformerFactory(clients.VersionClientSet, 5*time.Second)
 
-	forResources := []string{"inspectrules", "inspectresults", "inspectplans", "inspecttasks"}
-
-	for _, resource := range forResources {
-		_, err = factory.ForResource(schema.GroupVersionResource{
-			Group:    kubeeyev1alpha2.GroupVersion.Group,
-			Version:  kubeeyev1alpha2.GroupVersion.Version,
-			Resource: resource,
-		})
-		if err != nil {
-			errCh <- err
-		}
-	}
+	informerFactory := informers.NewInformerFactory(clients.ClientSet, clients.VersionClientSet)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	factory.Start(stopCh)
 
-	router.RegisterRouter(ctx, r, clients, factory.Kubeeye())
+	informerFactory.ForResources(informers.KeEyeGver(), informers.K8sEyeGver())
+	informerFactory.Start(stopCh)
+
+	informerFactory.KubeEyeInformerFactory().WaitForCacheSync(stopCh)
+	informerFactory.KubernetesInformerFactory().WaitForCacheSync(stopCh)
+
+	router.RegisterRouter(ctx, r, clients, informerFactory.KubeEyeInformerFactory().Kubeeye())
 
 	srv := &http.Server{
 		Addr:    "0.0.0.0:9090",
@@ -99,18 +89,4 @@ func main() {
 			os.Exit(1)
 		}
 	}
-}
-
-func GetResourcesName(obj interface{}) string {
-	switch o := obj.(type) {
-	case *kubeeyev1alpha2.InspectPlan:
-		return o.Name
-	case *kubeeyev1alpha2.InspectResult:
-		return o.Name
-	case *kubeeyev1alpha2.InspectTask:
-		return o.Name
-	case *kubeeyev1alpha2.InspectRule:
-		return o.Name
-	}
-	return ""
 }

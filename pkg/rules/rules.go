@@ -315,7 +315,7 @@ func (e *ExecuteRule) GenerateJob(ctx context.Context, rulesSpec kubeeyev1alpha2
 
 func (e *ExecuteRule) CreateInspectRule(ctx context.Context, ruleGroup []kubeeyev1alpha2.JobRule) ([]kubeeyev1alpha2.JobRule, error) {
 	r := sortRuleOpaToAtLast(ruleGroup)
-	marshal, err := json.Marshal(r)
+	ruleData, err := json.Marshal(r)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +325,7 @@ func (e *ExecuteRule) CreateInspectRule(ctx context.Context, ruleGroup []kubeeye
 		_ = e.KubeClient.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Delete(ctx, e.Task.Name, metav1.DeleteOptions{})
 	}
 	// create temp inspect rule
-	configMapTemplate := template.BinaryConfigMapTemplate(e.Task.Name, constant.DefaultNamespace, marshal, true, map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})
+	configMapTemplate := template.BinaryConfigMapTemplate(e.Task.Name, constant.DefaultNamespace, ruleData, true, map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})
 	_, err = e.KubeClient.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, configMapTemplate, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err

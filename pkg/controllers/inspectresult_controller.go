@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	kubeeyeInformers "github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye"
 	"github.com/kubesphere/kubeeye/pkg/conf"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
@@ -30,6 +31,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/informers"
 	"k8s.io/klog/v2"
 	"os"
 	"path"
@@ -43,7 +45,9 @@ import (
 // InspectResultReconciler reconciles a InspectResult object
 type InspectResultReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme         *runtime.Scheme
+	KubeEyeFactory kubeeyeInformers.Interface
+	K8sFactory     informers.SharedInformerFactory
 }
 
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=inspectresults,verbs=get;list;watch;create;update;patch;delete
@@ -103,8 +107,7 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	taskName := result.GetLabels()[constant.LabelTaskName]
 
-	task := &kubeeyev1alpha2.InspectTask{}
-	err = r.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: taskName}, task)
+	task, err := r.KubeEyeFactory.V1alpha2().InspectTasks().Lister().Get(taskName)
 	if err != nil {
 		klog.Error("Failed to get inspect task", err)
 		return ctrl.Result{}, err
@@ -141,7 +144,7 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 
-	go r.SendMessage(ctx, result)
+	go r.SendMessage(result)
 	return ctrl.Result{}, nil
 }
 
@@ -222,9 +225,9 @@ func totalResultLevel(data interface{}, mapLevel map[kubeeyev1alpha2.Level]*int)
 	}
 }
 
-func (r *InspectResultReconciler) SendMessage(ctx context.Context, result *kubeeyev1alpha2.InspectResult) {
+func (r *InspectResultReconciler) SendMessage(result *kubeeyev1alpha2.InspectResult) {
 
-	kc, err := kube.GetKubeEyeConfig(ctx, r.Client)
+	kc, err := kube.GetKubeEyeConfig(r.K8sFactory.Core())
 	if err != nil {
 		klog.Error("GetKubeEyeConfig error", err)
 		return

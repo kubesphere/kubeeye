@@ -89,7 +89,7 @@ func (c *commandInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMa
 	for i := range commandResult {
 		commandResult[i].NodeName = runNodeName
 	}
-	resultCr.Spec.CommandResult = commandResult
+	resultCr.Spec.CommandResult = append(resultCr.Spec.CommandResult, commandResult...)
 	return resultCr, nil
 
 }

@@ -16,6 +16,7 @@ package main
 import (
 	"flag"
 	controllers2 "github.com/kubesphere/kubeeye/pkg/controllers"
+	"github.com/kubesphere/kubeeye/pkg/informers"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -96,26 +97,32 @@ func main() {
 	}
 
 	setupLog.Info("starting inspect")
+	factory := informers.NewInformerFactory(clients.ClientSet, clients.VersionClientSet)
 
 	if err = (&controllers2.InspectPlanReconciler{
-		Client:    mgr.GetClient(),
-		Scheme:    mgr.GetScheme(),
-		K8sClient: clients,
+		Client:         mgr.GetClient(),
+		Scheme:         mgr.GetScheme(),
+		K8sClient:      clients,
+		KubeEyeFactory: factory.KubeEyeInformerFactory().Kubeeye(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "InspectPlan")
 		os.Exit(1)
 	}
 	if err = (&controllers2.InspectTaskReconciler{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		K8sClients: clients,
+		Client:         mgr.GetClient(),
+		Scheme:         mgr.GetScheme(),
+		K8sClients:     clients,
+		KubeEyeFactory: factory.KubeEyeInformerFactory().Kubeeye(),
+		K8sFactory:     factory.KubernetesInformerFactory(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "InspectTask")
 		os.Exit(1)
 	}
 	if err = (&controllers2.InspectResultReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:         mgr.GetClient(),
+		Scheme:         mgr.GetScheme(),
+		KubeEyeFactory: factory.KubeEyeInformerFactory().Kubeeye(),
+		K8sFactory:     factory.KubernetesInformerFactory(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "InspectResult")
 		os.Exit(1)
@@ -137,6 +144,12 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
+
+	factory.ForResources(informers.KeEyeGver(), informers.K8sEyeGver())
+	factory.Start(ctx.Done())
+
+	factory.KubeEyeInformerFactory().WaitForCacheSync(ctx.Done())
+	factory.KubernetesInformerFactory().WaitForCacheSync(ctx.Done())
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctx); err != nil {

@@ -62,9 +62,6 @@ func (c *componentInspect) GetResult(runNodeName string, resultCm *corev1.Config
 	if err != nil {
 		return nil, err
 	}
-	if componentResult == nil {
-		return resultCr, nil
-	}
 
 	resultCr.Spec.ComponentResult = componentResult
 

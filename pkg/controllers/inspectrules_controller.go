@@ -66,7 +66,7 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			inspectRules.Finalizers = append(inspectRules.Finalizers, Finalizers)
 			err = r.Client.Update(ctx, inspectRules)
 			if err != nil {
-				klog.Info("Failed to inspect plan add finalizers")
+				klog.Info("Failed to inspect plan add finalizers", err)
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{}, nil
@@ -95,7 +95,6 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 	if inspectRules.Status.State == kubeeyev1alpha2.ImportComplete {
-		klog.Info("import inspect ruleFiles success")
 		return ctrl.Result{}, nil
 	}
 
@@ -124,6 +123,9 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 	if inspectRules.Spec.NodeInfo != nil {
 		ComputeLevel(inspectRules.Spec.NodeInfo, levelCount)
+	}
+	if inspectRules.Spec.ServiceConnect != nil {
+		ComputeLevel(inspectRules.Spec.ServiceConnect, levelCount)
 	}
 
 	inspectRules.Status.EndImportTime = &v1.Time{Time: time.Now()}
