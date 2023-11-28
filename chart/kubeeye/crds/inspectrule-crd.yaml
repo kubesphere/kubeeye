@@ -153,29 +153,22 @@ spec:
               prometheusEndpoint:
                 type: string
               serviceConnect:
-                properties:
-                  excludeService:
-                    items:
+                items:
+                  properties:
+                    desc:
                       type: string
-                    type: array
-                  includeService:
-                    items:
-                      properties:
-                        desc:
-                          type: string
-                        level:
-                          type: string
-                        name:
-                          type: string
-                        namespace:
-                          type: string
-                        rule:
-                          type: string
-                        workSpaces:
-                          type: string
-                      type: object
-                    type: array
-                type: object
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    rule:
+                      type: string
+                    workSpaces:
+                      type: string
+                  type: object
+                type: array
               sysctl:
                 items:
                   properties:

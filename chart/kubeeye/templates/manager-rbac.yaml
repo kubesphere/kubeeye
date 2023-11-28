@@ -11,6 +11,16 @@ rules:
   - configmaps
   verbs:
   - deletecollection
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - namespaces
+  - nodes
+  - pods
+  - secrets
+  - services
+  verbs:
   - get
   - list
   - watch
@@ -20,16 +30,6 @@ rules:
   - namespaces
   verbs:
   - create
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  - nodes
-  - secrets
-  - services
-  verbs:
-  - get
-  - list
 - apiGroups:
   - ""
   resources:
