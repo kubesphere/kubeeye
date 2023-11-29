@@ -5,33 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
-	"github.com/kubesphere/kubeeye/clients/clientset/versioned"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/inspect"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/template"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
-	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/klog/v2"
 )
-
-func GetRules(ctx context.Context, task types.NamespacedName, client versioned.Interface) map[string][]byte {
-
-	_, err := client.KubeeyeV1alpha2().InspectTasks().Get(ctx, task.Name, metav1.GetOptions{})
-	if err != nil {
-		if kubeErr.IsNotFound(err) {
-			fmt.Printf("rego ruleFiles not found .\n")
-			return nil
-		}
-		fmt.Printf("Failed to Get rego ruleFiles.\n")
-		return nil
-	}
-	return nil
-}
 
 func RuleArrayDeduplication[T any](obj interface{}) []T {
 	maps, err := utils.ArrayStructToArrayMap(obj)
@@ -58,7 +41,7 @@ func Allocation(rule interface{}, taskName string, ruleType string) (*kubeeyev1a
 		klog.Errorf("Failed to convert rule to map. err:%s", err)
 		return nil, err
 	}
-	if toMap == nil && ruleType != constant.ServiceConnect && ruleType != constant.Component {
+	if toMap == nil && ruleType != constant.Component {
 		return nil, fmt.Errorf("failed to Allocation rule for empty")
 	}
 
@@ -256,7 +239,7 @@ func (e *ExecuteRule) SetPrometheusEndpoint(allRule []kubeeyev1alpha2.InspectRul
 func (e *ExecuteRule) MergeRule(allRule []kubeeyev1alpha2.InspectRule) (kubeeyev1alpha2.InspectRuleSpec, error) {
 	var newRuleSpec kubeeyev1alpha2.InspectRuleSpec
 	var newSpecMap = make(map[string][]interface{})
-	ruleTotal := map[string]int{constant.ServiceConnect: 0}
+	ruleTotal := map[string]int{constant.Component: 0}
 	for _, rule := range e.SetPrometheusEndpoint(e.SetRuleSchedule(allRule)) {
 		if rule.Spec.ServiceConnect != nil && newRuleSpec.ServiceConnect == nil {
 			newRuleSpec.ServiceConnect = rule.Spec.ServiceConnect
@@ -268,6 +251,17 @@ func (e *ExecuteRule) MergeRule(allRule []kubeeyev1alpha2.InspectRule) (kubeeyev
 			case []interface{}:
 				newSpecMap[k] = RuleArrayDeduplication[interface{}](append(newSpecMap[k], val...))
 				ruleTotal[e.clusterInspectRuleMap[k]] = len(newSpecMap[k])
+			}
+		}
+	}
+
+	for _, namespace := range constant.SystemNamespaces {
+		list, err := e.KubeClient.ClientSet.CoreV1().Services(namespace).List(context.TODO(), metav1.ListOptions{})
+		if err == nil {
+			for _, item := range list.Items {
+				if len(item.Spec.Selector) > 0 {
+					e.ruleTotal[constant.Component] += 1
+				}
 			}
 		}
 	}
