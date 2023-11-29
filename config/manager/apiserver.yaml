@@ -35,10 +35,6 @@ spec:
         - name: kubeeye-apiserver
           image: kubespheredev/kubeeye-apiserver:latest
           imagePullPolicy: IfNotPresent
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
           env:
             - name: GIN_MODE
               value: release
@@ -70,6 +66,9 @@ spec:
               cpu: 100m
               memory: 128Mi
       serviceAccountName: controller-manager
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
       volumes:
         - name: localtime
           hostPath:

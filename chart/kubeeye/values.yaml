@@ -1,9 +1,5 @@
 apiserver:
   kubeeyeApiserver:
-    containerSecurityContext:
-      runAsGroup: 1000
-      runAsNonRoot: true
-      runAsUser: 1000
     env:
       ginMode: release
     image:
