@@ -165,7 +165,7 @@ spec:
                       type: string
                     rule:
                       type: string
-                    workSpaces:
+                    workspace:
                       type: string
                   type: object
                 type: array

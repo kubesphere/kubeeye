@@ -26,6 +26,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsGroup: 1000
+        runAsUser: 1000
       containers:
       - args:
         - --leader-elect
@@ -54,7 +56,7 @@ spec:
             cpu: 200m
             memory: 256Mi
         volumeMounts:
-          - mountPath: /hosts/result
+          - mountPath: /kubeeye/data
             name: inspect-result
           - mountPath: /etc/localtime
             name: localtime

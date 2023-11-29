@@ -57,11 +57,18 @@ spec:
               one:
                 format: date-time
                 type: string
-              ruleGroup:
-                type: string
               ruleNames:
                 items:
-                  type: string
+                  properties:
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
                 type: array
               schedule:
                 type: string
@@ -163,26 +170,24 @@ spec:
                   properties:
                     assert:
                       type: boolean
-                    endpoint:
-                      type: string
                     level:
                       type: string
                     name:
-                      type: string
-                    namespace:
                       type: string
                   type: object
                 type: array
               fileChangeResult:
                 items:
                   properties:
-                    fileName:
-                      type: string
+                    assert:
+                      type: boolean
                     issues:
                       items:
                         type: string
                       type: array
                     level:
+                      type: string
+                    name:
                       type: string
                     nodeName:
                       type: string
@@ -193,13 +198,15 @@ spec:
               fileFilterResult:
                 items:
                   properties:
-                    fileName:
-                      type: string
+                    assert:
+                      type: boolean
                     issues:
                       items:
                         type: string
                       type: array
                     level:
+                      type: string
+                    name:
                       type: string
                     nodeName:
                       type: string
@@ -296,7 +303,24 @@ spec:
                       type: boolean
                     level:
                       type: string
+                    name:
+                      type: string
                     result:
+                      type: string
+                  type: object
+                type: array
+              serviceConnectResult:
+                items:
+                  properties:
+                    assert:
+                      type: boolean
+                    endpoint:
+                      type: string
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
                       type: string
                   type: object
                 type: array
@@ -391,17 +415,6 @@ spec:
           spec:
             description: InspectRuleSpec defines the desired state of InspectRule
             properties:
-              component:
-                properties:
-                  excludeComponent:
-                    items:
-                      type: string
-                    type: array
-                  includeComponent:
-                    items:
-                      type: string
-                    type: array
-                type: object
               customCommand:
                 items:
                   properties:
@@ -473,9 +486,7 @@ spec:
                     level:
                       type: string
                     mount:
-                      items:
-                        type: string
-                      type: array
+                      type: string
                     name:
                       type: string
                     nodeName:
@@ -484,6 +495,8 @@ spec:
                       additionalProperties:
                         type: string
                       type: object
+                    resourcesType:
+                      type: string
                     rule:
                       type: string
                   type: object
@@ -520,6 +533,23 @@ spec:
                 type: array
               prometheusEndpoint:
                 type: string
+              serviceConnect:
+                items:
+                  properties:
+                    desc:
+                      type: string
+                    level:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    rule:
+                      type: string
+                    workspace:
+                      type: string
+                  type: object
+                type: array
               sysctl:
                 items:
                   properties:
@@ -630,7 +660,16 @@ spec:
                 type: string
               ruleNames:
                 items:
-                  type: string
+                  properties:
+                    name:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
                 type: array
               timeout:
                 type: string
@@ -733,6 +772,16 @@ rules:
   - configmaps
   verbs:
   - deletecollection
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - namespaces
+  - nodes
+  - pods
+  - secrets
+  - services
+  verbs:
   - get
   - list
   - watch
@@ -742,15 +791,6 @@ rules:
   - namespaces
   verbs:
   - create
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  - nodes
-  - services
-  verbs:
-  - get
-  - list
 - apiGroups:
   - ""
   resources:
@@ -957,8 +997,7 @@ data:
   config: "job:\n  autoDelTime: 30\n  backLimit: 5\n  image: kubespheredev/kubeeye-job:latest\n
     \ imagePullPolicy: Always\n  resources:\n    limits:\n      cpu: 1000m\n      memory:
     512Mi\n    requests:\n      cpu: 50m\n      memory: 256Mi\n  multiCluster:\n    member1:
-    \n      image: kubespheredev/kubeeye-job:v1.0.0-beta.8\n      imagePullPolicy:
-    Always"
+    \n      image: kubespheredev/kubeeye-job:latest\n      imagePullPolicy: Always"
 kind: ConfigMap
 metadata:
   name: kubeeye-config
@@ -1077,10 +1116,14 @@ spec:
           requests:
             cpu: 100m
             memory: 128Mi
+        securityContext:
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
-        - mountPath: /hosts/result
+        - mountPath: /kubeeye/data
           name: inspect-result
           readOnly: true
       restartPolicy: Always
@@ -1160,13 +1203,20 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
         volumeMounts:
-        - mountPath: /hosts/result
+        - mountPath: /kubeeye/data
           name: inspect-result
+        - mountPath: /etc/localtime
+          name: localtime
       securityContext:
+        runAsGroup: 1000
         runAsNonRoot: true
+        runAsUser: 1000
       serviceAccountName: kubeeye-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
       - name: inspect-result
         persistentVolumeClaim:
           claimName: kubeeye-inspect-result
+      - hostPath:
+          path: /etc/localtime
+        name: localtime

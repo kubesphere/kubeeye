@@ -61,7 +61,7 @@ const (
 )
 
 const (
-	DefaultProcPath = "/hosts/proc"
-	RootPathPrefix  = "/hosts/root"
-	ResultPath      = "/hosts/result"
+	ProcPathPrefix   = "/hosts/proc"
+	RootPathPrefix   = "/hosts/root"
+	ResultPathPrefix = "/kubeeye/data"
 )

@@ -34,6 +34,13 @@ FROM --platform=${TARGETPLATFORM} alpine:3.18
 
 WORKDIR /
 
-COPY --from=builder /workspace/apiserver /bin/apiserver
+COPY --from=builder /workspace/apiserver /kubeeye/apiserver
 
-ENTRYPOINT ["/bin/apiserver"]
+
+RUN addgroup -S kubeeye -g 1000 && adduser -S kubeeye -G kubeeye -u 1000
+
+RUN   chown kubeeye:kubeeye /kubeeye
+
+USER 1000:1000
+
+ENTRYPOINT ["/kubeeye/apiserver"]

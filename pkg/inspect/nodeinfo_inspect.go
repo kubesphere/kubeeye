@@ -36,7 +36,7 @@ func (n *nodeInfoInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha
 	})
 
 	if exist {
-		fs, err := procfs.NewFS(constant.DefaultProcPath)
+		fs, err := procfs.NewFS(constant.ProcPathPrefix)
 		if err != nil {
 			return nil, err
 		}

@@ -22,7 +22,7 @@ func HtmlOut(resultName string) (error, map[string]interface{}) {
 
 	var results v1alpha2.InspectResult
 
-	open, err := os.Open(path.Join(constant.ResultPath, resultName))
+	open, err := os.Open(path.Join(constant.ResultPathPrefix, resultName))
 	if err != nil {
 		return err, nil
 	}

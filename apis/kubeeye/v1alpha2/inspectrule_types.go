@@ -49,7 +49,7 @@ type RuleItemBases struct {
 type ServiceConnectRuleItem struct {
 	RuleItemBases `json:",inline"`
 	Namespace     string `json:"namespace,omitempty"`
-	WorkSpaces    string `json:"workSpaces,omitempty"`
+	Workspace     string `json:"workspace,omitempty"`
 }
 
 type Node struct {

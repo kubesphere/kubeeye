@@ -36,7 +36,7 @@ func (c *serviceConnectInspect) RunInspect(ctx context.Context, rules []kubeeyev
 		if err != nil {
 			return nil, err
 		}
-		component, err := c.GetInspectComponent(ctx, clients, components)
+		component, err := GetInspectComponent(ctx, clients, components)
 		if err != nil {
 			return nil, err
 		}
@@ -90,51 +90,47 @@ func (c *serviceConnectInspect) checkConnection(address string) bool {
 	return true
 }
 
-func (c *serviceConnectInspect) GetInspectComponent(ctx context.Context, clients *kube.KubernetesClient, serviceConnectRule []kubeeyev1alpha2.ServiceConnectRuleItem) ([]kubeeyev1alpha2.ServiceConnectRuleItem, error) {
-	var inspectService []kubeeyev1alpha2.ServiceConnectRuleItem
-	if serviceConnectRule == nil {
-		return nil, fmt.Errorf("rule is empty")
-	}
+func GetInspectComponent(ctx context.Context, clients *kube.KubernetesClient, serviceConnectRule []kubeeyev1alpha2.ServiceConnectRuleItem) (map[string]kubeeyev1alpha2.ServiceConnectRuleItem, error) {
+	var inspectService = make(map[string]kubeeyev1alpha2.ServiceConnectRuleItem)
 	list, err := clients.ClientSet.CoreV1().Services(corev1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 	for _, service := range serviceConnectRule {
-		if !utils.IsEmptyValue(service.WorkSpaces) {
-			namespaces := GetNameSpacesForWorkSpace(ctx, clients, service.WorkSpaces)
+		if !utils.IsEmptyValue(service.Workspace) {
+			namespaces := GetNameSpacesForWorkSpace(ctx, clients, service.Workspace)
 			for _, namespace := range namespaces {
 				for _, s := range GetServicesForNameSpace(list.Items, namespace.Name) {
-					inspectService = append(inspectService, kubeeyev1alpha2.ServiceConnectRuleItem{
+					inspectService[fmt.Sprintf("%s/%s", s.Name, s.Namespace)] = kubeeyev1alpha2.ServiceConnectRuleItem{
 						RuleItemBases: kubeeyev1alpha2.RuleItemBases{
 							Name:  s.Name,
 							Rule:  fmt.Sprintf("%s.%s.svc.cluster.local:%d", s.Name, s.Namespace, s.Spec.Ports[0].Port),
 							Level: service.Level,
 						},
-					})
+					}
 
 				}
 			}
 		} else if !utils.IsEmptyValue(service.Namespace) {
 			for _, s := range GetServicesForNameSpace(list.Items, service.Namespace) {
-
-				inspectService = append(inspectService, kubeeyev1alpha2.ServiceConnectRuleItem{
+				inspectService[fmt.Sprintf("%s/%s", s.Name, s.Namespace)] = kubeeyev1alpha2.ServiceConnectRuleItem{
 					RuleItemBases: kubeeyev1alpha2.RuleItemBases{
 						Name:  s.Name,
 						Rule:  fmt.Sprintf("%s.%s.svc.cluster.local:%d", s.Name, s.Namespace, s.Spec.Ports[0].Port),
 						Level: service.Level,
 					},
-				})
+				}
 
 			}
 		} else {
 			if s, ok := GetServices(list.Items, service.Name); ok {
-				inspectService = append(inspectService, kubeeyev1alpha2.ServiceConnectRuleItem{
+				inspectService[fmt.Sprintf("%s/%s", s.Name, s.Namespace)] = kubeeyev1alpha2.ServiceConnectRuleItem{
 					RuleItemBases: kubeeyev1alpha2.RuleItemBases{
 						Name:  s.Name,
 						Rule:  fmt.Sprintf("%s.%s.svc.cluster.local:%d", s.Name, s.Namespace, s.Spec.Ports[0].Port),
 						Level: service.Level,
 					},
-				})
+				}
 			}
 		}
 	}

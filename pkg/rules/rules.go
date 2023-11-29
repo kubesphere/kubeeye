@@ -134,33 +134,6 @@ func mergeNodeRule(rule []map[string]interface{}, allNode []corev1.Node) map[str
 	return mergeMap
 }
 
-func TotalServiceNum(ctx context.Context, clients *kube.KubernetesClient, connectRuleItems []kubeeyev1alpha2.ServiceConnectRuleItem) (componentRuleNumber int) {
-
-	if connectRuleItems == nil {
-		return 0
-	}
-	list, err := clients.ClientSet.CoreV1().Services(corev1.NamespaceAll).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return 0
-	}
-	for _, service := range connectRuleItems {
-		if !utils.IsEmptyValue(service.WorkSpaces) {
-			namespaces := inspect.GetNameSpacesForWorkSpace(ctx, clients, service.WorkSpaces)
-			for _, item := range namespaces {
-				services := inspect.GetServicesForNameSpace(list.Items, item.Name)
-				componentRuleNumber = len(services)
-			}
-		} else if !utils.IsEmptyValue(service.Namespace) {
-			services := inspect.GetServicesForNameSpace(list.Items, service.Namespace)
-			componentRuleNumber = len(services)
-		} else {
-			componentRuleNumber++
-		}
-	}
-
-	return componentRuleNumber
-}
-
 type ExecuteRule struct {
 	KubeClient              *kube.KubernetesClient
 	Task                    *kubeeyev1alpha2.InspectTask
@@ -243,7 +216,13 @@ func (e *ExecuteRule) MergeRule(allRule []kubeeyev1alpha2.InspectRule) (kubeeyev
 	for _, rule := range e.SetPrometheusEndpoint(e.SetRuleSchedule(allRule)) {
 		if rule.Spec.ServiceConnect != nil && newRuleSpec.ServiceConnect == nil {
 			newRuleSpec.ServiceConnect = rule.Spec.ServiceConnect
-			ruleTotal[constant.ServiceConnect] = TotalServiceNum(context.TODO(), e.KubeClient, newRuleSpec.ServiceConnect)
+			component, err := inspect.GetInspectComponent(context.TODO(), e.KubeClient, newRuleSpec.ServiceConnect)
+			if err != nil {
+				ruleTotal[constant.ServiceConnect] = 0
+			} else {
+				ruleTotal[constant.ServiceConnect] = len(component)
+			}
+
 		}
 		toMap := utils.StructToMap(rule.Spec)
 		for k, v := range toMap {

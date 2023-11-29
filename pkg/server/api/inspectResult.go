@@ -81,7 +81,7 @@ func (i *InspectResult) ListInspectResult(gin *gin.Context) {
 	details, _ := gin.GetQuery("details")
 	if utils.StringToBool(details) {
 		for k := range results {
-			file, err := os.ReadFile(path.Join(constant.ResultPath, results[k].Name))
+			file, err := os.ReadFile(path.Join(constant.ResultPathPrefix, results[k].Name))
 			if err != nil {
 				gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
 				return
@@ -139,7 +139,7 @@ func (i *InspectResult) GetInspectResult(gin *gin.Context) {
 		}
 		details, _ := gin.GetQuery("details")
 		if utils.StringToBool(details) {
-			file, err := os.ReadFile(path.Join(constant.ResultPath, result.Name))
+			file, err := os.ReadFile(path.Join(constant.ResultPathPrefix, result.Name))
 			if err != nil {
 				gin.JSON(http.StatusInternalServerError, NewErrors(err.Error(), "InspectResult"))
 				return
@@ -180,7 +180,7 @@ func (i *InspectResult) filter(data map[string]interface{}, f *query.Filter) boo
 
 func (i *InspectResult) GetFileResultData(name string) (*v1alpha2.InspectResult, error) {
 	var results v1alpha2.InspectResult
-	file, err := os.ReadFile(path.Join(constant.ResultPath, name))
+	file, err := os.ReadFile(path.Join(constant.ResultPathPrefix, name))
 	if err != nil {
 		return nil, err
 	}

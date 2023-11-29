@@ -35,13 +35,17 @@ spec:
         - name: kubeeye-apiserver
           image: kubespheredev/kubeeye-apiserver:latest
           imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
           env:
             - name: GIN_MODE
               value: release
           volumeMounts:
             - mountPath: /etc/localtime
               name: localtime
-            - mountPath: /hosts/result
+            - mountPath: /kubeeye/data
               readOnly: true
               name: inspect-result
           livenessProbe:

@@ -1,10 +1,14 @@
 apiserver:
   kubeeyeApiserver:
+    containerSecurityContext:
+      runAsGroup: 1000
+      runAsNonRoot: true
+      runAsUser: 1000
     env:
       ginMode: release
     image:
       repository: kubespheredev/kubeeye-apiserver
-      tag: v1.0.0-rc.1
+      tag: latest
     imagePullPolicy: IfNotPresent
     resources:
       limits:
@@ -24,8 +28,8 @@ config:
     job:
       autoDelTime: 30
       backLimit: 5
-      image: kubespheredev/kubeeye-job:v1.0.0-rc.1
-      imagePullPolicy: IfNotPresent
+      image: kubespheredev/kubeeye-job:latest
+      imagePullPolicy: Always
       resources:
         limits:
           cpu: 1000m
@@ -33,6 +37,10 @@ config:
         requests:
           cpu: 50m
           memory: 256Mi
+      multiCluster:
+        member1:
+          image: kubespheredev/kubeeye-job:latest
+          imagePullPolicy: Always
 controllerManager:
   kubeRbacProxy:
     args:
@@ -59,8 +67,8 @@ controllerManager:
       allowPrivilegeEscalation: false
     image:
       repository: kubespheredev/kubeeye-controller
-      tag: v1.0.0-rc.1
-    imagePullPolicy: IfNotPresent
+      tag: latest
+    imagePullPolicy: Always
     resources:
       limits:
         cpu: 1500m

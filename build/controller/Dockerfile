@@ -29,12 +29,14 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETPLATFORM} go build   -o /workspace/c
 
 FROM alpine:3.18 as ke-manager
 
-WORKDIR /
+WORKDIR /kubeeye
 
-COPY --from=builder /workspace/controller .
+COPY --from=builder /workspace/controller /kubeeye
 
 RUN addgroup -S kubeeye -g 1000 && adduser -S kubeeye -G kubeeye -u 1000
 
+RUN chown kubeeye:kubeeye /kubeeye
+
 USER 1000:1000
 
-ENTRYPOINT ["/controller"]
+ENTRYPOINT ["/kubeeye/controller"]

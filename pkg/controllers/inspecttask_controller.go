@@ -249,10 +249,10 @@ func (r *InspectTaskReconciler) GenerateResult(task *kubeeyev1alpha2.InspectTask
 		}
 	}
 
-	file, err := os.Open(path.Join(constant.ResultPath, resultName))
+	file, err := os.Open(path.Join(constant.ResultPathPrefix, resultName))
 	if err == nil {
 		defer file.Close()
-		err = os.Remove(path.Join(constant.ResultPath, resultName))
+		err = os.Remove(path.Join(constant.ResultPathPrefix, resultName))
 		if err != nil {
 			klog.Error("failed to delete result ")
 		}
@@ -361,6 +361,7 @@ func (r *InspectTaskReconciler) createJobsInspect(ctx context.Context, task *kub
 					err = r.getInspectResultData(ctx, kubeClient, resultData, resultJob.JobName)
 					if err != nil {
 						klog.Error("failed to get inspect result data", err)
+						jobNames = append(jobNames, kubeeyev1alpha2.JobPhase{JobName: v.JobName, Phase: kubeeyev1alpha2.PhaseFailed})
 					}
 					mutex.Unlock()
 				} else {
@@ -453,7 +454,7 @@ func (r *InspectTaskReconciler) getInspectResultData(ctx context.Context, client
 }
 
 func saveResultFile(resultData *kubeeyev1alpha2.InspectResult) error {
-	file, err := os.OpenFile(path.Join(constant.ResultPath, resultData.Name), os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(path.Join(constant.ResultPathPrefix, resultData.Name), os.O_CREATE|os.O_WRONLY, 0775)
 	if err != nil {
 		klog.Error(err, "open file error")
 		return err

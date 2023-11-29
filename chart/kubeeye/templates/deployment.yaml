@@ -43,10 +43,12 @@ spec:
           timeoutSeconds: 10
         resources: {{- toYaml .Values.apiserver.kubeeyeApiserver.resources | nindent 10
           }}
+        securityContext: {{- toYaml .Values.apiserver.kubeeyeApiserver.containerSecurityContext
+          | nindent 10 }}
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
-        - mountPath: /hosts/result
+        - mountPath: /kubeeye/data
           name: inspect-result
           readOnly: true
       restartPolicy: Always
@@ -119,12 +121,14 @@ spec:
         securityContext: {{- toYaml .Values.controllerManager.manager.containerSecurityContext
           | nindent 10 }}
         volumeMounts:
-        - mountPath: /hosts/result
+        - mountPath: /kubeeye/data
           name: inspect-result
         - mountPath: /etc/localtime
           name: localtime
       securityContext:
+        runAsGroup: 1000
         runAsNonRoot: true
+        runAsUser: 1000
       serviceAccountName: {{ include "kubeeye.fullname" . }}-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:

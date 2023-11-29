@@ -89,7 +89,7 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		newFinalizers := utils.SliceRemove(Finalizers, result.Finalizers)
 		result.Finalizers = newFinalizers.([]string)
 		klog.Infof("inspect task is being deleted")
-		err = os.Remove(path.Join(constant.ResultPath, result.Name))
+		err = os.Remove(path.Join(constant.ResultPathPrefix, result.Name))
 		if err != nil {
 			klog.Error(err, "failed to delete file")
 		}
@@ -156,7 +156,7 @@ func (r *InspectResultReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *InspectResultReconciler) CountLevelNum(resultName string) (map[kubeeyev1alpha2.Level]*int, error) {
-	file, err := os.ReadFile(path.Join(constant.ResultPath, resultName))
+	file, err := os.ReadFile(path.Join(constant.ResultPathPrefix, resultName))
 	if err != nil {
 		return nil, err
 	}

@@ -27,7 +27,7 @@ func (o *sysctlInspect) RunInspect(ctx context.Context, rules []kubeeyev1alpha2.
 
 	var SysctlResult []kubeeyev1alpha2.NodeMetricsResultItem
 
-	fs, err := procfs.NewFS(constant.DefaultProcPath)
+	fs, err := procfs.NewFS(constant.ProcPathPrefix)
 	if err != nil {
 		return nil, err
 	}

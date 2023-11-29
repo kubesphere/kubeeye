@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kubeeye-config
+  name: {{ include "kubeeye.fullname" . }}-config
   labels:
   {{- include "kubeeye.labels" . | nindent 4 }}
 data:

@@ -19,5 +19,5 @@ data:
           memory: 256Mi
       multiCluster:
         member1: 
-          image: kubespheredev/kubeeye-job:v1.0.0-beta.8
+          image: kubespheredev/kubeeye-job:latest
           imagePullPolicy: Always
