@@ -75,7 +75,7 @@ func (f *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 				continue
 			}
 		}
-		baseContent := baseConfig.BinaryData[constant.FileChange]
+		baseContent := baseConfig.BinaryData[constant.Data]
 
 		diffResult := diffString(string(baseContent), string(baseFile))
 

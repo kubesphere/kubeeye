@@ -4,6 +4,6 @@ metadata:
   name: services-connect
 spec:
   serviceConnect:
-    - workSpaces: system-workspace
+    - workspace: system-workspace
       level: warning
 
