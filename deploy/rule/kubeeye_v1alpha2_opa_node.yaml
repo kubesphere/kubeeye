@@ -16,51 +16,38 @@ spec:
     name: FalseNodeConditionsRule
     rule: |-
       package kubeeye_nodes_rego
-
+  
+      import future.keywords.if
+      import future.keywords.in
+      
       deny[msg] {
-          resource := input
-          type := resource.Object.kind
-          resourcename := resource.Object.metadata.name
-          type == "Node"
-          level := "warning"
+        resource := input
+      	type := resource.Object.kind
 
-          resource.Object.status.conditions[i].status == "False"
+      	type == "Node"
+      	level := "warning"
 
-          contains(resource.Object.status.conditions[i].message, "has")
-          not contains(resource.Object.status.conditions[i].message, "has no")
-          Message := replace(resource.Object.status.conditions[i].message,"has", "has no")
-          contains(resource.Object.status.conditions[i].reason, "Has")
-          not contains(resource.Object.status.conditions[i].reason, "HasNo")
-          Reason := replace(resource.Object.status.conditions[i].reason,"Has", "HasNo")
-
-          msg := {
-              "Name": sprintf("%v", [resourcename]),
-              "Type": sprintf("%v", [type]),
-              "Level": sprintf("%v", [level]),
-              "Message": sprintf("%v", [Reason]),
-              "Reason": sprintf("%v", [Message]),
-          }
+      	some condition in resource.Object.status.conditions
+      	msg := f(condition, type, level, resource.Object.metadata.name)
       }
 
-      deny[msg] {
-          resource := input
-          type := resource.Object.kind
-          resourcename := resource.Object.metadata.name
-          type == "Node"
-          level := "warning"
-
-          resource.Object.status.conditions[i].status == "False"
-
-          contains(resource.Object.status.conditions[i].message, "has no")
-          Message := replace(resource.Object.status.conditions[i].message,"has no", "has")
-          contains(resource.Object.status.conditions[i].reason, "HasNo")
-          Reason := replace(resource.Object.status.conditions[i].reason,"HasNo", "Has")
-
-          msg := {
-              "Name": sprintf("%v", [resourcename]),
-              "Type": sprintf("%v", [type]),
-              "Level": sprintf("%v", [level]),
-              "Message": sprintf("%v", [Reason]),
-              "Reason": sprintf("%v", [Message]),
-          }
+      f(condition, type, level, resourcename) = result if {
+      	condition.type == "Ready"
+      	condition.status == "False"
+      	result = {
+      		"Name": sprintf("%v", [resourcename]),
+      		"Type": sprintf("%v", [type]),
+      		"Level": sprintf("%v", [level]),
+      		"Message": sprintf("%v", [condition.reason]),
+      		"Reason": sprintf("%v", [condition.message]),
+      	}
+      } else = {
+      	"Name": sprintf("%v", [resourcename]),
+      	"Type": sprintf("%v", [type]),
+      	"Level": sprintf("%v", [level]),
+      	"Message": sprintf("%v", [condition.reason]),
+      	"Reason": sprintf("%v", [condition.message]),
+      } if {
+      	condition.type != "Ready"
+      	condition.status == "True"
       }

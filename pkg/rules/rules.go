@@ -260,7 +260,7 @@ func (e *ExecuteRule) MergeRule(allRule []kubeeyev1alpha2.InspectRule) (kubeeyev
 		if err == nil {
 			for _, item := range list.Items {
 				if len(item.Spec.Selector) > 0 {
-					e.ruleTotal[constant.Component] += 1
+					ruleTotal[constant.Component] += 1
 				}
 			}
 		}
