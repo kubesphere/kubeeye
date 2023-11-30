@@ -29,7 +29,7 @@ jobs:
         with:
           context: .
           file: build/apiserver/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: jw008/kubeeye-apiserver:${{ github.ref_name }}
 
@@ -57,7 +57,7 @@ jobs:
         with:
           context: .
           file: build/controller/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: jw008/kubeeye-controller:${{ github.ref_name }}
 
@@ -85,7 +85,7 @@ jobs:
         with:
           context: .
           file: build/job/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: jw008/kubeeye-job:${{ github.ref_name }}
 

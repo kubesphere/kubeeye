@@ -214,7 +214,6 @@ func nextScheduledTimeDuration(sched cron.Schedule, now *metav1.Time) *time.Dura
 
 func (r *InspectPlanReconciler) createInspectTask(plan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (string, error) {
 	ownerController := true
-	r.removeTask(ctx, plan)
 	inspectTask := kubeeyev1alpha2.InspectTask{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   fmt.Sprintf("%s-%s", plan.Name, time.Now().Format("20060102-15-04")),
@@ -257,6 +256,7 @@ func (r *InspectPlanReconciler) createInspectTask(plan *kubeeyev1alpha2.InspectP
 		return "", err
 	}
 	klog.Info("create a new inspect task.", inspectTask.Name)
+	r.removeTask(ctx, plan)
 	return inspectTask.Name, nil
 }
 
@@ -266,7 +266,7 @@ func (r *InspectPlanReconciler) removeTask(ctx context.Context, plan *kubeeyev1a
 		if err != nil {
 			klog.Error("Failed to get inspect task for label", err)
 		}
-		if len(tasks) > plan.Spec.MaxTasks {
+		if len(tasks) >= plan.Spec.MaxTasks {
 			for _, task := range tasks[:len(tasks)-plan.Spec.MaxTasks] {
 				err = r.K8sClient.VersionClientSet.KubeeyeV1alpha2().InspectTasks().Delete(ctx, task.Name, metav1.DeleteOptions{})
 				if err == nil || kubeErr.IsNotFound(err) {
