@@ -9,231 +9,114 @@
 
 > English | [中文](README_zh.md)
 
-KubeEye 是为 Kubernetes 设计的巡检工具，用于发现 Kubernetes 资源（使用 [OPA](https://github.com/open-policy-agent/opa) ）、集群组件、集群节点（使用[Node-Problem-Detector](https://github.com/kubernetes/node-problem-detector)）等配置是否符合最佳实践，对于不符合最佳实践的，将给出修改建议。
+KubeEye 是为 Kubernetes 设计的云原生集群巡检工具，用于根据自定义规则发现 Kubernetes 集群中存在的问题及风险。
 
-KubeEye 支持自定义巡检规则、插件安装，通过 [KubeEye Operator](#kubeeye-operator) 能够使用 web 页面的图形化展示来查看巡检结果以及给出修复建议。
+## 快速开始
 
-## 架构图
-
-KubeEye 通过 Kubernetes API 获取资源详情，通过巡检规则和插件检查获取到的资源配置，并生成诊断结果，详见架构图。
-
-![kubeeye-architecture](./docs/images/kubeeye-architecture.svg?raw=true)
-
-## 安装并使用 KubeEye
-
-1. 机器上安装 KubeEye。
-  - 方法 1：从 [Releases](https://github.com/kubesphere/kubeeye/releases) 中下载预构建的可执行文件。
-
-  - 方法 2：从源代码构建。
-  > 提示：构建完成后将会在 `/usr/local/bin/` 目录下生成 KubeEye 文件。
-
-  ```
-  git clone https://github.com/kubesphere/kubeeye.git
-  cd kubeeye 
-  make installke
-  ```
-2. [可选] 安装 [Node-problem-Detector](https://github.com/kubernetes/node-problem-detector)。
-
-  > 提示：如果您需要详细的节点报告，可以运行该命令。运行后，将在你的集群上安装 NPD。
-
-   ```shell
-   kubeeye install npd
-   ```
-
-3. 使用 KubeEye 进行巡检。
+### 安装
+可从 [Releases](https://github.com/kubesphere/kubeeye/releases) 中下载安装包（其中包含helm chart，demo rules 以及 供离线环境部署的镜像）
 
 ```shell
-kubeeye inspect
-KIND          NAMESPACE        NAME                                                           REASON                                        LEVEL    MESSAGE
-Node                           docker-desktop                                                 kubelet has no sufficient memory available   warning    KubeletHasNoSufficientMemory
-Node                           docker-desktop                                                 kubelet has no sufficient PID available      warning    KubeletHasNoSufficientPID
-Node                           docker-desktop                                                 kubelet has disk pressure                    warning    KubeletHasDiskPressure
-Deployment    default          testkubeeye                                                                                                                  NoCPULimits
-Deployment    default          testkubeeye                                                                                                                  NoReadinessProbe
-Deployment    default          testkubeeye                                                                                                                  NotRunAsNonRoot
-Deployment    kube-system      coredns                                                                                                               NoCPULimits
-Deployment    kube-system      coredns                                                                                                               ImagePullPolicyNotAlways
-Deployment    kube-system      coredns                                                                                                               NotRunAsNonRoot
-Deployment    kubeeye-system   kubeeye-controller-manager                                                                                            ImagePullPolicyNotAlways
-Deployment    kubeeye-system   kubeeye-controller-manager                                                                                            NotRunAsNonRoot
-DaemonSet     kube-system      kube-proxy                                                                                                            NoCPULimits
-DaemonSet     kube-system      kube-proxy                                                                                                            NotRunAsNonRoot
-Event         kube-system      coredns-558bd4d5db-c26j8.16d5fa3ddf56675f                      Unhealthy                                    warning   Readiness probe failed: Get "http://10.1.0.87:8181/ready": dial tcp 10.1.0.87:8181: connect: connection refused
-Event         kube-system      coredns-558bd4d5db-c26j8.16d5fa3fbdc834c9                      Unhealthy                                    warning   Readiness probe failed: HTTP probe failed with statuscode: 503
-Event         kube-system      vpnkit-controller.16d5ac2b2b4fa1eb                             BackOff                                      warning   Back-off restarting failed container
-Event         kube-system      vpnkit-controller.16d5fa44d0502641                             BackOff                                      warning   Back-off restarting failed container
-Event         kubeeye-system   kubeeye-controller-manager-7f79c4ccc8-f2njw.16d5fa3f5fc3229c   Failed                                       warning   Failed to pull image "controller:latest": rpc error: code = Unknown desc = Error response from daemon: pull access denied for controller, repository does not exist or may require 'docker login': denied: requested access to the resource is denied
-Event         kubeeye-system   kubeeye-controller-manager-7f79c4ccc8-f2njw.16d5fa3f61b28527   Failed                                       warning   Error: ImagePullBackOff
-Role          kubeeye-system   kubeeye-leader-election-role                                                                                          CanDeleteResources
-ClusterRole                    kubeeye-manager-role                                                                                                  CanDeleteResources
-ClusterRole                    kubeeye-manager-role                                                                                                  CanModifyWorkloads
-ClusterRole                    vpnkit-controller                                                                                                     CanImpersonateUser
-ClusterRole                    vpnkit-controller                                                                                           CanDeleteResources
+VERSION=v1.0.0
+
+wget https://github.com/kubesphere/kubeeye/releases/download/${VERSION}/kubeeye-offline-${VERSION}.tar.gz
+
+tar -zxvf kubeeye-offline-${VERSION}.tar.gz
+
+cd kubeeye-offline-${VERSION}
+
+# 如需离线安装，请自行将images中的镜像导入本地仓库，并修改 chart/kubeeye/values.yaml 中的镜像地址。
+
+helm upgrade --install kubeeye chart/kubeeye -n kubeeye-system --create-namespace
+
 ```
 
-## KubeEye 能为您做什么
+### 使用
 
-- KubeEye 根据 Kubernetes 最佳实践来检查集群资源，确保集群保持最佳配置，稳定运行。
-- KubeEye 可以帮助您发现集群控制平面问题，包括 kube-apiserver、kube-controller-manager、etcd 等。
-- KubeEye 可以帮助您检测各种集群节点问题，包括内存、CPU、磁盘压力、意外的内核错误日志等。
+#### 导入规则
+   
+> 安装包中的rule目录下提供了demo规则，可根据需求自定义规则。
 
-## 检查项
-
-|是/否|检查项 |描述|级别|
-|---|---|---|---|
-| :white_check_mark: | PrivilegeEscalationAllowed     | 允许特权升级 | 紧急 |
-| :white_check_mark: | CanImpersonateUser             | role/clusterrole 有伪装成其他用户权限 | 警告 |
-| :white_check_mark: | CanDeleteResources             | role/clusterrole 有删除 kubernetes 资源权限 | 警告 |
-| :white_check_mark: | CanModifyWorkloads             | role/clusterrole 有修改 kubernetes 资源权限 | 警告 |
-| :white_check_mark: | NoCPULimits                    | 资源没有设置 CPU 使用限制 | 紧急 |
-| :white_check_mark: | NoCPURequests                  | 资源没有设置预留 CPU | 紧急 |
-| :white_check_mark: | HighRiskCapabilities           | 开启了高危功能，例如 ALL/SYS_ADMIN/NET_ADMIN | 紧急 |
-| :white_check_mark: | HostIPCAllowed                 | 开启了主机 IPC | 紧急 |
-| :white_check_mark: | HostNetworkAllowed             | 开启了主机网络 | 紧急 |
-| :white_check_mark: | HostPIDAllowed                 | 开启了主机PID | 紧急 |
-| :white_check_mark: | HostPortAllowed                | 开启了主机端口 | 紧急 |
-| :white_check_mark: | ImagePullPolicyNotAlways       | 镜像拉取策略不是 always | 警告 |
-| :white_check_mark: | ImageTagIsLatest               | 镜像标签是 latest | 警告 |
-| :white_check_mark: | ImageTagMiss                   | 镜像没有标签 | 紧急 |
-| :white_check_mark: | InsecureCapabilities           | 开启了不安全的功能，例如 KILL/SYS_CHROOT/CHOWN | 警告 |
-| :white_check_mark: | NoLivenessProbe                | 没有设置存活状态检查 | 警告 |
-| :white_check_mark: | NoMemoryLimits                 | 资源没有设置内存使用限制 | 紧急 |
-| :white_check_mark: | NoMemoryRequests               | 资源没有设置预留内存 | 紧急 |
-| :white_check_mark: | NoPriorityClassName            | 没有设置资源调度优先级 | 通知 |
-| :white_check_mark: | PrivilegedAllowed              | 以特权模式运行资源 | 紧急 |
-| :white_check_mark: | NoReadinessProbe               | 没有设置就绪状态检查 | 警告 |
-| :white_check_mark: | NotReadOnlyRootFilesystem      | 没有设置根文件系统为只读 | 警告 |
-| :white_check_mark: | NotRunAsNonRoot                | 没有设置禁止以 root 用户启动进程 | 警告 |
-| :white_check_mark: | CertificateExpiredPeriod       | 将检查 ApiServer 证书的到期日期少于30天 | 紧急 |
-| :white_check_mark: | EventAudit                     | 事件检查 | 警告 |
-| :white_check_mark: | NodeStatus                     | 节点状态检查 | 警告 |
-| :white_check_mark: | DockerStatus                   | docker 状态检查 | 警告 |          
-| :white_check_mark: | KubeletStatus                  | kubelet 状态检查 | 警告 |
-
-## 添加自定义检查规则
-
-### 添加自定义 OPA 检查规则
-
-1. 创建 OPA 规则存放目录。
-
-   ```shell
-   mkdir opa
-   ```
-
-2. 添加自定义 OPA 规则文件。
-
-   > 注意：
-   - 为检查工作负载设置的 OPA 规则， package 名称必须是 *kubeeye_workloads_rego*。
-   - 为检查 RBAC 设置的 OPA 规则， package 名称必须是 *kubeeye_RBAC_rego*。
-   - 为检查节点设置的 OPA 规则， package 名称必须是 *kubeeye_nodes_rego*。
-
-3. 为检查镜像仓库地址规则，保存以下规则到规则文件 *imageRegistryRule.rego*。
-
-  ```rego
-  package kubeeye_workloads_rego
-
-  deny[msg] {
-      resource := input
-      type := resource.Object.kind
-      resourcename := resource.Object.metadata.name
-      resourcenamespace := resource.Object.metadata.namespace
-      workloadsType := {"Deployment","ReplicaSet","DaemonSet","StatefulSet","Job"}
-      workloadsType[type]
-
-      not workloadsImageRegistryRule(resource)
-
-      msg := {
-          "Name": sprintf("%v", [resourcename]),
-          "Namespace": sprintf("%v", [resourcenamespace]),
-          "Type": sprintf("%v", [type]),
-          "Message": "ImageRegistryNotmyregistry"
-      }
-  }
-
-  workloadsImageRegistryRule(resource) {
-      regex.match("^myregistry.public.kubesphere/basic/.+", resource.Object.spec.template.spec.containers[_].image)
-  }
-  ```
-
-4. 使用新增规则运行 KubeEye.
-
-  > 提示：KubeEye 将读取指定目录下所有 *.rego* 结尾的文件。
+> 注意 prometheus 规则需提前为规则设置prometheus的endpoint。
 
 ```shell
-kubeeye inspect -p ./opa -f ~/.kube/config
-NAMESPACE     NAME              KIND          MESSAGE
-default       nginx1            Deployment    [ImageRegistryNotmyregistry NotReadOnlyRootFilesystem NotRunAsNonRoot]
-default       nginx11           Deployment    [ImageRegistryNotmyregistry PrivilegeEscalationAllowed HighRiskCapabilities HostIPCAllowed HostPortAllowed ImagePullPolicyNotAlways ImageTagIsLatest InsecureCapabilities NoPriorityClassName PrivilegedAllowed NotReadOnlyRootFilesystem NotRunAsNonRoot]
-default       nginx111          Deployment    [ImageRegistryNotmyregistry NoCPULimits NoCPURequests ImageTagMiss NoLivenessProbe NoMemoryLimits NoMemoryRequests NoPriorityClassName NotReadOnlyRootFilesystem NoReadinessProbe NotRunAsNonRoot]
+kubectl apply -f rule
 ```
-### 添加自定义 NPD 检查规则
 
-1. 执行以下命令修改 ConfigMap：
+#### 创建巡检计划
 
-   ```shell
-   kubectl edit ConfigMap node-problem-detector-config -n kube-system 
-   ```
-
-2. 执行以下命令重启 NPD：
-   ```shell
-   kubectl rollout restart DaemonSet node-problem-detector -n kube-system
-   ```
-
-## KubeEye Operator
-
-### 什么是 KubeEye Operator
-
-KubeEye Operator 是为 Kubernetes 设计的巡检平台。通过 Operator 管理 KubeEye，能够在 Kubernetes 集群中定期执行 KubeEye 巡检，并生成巡检报告。
-
-### KubeEye Operator 能为您做什么
-
-- 提供 web 管理页面。通过 CR 记录 KubeEye 巡检结果，让您可视化查看和对比集群巡检结果。
-- 支持安装更多插件。
-- 提供更加详细的修改建议。
-
-### 部署 KubeEye Operator
-
+    按需配置巡检计划
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye.yaml
-kubectl apply -f https://raw.githubusercontent.com/kubesphere/kubeeye/main/deploy/kubeeye_insights.yaml
-```
-### 查看 KubeEye Operator 巡检结果
+cat > plan.yaml << EOF
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectPlan
+metadata:
+  name: inspectplan
+spec:
+  # 需要执行检查的计划时间，仅支持cron表达式，例："*/30 * * * ?"表示每30分钟执行一次巡检。
+  # 如果仅需单次巡检，则将该参数移除。
+  schedule: "*/30 * * * ?"
+  # 巡检结果最大保留数量，不填写则是保留全部
+  maxTasks: 10 
+  # 是否暂停巡检计划, 仅作用于周期巡检，true 或 flase （默认false）
+  suspend: false
+  # 巡检超时时间, 默认 10m
+  timeout: 10m
+  # 巡检规则列表，用于关联对应的巡检规则，填写 inspectRule 名称
+  # 可通过 kubectl get inspectrule 查看集群中巡检规则
+  ruleNames:
+    - name: inspect-rule-filter-file
+    - name: inspect-rule-node-info
+    - name: inspect-rule-node
+    - name: inspect-rule-sbnormalpodstatus 
+    - name: inspect-rule-deployment
+    - name: inspect-rule-sysctl
+    - name: inspect-rule-prometheus
+    - name: inspect-rule-filechange
+    - name: inspect-rule-systemd
+  # nodeName: master
+  # nodeSelector:
+  #   node-role.kubernetes.io/master: ""        
+  # 多集群巡检（目前仅支持 KubeSphere 多集群巡检）
+  # clusterName: 
+  # - name: host
+EOF
 
+
+kubectl apply -f plan.yaml
+```
+
+#### 巡检报告获取
+##### 查询巡检结果
 ```shell
-kubectl get clusterinsight -o yaml
+# 查看巡检结果名称，用于后续巡检报告下载
+kubectl get inspectresult
 ```
-
+##### 获取巡检报告
+###### 命令行方式下载
 ```shell
-apiVersion: v1
-items:
-- apiVersion: kubeeye.kubesphere.io/v1alpha1
-  kind: ClusterInsight
-  metadata:
-    name: clusterinsight-sample
-    namespace: default
-  spec:
-    auditPeriod: 24h
-  status:
-    auditResults:
-      auditResults:
-      - resourcesType: Node
-        resultInfos:
-        - namespace: ""
-          resourceInfos:
-          - items:
-            - level: warning
-              message: KubeletHasNoSufficientMemory
-              reason: kubelet has no sufficient memory available
-            - level: warning
-              message: KubeletHasNoSufficientPID
-              reason: kubelet has no sufficient PID available
-            - level: warning
-              message: KubeletHasDiskPressure
-              reason: kubelet has disk pressure
-            name: kubeeyeNode
+## 获取 kubeeye-apiserver svc地址和端口
+kubectl get svc -n kubeeye-system kubeeye-apiserver -o custom-columns=CLUSTER-IP:.spec.clusterIP,PORT:.spec.ports[*].port
+
+## 下载巡检报告, 注意替换 <> 为环境中查询到的实际信息
+curl http://<svc-ip>:9090/kapis/kubeeye.kubesphere.io/v1alpha2/inspectresults/<result name>\?type\=html -o inspectReport.html
+
+## 下载后可使用浏览器打开html文件查看
 ```
+###### 浏览器查看
+```shell
+## 为 kubeeye-apiserver 创建 nodePort 类型svc
+kubectl -n kubeeye-system expose deploy kubeeye-apiserver --port=9090 --type=NodePort --name=ke-apiserver-node-port
 
-## 相关文档
-* [RoadMap](docs/roadmap.md)
-* [FAQ](docs/FAQ.md)
-
+## 浏览器输入巡检报告url查看, 注意替换 <> 为环境中查询到的实际信息
+http://<node address>:<node port>/kapis/kubeeye.kubesphere.io/v1alpha2/inspectresults/<result name>?type=html
+```
+## 支持规则清单
+* OPA 规则
+* PromQL 规则
+* 文件变更规则
+* 内核参数配置规则
+* Systemd 服务状态规则
+* 节点基本信息规则
+* 文件内容检查规则
+* 服务连通性检查规则
