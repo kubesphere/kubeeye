@@ -16,7 +16,7 @@ func GetClusterRoleTemplate() *rbacv1.ClusterRole {
 		Rules: []rbacv1.PolicyRule{{
 			APIGroups: []string{""},
 			Resources: []string{"configmaps", "pods", "server", "events", "services", "nodes", "namespaces"},
-			Verbs:     []string{"list"},
+			Verbs:     []string{"list", "get", "watch"},
 		},
 			{
 				APIGroups: []string{""},
@@ -26,17 +26,17 @@ func GetClusterRoleTemplate() *rbacv1.ClusterRole {
 			{
 				APIGroups: []string{"apps"},
 				Resources: []string{"deployments", "daemonsets", "statefulsets"},
-				Verbs:     []string{"list"},
+				Verbs:     []string{"list", "get", "watch"},
 			},
 			{
 				APIGroups: []string{"batch"},
 				Resources: []string{"jobs", "cronjobs"},
-				Verbs:     []string{"list"},
+				Verbs:     []string{"list", "get", "watch"},
 			},
 			{
 				APIGroups: []string{"rbac.authorization.k8s.io"},
 				Resources: []string{"roles", "clusterroles"},
-				Verbs:     []string{"list"},
+				Verbs:     []string{"list", "get", "watch"},
 			},
 		},
 	}
