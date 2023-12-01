@@ -47,7 +47,7 @@ spec:
       	"Level": sprintf("%v", [level]),
       	"Message": sprintf("%v", [condition.reason]),
       	"Reason": sprintf("%v", [condition.message]),
-      } if {
+      } {
       	condition.type != "Ready"
       	condition.status == "True"
       }

@@ -25,7 +25,7 @@ spec:
             type == "Namespace"
             level := "danger"
 
-            annotation := ["evercloud.io/creator", "evercloud.io/cluster","evercloud.io/ams_name","evercloud.io/ams_id"]
+            annotation := ["test", "demo"]
             some k in annotation
             not resource.Object.metadata.annotations[k]
             msg := {
@@ -48,7 +48,7 @@ spec:
             type == "Namespace"
             level := "danger"
 
-            annotation := ["msmsapp","msmscluster","msmsenv","msmsloc"]
+            annotation := ["test","demo"]
             some k in annotation
             not resource.Object.metadata.labels[k]
             msg := {
