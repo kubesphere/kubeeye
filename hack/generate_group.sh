@@ -71,12 +71,12 @@ fi
 
 if [ "${GENS}" = "all" ] || grep -qw "client" <<<"${GENS}"; then
   echo "Generating clientset for ${GROUPS_WITH_VERSIONS} at ${OUTPUT_PKG}/${CLIENTSET_PKG_NAME:-clientset}"
-  "${GOPATH}"/bin/client-gen --clientset-name "${CLIENTSET_NAME_VERSIONED:-versioned}" --input-base "" --input "$(codegen::join , "${FQ_APIS[@]}")" --output-package "${OUTPUT_PKG}"/"${CLIENTSET_PKG_NAME:-clientset}" "$@"
+  "${GOPATH}"/bin/client-gen --clientset-name "${CLIENTSET_NAME_VERSIONED:-versioned}" --input "$(codegen::join , "${FQ_APIS[@]}")" --output-pkg "${OUTPUT_PKG}"/"${CLIENTSET_PKG_NAME:-clientset}" "$@"
 fi
 
 if [ "${GENS}" = "all" ] || grep -qw "lister" <<<"${GENS}"; then
   echo "Generating listers for ${GROUPS_WITH_VERSIONS} at ${OUTPUT_PKG}/listers"
-  "${GOPATH}"/bin/lister-gen --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" --output-package "${OUTPUT_PKG}"/listers "$@"
+  "${GOPATH}"/bin/lister-gen --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" --output-pkg "${OUTPUT_PKG}"/listers "$@"
 fi
 
 if [ "${GENS}" = "all" ] || grep -qw "informer" <<<"${GENS}"; then
@@ -85,6 +85,6 @@ if [ "${GENS}" = "all" ] || grep -qw "informer" <<<"${GENS}"; then
            --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" \
            --versioned-clientset-package "${OUTPUT_PKG}"/"${CLIENTSET_PKG_NAME:-clientset}"/"${CLIENTSET_NAME_VERSIONED:-versioned}" \
            --listers-package "${OUTPUT_PKG}"/listers \
-           --output-package "${OUTPUT_PKG}"/informers \
+           --output-pkg "${OUTPUT_PKG}"/informers \
            "$@"
 fi

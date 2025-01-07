@@ -10,6 +10,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	"github.com/prometheus/client_golang/api"
 	apiprometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,26 +34,27 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 		return m.JobName == currentJobName
 	})
 	if exist {
-		var proRules []kubeeyev1alpha2.PrometheusRule
-		err := json.Unmarshal(phase.RunRule, &proRules)
+		var promRules []kubeeyev1alpha2.PrometheusRule
+		err := json.Unmarshal(phase.RunRule, &promRules)
 		if err != nil {
 			klog.Error(err, " Failed to marshal kubeeye result")
 			return nil, err
 		}
 
-		var proRuleResult []kubeeyev1alpha2.PrometheusResult
-		for _, proRule := range proRules {
-			proClient, err := api.NewClient(api.Config{
-				Address: proRule.Endpoint,
-			})
-			if err != nil {
-				klog.Error("create prometheus client failed", err)
-				continue
+		var promRuleResult []kubeeyev1alpha2.PrometheusResult
+		for _, promRule := range promRules {
+			if promRule.Prometheus == nil {
+				klog.Error("prometheus config is nil")
+				return nil, err
 			}
-			queryApi := apiprometheusv1.NewAPI(proClient)
-			query, _, err := queryApi.Query(ctx, proRule.Rule, time.Now())
+			queryApi, err := NewPrometheusAPI(promRule.Prometheus)
 			if err != nil {
-				klog.Errorf("failed to query rule:%s", proRule.Rule)
+				klog.Errorf("failed to create prometheus api for %s", promRule.Prometheus.Endpoint)
+				return nil, err
+			}
+			query, _, err := queryApi.Query(ctx, promRule.Rule, time.Now())
+			if err != nil {
+				klog.Errorf("failed to query rule:%s", promRule.Rule)
 				return nil, err
 			}
 			marshal, err := json.Marshal(query)
@@ -67,20 +69,20 @@ func (o *prometheusInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 				continue
 			}
 			for _, result := range queryResults {
-				proRuleResult = append(proRuleResult, kubeeyev1alpha2.PrometheusResult{
+				promRuleResult = append(promRuleResult, kubeeyev1alpha2.PrometheusResult{
 					Result:         toString(result),
-					Rule:           proRule.Rule,
-					RawDataEnabled: proRule.RawDataEnabled,
+					Rule:           promRule.Rule,
+					RawDataEnabled: promRule.RawDataEnabled,
 					BaseResult: kubeeyev1alpha2.BaseResult{
-						Name:   proRule.Name,
+						Name:   promRule.Name,
 						Assert: true,
-						Level:  proRule.Level,
+						Level:  promRule.Level,
 					},
 				})
 			}
 		}
 
-		marshal, err := json.Marshal(proRuleResult)
+		marshal, err := json.Marshal(promRuleResult)
 		if err != nil {
 			return nil, err
 		}
@@ -123,4 +125,47 @@ func toString(val *model.Sample) string {
 
 	sort.Strings(labelStrings)
 	return fmt.Sprintf("{%s}", strings.Join(labelStrings, ", "))
+}
+
+// NewPrometheusAPI creates a new Prometheus API client.
+func NewPrometheusAPI(prometheus *kubeeyev1alpha2.PrometheusConfig) (apiprometheusv1.API, error) {
+	if prometheus.Endpoint == "" {
+		return nil, fmt.Errorf("prometheus endpoint is empty")
+	}
+
+	httpConfig := config.HTTPClientConfig{}
+	basicToken := prometheus.GetBasicToken()
+	if basicToken != "" {
+		httpConfig.HTTPHeaders = &config.Headers{
+			Headers: map[string]config.Header{
+				"Authorization": config.Header{
+					Values: []string{"Basic " + basicToken},
+				},
+			},
+		}
+	}
+
+	bearerToken := prometheus.GetBearerToken()
+	if bearerToken != "" {
+		httpConfig.BearerToken = config.Secret(bearerToken)
+	}
+
+	if prometheus.InsecureSkipVerify != nil {
+		httpConfig.TLSConfig = config.TLSConfig{
+			InsecureSkipVerify: *prometheus.InsecureSkipVerify,
+		}
+	}
+
+	tr, err := config.NewRoundTripperFromConfig(httpConfig, "prometheus")
+	if err != nil {
+		return nil, err
+	}
+	client, err := api.NewClient(api.Config{
+		Address:      prometheus.Endpoint,
+		RoundTripper: tr,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return apiprometheusv1.NewAPI(client), nil
 }

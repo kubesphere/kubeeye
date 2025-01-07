@@ -1,6 +1,6 @@
 
 # Build the manager binary
-FROM golang:1.22 AS builder
+FROM golang:1.23 AS builder
 
 #RUN #go env -w GOPROXY=https://goproxy.cn,direct
 # Run this with docker build --build_arg $(go env GOPROXY) to override the goproxy
@@ -30,7 +30,7 @@ RUN go mod tidy && go mod vendor
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETPLATFORM} go build   -o /workspace/apiserver ./cmd/apiserver
 
 
-FROM alpine:3.19
+FROM alpine:3.21
 
 WORKDIR /
 

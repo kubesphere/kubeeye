@@ -3,8 +3,10 @@ package opa
 import (
 	"fmt"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
+	"github.com/kubesphere/kubeeye/pkg/constant"
 	"k8s.io/klog/v2"
 	"regexp"
+	"strings"
 )
 
 type RulesManager struct {
@@ -35,6 +37,12 @@ func (rm *RulesManager) AddRule(rule *v1alpha2.OpaRule) error {
 
 // parseResourceInfo parses resourceKind and apiVersion from rego rule
 func parseResourceInfo(regoContent string) (kind, apiVersion string, err error) {
+
+	// check if regoContent contains "package inspect.kubeeye.nodeStatsSummary"
+	if strings.Contains(regoContent, "package inspect.kubeeye.nodeStatsSummary") {
+		return constant.NodeStatsSummary, "v1", nil
+	}
+
 	kindPattern := `input\.kind\s*==\s*"([^"]+)"`
 	apiVersionPattern := `input\.apiVersion\s*==\s*"([^"]+)"`
 

@@ -4,6 +4,7 @@ import (
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 )
 
 func BinaryFileConfigMapTemplate(name string, namespace string, binaryData []byte, onRely bool, reference ...metav1.OwnerReference) *corev1.ConfigMap {
@@ -13,7 +14,7 @@ func BinaryFileConfigMapTemplate(name string, namespace string, binaryData []byt
 func BinaryConfigMapTemplate(name string, namespace string, binaryData []byte, onRely bool, labels map[string]string, reference ...metav1.OwnerReference) *corev1.ConfigMap {
 	resultConfigMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
+			Name:            strings.ToLower(name),
 			Namespace:       namespace,
 			OwnerReferences: reference,
 			Labels:          labels,

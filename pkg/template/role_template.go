@@ -15,7 +15,7 @@ func GetClusterRoleTemplate() *rbacv1.ClusterRole {
 		},
 		Rules: []rbacv1.PolicyRule{{
 			APIGroups: []string{""},
-			Resources: []string{"configmaps", "pods", "server", "events", "services", "nodes", "namespaces"},
+			Resources: []string{"*"},
 			Verbs:     []string{"list", "get", "watch"},
 		},
 			{

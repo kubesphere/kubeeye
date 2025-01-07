@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -73,15 +74,30 @@ func StringToBool(b string) bool {
 }
 
 func IsEmptyValue(val interface{}) bool {
-	switch v := val.(type) {
-	case string:
-		return len(strings.TrimSpace(v)) == 0
-	case *string:
-		return v == nil
-	case []string:
-		return v == nil
+	if val == nil {
+		return true
 	}
-	return true
+	v := reflect.ValueOf(val)
+	switch v.Kind() {
+	case reflect.String:
+		return len(strings.TrimSpace(v.String())) == 0
+	case reflect.Slice, reflect.Map:
+		return v.Len() == 0
+	case reflect.Ptr:
+		return v.IsNil()
+	case reflect.Struct:
+		return v.IsZero()
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return v.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0
+	default:
+		return false
+	}
 }
 
 func ArrayStructToArrayMap(obj interface{}) ([]map[string]interface{}, error) {

@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/klog/v2"
 	"os"
+	"strings"
 )
 
 func RuleArrayDeduplication[T any](obj interface{}) []T {
@@ -47,7 +48,7 @@ func Allocation(rule interface{}, taskName string, ruleType string) (*kubeeyev1a
 	}
 
 	return &kubeeyev1alpha2.JobRule{
-		JobName:  fmt.Sprintf("%s-%s-%s", taskName, ruleType, rand.String(5)),
+		JobName:  strings.ToLower(fmt.Sprintf("%s-%s-%s", taskName, ruleType, rand.String(5))),
 		RuleType: ruleType,
 		RunRule:  marshalRule,
 	}, nil
@@ -136,7 +137,7 @@ func NewExecuteRuleOptions(clients *kube.KubernetesClient, Task *kubeeyev1alpha2
 	clusterInspectRuleNames := []string{constant.Opa, constant.Prometheus, constant.ServiceConnect}
 	clusterInspectRuleMap := map[string]string{
 		"opas":           constant.Opa,
-		"prometheus":     constant.Prometheus,
+		"promQL":         constant.Prometheus,
 		"serviceConnect": constant.ServiceConnect,
 		"fileChange":     constant.FileChange,
 		"sysctl":         constant.Sysctl,
@@ -188,10 +189,10 @@ func (e *ExecuteRule) SetRuleSchedule(rules []kubeeyev1alpha2.InspectRule) (newR
 
 func (e *ExecuteRule) SetPrometheusEndpoint(allRule []kubeeyev1alpha2.InspectRule) []kubeeyev1alpha2.InspectRule {
 	for i := range allRule {
-		if !utils.IsEmptyValue(allRule[i].Spec.PrometheusEndpoint) && allRule[i].Spec.Prometheus != nil {
-			for p := range allRule[i].Spec.Prometheus {
-				if utils.IsEmptyValue(allRule[i].Spec.Prometheus[p].Endpoint) {
-					allRule[i].Spec.Prometheus[p].Endpoint = allRule[i].Spec.PrometheusEndpoint
+		if !utils.IsEmptyValue(allRule[i].Spec.Prometheus) && allRule[i].Spec.PromQL != nil {
+			for p := range allRule[i].Spec.PromQL {
+				if utils.IsEmptyValue(allRule[i].Spec.PromQL[p].Prometheus) {
+					allRule[i].Spec.PromQL[p].Prometheus = allRule[i].Spec.Prometheus
 				}
 			}
 		}
@@ -279,7 +280,6 @@ func (e *ExecuteRule) GenerateJob(ctx context.Context, rulesSpec map[string][]in
 	if err == nil {
 		jobs = append(jobs, *component)
 	}
-
 	return jobs
 }
 

@@ -4,22 +4,45 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-echo $SCRIPT_ROOT
-CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ./)}
-# generate the code with:
-# --output-base    because this script should also be able to run inside the vendor dir of
-#                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
-#                  instead of the $GOPATH directly. For normal projects this can be dropped.
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+SCRIPT_ROOT="${SCRIPT_DIR}/.."
+CODEGEN_PKG="${CODEGEN_PKG:-"${SCRIPT_ROOT}/vendor/k8s.io/code-generator"}"
 
-bash  "${CODEGEN_PKG}"/generate_group.sh "deepcopy,client,informer,lister" \
-  github.com/kubesphere/kubeeye/clients github.com/kubesphere/kubeeye/apis \
-  kubeeye:v1alpha2 \
-  --output-base "$(dirname "${BASH_SOURCE[0]}")/../../.." \
-  --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate.go.txt -v 10
+echo "Verifying environment..."
+echo "SCRIPT_ROOT: ${SCRIPT_ROOT}"
+echo "CODEGEN_PKG: ${CODEGEN_PKG}"
 
-# To use your own boilerplate text append:
-#   --go-header-file "${SCRIPT_ROOT}"/hack/custom-boilerplate.go.txt
+# 验证必要文件存在
+if [ ! -f "${CODEGEN_PKG}/kube_codegen.sh" ]; then
+    echo "Error: kube_codegen.sh not found at ${CODEGEN_PKG}/kube_codegen.sh"
+    exit 1
+fi
 
+if [ ! -f "${SCRIPT_ROOT}/hack/boilerplate.go.txt" ]; then
+    echo "Creating empty boilerplate.go.txt"
+    touch "${SCRIPT_ROOT}/hack/boilerplate.go.txt"
+fi
 
+if [ ! -d "${SCRIPT_ROOT}/apis/kubeeye" ]; then
+    echo "Error: APIs directory not found at ${SCRIPT_ROOT}/apis/kubeeye"
+    exit 1
+fi
+
+source "${CODEGEN_PKG}/kube_codegen.sh"
+
+THIS_PKG="github.com/kubesphere/kubeeye"
+
+echo "Generating deepcopy functions..."
+kube::codegen::gen_helpers \
+    --boilerplate "${SCRIPT_ROOT}/hack/boilerplate.go.txt" \
+    "${SCRIPT_ROOT}"
+
+echo "Generating client code..."
+kube::codegen::gen_client \
+    --with-watch \
+    --with-applyconfig \
+    --output-dir "${SCRIPT_ROOT}/clients" \
+    --output-pkg "${THIS_PKG}/clients" \
+    --boilerplate "${SCRIPT_ROOT}/hack/boilerplate.go.txt" \
+    "${SCRIPT_ROOT}/apis"
 

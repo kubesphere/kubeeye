@@ -103,8 +103,8 @@ func (r *InspectRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if inspectRules.Spec.Opas != nil {
 		ComputeLevel(inspectRules.Spec.Opas, levelCount)
 	}
-	if inspectRules.Spec.Prometheus != nil {
-		ComputeLevel(inspectRules.Spec.Prometheus, levelCount)
+	if inspectRules.Spec.PromQL != nil {
+		ComputeLevel(inspectRules.Spec.PromQL, levelCount)
 	}
 	if inspectRules.Spec.FileChange != nil {
 		ComputeLevel(inspectRules.Spec.FileChange, levelCount)
@@ -168,7 +168,5 @@ func ComputeLevel(data interface{}, mapLevel map[kubeeyev1alpha2.Level]*int) {
 			l := v.(string)
 			mapLevel[kubeeyev1alpha2.Level(l)] = Autoincrement(kubeeyev1alpha2.Level(l))
 		}
-
 	}
-
 }

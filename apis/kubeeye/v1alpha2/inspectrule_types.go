@@ -28,18 +28,19 @@ type InspectRuleSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	ComponentExclude   []string             `json:"componentExclude,omitempty"`
-	PrometheusEndpoint string               `json:"prometheusEndpoint,omitempty"`
-	Opas               []OpaRule            `json:"opas,omitempty"`
-	Prometheus         []PrometheusRule     `json:"prometheus,omitempty"`
-	FileChange         []FileChangeRule     `json:"fileChange,omitempty" `
-	Sysctl             []SysRule            `json:"sysctl,omitempty"`
-	Systemd            []SysRule            `json:"systemd,omitempty"`
-	FileFilter         []FileFilterRule     `json:"fileFilter,omitempty"`
-	CustomCommand      []CustomCommandRule  `json:"customCommand,omitempty"`
-	NodeInfo           []NodeInfoRule       `json:"nodeInfo,omitempty"`
-	ServiceConnect     []ServiceConnectRule `json:"serviceConnect,omitempty"`
+	ComponentExclude []string             `json:"componentExclude,omitempty"`
+	Opas             []OpaRule            `json:"opas,omitempty"`
+	Prometheus       *PrometheusConfig    `json:"prometheus,omitempty"`
+	PromQL           []PrometheusRule     `json:"promQL,omitempty"`
+	FileChange       []FileChangeRule     `json:"fileChange,omitempty" `
+	Sysctl           []SysRule            `json:"sysctl,omitempty"`
+	Systemd          []SysRule            `json:"systemd,omitempty"`
+	FileFilter       []FileFilterRule     `json:"fileFilter,omitempty"`
+	CustomCommand    []CustomCommandRule  `json:"customCommand,omitempty"`
+	NodeInfo         []NodeInfoRule       `json:"nodeInfo,omitempty"`
+	ServiceConnect   []ServiceConnectRule `json:"serviceConnect,omitempty"`
 }
+
 type RuleItemBases struct {
 	Name  string `json:"name,omitempty"`
 	Rule  string `json:"rule,omitempty"`
@@ -82,8 +83,15 @@ type OpaRule struct {
 }
 type PrometheusRule struct {
 	RuleItemBases  `json:",inline"`
-	Endpoint       string `json:"endpoint,omitempty"`
-	RawDataEnabled bool   `json:"rawDataEnabled,omitempty"`
+	Prometheus     *PrometheusConfig `json:"prometheus,omitempty"`
+	RawDataEnabled bool              `json:"rawDataEnabled,omitempty"`
+}
+
+type PrometheusConfig struct {
+	Endpoint           string  `json:"endpoint,omitempty"`
+	BasicToken         *string `json:"basicToken,omitempty"`
+	BearerToken        *string `json:"bearerToken,omitempty"`
+	InsecureSkipVerify *bool   `json:"insecureSkipVerify,omitempty"`
 }
 
 type FileChangeRule struct {
@@ -142,4 +150,20 @@ type InspectRuleList struct {
 
 func init() {
 	SchemeBuilder.Register(&InspectRule{}, &InspectRuleList{})
+}
+
+func (p *PrometheusConfig) GetBasicToken() string {
+	if p.BasicToken == nil {
+		return ""
+	} else {
+		return *p.BasicToken
+	}
+}
+
+func (p *PrometheusConfig) GetBearerToken() string {
+	if p.BearerToken == nil {
+		return ""
+	} else {
+		return *p.BearerToken
+	}
 }

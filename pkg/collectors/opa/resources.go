@@ -3,6 +3,7 @@ package opa
 import (
 	"context"
 	"fmt"
+	"github.com/kubesphere/kubeeye/pkg/constant"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -14,6 +15,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/klog/v2"
+	statsApi "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 	"strings"
 )
 
@@ -23,6 +25,7 @@ type ResourceCollector struct {
 	discovery discovery.DiscoveryInterface
 }
 
+// NewResourceCollector creates a new ResourceCollector
 func NewResourceCollector(config *rest.Config) (*ResourceCollector, error) {
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
@@ -41,16 +44,21 @@ func NewResourceCollector(config *rest.Config) (*ResourceCollector, error) {
 	}, nil
 }
 
+// ResourcesManager manages resources
 type ResourcesManager struct {
-	Resources map[string][]unstructured.Unstructured
+	Resources    map[string][]unstructured.Unstructured
+	StatsSummary map[string][]statsApi.Summary
 }
 
+// NewResourcesManager creates a new ResourcesManager
 func NewResourcesManager() *ResourcesManager {
 	return &ResourcesManager{
-		Resources: make(map[string][]unstructured.Unstructured),
+		Resources:    make(map[string][]unstructured.Unstructured),
+		StatsSummary: make(map[string][]statsApi.Summary),
 	}
 }
 
+// AddResource adds a resource to the manager
 func (rm *ResourcesManager) AddResource(resource string, collector *ResourceCollector) error {
 	// parse resource
 	parts := strings.SplitN(resource, ".", 2)
@@ -61,20 +69,35 @@ func (rm *ResourcesManager) AddResource(resource string, collector *ResourceColl
 	kind := parts[0]
 	version := parts[1]
 
-	// collect resources
-	resources, err := collector.CollectResources(kind, version)
-	if err != nil {
-		return fmt.Errorf("failed to collect resources: %v", err)
+	//var resources []unstructured.Unstructured
+	//var err error
+
+	if kind == constant.NodeStatsSummary {
+		// collect node stats summary
+		statsSummaryResults, err := collector.CollectNodeStatsSummary()
+		if err != nil {
+			return fmt.Errorf("failed to collect node stats summary: %v", err)
+		}
+		rm.StatsSummary[resource] = statsSummaryResults
+
+		klog.Infof("resource: %s, count: %d", resource, len(statsSummaryResults))
+	} else {
+		// collect resources
+		resources, err := collector.CollectResources(kind, version)
+		if err != nil {
+			return fmt.Errorf("failed to collect resources: %v", err)
+		}
+
+		// add resources to manager
+		rm.Resources[resource] = resources
+
+		klog.Infof("resource: %s, count: %d", resource, len(resources))
 	}
-
-	// add resources to manager
-	rm.Resources[resource] = resources
-
-	klog.Infof("resource: %s, count: %d", resource, len(resources))
 
 	return nil
 }
 
+// CollectResources collects resources of a given kind and version
 func (rc *ResourceCollector) CollectResources(kind, version string) ([]unstructured.Unstructured, error) {
 	// create REST mapper
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(rc.discovery))

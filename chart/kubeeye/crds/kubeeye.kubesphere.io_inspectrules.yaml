@@ -144,23 +144,43 @@ spec:
                       type: string
                   type: object
                 type: array
-              prometheus:
+              promQL:
                 items:
                   properties:
                     desc:
-                      type: string
-                    endpoint:
                       type: string
                     level:
                       type: string
                     name:
                       type: string
+                    prometheus:
+                      properties:
+                        basicToken:
+                          type: string
+                        bearerToken:
+                          type: string
+                        endpoint:
+                          type: string
+                        insecureSkipVerify:
+                          type: boolean
+                      type: object
                     rawDataEnabled:
                       type: boolean
                     rule:
                       type: string
                   type: object
                 type: array
+              prometheus:
+                properties:
+                  basicToken:
+                    type: string
+                  bearerToken:
+                    type: string
+                  endpoint:
+                    type: string
+                  insecureSkipVerify:
+                    type: boolean
+                type: object
               prometheusEndpoint:
                 type: string
               serviceConnect:

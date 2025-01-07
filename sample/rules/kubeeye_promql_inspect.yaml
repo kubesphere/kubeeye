@@ -5,8 +5,11 @@ kind: InspectRule
 metadata:
   name: promql-inspect-rules
 spec:
-  prometheusEndpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
   prometheus:
+    endpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
+    # basicToken: xxx
+    # bearerToken: xxx
+  promQL:
     - name: filesystem-less-20
       desc: Filesystem inode where less 20 %
       rule: (node_filesystem_files_free{fstype!="",job="node-exporter"} / node_filesystem_files{fstype!="",job="node-exporter"} * 100 < 20 and node_filesystem_readonly{fstype!="",job="node-exporter"} == 0)
