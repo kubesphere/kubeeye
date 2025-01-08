@@ -11,7 +11,7 @@ config:
   job:
     image:
       repository: kubespheredev/kubeeye-job
-      tag: v1.0.3
+      tag: v1.0.5
       pullPolicy: IfNotPresent
 controllerManager:
   kubeRbacProxy:
@@ -37,7 +37,7 @@ controllerManager:
       ginMode: release
     image:
       repository: kubespheredev/kubeeye-apiserver
-      tag: v1.0.3
+      tag: v1.0.5
     imagePullPolicy: IfNotPresent
     resources:
       limits:
@@ -55,7 +55,7 @@ controllerManager:
       allowPrivilegeEscalation: false
     image:
       repository: kubespheredev/kubeeye-controller
-      tag: v1.0.3
+      tag: v1.0.5
     imagePullPolicy: IfNotPresent
     resources:
       limits:

@@ -36,6 +36,12 @@ spec:
         env:
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
+        - name: DISABLE_SYSTEM_COMPONENT
+          value: {{ quote .Values.controllerManager.kubeeyeApiserver.env.disableSystemComponent
+            }}
+        - name: DISABLE_OVERVIEW
+          value: {{ quote .Values.controllerManager.kubeeyeApiserver.env.disableOverview
+            }}
         - name: KUBERNETES_POD_NAMESPACE
           valueFrom:
             fieldRef:
