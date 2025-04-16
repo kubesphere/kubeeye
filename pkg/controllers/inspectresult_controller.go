@@ -21,6 +21,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path"
+	"time"
+
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	kubeeyeInformers "github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye"
 	"github.com/kubesphere/kubeeye/pkg/conf"
@@ -33,9 +37,6 @@ import (
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/informers"
 	"k8s.io/klog/v2"
-	"os"
-	"path"
-	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -110,6 +111,22 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	if result.Status.Complete {
+		if result.Status.TaskEndTime == "" || result.Status.Duration == "" {
+			parseStart, err := time.Parse("2006-01-02 15:04:05", result.Status.TaskStartTime)
+			if err != nil {
+				klog.Error(err)
+				return ctrl.Result{}, err
+			}
+			result.Status.TaskEndTime = time.Now().Format("2006-01-02 15:04:05")
+			result.Status.Duration = time.Since(parseStart).String()
+
+			err = r.Client.Status().Update(ctx, result)
+			if err != nil {
+				klog.Error("Failed to update inspect result status", err)
+				return ctrl.Result{}, err
+			}
+			klog.Infof("inspect result is complete;name:%s\n", result.Name)
+		}
 		return ctrl.Result{}, nil
 	}
 
@@ -121,23 +138,9 @@ func (r *InspectResultReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 	startTime := result.GetAnnotations()[constant.AnnotationStartTime]
-	endTime := result.GetAnnotations()[constant.AnnotationEndTime]
-
-	parseStart, err := time.Parse("2006-01-02 15:04:05", startTime)
-	if err != nil {
-		klog.Error(err)
-		return ctrl.Result{}, err
-	}
-	parseEnd, err := time.Parse("2006-01-02 15:04:05", endTime)
-	if err != nil {
-		klog.Error(err)
-		return ctrl.Result{}, err
-	}
 
 	result.Status.Policy = task.Spec.InspectPolicy
-	result.Status.Duration = parseEnd.Sub(parseStart).String()
 	result.Status.TaskStartTime = startTime
-	result.Status.TaskEndTime = endTime
 	result.Status.Complete = true
 	countLevelNum, err := r.CountLevelNum(result.Name)
 	if err != nil {
