@@ -2,6 +2,10 @@ package api
 
 import (
 	"context"
+	"net/http"
+	"regexp"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	versionsv1alpha2 "github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye/v1alpha2"
@@ -11,8 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"net/http"
-	"strings"
 )
 
 type InspectPlan struct {
@@ -250,11 +252,20 @@ func (i *InspectPlan) filter(data map[string]interface{}, f *query.Filter) bool 
 				isTag = result.Spec.Schedule != nil || result.Spec.Once != nil
 			}
 		case query.Name:
-			isTag = strings.Contains(result.Name, v)
+			if isUUID(v) {
+				isTag = string(result.UID) == v
+			} else {
+				isTag = strings.Contains(result.Name, v)
+			}
 		}
 		if !isTag {
 			return false
 		}
 	}
 	return true
+}
+
+func isUUID(str string) bool {
+	r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")
+	return r.MatchString(str)
 }
