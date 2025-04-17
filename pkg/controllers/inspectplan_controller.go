@@ -19,6 +19,11 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
 	kubeeyeInformers "github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/kube"
@@ -26,10 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/robfig/cron/v3"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
@@ -136,13 +137,13 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, nil
 		}
 		if !plan.Spec.Once.After(time.Now()) {
-			taskName, err := r.createInspectTask(plan, ctx)
+			taskName, phase, err := r.createInspectTask(plan, ctx)
 			if err != nil {
 				klog.Error("failed to create InspectTask.", err)
 				return ctrl.Result{}, err
 			}
 
-			if err = r.updateStatus(ctx, plan, time.Now(), taskName); err != nil {
+			if err = r.updateStatus(ctx, plan, time.Now(), taskName, phase); err != nil {
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{}, nil
@@ -157,12 +158,12 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if !utils.IsEmptyValue(plan.Status.LastTaskName) {
 			return ctrl.Result{}, nil
 		}
-		taskName, err := r.createInspectTask(plan, ctx)
+		taskName, phase, err := r.createInspectTask(plan, ctx)
 		if err != nil {
 			klog.Error("failed to create InspectTask.", err)
 			return ctrl.Result{}, err
 		}
-		if err = r.updateStatus(ctx, plan, time.Now(), taskName); err != nil {
+		if err = r.updateStatus(ctx, plan, time.Now(), taskName, phase); err != nil {
 			return ctrl.Result{}, err
 		}
 
@@ -179,7 +180,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	if plan.Status.LastScheduleTime == nil || plan.Status.LastScheduleTime.Add(*scheduledTime).Before(now) {
 		oldPlan := plan.DeepCopy()
 
-		taskName, err := r.createInspectTask(plan, ctx)
+		taskName, phase, err := r.createInspectTask(plan, ctx)
 		if err != nil {
 			klog.Error("failed to create InspectTask.", err)
 			return ctrl.Result{}, err
@@ -187,7 +188,7 @@ func (r *InspectPlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 		plan.Status.TaskNames = append(plan.Status.TaskNames, kubeeyev1alpha2.TaskNames{
 			Name:       taskName,
-			TaskStatus: kubeeyev1alpha2.PhasePending,
+			TaskStatus: phase,
 		})
 
 		r.cleanTask(ctx, plan)
@@ -228,14 +229,15 @@ func nextScheduledTimeDuration(sched cron.Schedule, now *metav1.Time) *time.Dura
 	return &nextTime
 }
 
-func (r *InspectPlanReconciler) createInspectTask(plan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (string, error) {
+func (r *InspectPlanReconciler) createInspectTask(plan *kubeeyev1alpha2.InspectPlan, ctx context.Context) (string, kubeeyev1alpha2.Phase, error) {
 
 	inspectTaskName := fmt.Sprintf("%s-%s", plan.Name, time.Now().Format("20060102-15-04"))
 
-	err := r.Client.Get(ctx, client.ObjectKey{Name: inspectTaskName}, &kubeeyev1alpha2.InspectTask{})
+	existingTask := &kubeeyev1alpha2.InspectTask{}
+	err := r.Client.Get(ctx, client.ObjectKey{Name: inspectTaskName}, existingTask)
 	if err == nil {
 		klog.Info("InspectTask already exists. ", "InspectTask: ", inspectTaskName)
-		return inspectTaskName, nil
+		return inspectTaskName, GetStatus(existingTask), nil
 	}
 
 	ownerController := true
@@ -278,11 +280,11 @@ func (r *InspectPlanReconciler) createInspectTask(plan *kubeeyev1alpha2.InspectP
 
 	err = r.Client.Create(ctx, &inspectTask)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	klog.Info("create a new inspect task.", inspectTask.Name)
 
-	return inspectTask.Name, nil
+	return inspectTask.Name, kubeeyev1alpha2.PhasePending, nil
 }
 
 func (r *InspectPlanReconciler) cleanTask(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan) {
@@ -304,14 +306,12 @@ func (r *InspectPlanReconciler) cleanTask(ctx context.Context, plan *kubeeyev1al
 		}
 	}
 }
-func (r *InspectPlanReconciler) updateStatus(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan, now time.Time, taskName string) error {
+func (r *InspectPlanReconciler) updateStatus(ctx context.Context, plan *kubeeyev1alpha2.InspectPlan, now time.Time, taskName string, phase kubeeyev1alpha2.Phase) error {
 	plan.Status.LastScheduleTime = &metav1.Time{Time: now}
 	plan.Status.LastTaskName = taskName
-	plan.Status.LastTaskStatus = kubeeyev1alpha2.PhasePending
-	plan.Status.TaskNames = append(plan.Status.TaskNames, kubeeyev1alpha2.TaskNames{
-		Name:       taskName,
-		TaskStatus: kubeeyev1alpha2.PhasePending,
-	})
+	plan.Status.LastTaskStatus = phase
+	r.addTaskName(plan, taskName, phase)
+
 	err := r.Status().Update(ctx, plan)
 	if err != nil {
 		klog.Error("failed to update inspect plan.", err)
@@ -443,4 +443,20 @@ func (r *InspectPlanReconciler) GetUpdatePlanRule(plan *kubeeyev1alpha2.InspectP
 
 	return newRules, true
 
+}
+
+func (r *InspectPlanReconciler) addTaskName(plan *kubeeyev1alpha2.InspectPlan, taskName string, status kubeeyev1alpha2.Phase) {
+	// check if the taskName already exists in the TaskNames slice
+	for i, task := range plan.Status.TaskNames {
+		if task.Name == taskName {
+			// 如果存在则更新状态
+			plan.Status.TaskNames[i].TaskStatus = status
+			return
+		}
+	}
+	// if not found, append the new taskName
+	plan.Status.TaskNames = append(plan.Status.TaskNames, kubeeyev1alpha2.TaskNames{
+		Name:       taskName,
+		TaskStatus: status,
+	})
 }

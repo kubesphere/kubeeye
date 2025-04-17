@@ -20,6 +20,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
+	"os"
+	"path"
+	"sync"
+	"time"
+
 	kubeeyeInformers "github.com/kubesphere/kubeeye/clients/informers/externalversions/kubeeye"
 	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/output"
@@ -31,11 +37,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/informers"
 	"k8s.io/klog/v2"
-	"math"
-	"os"
-	"path"
-	"sync"
-	"time"
 
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/conf"
@@ -111,6 +112,17 @@ func (r *InspectTaskReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if inspectTask.Status.Status.IsSucceeded() || inspectTask.Status.Status.IsFailed() {
+		if inspectTask.Status.EndTimestamp.IsZero() {
+			inspectTask.Status.EndTimestamp = &metav1.Time{Time: time.Now()}
+			inspectTask.Status.Duration = inspectTask.Status.EndTimestamp.Sub(inspectTask.Status.StartTimestamp.Time).String()
+
+			err = r.Status().Update(ctx, inspectTask)
+			if err != nil {
+				klog.Error("Failed to update inspect task status. ", err)
+				return ctrl.Result{}, err
+			}
+		}
+
 		return ctrl.Result{}, nil
 	}
 
@@ -209,8 +221,6 @@ func (r *InspectTaskReconciler) createInspect(ctx context.Context, cluster kubee
 	}
 	jobConfig := kubeEyeConfig.GetClusterJobConfig(cluster.Name)
 
-	task.Status.EndTimestamp = &metav1.Time{Time: time.Now()}
-	task.Status.Duration = task.Status.EndTimestamp.Sub(task.Status.StartTimestamp.Time).String()
 	task.Status.InspectRuleType = func() (data []string) {
 		for k, v := range e.GetRuleTotal() {
 			if v > 0 {
@@ -276,7 +286,6 @@ func (r *InspectTaskReconciler) GenerateResult(task *kubeeyev1alpha2.InspectTask
 			},
 			Annotations: map[string]string{
 				constant.AnnotationStartTime:     task.Status.StartTimestamp.Format("2006-01-02 15:04:05"),
-				constant.AnnotationEndTime:       task.Status.EndTimestamp.Format("2006-01-02 15:04:05"),
 				constant.AnnotationInspectPolicy: string(task.Spec.InspectPolicy),
 			},
 			OwnerReferences: []metav1.OwnerReference{{
