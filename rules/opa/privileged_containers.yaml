@@ -1,0 +1,148 @@
+---
+# 特权容器检查规则
+id: opa_privileged_containers
+name: 特权容器检查
+description: 检查集群中是否存在以特权模式运行的容器，特权容器可以访问宿主机资源，增加安全风险
+type: opa
+category: security
+severity: critical
+enabled: true
+tier: basic  # 基础层规则，适用于所有集群
+
+# 规则配置
+config:
+  # 资源配置
+  resources:
+    - kind: Pod
+      apiVersion: v1
+      namespaced: true
+    - kind: Deployment
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: DaemonSet
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: StatefulSet
+      apiVersion: apps/v1
+      namespaced: true
+  
+  # 范围配置
+  scope:
+    namespaces:
+      include: []  # 空数组表示所有非排除的命名空间
+      exclude:
+        - kube-system  # 系统命名空间中的组件可能需要特权容器
+
+  # 阈值配置 - 使用thresholds替代threshold
+  thresholds:
+    value: false
+
+  # Rego规则配置
+  rego:
+    # 内联Rego规则定义
+    inline: |
+      package kubernetes.security
+      
+      # 获取Pod规范 - 直接来自Pod资源或从控制器的模板中获取
+      get_pod_spec(resource) = spec {
+          # 直接是Pod资源
+          resource.kind == "Pod"
+          spec := resource.spec
+      }
+      
+      # 从Deployment获取Pod规范
+      get_pod_spec(resource) = spec {
+          resource.kind == "Deployment"
+          spec := resource.spec.template.spec
+      }
+      
+      # 从DaemonSet获取Pod规范
+      get_pod_spec(resource) = spec {
+          resource.kind == "DaemonSet"
+          spec := resource.spec.template.spec
+      }
+      
+      # 从StatefulSet获取Pod规范
+      get_pod_spec(resource) = spec {
+          resource.kind == "StatefulSet"
+          spec := resource.spec.template.spec
+      }
+      
+      # 检查容器是否以特权模式运行
+      deny[result] {
+          resource := input
+          spec := get_pod_spec(resource)
+          
+          container := spec.containers[i]
+          container.securityContext.privileged == true
+          
+          result := {
+            "name": resource.metadata.name,
+            "namespace": resource.metadata.namespace,
+            "message": sprintf("容器 '%s' 以特权模式运行，这会带来安全风险", [container.name]),
+            "severity": "critical"
+          }
+      }
+      
+      # 还检查初始化容器
+      deny[result] {
+          resource := input
+          spec := get_pod_spec(resource)
+          
+          container := spec.initContainers[i]
+          container.securityContext.privileged == true
+          
+          result := {
+            "name": resource.metadata.name,
+            "namespace": resource.metadata.namespace,
+            "message": sprintf("初始化容器 '%s' 以特权模式运行，这会带来安全风险", [container.name]),
+            "severity": "critical"
+          }
+      }
+  
+  # 豁免列表
+  exemptions:
+    - name: "kube-apiserver"
+      namespace: "kube-system"
+      reason: "API服务器需要特权访问"
+    - name: "csi-provisioner"
+      namespace: ""  # 适用于任何命名空间
+      reason: "CSI驱动程序需要特权访问存储设备"
+
+# 问题解决建议
+solution: |
+  特权容器会带来严重的安全风险，因为它们可以访问宿主机资源。请按照以下步骤处理:
+  
+  1. 审查特权容器是否真的需要特权模式:
+     - 大多数应用不需要特权模式即可运行
+     - 考虑使用更精细的Linux capabilities而不是完全特权模式
+  
+  2. 移除不必要的特权设置:
+     ```yaml
+     securityContext:
+       privileged: false  # 显式设置为false
+     ```
+  
+  3. 如果确实需要提升权限，使用最小权限原则:
+     ```yaml
+     securityContext:
+       capabilities:
+         add: ["NET_ADMIN", "SYS_TIME"]  # 只添加必要的能力
+         drop: ["ALL"]  # 先删除所有能力
+     ```
+  
+  4. 对于需要特权访问的工作负载，考虑使用:
+     - 专用节点和严格的RBAC权限
+     - 基于安全策略的隔离
+     - 容器运行时沙箱(如gVisor, Kata Containers)
+  
+  5. 实施Pod安全策略或Pod安全标准，限制特权容器的使用
+
+# 标签，用于过滤和分组
+tags:
+  - security
+  - container
+  - privilege
+  - vulnerability
+  - compliance
+  - hardening

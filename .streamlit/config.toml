@@ -1,0 +1,11 @@
+[theme]
+# KubeSphere 主题色，调整为更柔和的绿色
+primaryColor = "#00a971" 
+backgroundColor = "#fafafa"
+secondaryBackgroundColor = "#f0f2f5"
+textColor = "#333333"
+font = "sans serif"
+
+[client]
+showSidebarNavigation = false
+

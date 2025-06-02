@@ -1,0 +1,51 @@
+---
+# 节点内存使用率检查规则
+id: node_memory_usage
+name: 内存使用率检查
+description: 检查节点内存使用率是否超过阈值，内存不足可能导致OOM错误和应用崩溃
+type: node
+category: system
+severity: warning
+enabled: true
+tier: basic  # 基础层规则，适用于所有集群
+
+# 规则配置
+config:
+  # 执行配置
+  execution:
+    command: "free -m"  # 要执行的命令
+    parser: "free_output"  # 结果解析器
+    timeout: 30  # 执行超时时间（秒）
+
+  # 阈值配置 - 使用thresholds替代threshold
+  thresholds:
+    warning:
+      memory_percent: 80   # 内存使用率超过80%触发警告
+    critical:
+      memory_percent: 90  # 内存使用率超过90%触发严重警告
+    
+  # 应用范围
+  scope:
+    node_selector:  # 节点选择器，为空表示适用于所有节点
+      # kubernetes.io/role: worker  # 可以添加标签选择器
+
+# 问题解决建议
+solution: |
+  内存使用率过高，请执行以下检查和操作：
+  1. 使用 'top' 命令查看内存占用较高的进程
+  2. 使用 'ps aux --sort=-%mem | head -10' 查看内存占用最高的前10个进程
+  3. 检查 'free -m' 和 'vmstat' 命令输出，确认可用内存和交换使用情况
+  4. 查看 '/proc/meminfo' 了解详细的内存使用情况
+  5. 检查是否存在内存泄漏，尤其是长时间运行的进程
+  6. 在Kubernetes环境中，使用 'kubectl top pods' 检查Pod内存占用
+  7. 检查容器内存限制设置是否合理
+  8. 优化应用内存使用或考虑增加节点内存资源
+  9. 检查系统日志中是否存在OOM错误
+
+# 标签，用于过滤和分组
+tags:
+  - memory
+  - performance
+  - system
+  - resource-usage
+  - node

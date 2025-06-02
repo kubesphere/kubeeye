@@ -1,31 +1,36 @@
-# Build the manager binary
-FROM golang:1.17 as builder
+FROM python:3.12-slim
 
-WORKDIR /workspace
+LABEL maintainer="KubeSphere Team"
+LABEL description="KubeEye Kubernetes Cluster Inspection Tool"
 
-COPY apis/ apis/
-COPY client/ client/
-COPY cmd/ cmd/
-COPY controllers/ controllers/
-COPY pkg/ pkg/
-COPY plugins/ plugins/
+# 设置工作目录
+WORKDIR /app
 
-# Copy the Go Modules manifests
-COPY go.mod go.mod
-COPY go.sum go.sum
+# 安装系统依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    openssh-client \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN go mod tidy && go mod vendor
+# 复制项目文件
+COPY . /app/
 
-ENV CGO_ENABLED=0
+# 安装Python依赖
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Build
-RUN go install -v ./cmd/...
+# 创建数据目录
+RUN mkdir -p /app/data/clusters /app/data/results /app/data/logs
 
-FROM alpine:3.15 as ke-manager
-WORKDIR /
-COPY --from=builder /go/bin/ke .
-COPY --from=builder /go/bin/ke-manager .
-RUN addgroup -S kubeeye -g 1000 && adduser -S kubeeye -G kubeeye -u 1000
-USER 1000:1000
+# 设置环境变量
+ENV PYTHONPATH=/app
+ENV KUBEEYE_DATA_DIR=/app/data
 
-ENTRYPOINT ["/ke-manager"]
+# 暴露服务端口
+EXPOSE 8501
+
+# 初始化应用
+RUN python init.py
+
+# 启动应用
+ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

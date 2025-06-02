@@ -1,0 +1,81 @@
+---
+# Deployment副本数检查规则
+id: opa_deployment_replicas
+name: Deployment副本数检查
+description: 检查Deployment资源是否配置足够的副本数以确保高可用性，防止单点故障
+type: opa
+category: availability
+severity: warning
+enabled: true
+tier: basic  # 基础层规则，适用于所有生产集群
+
+# 规则配置
+config:
+  # 资源配置
+  resources:
+    - kind: Deployment
+      apiVersion: apps/v1
+      namespaced: true
+
+  # 范围配置
+  scope:
+    namespaces:
+      include: []  # 空数组表示所有非排除的命名空间
+      exclude:
+        - kube-system
+        - kube-public
+        - kube-node-lease
+
+  # Rego规则配置
+  rego:
+    # 内联Rego规则定义
+    inline: |
+      package kubeeye
+      
+      deny[result] {
+        input.kind == "Deployment"
+        replicas := input.spec.replicas
+        replicas < 2
+        
+        result := {
+          "name": input.metadata.name,
+          "namespace": input.metadata.namespace,
+          "message": "Deployment应配置至少2个副本以确保高可用",
+          "severity": "warning"
+        }
+      }
+    
+    # 或者引用外部文件
+    # file: "rules/deployment_replicas.rego"
+
+  # 阈值配置 - 使用thresholds替代threshold
+  thresholds:
+    value: 2
+    comparator: ">="  # 副本数应大于等于2
+
+  # 豁免列表
+  exemptions:
+    - name: "test-deployment"
+      namespace: "test"
+      reason: "测试环境允许单副本部署"
+    - name: "dev-deployment"
+      namespace: "dev"
+      reason: "开发环境允许单副本部署"
+
+# 问题解决建议
+solution: |
+  生产环境中的Deployment应配置至少2个副本以确保高可用性，建议：
+  1. 修改Deployment的replicas字段为2或更高: kubectl scale deployment <name> --replicas=2
+  2. 在YAML中设置副本数: spec.replicas: 2
+  3. 使用HorizontalPodAutoscaler进行自动扩缩容:
+     kubectl autoscale deployment <name> --min=2 --max=10 --cpu-percent=80
+  4. 确保有足够的节点资源支持多副本运行
+  5. 配置Pod反亲和性，确保副本分布在不同节点上:
+     spec.template.spec.affinity.podAntiAffinity
+
+# 标签，用于过滤和分组
+tags:
+  - deployment
+  - availability
+  - best-practice
+  - high-availability

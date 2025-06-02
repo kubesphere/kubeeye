@@ -1,0 +1,41 @@
+# Prometheus规则标准模板
+---
+id: prometheus_rule_id         # 规则唯一标识符，使用下划线分隔单词
+name: 规则名称                   # 简短易懂的名称
+description: 规则详细描述        # 完整描述规则的目的和检查内容
+type: prometheus               # 规则类型: prometheus
+category: performance|availability|resource|stability  # 规则分类
+severity: info|warning|critical # 严重程度
+enabled: true                  # 是否默认启用
+tier: basic|standard|extended   # 规则层级: 基础、标准、扩展
+
+# 规则配置
+config:
+  # 查询配置
+  query:
+    promql: "prometheus查询表达式"  # PromQL查询表达式
+    duration: "5m"              # 查询时间范围
+    interval: "1m"              # 查询间隔
+  
+  # 统一的阈值配置
+  thresholds:
+    warning: 80                 # 警告阈值
+    critical: 90                # 严重阈值
+    comparator: ">"             # 比较操作符: > >= < <= == !=
+  
+  # 告警配置
+  alert:
+    summary: "告警摘要模板"        # 告警摘要，可使用模板变量
+    description: "告警描述模板"    # 告警描述，可使用模板变量
+
+# 问题解决建议
+solution: |
+  详细的问题解决步骤...
+  1. 第一步
+  2. 第二步
+  3. 第三步
+
+# 标签，用于过滤和分组
+tags:
+  - tag1
+  - tag2

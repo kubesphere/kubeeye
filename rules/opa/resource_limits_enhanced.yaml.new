@@ -1,0 +1,188 @@
+---
+# 容器资源请求与限制增强检查规则
+id: opa_resource_limits_enhanced
+name: 资源请求与限制增强检查
+description: 全面检查集群中的Pod是否配置了适当的资源请求和限制，包括检查最小阈值和关键服务
+type: opa
+category: performance
+severity: warning
+enabled: true
+tier: standard  # 标准层规则，提供更详细的资源检查
+
+# 规则配置
+config:
+  # 资源配置
+  resources:
+    - kind: Pod
+      apiVersion: v1
+      namespaced: true
+    - kind: Deployment
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: DaemonSet
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: StatefulSet
+      apiVersion: apps/v1
+      namespaced: true
+  
+  # 范围配置
+  scope:
+    namespaces:
+      include:
+        - default
+        - kube-system
+      exclude:
+        - kube-node-lease
+        - kube-public
+
+  # 阈值配置
+  thresholds:
+    # 要检查的资源限制阈值
+    cpu_request_min: "50m"
+    cpu_limit_min: "100m"
+    memory_request_min: "128Mi"
+    memory_limit_min: "256Mi"
+    # 关键命名空间中的应用必须设置资源限制
+    critical_namespaces:
+      - kube-system
+      - default
+    # 特定服务可以豁免检查
+    exempt_services:
+      - kube-proxy
+      - metrics-server
+  
+  # Rego规则配置
+  rego:
+    # 内联Rego规则定义
+    inline: |
+      package kubernetes.resources
+      
+      # 获取Pod规范 - 直接来自Pod资源或从控制器的模板中获取
+      get_pod_spec(resource) = spec {
+          # 直接是Pod资源
+          resource.kind == "Pod"
+          spec := resource.spec
+      }
+      
+      # 从Deployment获取Pod规范
+      get_pod_spec(resource) = spec {
+          resource.kind == "Deployment"
+          spec := resource.spec.template.spec
+      }
+      
+      # 从DaemonSet获取Pod规范
+      get_pod_spec(resource) = spec {
+          resource.kind == "DaemonSet"
+          spec := resource.spec.template.spec
+      }
+      
+      # 从StatefulSet获取Pod规范
+      get_pod_spec(resource) = spec {
+          resource.kind == "StatefulSet"
+          spec := resource.spec.template.spec
+      }
+      
+      # 检查容器是否设置了资源请求
+      deny[result] {
+          resource := input
+          spec := get_pod_spec(resource)
+          container := spec.containers[i]
+          not container.resources.requests
+          
+          result := {
+            "name": resource.metadata.name,
+            "namespace": resource.metadata.namespace,
+            "message": sprintf("容器 '%s' 未设置资源请求", [container.name]),
+            "severity": "warning"
+          }
+      }
+      
+      # 检查容器是否设置了资源限制
+      deny[result] {
+          resource := input
+          spec := get_pod_spec(resource)
+          container := spec.containers[i]
+          not container.resources.limits
+          
+          result := {
+            "name": resource.metadata.name,
+            "namespace": resource.metadata.namespace,
+            "message": sprintf("容器 '%s' 未设置资源限制", [container.name]),
+            "severity": "warning"
+          }
+      }
+      
+      # 检查关键命名空间中的容器必须有资源限制
+      deny[result] {
+          resource := input
+          spec := get_pod_spec(resource)
+          container := spec.containers[i]
+          
+          # 检查是否是关键命名空间
+          critical_namespaces := ["kube-system", "default"]
+          ns := resource.metadata.namespace
+          ns == critical_namespaces[_]
+          
+          # 检查是否是豁免服务
+          exempt_services := ["kube-proxy", "metrics-server"]
+          not container.name == exempt_services[_]
+          
+          not container.resources.limits
+          
+          result := {
+            "name": resource.metadata.name,
+            "namespace": resource.metadata.namespace,
+            "message": sprintf("关键命名空间中的容器 '%s' 未设置资源限制", [container.name]),
+            "severity": "critical"
+          }
+      }
+      
+      # 检查CPU请求是否满足最小阈值
+      deny[result] {
+          resource := input
+          spec := get_pod_spec(resource)
+          container := spec.containers[i]
+          
+          container.resources.requests.cpu
+          cpu_request := container.resources.requests.cpu
+          
+          # 简单比较，假设值为"50m"格式
+          cpu_request < "50m"
+          
+          result := {
+            "name": resource.metadata.name,
+            "namespace": resource.metadata.namespace,
+            "message": sprintf("容器 '%s' CPU请求低于最小阈值50m", [container.name]),
+            "severity": "warning"
+          }
+      }
+      
+      # 检查内存请求是否满足最小阈值
+      deny[result] {
+          resource := input
+          spec := get_pod_spec(resource)
+          container := spec.containers[i]
+          
+          container.resources.requests.memory
+          memory_request := container.resources.requests.memory
+          
+          # 简单比较，假设值为"128Mi"格式
+          memory_request < "128Mi"
+          
+          result := {
+            "name": resource.metadata.name,
+            "namespace": resource.metadata.namespace,
+            "message": sprintf("容器 '%s' 内存请求低于最小阈值128Mi", [container.name]),
+            "severity": "warning"
+          }
+      }
+
+# 问题解决建议
+solution: 为所有容器配置适当的资源请求和限制，确保资源分配合理
+
+# 规则标签
+tags:
+  - resource
+  - performance
+  - optimization

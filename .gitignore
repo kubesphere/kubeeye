@@ -41,3 +41,5 @@ kubeEyeAuditResult.csv
 !.gitignore
 !cover.out
 !go.sum
+
+*__pycache__*

@@ -1,0 +1,73 @@
+# OPA规则标准模板
+---
+id: opa_rule_id                # 规则唯一标识符，使用下划线分隔单词
+name: 规则名称                   # 简短易懂的名称
+description: 规则详细描述        # 完整描述规则的目的和检查内容
+type: opa                      # 规则类型: opa
+category: security|compliance|availability|performance  # 规则分类
+severity: info|warning|critical # 严重程度
+enabled: true                  # 是否默认启用
+tier: basic|standard|extended   # 规则层级: 基础、标准、扩展
+
+# 规则配置
+config:
+  # 资源配置
+  resources:
+    - kind: Kind               # Kubernetes资源类型，如Deployment
+      apiVersion: version      # API版本，如apps/v1
+      namespaced: true|false   # 是否命名空间作用域
+  
+  # 范围配置
+  scope:
+    namespaces:
+      include:                 # 包含的命名空间列表
+        - namespace1
+        - namespace2
+      exclude:                 # 排除的命名空间列表
+        - kube-system
+        - kube-public
+  
+  # Rego规则
+  rego:
+    # 内联Rego规则
+    inline: |
+      package kubeeye
+      # rego规则内容...
+      
+      # 示例违规检查
+      deny[result] {
+        # 条件
+        
+        result := {
+          "name": "资源名称",
+          "namespace": "命名空间",
+          "message": "违规说明",
+          "severity": "警告级别"
+        }
+      }
+    
+    # 或者引用外部文件
+    # file: "rules/external_rule.rego"
+  
+  # 统一的阈值配置
+  thresholds:
+    value: 2                  # 阈值值
+    comparator: ">="          # 比较操作符: > >= < <= == !=
+  
+  # 豁免配置
+  exemptions:
+    - name: "resource_name"    # 资源名称
+      namespace: "namespace"   # 命名空间
+      reason: "豁免原因"       # 豁免原因说明
+
+# 问题解决建议
+solution: |
+  详细的问题解决步骤...
+  1. 第一步
+  2. 第二步
+  3. 第三步
+
+# 标签，用于过滤和分组
+tags:
+  - tag1
+  - tag2

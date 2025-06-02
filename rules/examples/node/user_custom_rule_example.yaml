@@ -1,0 +1,53 @@
+# 用户自定义规则示例
+---
+id: node_custom_example
+name: 用户自定义节点检查示例
+description: 此规则展示如何创建自定义的节点检查规则，用户可以基于此模板创建自己的规则
+type: node
+category: custom
+severity: warning
+enabled: true
+tier: extended  # 用户自定义规则通常属于扩展层
+
+# 规则配置
+config:
+  # 执行配置
+  execution:
+    command: "grep 'MemTotal\\|MemFree\\|Buffers\\|Cached' /proc/meminfo | awk '{print $2}'"  # 获取内存信息
+    parser: "custom_memory_parser"  # 自定义解析器名称
+    timeout: 30  # 执行超时时间（秒）
+    
+    # 解析器特定配置
+    parser_config:
+      # 自定义参数
+      warning_threshold: 75    # 警告阈值（百分比）
+      critical_threshold: 90   # 严重阈值（百分比）
+      exclude_buffers: true    # 是否排除缓冲区
+      exclude_cached: true     # 是否排除缓存
+      description_prefix: "自定义内存检查"  # 结果描述前缀
+  
+  # 阈值配置
+  thresholds:
+    warning:
+      memory_percent: 75  # 内存使用百分比警告阈值
+    critical:
+      memory_percent: 90  # 内存使用百分比严重阈值
+  
+  # 应用范围
+  scope:
+    node_selector:  # 节点选择器，可以指定应用到特定节点
+      kubernetes.io/role: "worker"  # 只应用于工作节点
+
+# 问题解决建议
+solution: |
+  内存使用率过高，建议进行以下检查：
+  1. 使用 'top' 命令查看占用内存较高的进程
+  2. 检查应用内存限制是否合理
+  3. 考虑增加节点内存资源
+  4. 调整内核内存参数，如vm.swappiness
+
+# 标签，用于过滤和分组
+tags:
+  - custom
+  - memory
+  - user-defined

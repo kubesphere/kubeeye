@@ -1,0 +1,11 @@
+streamlit>=1.32.0
+pandas>=2.0.0
+plotly>=5.18.0
+pyyaml>=6.0
+kubernetes>=28.1.0
+paramiko>=3.2.0
+requests>=2.31.0
+openpyxl>=3.0.0
+cryptography>=41.0.0
+schedule>=1.2.0
+croniter>=1.4.1

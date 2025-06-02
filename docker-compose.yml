@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  kubeeye:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: kubeeye
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app
+      - KUBEEYE_DATA_DIR=/app/data
+    restart: unless-stopped
+
+  # 可选: 为开发环境添加一个简单的 Prometheus 实例
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./tools/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    restart: unless-stopped

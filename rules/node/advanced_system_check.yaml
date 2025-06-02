@@ -1,0 +1,81 @@
+---
+# 节点系统高级状态检查规则
+id: node_advanced_system_check
+name: 节点系统高级状态检查
+description: 使用高级解析器自动检测和分析节点的多种系统指标，包括CPU、内存、磁盘和负载情况
+type: node
+category: system
+severity: warning
+enabled: true
+tier: extended  # 扩展层规则，提供更复杂的检查功能
+
+# 规则配置
+config:
+  # 执行配置
+  execution:
+    # 可以使用不同命令来获取各种系统信息
+    command: "top -b -n1 | head -n 5"
+    parser: "advanced_system_parser"
+    timeout: 30
+    
+    # 高级解析器配置
+    parser_config:
+      mode: "auto"  # 自动检测输出类型，也可以设置为 cpu, memory, disk, load, generic
+      cpu_warning: 70
+      cpu_critical: 90
+      memory_warning: 80
+      memory_critical: 90
+      disk_warning: 75
+      disk_critical: 85
+      load_warning: 1.0  # 每核心负载
+      load_critical: 2.0
+      
+  # 阈值配置 - 使用thresholds替代threshold
+  thresholds:
+    warning:
+      cpu: 70
+      memory: 80
+      disk: 75
+      load_per_core: 1.0
+    critical:
+      cpu: 90
+      memory: 90
+      disk: 85
+      load_per_core: 2.0
+    
+  # 应用范围
+  scope:
+    node_selector: {}  # 空选择器表示应用到所有节点
+
+# 问题解决建议
+solution: |
+  系统资源使用过高，建议采取以下措施:
+  
+  对于CPU使用率过高:
+  1. 使用 'top' 命令按CPU排序 (按P键) 识别高CPU使用的进程
+  2. 检查这些进程是否有异常行为或是预期的高负载
+  3. 考虑优化应用代码或配置，降低CPU使用率
+  
+  对于内存使用率过高:
+  1. 使用 'free -m' 和 'top' (按M键) 检查内存使用情况
+  2. 检查是否有内存泄漏 (持续增长的进程)
+  3. 调整应用的内存限制或增加节点内存
+  
+  对于磁盘使用率过高:
+  1. 使用 'df -h' 确定哪些分区使用率高
+  2. 使用 'du -sh *' 在大目录中找出占用空间最多的文件/目录
+  3. 清理不需要的文件、日志或缓存
+  
+  对于系统负载过高:
+  1. 检查负载与CPU核心数的比例
+  2. 使用 'vmstat 1' 检查系统负载类型 (CPU或IO)
+  3. 考虑限制应用的并发操作数或优化IO操作
+
+# 标签，用于过滤和分组
+tags:
+  - system
+  - performance
+  - monitoring
+  - resource
+  - advanced
+  - auto-detect

@@ -1,0 +1,36 @@
+---
+id: node_container_runtime_status
+name: 容器运行时服务状态检查
+description: 检查节点上Docker或Containerd服务是否正常运行，容器运行时是Kubernetes的核心依赖组件
+type: node
+category: system
+severity: critical
+enabled: true
+tier: basic  # 基础层规则，适用于所有集群
+
+config:
+  execution:
+    command: "systemctl is-active docker 2>/dev/null || systemctl is-active containerd 2>/dev/null || echo 'not found'"
+    parser: "container_runtime_status"
+    timeout: 30
+  thresholds:
+    expected_value: active
+  scope:
+    node_selector: {}
+
+solution: |
+  容器运行时服务异常，请按以下步骤处理：
+  1. 使用命令启动服务: systemctl start docker 或 systemctl start containerd
+  2. 如无法启动，检查服务日志: journalctl -u docker 或 journalctl -u containerd
+  3. 检查磁盘空间是否不足: df -h
+  4. 确认系统资源是否充足: free -m; top
+  5. 检查服务配置文件: cat /etc/docker/daemon.json 或 cat /etc/containerd/config.toml
+  6. 必要时考虑重新安装容器运行时
+
+tags:
+  - kubernetes
+  - docker
+  - containerd
+  - node
+  - core-service
+  - runtime
