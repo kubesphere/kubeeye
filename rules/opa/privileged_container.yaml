@@ -1,0 +1,106 @@
+---
+# OPA规则 - 特权容器检查 - 简化版本
+id: opa_privileged_container
+name: 特权容器安全检查
+description: 检查是否存在特权容器，一个规则一个检查项
+type: opa
+category: security
+severity: critical
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # 资源配置
+  resources:
+    - kind: Pod
+      apiVersion: v1
+      namespaced: true
+    - kind: Deployment
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: StatefulSet
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: DaemonSet
+      apiVersion: apps/v1
+      namespaced: true
+
+  # Rego规则配置
+  rego:
+    inline: |
+      package kubernetes
+      
+      # 获取Pod规范
+      get_pod_spec(resource) = spec if {
+          resource.kind == "Pod"
+          spec := resource.spec
+      }
+      
+      get_pod_spec(resource) = spec if {
+          resource.kind != "Pod"
+          spec := resource.spec.template.spec
+      }
+      
+      # 检查特权容器
+      privileged_containers(containers) = privileged if {
+          privileged := [container |
+              container := containers[_]
+              container.securityContext.privileged == true
+          ]
+      }
+      
+      # 定义违规
+      violations contains result if {
+          resource := input.resources[_]
+          spec := get_pod_spec(resource)
+          containers := array.concat(
+              default_array(spec.containers),
+              default_array(spec.initContainers)
+          )
+          privileged := privileged_containers(containers)
+          count(privileged) > 0
+          
+          result := {
+              "kind": resource.kind,
+              "name": resource.metadata.name,
+              "namespace": resource.metadata.namespace,
+              "message": sprintf("%s '%s' in namespace '%s' has %d privileged container(s): %s", [
+                  resource.kind,
+                  resource.metadata.name,
+                  resource.metadata.namespace,
+                  count(privileged),
+                  concat(", ", [c.name | c := privileged[_]])
+              ])
+          }
+      }
+      
+      # 辅助函数
+      default_array(val) = result if {
+          val != null
+          result = val
+      }
+      
+      default_array(val) = [] if {
+          val == null
+      }
+  
+  # 断言配置
+  assertions:
+    - name: "检查特权容器"
+      condition: "violation_count == 0"
+      severity: critical
+      description: "发现 {{ violation_count }} 个特权容器"
+
+# 问题解决建议
+solution: |
+  特权容器安全风险处理：
+  1. 避免使用privileged: true
+  2. 使用最小权限原则，只授予必要的权限
+  3. 考虑使用securityContext配置特定的安全权限
+
+# 标签
+tags:
+  - security
+  - privileged
+  - containers

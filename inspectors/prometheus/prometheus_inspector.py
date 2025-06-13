@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Prometheus 指标巡检器，继承自基类实现，使用规则处理器
+Prometheus 巡检器 - 简化版本，支持"一个规则=一个query=一个巡检项"
 """
+
 import logging
-import re
+import datetime
 from typing import Dict, List, Any, Optional, Tuple
 
 from inspectors.base_inspector import BaseInspector
@@ -15,326 +16,359 @@ from utils.rule_loader import Rule
 logger = logging.getLogger(__name__)
 
 class PrometheusInspector(BaseInspector):
-    """Prometheus 指标巡检器"""
+    """
+    Prometheus规则巡检器 - 简化版本
+    """
     
-    def __init__(self, config: Dict):
+    def __init__(self, config: Dict[str, Any]):
         """
         初始化Prometheus巡检器
         
         Args:
-            config: 配置字典，必须包含 prometheus_config 键
+            config: Prometheus配置字典，应包含以下字段：
+                - url: Prometheus服务器URL
+                - username: 可选的用户名
+                - password: 可选的密码
+                - token: 可选的访问令牌
+                - enabled: 是否启用
         """
+        # 确保配置是有效的
+        if not isinstance(config, dict):
+            raise TypeError("配置必须是一个字典")
+        
+        # 如果传入的配置缺少必要的字段，则添加默认值
+        if 'url' not in config:
+            raise ValueError("Prometheus配置缺少url字段")
+        
+        # 创建PrometheusClient实例
+        self.prometheus_client = PrometheusClient(config)
+        
+        # 调用父类初始化
         super().__init__(config)
-        
-        # 获取Prometheus客户端配置
-        prometheus_config = config.get("prometheus_config", {})
-        
-        # 创建Prometheus客户端
-        prometheus_config.setdefault("url", "http://localhost:9090")
-        self.client = PrometheusClient(prometheus_config)
     
     @property
     def inspector_type(self) -> str:
-        """获取巡检器类型"""
         return "prometheus"
     
-    def _apply_rule(self, rule: Rule, context: Dict) -> Dict:
+    def _prepare_context(self, cluster_name: str) -> Dict:
         """
-        应用规则检查 Prometheus 指标
+        准备Prometheus巡检上下文
         
         Args:
-            rule: 要应用的规则
+            cluster_name: 集群名称
+            
+        Returns:
+            准备好的上下文
+        """
+        context = super()._prepare_context(cluster_name)
+        return context
+    
+    def _validate_rule_config(self, rule: Rule) -> List[str]:
+        """
+        验证规则配置是否有效
+        
+        Args:
+            rule: 规则对象
+            
+        Returns:
+            配置问题列表，如果没有问题则为空列表
+        """
+        issues = []
+        
+        # 检查必要的查询配置
+        query = self.get_rule_config(rule, 'query', '')
+        if not query:
+            issues.append("缺少必要的Prometheus查询(query)")
+        
+        # 检查必要的断言配置
+        assertions = self.get_rule_config(rule, 'assertions', [])
+        if not assertions:
+            issues.append("缺少必要的断言配置(assertions)")
+            
+        return issues
+
+    def _apply_rule(self, rule: Rule, context: Dict) -> Dict:
+        """
+        应用Prometheus规则进行检查 - 简化版本
+        
+        Args:
+            rule: 规则对象
             context: 上下文
             
         Returns:
             检查结果
         """
-        # 获取查询
-        query = self._get_query(rule)
-        if not query:
-            return self.rule_processor.format_rule_result(
-                rule=rule,
-                status='skipped',
-                description="缺少查询语句",
-                severity='info',
-                details="规则未定义 Prometheus 查询语句",
-                solution="编辑规则，添加有效的 PromQL 查询"
-            )
-        
+        # 获取查询和断言配置
+        query = self.get_rule_config(rule, 'query', '')
+        assertions = self.get_rule_config(rule, 'assertions', [])
+            
         # 执行查询
-        success, result = self._execute_query(query)
-        if not success:
-            return self.rule_processor.format_rule_result(
-                rule=rule,
-                status='error',
-                description="执行查询失败",
-                severity='warning',
-                details=f"执行 PromQL 查询时出错: {result}",
-                solution="检查 Prometheus 服务器状态和查询语法"
-            )
-        
-        # 解析结果
-        metrics = self._parse_result(result)
-        if not metrics:
-            return self.rule_processor.format_rule_result(
-                rule=rule,
-                status='passed',  # 假设无数据意味着没有问题
-                description="无指标数据",
-                severity='info',
-                details=f"查询 '{query}' 未返回任何结果",
-                solution=""
-            )
-        
-        # 评估结果
-        return self._evaluate_metrics(rule, metrics, query)
-    
-    def _get_query(self, rule: Rule) -> str:
-        """
-        获取规则的Prometheus查询语句
-        
-        Args:
-            rule: 规则对象
-            
-        Returns:
-            查询语句字符串
-        """
-        # 只从新格式中获取查询
-        return self.get_rule_config(rule, 'query.promql') or ''
-    
-    def _execute_query(self, query: str) -> Tuple[bool, Any]:
-        """
-        执行Prometheus查询
-        
-        Args:
-            query: PromQL查询语句
-            
-        Returns:
-            (成功标志, 结果数据)
-        """
         try:
-            result = self.client.query(query)
-            return True, result
+            # 执行即时查询（简化版本，不再支持复杂的时间范围查询）
+            result = self.prometheus_client.query(query)
+                
+            # 处理结果
+            metrics = self._process_query_result(result)
+            if not metrics:
+                return self.rule_processor.format_rule_result(
+                    rule=rule,
+                    status="passed",
+                    description=f"{rule.name}: 无数据",
+                    severity="info",
+                    details="Prometheus查询没有返回匹配的指标数据",
+                    solution=""
+                )
+                
+            # 提取数据进行断言评估
+            variables = self._extract_metrics_variables(metrics)
+            
+            # 生成包含上下文信息的名称后缀
+            name_suffix = self._generate_context_suffix(metrics, variables)
+            
+            # 评估断言
+            assertion_result = self.rule_processor.evaluate_assertions(assertions, variables)
+            
+            # 根据断言结果返回检查结果
+            if assertion_result['passed']:
+                # 对于通过的检查，在描述中显示具体的监控数据
+                first_assertion = assertions[0] if assertions else {}
+                first_assertion_desc = first_assertion.get('description', '')
+                if first_assertion_desc:
+                    # 渲染模板以显示具体值
+                    from utils.assertion_evaluator import AssertionEvaluator
+                    evaluator = AssertionEvaluator()
+                    rendered_desc = evaluator._render_template(first_assertion_desc, variables)
+                    description = f"{rule.name}: {rendered_desc}"
+                else:
+                    # 显示关键指标值
+                    if 'max_value' in variables:
+                        description = f"{rule.name}: 最大值 {variables['max_value']:.2f}"
+                    elif 'value' in variables:
+                        description = f"{rule.name}: 当前值 {variables['value']:.2f}"
+                    else:
+                        description = f"{rule.name}: 检查通过"
+                
+                result = self.rule_processor.format_rule_result(
+                    rule=rule,
+                    status="passed",
+                    description=description,
+                    severity="info",
+                    details="监控指标正常",
+                    solution=""
+                )
+            else:
+                # 移除"断言失败"前缀，直接使用描述
+                clean_description = assertion_result['description'].replace("断言失败: ", "")
+                
+                result = self.rule_processor.format_rule_result(
+                    rule=rule,
+                    status="failed",
+                    description=clean_description,
+                    severity=assertion_result['severity'],
+                    details=f"监控告警触发\n查询: {query}\n结果值: {self._format_simple_metrics(metrics)}",
+                    solution=rule.solution
+                )
+            
+            # 添加上下文信息到名称
+            if name_suffix:
+                result['name'] = f"{rule.name} - {name_suffix}"
+            
+            return result
+                
         except Exception as e:
             logger.exception(f"执行Prometheus查询时出错: {str(e)}")
-            return False, str(e)
+            return self._format_error_result(rule,
+                "执行Prometheus查询失败", str(e))
     
-    def _parse_result(self, result: Dict) -> Dict:
+    def _process_query_result(self, result: Dict) -> List[Dict]:
         """
-        解析Prometheus查询结果
+        处理Prometheus查询结果 - 简化版本，只支持vector类型
         
         Args:
-            result: 查询结果
+            result: Prometheus查询结果
             
         Returns:
-            解析后的指标数据
+            处理后的指标列表
         """
-        metrics = {}
+        metrics = []
         
-        try:
-            # 处理瞬时查询结果 (instant query)
-            if 'data' in result and 'result' in result['data']:
-                for item in result['data']['result']:
-                    metric_key = self._get_metric_key(item.get('metric', {}))
-                    
-                    # 获取值
-                    if 'value' in item:
-                        try:
-                            # value is [timestamp, value_string]
-                            timestamp, value_str = item['value']
-                            value = float(value_str)
-                            metrics[metric_key] = {'value': value, 'labels': item.get('metric', {})}
-                        except (ValueError, TypeError, IndexError) as e:
-                            logger.error(f"解析指标值时出错: {str(e)}")
-                    
-                    # 处理区间查询结果
-                    elif 'values' in item:
-                        try:
-                            # 取最新的值
-                            if item['values']:
-                                latest = item['values'][-1]
-                                timestamp, value_str = latest
-                                value = float(value_str)
-                                metrics[metric_key] = {'value': value, 'labels': item.get('metric', {})}
-                        except (ValueError, TypeError, IndexError) as e:
-                            logger.error(f"解析区间指标值时出错: {str(e)}")
-        except Exception as e:
-            logger.exception(f"解析Prometheus结果时出错: {str(e)}")
+        # 检查结果格式
+        if not result or not isinstance(result, dict):
+            return metrics
+            
+        data = result.get('data', {})
+        result_type = data.get('resultType')
+        result_data = data.get('result', [])
+        
+        if not result_data:
+            return metrics
+            
+        # 只处理即时查询结果（vector类型）
+        if result_type == 'vector':
+            for item in result_data:
+                metric = {
+                    'metric': item.get('metric', {}),
+                    'value': float(item.get('value', [0, '0'])[1]) if item.get('value') else 0
+                }
+                metrics.append(metric)
+        else:
+            # 不再支持matrix类型的复杂时间序列数据
+            logger.warning(f"不支持的查询结果类型: {result_type}，请使用即时查询")
         
         return metrics
     
-    def _get_metric_key(self, labels: Dict) -> str:
+    def _extract_metrics_variables(self, metrics: List[Dict]) -> Dict[str, Any]:
         """
-        从标签中获取指标键名
+        从指标中提取变量用于断言评估
         
         Args:
-            labels: 指标标签
+            metrics: 指标列表
             
         Returns:
-            指标键名
+            变量字典
         """
-        if '__name__' in labels:
-            base_name = labels['__name__']
-        else:
-            base_name = "unknown_metric"
-            
-        if labels:
-            label_strs = [f'{k}="{v}"' for k, v in labels.items() if k != '__name__']
-            if label_strs:
-                return f"{base_name}{{{','.join(label_strs)}}}"
+        variables = {
+            # 存储所有值的列表，方便计算平均值、最大值等
+            'values': [m.get('value', 0) for m in metrics],
+        }
         
-        return base_name
+        # 如果只有一个指标，直接使用其值
+        if len(metrics) == 1:
+            variables['value'] = metrics[0].get('value', 0)
+            
+            # 添加标签作为变量
+            metric_labels = metrics[0].get('metric', {})
+            for label, label_value in metric_labels.items():
+                variables[f"label_{label}"] = label_value
+        
+        # 添加聚合值
+        if variables['values']:
+            variables['max_value'] = max(variables['values'])
+            variables['min_value'] = min(variables['values'])
+            variables['avg_value'] = sum(variables['values']) / len(variables['values'])
+            
+        return variables
     
-    def _evaluate_metrics(self, rule: Rule, metrics: Dict, query: str) -> Dict:
+    def _generate_context_suffix(self, metrics: List[Dict], variables: Dict[str, Any]) -> str:
         """
-        评估指标
+        生成包含上下文信息的名称后缀
+        
+        Args:
+            metrics: 指标列表
+            variables: 变量字典
+            
+        Returns:
+            上下文后缀字符串
+        """
+        if not metrics:
+            return ""
+        
+        # 如果只有一个指标，尝试提取有意义的标签
+        if len(metrics) == 1:
+            metric_labels = metrics[0].get('metric', {})
+            
+            # 优先显示节点相关信息
+            if 'instance' in metric_labels:
+                instance = metric_labels['instance']
+                # 清理instance格式 (通常是IP:PORT或hostname:PORT)
+                if ':' in instance:
+                    instance = instance.split(':')[0]
+                return f"节点 {instance}"
+            elif 'node' in metric_labels:
+                return f"节点 {metric_labels['node']}"
+            elif 'job' in metric_labels:
+                return f"作业 {metric_labels['job']}"
+            elif '__name__' in metric_labels:
+                return f"指标 {metric_labels['__name__']}"
+        
+        # 如果有多个指标，显示指标数量
+        elif len(metrics) > 1:
+            # 尝试找到共同的标签
+            first_metric_labels = metrics[0].get('metric', {})
+            if 'job' in first_metric_labels:
+                job_name = first_metric_labels['job']
+                return f"{len(metrics)}个{job_name}实例"
+            else:
+                return f"{len(metrics)}个实例"
+        
+        return ""
+    
+    def _format_simple_metrics(self, metrics: List[Dict]) -> str:
+        """
+        简化的指标格式化方法
+        
+        Args:
+            metrics: 指标列表
+            
+        Returns:
+            格式化的指标字符串
+        """
+        if not metrics:
+            return "无数据"
+        
+        if len(metrics) == 1:
+            metric = metrics[0]
+            value = metric.get('value', 'N/A')
+            return f"当前值: {value}"
+        else:
+            values = [m.get('value', 0) for m in metrics]
+            max_val = max(values)
+            avg_val = sum(values) / len(values)
+            return f"最大值: {max_val:.2f}, 平均值: {avg_val:.2f}, 共{len(metrics)}个实例"
+    
+    def get_rule_config(self, rule: Rule, key: str, default: Any = None) -> Any:
+        """
+        从规则配置中获取特定键的值
         
         Args:
             rule: 规则对象
-            metrics: 指标数据
-            query: 执行的查询
+            key: 配置键
+            default: 默认值，如果键不存在则返回此值
             
         Returns:
-            检查结果
+            配置值或默认值
         """
-        # 获取阈值
-        thresholds = self._get_thresholds(rule)
+        if rule.config and key in rule.config:
+            return rule.config[key]
+        return default
         
-        # 获取比较运算符
-        comparator = self.get_rule_config(rule, 'query.comparator', '>')
+    def _format_skipped_result(self, rule: Rule, reason: str) -> Dict:
+        """
+        格式化跳过的规则结果
         
-        # 记录所有违规指标
-        violations = []
-        warning_count = 0
-        critical_count = 0
-        
-        # 评估每个指标
-        for key, metric_data in metrics.items():
-            value = metric_data.get('value')
-            labels = metric_data.get('labels', {})
+        Args:
+            rule: 规则对象
+            reason: 跳过原因
             
-            # 跳过没有值的指标
-            if value is None:
-                continue
-                
-            # 检查是否超过警告阈值
-            is_warning = False
-            is_critical = False
-            
-            if 'warning' in thresholds and thresholds['warning'] is not None:
-                # 使用比较操作符进行比较
-                if self._compare_value(value, thresholds['warning'], comparator):
-                    is_warning = True
-                    warning_count += 1
-            
-            # 检查是否超过严重阈值
-            if 'critical' in thresholds and thresholds['critical'] is not None:
-                if self._compare_value(value, thresholds['critical'], comparator):
-                    is_critical = True
-                    critical_count += 1
-            
-            # 如果有违规，添加到列表
-            if is_warning or is_critical:
-                violation = {
-                    'metric': key,
-                    'value': value,
-                    'labels': labels,
-                    'severity': 'critical' if is_critical else 'warning'
-                }
-                violations.append(violation)
-        
-        # 确定整体状态和严重性
-        if critical_count > 0:
-            status = 'fail'
-            severity = 'critical'
-            description = f"{rule.name} - {critical_count} 个指标超过严重阈值"
-        elif warning_count > 0:
-            status = 'warn'
-            severity = 'warning'
-            description = f"{rule.name} - {warning_count} 个指标超过警告阈值"
-        else:
-            status = 'pass'
-            severity = 'info'
-            description = f"{rule.name} - 指标正常"
-        
-        # 生成详细信息
-        if violations:
-            details = f"查询: {query}\n\n"
-            details += f"警告阈值: {thresholds.get('warning')}, 严重阈值: {thresholds.get('critical')}, 比较运算符: {comparator}\n\n"
-            
-            # 添加违规详情
-            details += "违规指标:\n"
-            for idx, v in enumerate(violations[:10]):  # 仅显示前10个
-                details += f"{idx+1}. {v['metric']} = {v['value']} ({v['severity']})\n"
-                
-            if len(violations) > 10:
-                details += f"\n...共 {len(violations)} 个违规指标"
-        else:
-            details = f"查询: {query}\n\n所有指标均符合阈值要求"
-        
-        # 返回结果
+        Returns:
+            结果字典
+        """
         return self.rule_processor.format_rule_result(
             rule=rule,
-            status=status,
-            description=description,
-            severity=severity,
-            details=details,
-            solution=rule.solution if hasattr(rule, 'solution') else "根据指标情况优化系统配置"
+            status="skipped",
+            description=f"{rule.name} 已跳过: {reason}",
+            severity="info",
+            details=reason,
+            solution=""
         )
-    
-    def _get_thresholds(self, rule: Rule) -> Dict:
+        
+    def _format_error_result(self, rule: Rule, error_type: str, error_msg: str) -> Dict:
         """
-        获取规则的阈值配置
+        格式化错误结果
         
         Args:
             rule: 规则对象
+            error_type: 错误类型
+            error_msg: 错误消息
             
         Returns:
-            阈值配置字典
+            结果字典
         """
-        # 创建一个包含warning和critical阈值的字典
-        thresholds = {}
-        
-        # 直接从rule.thresholds获取
-        rule_thresholds = getattr(rule, 'thresholds', {}) or {}
-        
-        # 提取warning阈值
-        warning = rule_thresholds.get('warning')
-        if warning is not None:
-            thresholds['warning'] = warning
-            
-        # 提取critical阈值
-        critical = rule_thresholds.get('critical')
-        if critical is not None:
-            thresholds['critical'] = critical
-            
-        return thresholds
-    
-    def _compare_value(self, value: float, threshold: float, comparator: str) -> bool:
-        """
-        比较值和阈值
-        
-        Args:
-            value: 要比较的值
-            threshold: 阈值
-            comparator: 比较运算符
-            
-        Returns:
-            比较结果
-        """
-        try:
-            if comparator == '>':
-                return value > threshold
-            elif comparator == '>=':
-                return value >= threshold
-            elif comparator == '<':
-                return value < threshold
-            elif comparator == '<=':
-                return value <= threshold
-            elif comparator == '==':
-                return value == threshold
-            else:
-                # 默认使用大于
-                return value > threshold
-        except (TypeError, ValueError) as e:
-            logger.error(f"比较值和阈值时出错: {str(e)}")
-            return False
+        return self.rule_processor.format_rule_result(
+            rule=rule,
+            status="error",
+            description=f"{rule.name} 出错: {error_type}",
+            severity="critical",
+            details=f"错误类型: {error_type}\n错误信息: {error_msg}",
+            solution="请检查Prometheus连接配置和查询语法"
+        )

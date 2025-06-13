@@ -44,10 +44,13 @@ class K8sClient:
                 self.temp_config = tempfile.NamedTemporaryFile(delete=False)
                 self.temp_config.write(self.kubeconfig_content.encode())
                 self.temp_config.flush()
+                # 允许跳过SSL证书验证
                 config.load_kube_config(self.temp_config.name)
+                client.Configuration.set_default(self._configure_no_verify_ssl())
             else:
                 # 尝试默认方式加载配置
                 config.load_kube_config()
+                client.Configuration.set_default(self._configure_no_verify_ssl())
                 
             self.core_v1 = client.CoreV1Api()
             self.apps_v1 = client.AppsV1Api()
@@ -63,6 +66,25 @@ class K8sClient:
             logger.error(f"初始化 Kubernetes 客户端失败: {e}")
             self.initialized = False
             return False
+    
+    def _configure_no_verify_ssl(self):
+        """
+        配置Kubernetes客户端跳过SSL证书验证，用于自签名证书环境
+        
+        Returns:
+            配置好的客户端配置
+        """
+        # 获取当前客户端配置
+        configuration = client.Configuration.get_default_copy()
+        
+        # 禁用SSL证书验证
+        configuration.verify_ssl = False
+        configuration.ssl_ca_cert = None
+        
+        # 设置警告消息
+        logger.warning("已禁用SSL证书验证，这可能存在安全风险")
+        
+        return configuration
     
     def __del__(self):
         """析构函数，删除临时文件"""
@@ -310,6 +332,90 @@ class K8sClient:
             logger.error(f"获取所有PVC失败: {e}")
             return []
     
+    def list_resources(self, resource_type: str):
+        """
+        获取所有命名空间下指定类型的资源列表 - 增强版本，支持更多资源类型
+        
+        Args:
+            resource_type: 资源类型，如'pods', 'deployments', 'services'等
+            
+        Returns:
+            资源对象列表
+        """
+        try:
+            if resource_type == 'pods':
+                items = self.core_v1.list_pod_for_all_namespaces().items
+            elif resource_type == 'deployments':
+                items = self.apps_v1.list_deployment_for_all_namespaces().items
+            elif resource_type == 'services':
+                items = self.core_v1.list_service_for_all_namespaces().items
+            elif resource_type == 'statefulsets':
+                items = self.apps_v1.list_stateful_set_for_all_namespaces().items
+            elif resource_type == 'daemonsets':
+                items = self.apps_v1.list_daemon_set_for_all_namespaces().items
+            elif resource_type == 'replicasets':
+                items = self.apps_v1.list_replica_set_for_all_namespaces().items
+            elif resource_type == 'configmaps':
+                items = self.core_v1.list_config_map_for_all_namespaces().items
+            elif resource_type == 'secrets':
+                items = self.core_v1.list_secret_for_all_namespaces().items
+            elif resource_type == 'persistentvolumeclaims':
+                items = self.core_v1.list_persistent_volume_claim_for_all_namespaces().items
+            elif resource_type == 'serviceaccounts':
+                items = self.core_v1.list_service_account_for_all_namespaces().items
+            elif resource_type == 'networkpolicies':
+                items = self.networking_v1.list_network_policy_for_all_namespaces().items
+            elif resource_type == 'roles':
+                items = self.rbac_v1.list_role_for_all_namespaces().items
+            elif resource_type == 'rolebindings':
+                items = self.rbac_v1.list_role_binding_for_all_namespaces().items
+            elif resource_type == 'ingresses':
+                items = self.networking_v1.list_ingress_for_all_namespaces().items
+            else:
+                # 尝试作为CRD资源处理
+                items = self._list_custom_resources(resource_type)
+                if items is None:
+                    logger.warning(f"不支持的资源类型: {resource_type}")
+                    return []
+                
+            return [self._convert_k8s_object_to_dict(item) for item in items]
+        except Exception as e:
+            logger.error(f"获取资源 {resource_type} 失败: {e}")
+            return []
+    
+    def list_cluster_resources(self, resource_type: str):
+        """
+        获取集群级别的资源列表 - 增强版本，支持更多资源类型
+        
+        Args:
+            resource_type: 资源类型，如'nodes', 'persistentvolumes'等
+            
+        Returns:
+            资源对象列表
+        """
+        try:
+            if resource_type == 'nodes':
+                items = self.core_v1.list_node().items
+            elif resource_type == 'persistentvolumes':
+                items = self.core_v1.list_persistent_volume().items
+            elif resource_type == 'clusterroles':
+                items = self.rbac_v1.list_cluster_role().items
+            elif resource_type == 'clusterrolebindings':
+                items = self.rbac_v1.list_cluster_role_binding().items
+            elif resource_type == 'storageclasses':
+                items = self.storage_v1.list_storage_class().items
+            else:
+                # 尝试作为CRD集群资源处理
+                items = self._list_custom_cluster_resources(resource_type)
+                if items is None:
+                    logger.warning(f"不支持的集群资源类型: {resource_type}")
+                    return []
+                
+            return [self._convert_k8s_object_to_dict(item) for item in items]
+        except Exception as e:
+            logger.error(f"获取集群资源 {resource_type} 失败: {e}")
+            return []
+    
     def list_namespaces(self):
         """获取所有命名空间列表"""
         try:
@@ -345,3 +451,255 @@ class K8sClient:
                     }
                 }
             return {}
+    
+    def get_custom_resources(self, group: str, version: str, plural: str, 
+                            namespace: str = None) -> List[Dict]:
+        """
+        获取自定义资源(CRD)列表
+        
+        Args:
+            group: API组，如 'networking.istio.io'
+            version: API版本，如 'v1beta1'
+            plural: 资源复数名称，如 'virtualservices'
+            namespace: 命名空间，如果为None则获取集群级别资源
+            
+        Returns:
+            CRD资源对象列表
+        """
+        try:
+            if namespace:
+                # 获取命名空间级别的CRD资源
+                response = self.custom_objects.list_namespaced_custom_object(
+                    group=group,
+                    version=version,
+                    namespace=namespace,
+                    plural=plural
+                )
+            else:
+                # 获取所有命名空间的CRD资源
+                response = self.custom_objects.list_cluster_custom_object(
+                    group=group,
+                    version=version,
+                    plural=plural
+                )
+            
+            items = response.get('items', [])
+            return [self._convert_dict_to_k8s_format(item) for item in items]
+            
+        except Exception as e:
+            logger.debug(f"获取CRD资源 {group}/{version}/{plural} 失败: {str(e)}")
+            return []
+
+    def _list_custom_resources(self, resource_type: str) -> List:
+        """
+        尝试列出自定义资源
+        
+        Args:
+            resource_type: 资源类型
+            
+        Returns:
+            资源列表或None（如果不支持）
+        """
+        # 常见CRD资源映射
+        crd_mappings = {
+            'virtualservices': ('networking.istio.io', 'v1beta1'),
+            'destinationrules': ('networking.istio.io', 'v1beta1'),
+            'gateways': ('networking.istio.io', 'v1beta1'),
+            'serviceentries': ('networking.istio.io', 'v1beta1'),
+            'certificates': ('cert-manager.io', 'v1'),
+            'certificaterequests': ('cert-manager.io', 'v1'),
+            'issuers': ('cert-manager.io', 'v1'),
+            'prometheuses': ('monitoring.coreos.com', 'v1'),
+            'servicemonitors': ('monitoring.coreos.com', 'v1'),
+            'alertmanagers': ('monitoring.coreos.com', 'v1'),
+            'prometheusrules': ('monitoring.coreos.com', 'v1'),
+        }
+        
+        if resource_type in crd_mappings:
+            group, version = crd_mappings[resource_type]
+            try:
+                response = self.custom_objects.list_cluster_custom_object(
+                    group=group,
+                    version=version,
+                    plural=resource_type
+                )
+                return [self._convert_dict_to_k8s_format(item) for item in response.get('items', [])]
+            except Exception as e:
+                logger.debug(f"获取CRD资源 {resource_type} 失败: {str(e)}")
+                return []
+        
+        return None
+
+    def _list_custom_cluster_resources(self, resource_type: str) -> List:
+        """
+        尝试列出集群级别的自定义资源
+        
+        Args:
+            resource_type: 资源类型
+            
+        Returns:
+            资源列表或None（如果不支持）
+        """
+        # 集群级别CRD资源映射
+        cluster_crd_mappings = {
+            'clusterissuers': ('cert-manager.io', 'v1'),
+            'clusterpolicies': ('kyverno.io', 'v1'),
+            'customresourcedefinitions': ('apiextensions.k8s.io', 'v1'),
+        }
+        
+        if resource_type in cluster_crd_mappings:
+            group, version = cluster_crd_mappings[resource_type]
+            try:
+                response = self.custom_objects.list_cluster_custom_object(
+                    group=group,
+                    version=version,
+                    plural=resource_type
+                )
+                return [self._convert_dict_to_k8s_format(item) for item in response.get('items', [])]
+            except Exception as e:
+                logger.debug(f"获取集群级CRD资源 {resource_type} 失败: {str(e)}")
+                return []
+        
+        return None
+
+    def _convert_dict_to_k8s_format(self, item: Dict) -> Dict:
+        """
+        将字典格式的CRD资源转换为标准K8s格式
+        
+        Args:
+            item: CRD资源字典
+            
+        Returns:
+            标准格式的资源字典
+        """
+        # CRD资源已经是字典格式，只需要确保格式一致
+        return item
+
+    def _convert_datetime_in_dict(self, data: Dict) -> None:
+        """
+        递归转换字典中的datetime对象为字符串
+        
+        Args:
+            data: 要转换的字典
+        """
+        for key, value in data.items():
+            if isinstance(value, datetime.datetime):
+                data[key] = value.isoformat()
+            elif isinstance(value, datetime.date):
+                data[key] = value.isoformat()
+            elif isinstance(value, dict):
+                self._convert_datetime_in_dict(value)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        self._convert_datetime_in_dict(item)
+
+    def list_all_custom_resource_definitions(self) -> List[Dict]:
+        """
+        获取集群中所有的CRD定义
+        
+        Returns:
+            CRD定义列表
+        """
+        try:
+            # 获取集群中所有的CRD
+            from kubernetes.client import ApiextensionsV1Api
+            extensions_v1 = ApiextensionsV1Api()
+            crds = extensions_v1.list_custom_resource_definition()
+            
+            crd_list = []
+            for crd in crds.items:
+                crd_info = {
+                    'name': crd.metadata.name,
+                    'group': crd.spec.group,
+                    'versions': [v.name for v in crd.spec.versions],
+                    'scope': crd.spec.scope,  # Cluster 或 Namespaced
+                    'kind': crd.spec.names.kind,
+                    'plural': crd.spec.names.plural,
+                }
+                crd_list.append(crd_info)
+            
+            return crd_list
+        except Exception as e:
+            logger.debug(f"获取CRD列表失败: {str(e)}")
+            return []
+
+    def get_custom_resource_by_crd(self, crd_info: Dict, namespace: str = None) -> List[Dict]:
+        """
+        根据CRD定义获取自定义资源
+        
+        Args:
+            crd_info: CRD定义信息
+            namespace: 命名空间（如果是命名空间级别的资源）
+            
+        Returns:
+            自定义资源列表
+        """
+        try:
+            group = crd_info['group']
+            # 使用最新版本
+            version = crd_info['versions'][0] if crd_info['versions'] else 'v1'
+            plural = crd_info['plural']
+            scope = crd_info.get('scope', 'Namespaced')
+            
+            if scope == 'Namespaced' and namespace:
+                response = self.custom_objects.list_namespaced_custom_object(
+                    group=group,
+                    version=version,
+                    namespace=namespace,
+                    plural=plural
+                )
+            elif scope == 'Cluster':
+                response = self.custom_objects.list_cluster_custom_object(
+                    group=group,
+                    version=version,
+                    plural=plural
+                )
+            else:
+                # 获取所有命名空间的资源
+                response = self.custom_objects.list_cluster_custom_object(
+                    group=group,
+                    version=version,
+                    plural=plural
+                )
+            
+            items = response.get('items', [])
+            return [self._convert_dict_to_k8s_format(item) for item in items]
+            
+        except Exception as e:
+            logger.debug(f"获取CRD资源失败: {str(e)}")
+            return []
+
+    def discover_and_list_all_crd_resources(self) -> Dict[str, List[Dict]]:
+        """
+        发现并列出所有CRD资源
+        
+        Returns:
+            按类型分组的CRD资源字典
+        """
+        crd_resources = {}
+        
+        # 获取所有CRD定义
+        crds = self.list_all_custom_resource_definitions()
+        
+        for crd in crds:
+            try:
+                resource_key = f"{crd['plural']}.{crd['group']}"
+                crd_resources[resource_key] = self.get_custom_resource_by_crd(crd)
+                
+                # 如果是命名空间级别的资源，也获取各个命名空间的资源
+                if crd.get('scope') == 'Namespaced':
+                    namespaces = self.list_namespaces()
+                    all_resources = []
+                    for ns in namespaces:
+                        ns_name = ns.get('metadata', {}).get('name', '')
+                        if ns_name:
+                            ns_resources = self.get_custom_resource_by_crd(crd, ns_name)
+                            all_resources.extend(ns_resources)
+                    crd_resources[resource_key] = all_resources
+                    
+            except Exception as e:
+                logger.debug(f"获取CRD资源 {crd['plural']} 失败: {str(e)}")
+                continue
+        
+        return crd_resources

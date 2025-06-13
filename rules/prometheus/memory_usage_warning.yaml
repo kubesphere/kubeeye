@@ -1,0 +1,42 @@
+---
+# 内存使用率检查规则 - 警告阈值
+id: prom_memory_usage_warning
+name: 节点内存使用率检查
+description: 检查节点内存使用率是否超过警告阈值
+type: prometheus
+category: resource
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # Prometheus查询配置 - 计算内存使用百分比
+  query: "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100"
+  
+  # 时间范围配置
+  time_range:
+    start: "now-10m"  # 10分钟前
+    end: "now"        # 当前时间
+    step: "1m"        # 1分钟间隔
+  
+  # 断言配置 - 简化为单个检查
+  assertions:
+    - name: "内存使用率正常"
+      condition: "max_value < 85"
+      severity: warning
+      description: "内存使用率: {{ max_value | round(2) }}%"
+
+# 问题解决建议
+solution: |
+  内存使用率过高处理：
+  1. 查看内存消耗：kubectl top nodes && kubectl top pods --sort-by=memory
+  2. 检查内存泄漏：kubectl describe pod <pod-name>
+  3. 调整内存限制或增加节点内存
+  4. 重启内存泄漏的Pod
+
+# 标签
+tags:
+  - memory
+  - performance
+  - monitoring

@@ -102,7 +102,12 @@ def execute_inspection_task(task, show_progress=True):
             kubeconfig = cluster_config.get_kubeconfig()
             if kubeconfig:
                 try:
-                    opa_inspector = OpaInspector(kubeconfig)
+                    # 创建OPA配置字典
+                    opa_config = {
+                        'kubeconfig': kubeconfig,
+                        'opa_path': 'opa'  # 默认OPA路径
+                    }
+                    opa_inspector = OpaInspector(opa_config)
                     opa_result = opa_inspector.run_inspection(
                         task.cluster, 
                         task.rules["opa"].get("rules", [])
@@ -126,25 +131,36 @@ def execute_inspection_task(task, show_progress=True):
         if show_progress:
             progress.complete()
         
-        # 合并所有巡检结果
+        # 合并所有巡检结果并保存
         if all_results:
-            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-            unified_result_id = f"{task.cluster}_定时巡检_{task.task_id}_{timestamp}"
+            # 使用新的控制器保存结果
+            from inspectors.controller import InspectionController
             
-            # 准备合并后的结果数据
-            unified_items = []
-            for result in all_results.values():
-                unified_items.extend(result.get_items())
+            # 安全地获取集群配置字典
+            try:
+                if hasattr(cluster_config, 'get_dict'):
+                    config_dict = cluster_config.get_dict()
+                else:
+                    # 如果没有get_dict方法，手动构建配置字典
+                    config_dict = {
+                        'nodes': cluster_config.get_nodes() if hasattr(cluster_config, 'get_nodes') else [],
+                        'prometheus': cluster_config.get_prometheus_config() if hasattr(cluster_config, 'get_prometheus_config') else {},
+                        'opa': {'kubeconfig': cluster_config.get_kubeconfig() if hasattr(cluster_config, 'get_kubeconfig') else ''}
+                    }
+            except Exception as e:
+                if show_progress:
+                    progress.error(f"获取集群配置失败: {e}")
+                config_dict = {'nodes': [], 'prometheus': {}, 'opa': {'kubeconfig': ''}}
             
-            # 创建综合结果对象
-            unified_result = InspectionResult(task.cluster, "unified")
-            unified_result.result_id = unified_result_id
-            unified_result.items = unified_items
+            controller = InspectionController(config_dict)
             
-            # 保存统一结果
-            unified_result.save()
+            # 保存为定时巡检类型
+            result_path = controller.save_inspection_result(all_results, task.cluster, "scheduled")
             
-            return True, "巡检完成", all_results
+            if show_progress:
+                progress.success(f"巡检结果已保存: {result_path}")
+            
+            return True, f"巡检完成，结果已保存到: {result_path}", all_results
         else:
             if show_progress:
                 progress.warning("没有生成任何巡检结果")

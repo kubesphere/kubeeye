@@ -1,0 +1,42 @@
+---
+# CPU使用率检查规则 - 警告阈值
+id: prom_cpu_usage_warning
+name: 节点CPU使用率检查
+description: 检查节点CPU使用率是否超过警告阈值
+type: prometheus
+category: resource
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # Prometheus查询配置 - 直接返回CPU使用率
+  query: "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)"
+  
+  # 时间范围配置
+  time_range:
+    start: "now-10m"  # 10分钟前
+    end: "now"        # 当前时间
+    step: "1m"        # 1分钟间隔
+  
+  # 断言配置 - 简化为单个检查
+  assertions:
+    - name: "CPU使用率正常"
+      condition: "max_value < 80"
+      severity: warning
+      description: "CPU使用率: {{ max_value | round(2) }}%"
+
+# 问题解决建议
+solution: |
+  CPU使用率过高处理：
+  1. 查看高CPU消耗进程：kubectl top nodes && kubectl top pods
+  2. 检查Pod资源限制：kubectl describe pod <pod-name>
+  3. 优化高CPU应用或增加节点资源
+  4. 使用HPA自动扩展工作负载
+
+# 标签
+tags:
+  - cpu
+  - performance
+  - monitoring

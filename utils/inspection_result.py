@@ -67,11 +67,22 @@ class InspectionResult:
         passed = 0
         
         for item in self.items:
-            if item['status'] == 'passed':
+            # 安全地获取status和severity，处理不同类型的item
+            if isinstance(item, dict):
+                status = item.get('status', 'unknown')
+                severity = item.get('severity', 'unknown')
+            elif hasattr(item, 'status'):
+                status = getattr(item, 'status', 'unknown')
+                severity = getattr(item, 'severity', 'unknown')
+            else:
+                status = 'unknown'
+                severity = 'unknown'
+            
+            if status == 'passed':
                 passed += 1
-            elif item['severity'] == 'critical':
+            elif severity == 'critical':
                 critical += 1
-            elif item['severity'] == 'warning':
+            elif severity == 'warning':
                 warning += 1
             else:
                 info += 1
@@ -124,19 +135,25 @@ def load_result(result_id: str) -> Optional[Dict]:
     Returns:
         巡检结果字典，如果不存在则返回 None
     """
-    # 从 result_id 中解析出集群名
-    parts = result_id.split('_')
-    if len(parts) < 3:
-        return None
-        
-    cluster_name = parts[0]
-    result_file = RESULTS_DIR / cluster_name / f"{result_id}.json"
+    # 搜索results目录下所有json文件，找到匹配的result_id
+    for file_path in RESULTS_DIR.glob('*.json'):
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                result_data = json.load(f)
+                
+            # 检查result_id是否匹配
+            if result_data.get('result_id') == result_id:
+                return result_data
+        except Exception:
+            continue
+            
+    # 如果没有找到，也尝试从文件名匹配
+    result_file = RESULTS_DIR / f"inspection_result_{result_id.replace('_', '_')}.json"
+    if result_file.exists():
+        with open(result_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
     
-    if not result_file.exists():
-        return None
-        
-    with open(result_file, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    return None
 
 
 def export_report(result_id: str, format_type: str = "json") -> Tuple[bool, str]:
@@ -249,52 +266,100 @@ def list_results(cluster_name: Optional[str] = None) -> List[Dict]:
     """
     results = []
     
-    if cluster_name:
-        cluster_dir = RESULTS_DIR / cluster_name
-        if not cluster_dir.exists():
-            return []
-            
-        dirs_to_search = [cluster_dir]
-    else:
-        dirs_to_search = [d for d in RESULTS_DIR.iterdir() if d.is_dir()]
-    
-    for directory in dirs_to_search:
-        for file_path in directory.glob('*.json'):
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    result_data = json.load(f)
+    # 直接搜索results目录下的所有json文件
+    for file_path in RESULTS_DIR.glob('*.json'):
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                result_data = json.load(f)
+                
+            # 如果指定了集群名称，进行过滤
+            if cluster_name and result_data.get('cluster_name') != cluster_name:
+                continue
                     
+            # 处理新的数据结构
+            if 'summary' in result_data:
+                # 新格式：有summary字段
+                summary_data = result_data['summary']
+                critical = summary_data.get('failed', 0)
+                warning = summary_data.get('warning', 0)
+                passed = summary_data.get('passed', 0)
+                info = summary_data.get('error', 0)
+                total = summary_data.get('total_items', 0)
+            elif 'inspection_results' in result_data:
+                # 新格式：但没有summary，需要计算
+                critical = 0
+                warning = 0
+                info = 0
+                passed = 0
+                total = 0
+                
+                for inspector_type, inspector_result in result_data.get('inspection_results', {}).items():
+                    items = inspector_result.get('items', [])
+                    total += len(items)
+                    
+                    for item in items:
+                        # 安全地获取status，处理不同类型的item
+                        if isinstance(item, dict):
+                            status = item.get('status', 'unknown')
+                        elif hasattr(item, 'status'):
+                            status = getattr(item, 'status', 'unknown')
+                        else:
+                            status = 'unknown'
+                        
+                        if status == 'passed':
+                            passed += 1
+                        elif status == 'failed':
+                            critical += 1
+                        elif status == 'warning':
+                            warning += 1
+                        else:
+                            info += 1
+            else:
+                # 旧格式：直接items字段
                 critical = 0
                 warning = 0
                 info = 0
                 passed = 0
                 
                 for item in result_data.get('items', []):
-                    if item.get('status') == 'passed':
+                    # 安全地获取status和severity，处理不同类型的item
+                    if isinstance(item, dict):
+                        status = item.get('status', 'unknown')
+                        severity = item.get('severity', 'unknown')
+                    elif hasattr(item, 'status'):
+                        status = getattr(item, 'status', 'unknown')
+                        severity = getattr(item, 'severity', 'unknown')
+                    else:
+                        status = 'unknown'
+                        severity = 'unknown'
+                    
+                    if status == 'passed':
                         passed += 1
-                    elif item.get('severity') == 'critical':
+                    elif severity == 'critical':
                         critical += 1
-                    elif item.get('severity') == 'warning':
+                    elif severity == 'warning':
                         warning += 1
                     else:
                         info += 1
                 
-                summary = {
-                    'cluster_name': result_data.get('cluster_name', ''),
-                    'inspection_type': result_data.get('inspection_type', ''),
-                    'timestamp': result_data.get('timestamp', ''),
-                    'result_id': result_data.get('result_id', ''),
-                    'total': len(result_data.get('items', [])),
-                    'passed': passed,
-                    'critical': critical,
-                    'warning': warning,
-                    'info': info
-                }
-                
-                results.append(summary)
-            except Exception as e:
-                # 跳过无法解析的文件
-                continue
+                total = len(result_data.get('items', []))
+            
+            summary = {
+                'cluster_name': result_data.get('cluster_name', ''),
+                'inspection_type': result_data.get('inspection_type', 'unknown'),
+                'timestamp': result_data.get('timestamp', ''),
+                'result_id': result_data.get('result_id', ''),
+                'total': total,
+                'passed': passed,
+                'critical': critical,
+                'warning': warning,
+                'info': info
+            }
+            
+            results.append(summary)
+        except Exception as e:
+            # 跳过无法解析的文件
+            continue
     
     # 按时间戳排序，最新的在前
     results.sort(key=lambda x: x['timestamp'], reverse=True)

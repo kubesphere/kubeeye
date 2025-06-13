@@ -1,0 +1,164 @@
+---
+# OPA规则 - 资源限制检查 - 使用断言格式
+id: opa_resource_limits_check
+name: 容器资源限制检查
+description: 检查所有容器是否设置了资源请求和限制，避免资源竞争和节点过载
+type: opa
+category: resource
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # 资源配置
+  resources:
+    - kind: Pod
+      apiVersion: v1
+      namespaced: true
+    - kind: Deployment
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: StatefulSet
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: DaemonSet
+      apiVersion: apps/v1
+      namespaced: true
+
+  # 范围配置
+  scope:
+    namespaces:
+      include: []  # 空数组表示所有非排除的命名空间
+      exclude:
+        - kube-system
+        - kube-public
+    
+  # Rego规则配置
+  rego:
+    # 内联Rego规则定义
+    inline: |
+      package kubernetes
+      
+      # 获取Pod规范
+      get_pod_spec(resource) = spec if {
+          resource.kind == "Pod"
+          spec := resource.spec
+      }
+      
+      get_pod_spec(resource) = spec if {
+          resource.kind != "Pod"
+          spec := resource.spec.template.spec
+      }
+      
+      # 检查容器是否缺少资源限制
+      missing_resources_containers(containers, field) = missing if {
+          missing := [container |
+              container := containers[_]
+              resources := object.get(container, "resources", {})
+              not resources[field]
+          ]
+      }
+      
+      # 定义违规 - 缺少资源请求
+      violations contains result if {
+          resource := input.resources[_]
+          spec := get_pod_spec(resource)
+          containers := array.concat(
+              default_array(spec.containers),
+              default_array(spec.initContainers)
+          )
+          missing_requests := missing_resources_containers(containers, "requests")
+          count(missing_requests) > 0
+          
+          result := {
+              "kind": resource.kind,
+              "name": resource.metadata.name,
+              "namespace": resource.metadata.namespace,
+              "message": sprintf("%s '%s' in namespace '%s' has %d container(s) without resource requests: %s", [
+                  resource.kind,
+                  resource.metadata.name,
+                  resource.metadata.namespace,
+                  count(missing_requests),
+                  concat(", ", [c.name | c := missing_requests[_]])
+              ])
+          }
+      }
+      
+      # 定义违规 - 缺少资源限制
+      violations contains result if {
+          resource := input.resources[_]
+          spec := get_pod_spec(resource)
+          containers := array.concat(
+              default_array(spec.containers), 
+              default_array(spec.initContainers)
+          )
+          missing_limits := missing_resources_containers(containers, "limits")
+          count(missing_limits) > 0
+          
+          result := {
+              "kind": resource.kind,
+              "name": resource.metadata.name,
+              "namespace": resource.metadata.namespace,
+              "message": sprintf("%s '%s' in namespace '%s' has %d container(s) without resource limits: %s", [
+                  resource.kind,
+                  resource.metadata.name,
+                  resource.metadata.namespace,
+                  count(missing_limits),
+                  concat(", ", [c.name | c := missing_limits[_]])
+              ])
+          }
+      }
+      
+      # 辅助函数 - 返回默认空数组
+      default_array(val) = result if {
+          val != null
+          result = val
+      }
+      
+      default_array(val) = [] if {
+          val == null
+      }
+      
+  # 断言配置
+  assertions:
+    - name: "检查是否有缺少资源配置的工作负载"
+      condition: "violation_count == 0"
+      severity: warning
+      description: "发现 {{ violation_count }} 个资源没有正确配置资源请求/限制"
+      
+    - name: "检查是否有大量缺少资源配置的工作负载"
+      condition: "violation_count < 10"
+      severity: critical
+      description: "发现大量 ({{ violation_count }}) 资源没有正确配置资源请求/限制"
+
+# 问题解决建议
+solution: |
+  为所有容器设置资源请求和限制，避免资源竞争和节点过载：
+  
+  1. 为每个容器设置合理的资源请求值：
+     ```yaml
+     resources:
+       requests:
+         memory: "128Mi"
+         cpu: "100m"
+     ```
+  
+  2. 为每个容器设置适当的资源限制值：
+     ```yaml
+     resources:
+       limits:
+         memory: "256Mi"
+         cpu: "500m"
+     ```
+  
+  3. 监控应用实际资源使用情况，根据使用模式调整请求和限制值
+  4. 考虑使用LimitRange或ResourceQuota管理命名空间内资源分配
+  5. 为不同环境(开发、测试、生产)设置不同的资源配置
+
+# 标签
+tags:
+  - resources
+  - best-practice
+  - performance
+  - stability

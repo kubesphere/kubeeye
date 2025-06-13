@@ -52,17 +52,15 @@ def create_opa_rules_selection(key_suffix=""):
     return create_rule_selection('opa', key_suffix)
 
 
-def create_rule_selection_in_form(rule_type, all_rules, rule_display_names, select_all_key):
+def create_rule_selection_in_form(rule_type, key_suffix=""):
     """
     创建表单内的规则选择组件
     
     参数:
-    rule_type (str): 规则类型显示名称
-    all_rules (list): 所有可用规则ID列表
-    rule_display_names (dict): 规则ID到显示名称的映射
-    select_all_key (str): 全选复选框的键名
+    rule_type (str): 规则类型 'node', 'prometheus' 或 'opa'
+    key_suffix (str): 用于区分不同调用场景的组件key后缀
     
     返回:
     list: 选中的规则ID列表
     """
-    return RuleManager.create_rule_selection_in_form(rule_type, all_rules, rule_display_names, select_all_key)
+    return RuleManager.create_rule_selection_in_form(rule_type, key_suffix)

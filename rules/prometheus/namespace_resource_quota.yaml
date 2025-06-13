@@ -1,0 +1,35 @@
+---
+# 命名空间资源配额使用率检查
+id: prom_namespace_resource_quota
+name: 命名空间资源配额使用率检查
+description: 检查命名空间的资源配额使用情况
+type: prometheus
+category: quota
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # Prometheus查询配置 - 命名空间CPU配额使用率
+  query: "(sum by(namespace) (kube_resourcequota{resource=\"requests.cpu\", type=\"used\"}) / sum by(namespace) (kube_resourcequota{resource=\"requests.cpu\", type=\"hard\"})) * 100"
+  
+  # 时间范围配置
+  time_range:
+    start: "now-5m"
+    end: "now"
+    step: "1m"
+
+  # 断言配置
+  assertions:
+    - name: "命名空间资源配额使用率检查"
+      condition: "max_value < 90"
+      severity: warning
+      description: "命名空间CPU配额使用率: {{ max_value | round(2) }}%"
+
+# 标签
+tags:
+  - namespace
+  - quota
+  - cpu
+  - resource

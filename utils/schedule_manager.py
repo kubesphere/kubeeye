@@ -7,7 +7,7 @@
 import json
 import os
 import time
-from datetime import datetime
+from datetime import datetime as dt
 from pathlib import Path
 import threading
 import schedule
@@ -56,7 +56,7 @@ class ScheduleTask:
         self.task_type = task_type  # cron, monthly, weekly, daily, hourly, once
         self.last_run = last_run
         self.last_status = last_status
-        self.created_at = created_at or datetime.now().isoformat()
+        self.created_at = created_at or dt.now().isoformat()
         self.run_datetime = run_datetime  # 新增字段，单次定时任务用
         
     def to_dict(self):
@@ -107,9 +107,9 @@ class ScheduleTask:
     def get_next_run(self):
         """获取下次运行时间"""
         if self.cron_expr and self.is_valid_cron():
-            base = datetime.now()
+            base = dt.now()
             itr = croniter(self.cron_expr, base)
-            return itr.get_next(datetime)
+            return itr.get_next(dt)
         return None
     
     def get_pretty_schedule(self):
@@ -180,7 +180,7 @@ def update_task_status(task_id, last_run=None, last_status=None):
     """更新任务状态"""
     task = get_schedule(task_id)
     if task:
-        task.last_run = last_run or datetime.now().isoformat()
+        task.last_run = last_run or dt.now().isoformat()
         task.last_status = last_status
         return add_schedule(task)
     return False
@@ -209,7 +209,8 @@ def run_inspection_bg(task):
         
         return success
     except Exception as e:
-        logger.error(f"执行巡检任务失败: {e}")
+        error_msg = f"执行巡检任务失败: {str(e)}"
+        logger.error(error_msg, exc_info=True)  # 添加完整的异常堆栈
         update_task_status(task.task_id, last_status="failed")
         return False
 
@@ -243,38 +244,42 @@ def run_inspection(task_id, return_results=False):
     except Exception as e:
         logger.error(f"启动任务失败: {e}")
         return (False, str(e), None) if return_results else (False, str(e))
-        
-        # 使用schedule.every()中的func参数替换def run_inspection(task)的旧实现            
-    except Exception as e:
-        logger.error(f"执行巡检任务失败: {e}")
-        update_task_status(task.task_id, last_status="failed")
-        return False
 
 def _scheduler_loop():
     """调度器循环，在后台线程中运行"""
-    import datetime
     while not _stop_event.is_set():
         schedule.run_pending()
-        # 检查单次定时任务
+        
+        # 检查单次定时任务 - 这里只检查通过_scheduler_loop管理的单次任务
+        # 实际上，单次任务应该通过schedule库来管理，而不是在这里手动检查
+        # 但为了兼容性，保留这个检查，但添加更严格的条件
         tasks = load_schedules()
-        now = datetime.datetime.now()
+        now = dt.now()
         for task in tasks:
-            if task.enabled and task.task_type == "once" and task.run_datetime:
+            if (task.enabled and task.task_type == "once" and task.run_datetime and 
+                not task.last_run):  # 只有从未执行过的任务才检查
                 try:
-                    run_dt = datetime.datetime.strptime(task.run_datetime, "%Y-%m-%d %H:%M")
+                    run_dt = dt.strptime(task.run_datetime, "%Y-%m-%d %H:%M")
                 except Exception:
                     continue
-                # 到点且未执行
-                if now >= run_dt and (not task.last_run or task.last_status != "success"):
+                
+                # 检查是否到了执行时间，且任务从未执行过
+                if now >= run_dt:
                     logger.info(f"单次定时任务到点执行: {task.name} ({task.task_id})")
-                    run_inspection_bg(task)
-                    # 执行后禁用该任务
+                    success = run_inspection_bg(task)
+                    
+                    # 执行后禁用该任务，避免重复执行
                     task.enabled = False
-                    add_schedule(task, update=True)
+                    add_schedule(task)
+                    
+                    # 从schedule中也移除该任务
+                    schedule.clear(task.task_id)
+        
         time.sleep(30)  # 每30秒检查一次
 
 def schedule_tasks():
     """设置所有启用的调度任务"""
+    
     # 清除所有现有的任务
     schedule.clear()
     
@@ -287,21 +292,33 @@ def schedule_tasks():
             continue
             
         if task.task_type == "cron" and task.is_valid_cron():
-            # 使用croniter解析cron表达式，计算下一次运行时间
+            # 对于cron任务，我们创建一个包装函数来处理重复调度
+            def create_cron_job(task_obj):
+                def cron_job():
+                    # 执行任务
+                    run_inspection_bg(task_obj)
+                    # 任务执行后，重新计算下一次运行时间并重新调度
+                    reschedule_cron_task(task_obj)
+                return cron_job
+            
+            # 计算首次运行时间
             from croniter import croniter
-            import datetime
-            
-            base = datetime.datetime.now()
+            base = dt.now()
             cron = croniter(task.cron_expr, base)
-            next_run = cron.get_next(datetime.datetime)
-            
-            # 计算下一次运行的时间间隔
+            next_run = cron.get_next(dt)
             delta_seconds = (next_run - base).total_seconds()
             
-            # 添加一个定时任务，将在下一次计划的时间运行
+            # 如果下次运行时间很近（小于1分钟），则延迟到下下次
+            if delta_seconds < 60:
+                next_run = cron.get_next(dt)
+                delta_seconds = (next_run - base).total_seconds()
+            
+            # 调度首次执行
             schedule.every(int(delta_seconds)).seconds.do(
-                lambda t=task: run_inspection_bg(t)
+                create_cron_job(task)
             ).tag(task.task_id)
+            
+            logger.info(f"已调度Cron任务: {task.name} ({task.task_id})，将在 {next_run.strftime('%Y-%m-%d %H:%M:%S')} 首次执行")
             
         elif task.task_type == "hourly":
             schedule.every().hour.do(
@@ -320,12 +337,12 @@ def schedule_tasks():
             
         elif task.task_type == "monthly":
             schedule.every().day.at("00:00").do(
-                lambda t=task: run_inspection_bg(t) if datetime.now().day == 1 else None
+                lambda t=task: run_inspection_bg(t) if dt.now().day == 1 else None
             ).tag(task.task_id)
         elif task.task_type == "once" and task.run_datetime:
             # 计算当前时间到指定运行时间的秒数
-            run_time = datetime.fromisoformat(task.run_datetime)
-            now = datetime.now()
+            run_time = dt.fromisoformat(task.run_datetime)
+            now = dt.now()
             if run_time > now:
                 delta_seconds = (run_time - now).total_seconds()
                 schedule.every(int(delta_seconds)).seconds.do(
@@ -334,6 +351,35 @@ def schedule_tasks():
                 logger.info(f"已调度一次性任务: {task.name} ({task.task_id})，将在 {run_time} 执行")
     
     logger.info(f"已调度 {len([t for t in tasks if t.enabled])} 个巡检任务")
+
+def reschedule_cron_task(task):
+    """重新调度cron任务的下一次执行"""
+    try:
+        # 先取消当前任务
+        schedule.clear(task.task_id)
+        
+        # 计算下一次执行时间
+        from croniter import croniter
+        base = dt.now()
+        cron = croniter(task.cron_expr, base)
+        next_run = cron.get_next(dt)
+        delta_seconds = (next_run - base).total_seconds()
+        
+        # 创建新的调度
+        def create_cron_job(task_obj):
+            def cron_job():
+                run_inspection_bg(task_obj)
+                reschedule_cron_task(task_obj)
+            return cron_job
+        
+        schedule.every(int(delta_seconds)).seconds.do(
+            create_cron_job(task)
+        ).tag(task.task_id)
+        
+        logger.info(f"重新调度Cron任务: {task.name} ({task.task_id})，下次执行时间: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
+        
+    except Exception as e:
+        logger.error(f"重新调度任务失败: {task.name} ({task.task_id}), 错误: {e}")
 
 def start_scheduler():
     """启动调度器"""

@@ -1,37 +1,38 @@
 ---
+# kubelet服务状态检查规则
 id: node_kubelet_status
-name: Kubelet服务状态检查
-description: 检查节点上Kubelet服务是否正常运行，Kubelet是每个节点上的主要组件，负责管理容器和Pod
+name: kubelet服务状态检查
+description: 检查kubelet服务是否正常运行
 type: node
-category: system
+category: service
 severity: critical
 enabled: true
-tier: basic  # 基础层规则，适用于所有集群
+tier: basic
 
+# 规则配置
 config:
+  # 执行配置 - 直接返回服务状态
   execution:
-    command: "systemctl is-active kubelet"
-    parser: "service_status"
-    timeout: 30
-  thresholds:
-    expected_value: active
-  scope:
-    node_selector: {}
+    command: "systemctl is-active kubelet 2>/dev/null || echo 'inactive'"
+    timeout: 5
 
+  # 断言配置 - 直接使用命令输出
+  assertions:
+    - name: "kubelet服务正常"
+      condition: "output.strip() == 'active'"
+      severity: critical
+      description: "kubelet服务状态: {{ output }}"
+
+# 问题解决建议
 solution: |
-  Kubelet服务异常，请按以下步骤处理：
-  1. 使用命令启动服务: systemctl start kubelet
-  2. 查看最近的服务日志: journalctl -u kubelet -n 100
-  3. 检查证书是否正确: ls -la /var/lib/kubelet/pki/
-  4. 确认kubeconfig配置: cat /etc/kubernetes/kubelet.conf
-  5. 检查kubelet配置文件: cat /var/lib/kubelet/config.yaml
-  6. 验证kubelet进程参数: ps -ef | grep kubelet
-  7. 确认节点网络连接: ping api.server.ip
-  8. 必要时重启节点服务: systemctl daemon-reload && systemctl restart kubelet
+  kubelet服务异常处理：
+  1. 查看服务状态：systemctl status kubelet
+  2. 重启服务：systemctl restart kubelet
+  3. 查看日志：journalctl -u kubelet -f
+  4. 检查配置文件：/etc/kubernetes/kubelet/kubelet-config.yaml
 
+# 标签
 tags:
-  - kubernetes
-  - kubelet
   - service
-  - node
-  - core-service
+  - kubelet
+  - kubernetes

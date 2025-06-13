@@ -1,0 +1,118 @@
+---
+# OPA规则 - 非root用户检查 - 简化版本
+id: opa_run_as_non_root
+name: 容器非root用户检查
+description: 检查容器是否以非root用户运行，一个规则一个检查项
+type: opa
+category: security
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # 资源配置
+  resources:
+    - kind: Pod
+      apiVersion: v1
+      namespaced: true
+    - kind: Deployment
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: StatefulSet
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: DaemonSet
+      apiVersion: apps/v1
+      namespaced: true
+
+  # Rego规则配置
+  rego:
+    inline: |
+      package kubernetes
+      
+      # 获取Pod规范
+      get_pod_spec(resource) = spec if {
+          resource.kind == "Pod"
+          spec := resource.spec
+      }
+      
+      get_pod_spec(resource) = spec if {
+          resource.kind != "Pod"
+          spec := resource.spec.template.spec
+      }
+      
+      # 检查容器是否未明确指定非root用户运行
+      non_root_violations(containers, pod_security_context) = violations if {
+          violations := [container |
+              container := containers[_]
+              # 既没有容器级别的runAsNonRoot设置，也没有Pod级别的设置
+              not container.securityContext.runAsNonRoot
+              not pod_security_context.runAsNonRoot
+          ]
+      }
+      
+      # 定义违规
+      violations contains result if {
+          resource := input.resources[_]
+          spec := get_pod_spec(resource)
+          containers := array.concat(
+              default_array(spec.containers),
+              default_array(spec.initContainers)
+          )
+          pod_security_context := default_object(spec.securityContext)
+          violations := non_root_violations(containers, pod_security_context)
+          count(violations) > 0
+          
+          result := {
+              "kind": resource.kind,
+              "name": resource.metadata.name,
+              "namespace": resource.metadata.namespace,
+              "message": sprintf("%s '%s' in namespace '%s' has %d container(s) not running as non-root: %s", [
+                  resource.kind,
+                  resource.metadata.name,
+                  resource.metadata.namespace,
+                  count(violations),
+                  concat(", ", [c.name | c := violations[_]])
+              ])
+          }
+      }
+      
+      # 辅助函数
+      default_array(val) = result if {
+          val != null
+          result = val
+      }
+      
+      default_array(val) = [] if {
+          val == null
+      }
+      
+      default_object(val) = result if {
+          val != null
+          result = val
+      }
+      
+      default_object(val) = {} if {
+          val == null
+      }
+  
+  # 断言配置
+  assertions:
+    - name: "检查非root用户运行"
+      condition: "violation_count == 0"
+      severity: warning
+      description: "发现 {{ violation_count }} 个容器未明确指定非root用户运行"
+
+# 问题解决建议
+solution: |
+  容器安全用户配置：
+  1. 在securityContext中设置runAsNonRoot: true
+  2. 指定runAsUser为非0的用户ID
+  3. 在容器镜像中创建专用的非特权用户
+
+# 标签
+tags:
+  - security
+  - runAsNonRoot
+  - user

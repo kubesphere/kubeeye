@@ -1,0 +1,148 @@
+---
+# OPA规则 - 危险Linux能力检查
+id: opa_dangerous_capabilities
+name: 容器危险Linux能力检查
+description: 检查容器是否配置了危险的Linux能力，如CAP_SYS_ADMIN等可能带来安全风险的能力
+type: opa
+category: security
+severity: high
+enabled: true
+tier: standard
+
+# 规则配置
+config:
+  # 资源配置
+  resources:
+    - kind: Pod
+      apiVersion: v1
+      namespaced: true
+    - kind: Deployment
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: StatefulSet
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: DaemonSet
+      apiVersion: apps/v1
+      namespaced: true
+
+  # 范围配置
+  scope:
+    namespaces:
+      include: []  # 所有命名空间
+      exclude:
+        - kube-system
+        - kube-public
+
+  # Rego规则配置
+  rego:
+    inline: |
+      package kubernetes
+      
+      # 获取Pod规范
+      get_pod_spec(resource) = spec if {
+          resource.kind == "Pod"
+          spec := resource.spec
+      }
+      
+      get_pod_spec(resource) = spec if {
+          resource.kind != "Pod"
+          spec := resource.spec.template.spec
+      }
+      
+      # 危险的Linux能力列表
+      dangerous_caps := {
+          "SYS_ADMIN",
+          "SYS_TIME", 
+          "SYS_MODULE",
+          "NET_ADMIN",
+          "NET_RAW",
+          "SYS_PTRACE",
+          "DAC_OVERRIDE",
+          "SETUID",
+          "SETGID"
+      }
+      
+      # 检查容器的危险能力
+      dangerous_capabilities(containers) = dangerous if {
+          dangerous := [container |
+              container := containers[_]
+              security_context := default_object(container.securityContext)
+              capabilities := default_object(security_context.capabilities)
+              add_caps := default_array(capabilities.add)
+              container_dangerous_caps := [cap | 
+                  cap := add_caps[_]
+                  dangerous_caps[upper(cap)]
+              ]
+              count(container_dangerous_caps) > 0
+          ]
+      }
+      
+      # 违规规则 - 危险能力
+      violations contains result if {
+          resource := input.resources[_]
+          spec := get_pod_spec(resource)
+          containers := array.concat(
+              default_array(spec.containers),
+              default_array(spec.initContainers)
+          )
+          dangerous := dangerous_capabilities(containers)
+          count(dangerous) > 0
+          
+          result := {
+              "kind": resource.kind,
+              "name": resource.metadata.name,
+              "namespace": resource.metadata.namespace,
+              "message": sprintf("%s '%s' in namespace '%s' has %d container(s) with dangerous capabilities: %s", [
+                  resource.kind,
+                  resource.metadata.name,
+                  resource.metadata.namespace,
+                  count(dangerous),
+                  concat(", ", [c.name | c := dangerous[_]])
+              ])
+          }
+      }
+      
+      # 辅助函数
+      default_array(val) = result if {
+          val != null
+          result = val
+      }
+      
+      default_array(val) = [] if {
+          val == null
+      }
+      
+      default_object(val) = result if {
+          val != null
+          result = val
+      }
+      
+      default_object(val) = {} if {
+          val == null
+      }
+
+  # 断言配置
+  assertions:
+    - name: "检查危险能力"
+      condition: "violation_count == 0"
+      severity: high
+      description: "发现 {{ violation_count }} 个容器配置了危险的Linux能力"
+
+# 问题解决建议
+solution: |
+  
+  移除不必要的Linux能力，采用最小权限原则：
+  
+  ```yaml
+  securityContext:
+    capabilities:
+      drop: ["ALL"]  # 先移除所有能力
+      add: []        # 只添加绝对必需的能力
+  ```
+
+# 标签
+tags:
+  - security
+  - linux-capabilities
+  - container-security

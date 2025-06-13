@@ -1,0 +1,34 @@
+---
+# 集群节点可用性检查
+id: prom_cluster_node_availability
+name: 集群节点可用性检查
+description: 检查集群中可用节点的比例
+type: prometheus
+category: cluster
+severity: critical
+enabled: true
+tier: cluster
+
+# 规则配置
+config:
+  # Prometheus查询配置 - 可用节点比例
+  query: "(sum(up{job=\"node-exporter\"}) / count(up{job=\"node-exporter\"})) * 100"
+  
+  # 时间范围配置
+  time_range:
+    start: "now-5m"
+    end: "now"
+    step: "1m"
+
+  # 断言配置
+  assertions:
+    - name: "集群节点可用性检查"
+      condition: "max_value > 80"
+      severity: critical
+      description: "集群节点可用率: {{ max_value | round(2) }}%"
+
+# 标签
+tags:
+  - cluster
+  - availability
+  - nodes

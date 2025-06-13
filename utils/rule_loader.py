@@ -1,12 +1,12 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-规则加载器模块，仅支持新版规则格式
+新版规则加载器模块，支持断言格式
 """
 
 import yaml
 import logging
+import os
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 RULES_DIR = Path(__file__).parent.parent / "rules"
 
 class Rule:
-    """规则类，表示一个巡检规则，仅支持新格式"""
+    """规则类，表示一个巡检规则，支持断言格式"""
     
     def __init__(self, rule_data: Dict):
         """
-        初始化规则对象，仅支持新的规则格式
+        初始化规则对象，支持断言格式
         
         Args:
             rule_data: 规则数据字典
@@ -40,8 +40,11 @@ class Rule:
         
         # 核心配置
         self.config = rule_data.get('config', {})  # 统一的配置对象
-        self.thresholds = self.config.get('thresholds', rule_data.get('thresholds', {}))  # 阈值配置
-    
+        
+        # 断言模式特定字段
+        self.assertions = self.config.get('assertions', [])  # 断言配置列表
+        self.extractors = self.config.get('extractors', [])  # 提取器配置列表
+        
     def to_dict(self) -> Dict:
         """将规则转换为字典"""
         # 基础字段
@@ -55,124 +58,139 @@ class Rule:
             'enabled': self.enabled,
             'solution': self.solution,
             'tags': self.tags,
-            'tier': self.tier
+            'tier': self.tier,
+            'config': self.config
         }
         
-        # 添加配置
-        if self.config:
-            rule_dict['config'] = self.config
-            
         return rule_dict
+        
+    @property
+    def execution(self) -> Dict:
+        """获取执行配置"""
+        return self.config.get('execution', {})
 
-
-def load_rules(rule_type: Optional[str] = None, category: Optional[str] = None) -> List[Rule]:
+def load_rules(rule_type: str = None, include_disabled: bool = False) -> List[Rule]:
     """
-    加载规则
+    加载指定类型的规则
     
     Args:
-        rule_type: 规则类型，如果为 None 则加载所有类型
-        category: 规则类别，如果为 None 则加载所有类别
+        rule_type: 规则类型，如 node、opa、prometheus，为None则加载所有规则
+        include_disabled: 是否包含禁用规则
         
     Returns:
-        规则对象列表
+        规则列表
     """
     rules = []
     
     # 确定要搜索的目录
+    search_dirs = []
     if rule_type:
-        dirs_to_search = [RULES_DIR / rule_type]
+        # 只搜索指定类型的规则目录
+        type_dir = RULES_DIR / rule_type
+        if type_dir.exists():
+            search_dirs.append(type_dir)
     else:
-        dirs_to_search = [
-            RULES_DIR / 'node',
-            RULES_DIR / 'prometheus',
-            RULES_DIR / 'opa'
-        ]
+        # 搜索所有规则目录
+        for item in RULES_DIR.iterdir():
+            if item.is_dir() and not item.name.startswith('_') and not item.name == 'examples':
+                search_dirs.append(item)
     
-    # 处理每个目录
-    for rules_dir in dirs_to_search:
-        if not rules_dir.exists() or not rules_dir.is_dir():
-            logger.warning(f"规则目录不存在或不是目录: {rules_dir}")
-            continue
+    # 从每个目录加载规则
+    for rules_dir in search_dirs:
+        dir_rule_type = rules_dir.name  # 从目录名推断规则类型
         
-        # 处理每个YAML文件
-        for rule_file in rules_dir.glob('*.yaml'):
+        for file_path in rules_dir.glob('*.yaml'):
             try:
                 # 加载YAML文件
-                with open(rule_file, 'r', encoding='utf-8') as f:
+                with open(file_path, 'r', encoding='utf-8') as f:
                     rule_data = yaml.safe_load(f)
-                    
+                
+                # 确保规则数据是字典
+                if not isinstance(rule_data, dict):
+                    logger.warning(f"规则文件 {file_path} 格式错误，应为YAML字典")
+                    continue
+                
+                # 如果没有明确指定type，则从目录名推断
+                if 'type' not in rule_data:
+                    rule_data['type'] = dir_rule_type
+                
                 # 创建规则对象
-                if rule_data:
-                    rule = Rule(rule_data)
-                    
-                    # 应用过滤器
-                    if category and rule.category != category:
-                        continue
-                        
+                rule = Rule(rule_data)
+                
+                # 检查是否应该加入结果
+                if rule.enabled or include_disabled:
                     rules.append(rule)
-                    
+            
             except Exception as e:
-                logger.exception(f"加载规则文件时出错: {rule_file}")
+                logger.error(f"加载规则文件 {file_path} 失败: {str(e)}")
     
-    logger.info(f"加载了 {len(rules)} 条规则")
+    logger.info(f"已加载 {len(rules)} 条规则")
     return rules
 
-
-def get_rule_by_id(rule_id: str, rule_type: Optional[str] = None) -> Optional[Rule]:
+def load_rule_from_file(file_path: str) -> Optional[Rule]:
     """
-    根据ID获取规则
+    从文件加载单个规则
     
     Args:
-        rule_id: 规则ID
-        rule_type: 规则类型，如果提供可以加速搜索
+        file_path: 规则文件路径
         
     Returns:
-        规则对象或None
+        规则对象，如果加载失败则返回None
     """
-    rules = load_rules(rule_type=rule_type)
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            rule_data = yaml.safe_load(f)
+        
+        if not isinstance(rule_data, dict):
+            logger.warning(f"规则文件 {file_path} 格式错误，应为YAML字典")
+            return None
+        
+        # 如果没有明确指定type，则从文件路径推断
+        if 'type' not in rule_data:
+            # 尝试从路径中提取规则类型
+            path_parts = Path(file_path).parts
+            for part in path_parts:
+                if part in ('node', 'opa', 'prometheus'):
+                    rule_data['type'] = part
+                    break
+        
+        return Rule(rule_data)
     
-    for rule in rules:
-        if rule.id == rule_id:
-            return rule
-            
-    return None
+    except Exception as e:
+        logger.error(f"加载规则文件 {file_path} 失败: {str(e)}")
+        return None
 
 def save_rule(rule: Rule) -> bool:
     """
-    保存规则到YAML文件
+    保存规则到文件
     
     Args:
-        rule: 规则对象
+        rule: 要保存的规则对象
         
     Returns:
         是否保存成功
     """
-    if not rule.type or not rule.id:
-        logger.error("规则保存失败: 规则类型或ID为空")
-        return False
-    
-    # 确定保存路径
-    rule_dir = RULES_DIR / rule.type
-    if not rule_dir.exists():
-        try:
-            rule_dir.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            logger.error(f"创建规则目录失败: {e}")
-            return False
-    
-    # 文件名: <id>.yaml
-    rule_file = rule_dir / f"{rule.id}.yaml"
-    
     try:
-        # 将规则对象转换为字典并保存为YAML
-        with open(rule_file, 'w', encoding='utf-8') as f:
-            yaml.dump(rule.to_dict(), f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        # 确定规则类型目录
+        rule_type_dir = RULES_DIR / rule.type
         
-        logger.info(f"规则已保存: {rule_file}")
+        # 确保目录存在
+        if not rule_type_dir.exists():
+            rule_type_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 规则文件路径
+        file_path = rule_type_dir / f"{rule.id}.yaml"
+        
+        # 将规则转换为字典
+        rule_dict = rule.to_dict()
+        
+        # 保存到文件
+        with open(file_path, 'w', encoding='utf-8') as f:
+            yaml.dump(rule_dict, f, default_flow_style=False, allow_unicode=True)
+            
+        logger.info(f"规则 {rule.id} 已成功保存到文件 {file_path}")
         return True
+        
     except Exception as e:
-        logger.error(f"保存规则失败: {e}")
+        logger.error(f"保存规则 {rule.id} 失败: {str(e)}")
         return False
-
-# 导出符号
-__all__ = ["Rule", "load_rules", "get_rule_by_id", "save_rule"]

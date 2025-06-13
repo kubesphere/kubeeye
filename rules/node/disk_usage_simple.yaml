@@ -1,0 +1,38 @@
+---
+# 磁盘使用率检查规则
+id: node_disk_usage_simple
+name: 磁盘使用率检查
+description: 检查根分区磁盘使用率
+type: node
+category: storage
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # 执行配置 - 直接返回使用率百分比
+  execution:
+    command: "df -h / | tail -1 | awk '{print $5}' | sed 's/%//'"
+    timeout: 5
+
+  # 断言配置 - 直接使用命令输出
+  assertions:
+    - name: "磁盘使用率正常"
+      condition: "int(output) < 30"
+      severity: warning
+      description: "根分区使用率: {{ output }}%"
+
+# 问题解决建议
+solution: |
+  磁盘使用率过高处理：
+  1. 查看磁盘使用：df -h
+  2. 查找大文件：find / -type f -size +100M 2>/dev/null
+  3. 清理日志：journalctl --vacuum-time=30d
+  4. 清理临时文件：rm -rf /tmp/* /var/tmp/*
+
+# 标签
+tags:
+  - storage
+  - disk
+  - usage

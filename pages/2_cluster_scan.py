@@ -27,7 +27,6 @@ from utils.common import initialize_page
 from components.immediate_scan import render_immediate_scan_tab
 from components.scheduled_scan import render_scheduled_scan_tab
 from components.rule_management import render_rule_management_tab
-from components.update_inspector import render_system_info_tab
 
 # 初始化页面
 initialize_page(
@@ -37,8 +36,8 @@ initialize_page(
     page_subtitle="执行立即或定时巡检，管理巡检规则"
 )
 
-# 创建四个选项卡
-tab1, tab2, tab3, tab4 = st.tabs(["立即巡检", "定时巡检", "规则管理", "系统信息"])
+# 创建三个选项卡
+tab1, tab2, tab3 = st.tabs(["立即巡检", "定时巡检", "规则管理"])
 
 # 渲染立即巡检选项卡
 with tab1:
@@ -51,7 +50,3 @@ with tab2:
 # 渲染规则管理选项卡
 with tab3:
     render_rule_management_tab()
-    
-# 渲染系统信息选项卡
-with tab4:
-    render_system_info_tab()

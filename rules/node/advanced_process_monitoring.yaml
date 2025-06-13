@@ -1,0 +1,36 @@
+---
+# 僵尸进程检查规则
+id: node_zombie_processes
+name: 僵尸进程检查
+description: 检查节点上是否存在僵尸进程
+type: node
+category: process
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # 执行配置 - 直接返回数字
+  execution:
+    command: "ps aux | awk '$8 ~ /^Z/ { count++ } END { print count+0 }'"
+    timeout: 10
+
+  # 断言配置 - 直接使用命令输出
+  assertions:
+    - name: "无僵尸进程"
+      condition: "output == '0'"
+      severity: warning
+      description: "发现 {{ output }} 个僵尸进程"
+
+# 问题解决建议
+solution: |
+  僵尸进程处理：
+  1. 查看僵尸进程：ps aux | awk '$8 ~ /^Z/'
+  2. 找到父进程并重启
+  3. 必要时重启系统
+
+# 标签
+tags:
+  - process
+  - zombie

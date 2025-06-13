@@ -1,0 +1,37 @@
+---
+# 进程总数检查规则
+id: node_process_count
+name: 进程总数检查
+description: 检查节点进程总数是否过多
+type: node
+category: process
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # 执行配置 - 直接返回进程总数
+  execution:
+    command: "ps aux | grep -v grep | wc -l"
+    timeout: 10
+
+  # 断言配置 - 直接使用命令输出
+  assertions:
+    - name: "进程数量正常"
+      condition: "int(output) < 500"
+      severity: warning
+      description: "进程总数: {{ output }}"
+
+# 问题解决建议
+solution: |
+  进程数量过多处理：
+  1. 查看进程列表：ps aux
+  2. 按用户统计：ps aux | sort -k1 | uniq -c -f1
+  3. 查找异常进程：ps aux | grep <suspicious_process>
+  4. 检查定时任务：crontab -l
+
+# 标签
+tags:
+  - process
+  - count

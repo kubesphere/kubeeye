@@ -1,3 +1,4 @@
+# KubeEye dependencies
 streamlit>=1.32.0
 pandas>=2.0.0
 plotly>=5.18.0
@@ -9,3 +10,10 @@ openpyxl>=3.0.0
 cryptography>=41.0.0
 schedule>=1.2.0
 croniter>=1.4.1
+# GitOps support
+GitPython>=3.1.0
+# 增加的依赖
+regex>=2023.0.0
+typing-extensions>=4.0.0
+watchdog>=2.0.0
+starlette>=0.31.0

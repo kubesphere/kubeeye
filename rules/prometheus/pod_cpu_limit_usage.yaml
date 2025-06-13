@@ -1,0 +1,35 @@
+---
+# Pod CPU限制使用率检查
+id: prom_pod_cpu_limit_usage
+name: Pod CPU限制使用率检查
+description: 检查Pod的CPU使用率是否接近其限制值
+type: prometheus
+category: workload
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # Prometheus查询配置 - Pod CPU使用率相对于其限制
+  query: "(rate(container_cpu_usage_seconds_total{container!=\"\"}[5m]) / on(container,pod,namespace) kube_pod_container_resource_limits{resource=\"cpu\"}) * 100"
+  
+  # 时间范围配置
+  time_range:
+    start: "now-10m"
+    end: "now"
+    step: "1m"
+
+  # 断言配置
+  assertions:
+    - name: "Pod CPU限制使用率检查"
+      condition: "max_value < 85"
+      severity: warning
+      description: "Pod CPU使用率: {{ max_value | round(2) }}%"
+
+# 标签
+tags:
+  - pod
+  - cpu
+  - workload
+  - limits

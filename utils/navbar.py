@@ -6,7 +6,6 @@
 
 import streamlit as st
 from pathlib import Path
-from utils.image_utils import get_image_html
 from utils.version import VERSION
 
 def set_app_styles():

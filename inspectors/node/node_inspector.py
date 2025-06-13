@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-节点巡检器，继承自基类实现，使用新的解析器系统和通用规则处理器
+节点巡检器，支持并发执行优化
 """
 
 import logging
 import os
 import re
 import subprocess
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Any, Optional, Tuple, Union
 
 from inspectors.base_inspector import BaseInspector
@@ -15,318 +17,495 @@ from utils.inspection_result import InspectionResult
 from utils.rule_loader import Rule
 from utils.node_connection import NodeConnection
 
-# 导入解析器模块（如果有的话）
-try:
-    from inspectors.node.parsers import get_parser, list_parsers, parse_output
-except ImportError:
-    get_parser = None
-    list_parsers = lambda: []
-    parse_output = lambda name, stdout, rule, node, extra_data=None: None
-
 # 设置日志
 logger = logging.getLogger(__name__)
 
 class NodeInspector(BaseInspector):
-    """节点巡检器，用于执行SSH命令并基于规则进行检查"""
+    """节点巡检器，支持并发执行优化"""
     
-    def __init__(self, config: List[Dict[str, Any]]):
+    def __init__(self, config: List[Dict[str, Any]], enable_concurrent: bool = True, 
+                 max_workers: int = 5, timeout: int = 30):
         """
         初始化节点巡检器
         
         Args:
             config: 节点配置列表，包含连接信息
+            enable_concurrent: 是否启用并发执行，默认True
+            max_workers: 最大并发线程数，默认5个
+            timeout: 单个节点命令执行超时时间（秒），默认30秒
         """
         self.nodes = config
+        self.enable_concurrent = enable_concurrent
+        self.max_workers = min(max_workers, len(config)) if enable_concurrent else 1
+        self.timeout = timeout
+        
+        # 统计信息
+        self.stats = {
+            'total_rules': 0,
+            'total_node_executions': 0,
+            'successful_executions': 0,
+            'failed_executions': 0,
+            'total_time': 0
+        }
+        
         super().__init__({"nodes": config})
         
-        # 记录可用解析器
-        available_parsers = list_parsers()
-        logger.info(f"已加载的节点解析器: {available_parsers}")
+        logger.info(f"节点巡检器初始化完成 - 并发模式: {'开启' if enable_concurrent else '关闭'}, "
+                   f"最大并发数: {self.max_workers}, 超时: {timeout}秒")
     
     @property
     def inspector_type(self) -> str:
         return "node"
     
-    def _apply_rule(self, rule: Rule, context: Dict) -> Dict:
+    def _validate_rule_config(self, rule: Rule) -> List[str]:
         """
-        应用单条规则进行节点检查
+        验证规则配置是否有效
+        
+        Args:
+            rule: 规则对象
+            
+        Returns:
+            配置问题列表，如果没有问题则为空列表
+        """
+        issues = []
+        
+        # 检查必要的命令配置
+        command = self.get_rule_config(rule, 'execution.command', '')
+        if not command:
+            issues.append("缺少必要的执行命令(execution.command)")
+        
+        # 检查必要的断言配置
+        assertions = self.get_rule_config(rule, 'assertions', [])
+        if not assertions:
+            issues.append("缺少必要的断言配置(assertions)")
+            
+        return issues
+            
+    def _apply_rule(self, rule: Rule, context: Dict) -> List[Dict]:
+        """
+        应用单条规则进行节点检查（支持并发）
         
         Args:
             rule: 要应用的规则
             context: 检查上下文
             
         Returns:
-            检查结果
+            检查结果列表
         """
-        # 获取命令
+        rule_start_time = time.time()
+        
+        # 获取命令和断言配置
         command = self.get_rule_config(rule, 'execution.command', '')
-        if not command:
-            return self.rule_processor.format_rule_result(
-                rule=rule,
-                status='skipped',
-                description="规则未定义执行命令",
-                severity='info',
-                details="检查被跳过，因为规则没有定义有效的执行命令",
-                solution="检查规则定义中的execution.command"
-            )
+        assertions = self.get_rule_config(rule, 'assertions', [])
         
-        # 获取解析器配置
-        parser_name = self.get_rule_config(rule, 'execution.parser', '')
+        # 获取节点选择器并过滤节点
+        node_selector = self.get_rule_config(rule, 'scope.node_selector', {})
+        target_nodes = self._filter_nodes_by_selector(self.nodes, node_selector)
         
-        # 针对每个节点执行检查
-        node_results = []
-        for node in self.nodes:
-            node_context = {'node': node, **context}
-            try:
-                # 执行命令
-                output, error = self._execute_command(command, node)
-                
-                if error:
-                    # 命令执行错误
-                    node_result = self.rule_processor.format_rule_result(
-                        rule=rule,
-                        status='error',
-                        description=f"在节点 {node['ip']} 上执行检查命令失败",
-                        severity='warning',
-                        details=f"错误: {error}",
-                        solution="检查节点SSH连接和命令语法"
-                    )
-                else:
-                    # 解析输出并评估结果
-                    parsed_result = self._parse_output(output, rule, parser_name)
-                    node_result = self._evaluate_parsed_result(rule, parsed_result, node)
-                
-                # 添加节点信息
-                node_result['node'] = {'ip': node['ip'], 'name': node.get('name', node['ip'])}
-                node_results.append(node_result)
-            except Exception as e:
-                logger.exception(f"在节点 {node['ip']} 上执行规则 {rule.id} 时出错: {str(e)}")
-                # 添加错误结果
-                error_result = self.rule_processor.format_rule_result(
-                    rule=rule,
-                    status='error',
-                    description=f"在节点 {node['ip']} 上执行规则失败",
-                    severity='warning',
-                    details=f"错误: {str(e)}",
-                    solution="检查日志和节点状态"
-                )
-                error_result['node'] = {'ip': node['ip'], 'name': node.get('name', node['ip'])}
-                node_results.append(error_result)
+        if not target_nodes:
+            logger.warning(f"规则 {rule.id} 没有匹配的节点")
+            return []
         
-        # 汇总结果
-        if len(node_results) == 1:
-            # 单节点结果直接返回
-            return node_results[0]
+        # 选择执行模式：如果启用并发且节点数>1，使用并发；否则串行
+        if self.enable_concurrent and len(target_nodes) > 1:
+            logger.info(f"规则 {rule.id}: 将在 {len(target_nodes)} 个节点上并发执行（最大并发数: {self.max_workers}）")
+            node_results = self._execute_rule_concurrently(rule, command, assertions, target_nodes)
         else:
-            # 多节点结果需要合并
-            return self._merge_node_results(rule, node_results)
-        node_selector = self.get_rule_config(rule, 'scope.node_selector')
-        if node_selector:
-            # 这里可以实现更复杂的节点选择器逻辑
-            # 当前简单返回True，表示应用到所有节点
-            pass
-                
-        return True
+            logger.info(f"规则 {rule.id}: 将在 {len(target_nodes)} 个节点上串行执行")
+            node_results = self._execute_rule_sequentially(rule, command, assertions, target_nodes)
+        
+        rule_duration = time.time() - rule_start_time
+        logger.info(f"规则 {rule.id} 执行完成，耗时 {rule_duration:.2f}秒")
+        
+        # 更新统计信息
+        self.stats['total_rules'] += 1
+        self.stats['total_node_executions'] += len(target_nodes)
+        self.stats['total_time'] += rule_duration
+        
+        return node_results
     
-    def _apply_rule(self, rule: Rule, context: Dict) -> List[Dict]:
+    def _execute_rule_concurrently(self, rule: Rule, command: str, 
+                                 assertions: List[Dict], target_nodes: List[Dict]) -> List[Dict]:
         """
-        应用规则到所有节点
+        在多个节点上并发执行规则
         
         Args:
             rule: 规则对象
-            context: 上下文
+            command: 要执行的命令
+            assertions: 断言列表
+            target_nodes: 目标节点列表
             
         Returns:
             所有节点的检查结果列表
         """
-        results = []
+        node_results = []
         
-        for node in self.nodes:
-            try:
-                # 为每个节点单独创建连接
-                conn = NodeConnection(node)
-                success, message = conn.connect()
-                
-                if not success:
-                    results.append(
-                        self.rule_processor.format_rule_result(
-                            rule=rule,
-                            status='failed',
-                            description=f"无法连接到节点: {message}",
-                            severity='critical',
-                            details=f"节点 {node['ip']} 连接失败，可能是认证问题或网络不可达",
-                            solution="检查节点 SSH 配置、防火墙设置和网络连接"
-                        )
-                    )
-                    continue
-                    
-                # 应用规则
-                node_result = self._apply_rule_to_node(rule, conn, node)
-                if node_result:
-                    # 添加节点标识
-                    if 'name' in node_result:
-                        node_result['name'] = f"{node_result['name']} - {node['ip']}"
-                    results.append(node_result)
-                    
-                conn.close()
-            except Exception as e:
-                logger.exception(f"对节点 {node['ip']} 应用规则 {rule.id} 时出错")
-                results.append(
-                    self.rule_processor.format_rule_result(
-                        rule=rule,
-                        status='error',
-                        description=f"执行规则时发生错误: {str(e)}",
-                        severity='warning',
-                        details=f"节点 {node['ip']} 执行 {rule.name} 规则失败: {str(e)}",
-                        solution="检查日志和节点状态"
-                    )
+        # 使用线程池并发执行
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # 提交所有节点任务
+            future_to_node = {}
+            for node in target_nodes:
+                future = executor.submit(
+                    self._execute_rule_on_single_node,
+                    rule, command, assertions, node
                 )
+                future_to_node[future] = node
+            
+            # 收集结果
+            for future in as_completed(future_to_node, timeout=self.timeout * len(target_nodes)):
+                node = future_to_node[future]
+                node_name = node.get('name', node['ip'])
+                
+                try:
+                    result = future.result(timeout=self.timeout)
+                    node_results.append(result)
+                    self.stats['successful_executions'] += 1
+                    logger.debug(f"节点 {node_name} 执行完成")
+                    
+                except Exception as e:
+                    logger.error(f"节点 {node_name} 执行失败: {str(e)}")
+                    # 创建错误结果
+                    error_result = self._format_error_result(rule, 
+                        f"节点执行失败", str(e))
+                    error_result['name'] = f"{rule.name} - {node_name}"
+                    error_result['node'] = {'ip': node['ip'], 'name': node.get('name', node['ip'])}
+                    node_results.append(error_result)
+                    self.stats['failed_executions'] += 1
         
-        return results
+        return node_results
     
-    def _apply_rule_to_node(self, rule: Rule, conn: NodeConnection, node: Dict) -> Dict:
+    def _execute_rule_sequentially(self, rule: Rule, command: str, 
+                                 assertions: List[Dict], target_nodes: List[Dict]) -> List[Dict]:
         """
-        对单个节点应用规则
+        在多个节点上串行执行规则（原始方式）
         
         Args:
             rule: 规则对象
-            conn: 节点连接
+            command: 要执行的命令
+            assertions: 断言列表
+            target_nodes: 目标节点列表
+            
+        Returns:
+            所有节点的检查结果列表
+        """
+        node_results = []
+        
+        for node in target_nodes:
+            try:
+                result = self._execute_rule_on_single_node(rule, command, assertions, node)
+                node_results.append(result)
+                self.stats['successful_executions'] += 1
+                
+            except Exception as e:
+                node_name = node.get('name', node['ip'])
+                logger.error(f"节点 {node_name} 执行失败: {str(e)}")
+                
+                error_result = self._format_error_result(rule, 
+                    f"节点执行失败", str(e))
+                error_result['name'] = f"{rule.name} - {node_name}"
+                error_result['node'] = {'ip': node['ip'], 'name': node.get('name', node['ip'])}
+                node_results.append(error_result)
+                self.stats['failed_executions'] += 1
+        
+        return node_results
+    
+    def _execute_rule_on_single_node(self, rule: Rule, command: str, 
+                                   assertions: List[Dict], node: Dict) -> Dict:
+        """
+        在单个节点上执行规则
+        
+        Args:
+            rule: 规则对象
+            command: 要执行的命令
+            assertions: 断言列表
             node: 节点信息
             
         Returns:
-            节点的检查结果
+            该节点的检查结果
         """
-        # 处理依赖命令和准备上下文
-        preprocess_data = {}
-        
-        # 获取主命令和解析器
-        check_command = self.get_rule_config(rule, 'execution.command') or self.get_rule_config(rule, 'query')
-        parser_name = self.get_rule_config(rule, 'execution.parser') or self.get_rule_config(rule, 'custom_data.parser')
-        
-        # 处理依赖命令
-        dependencies = self.get_rule_config(rule, 'execution.dependencies') or {}
-        if isinstance(dependencies, dict):
-            for key, command in dependencies.items():
-                if command:
-                    success, stdout, _ = conn.execute_command(command)
-                    if success and stdout.strip():
-                        try:
-                            if key == 'cpu_cores':
-                                preprocess_data[key] = int(stdout.strip())
-                            else:
-                                preprocess_data[key] = stdout.strip()
-                        except ValueError:
-                            preprocess_data[key] = stdout.strip()
-        
-        # 获取CPU核心数命令
-        cpu_cores_cmd = self.get_rule_config(rule, 'custom_data.cpu_cores_command')
-        if cpu_cores_cmd:
-            success, cores_stdout, _ = conn.execute_command(cpu_cores_cmd)
-            if success and cores_stdout.strip():
-                try:
-                    preprocess_data['cpu_cores'] = int(cores_stdout.strip())
-                except ValueError:
-                    preprocess_data['cpu_cores'] = 1
-                    
-        # 处理其他预处理命令
-        preprocess_commands = self.get_rule_config(rule, 'custom_data.preprocess_commands') or {}
-        if isinstance(preprocess_commands, dict):
-            for key, command in preprocess_commands.items():
-                if command:
-                    success, stdout, _ = conn.execute_command(command)
-                    if success:
-                        preprocess_data[key] = stdout.strip()
-        
-        # 处理解析器配置
-        parser_config = self.get_rule_config(rule, 'execution.parser_config') or {}
-        for key, value in parser_config.items():
-            preprocess_data[key] = value
-        
-        if not check_command:
-            return self.rule_processor.format_rule_result(
-                rule=rule,
-                status='skipped',
-                description="规则未定义检查命令",
-                severity='info',
-                details="检查被跳过，因为规则未定义执行命令",
-                solution="检查规则定义"
-            )
+        node_name = node.get('name', node['ip'])
         
         # 执行命令
-        success, stdout, stderr = conn.execute_command(check_command)
+        output, error = self._execute_command(command, node)
         
-        if not success:
-            return self.rule_processor.format_rule_result(
-                rule=rule,
-                status='failed',
-                description="执行命令失败",
-                severity=rule.severity,
-                details=stderr,
-                solution=rule.solution if hasattr(rule, 'solution') else "检查节点状态"
-            )
-        
-        # 将预处理数据添加到规则上下文
-        rule_context = {'rule': rule, 'node': node, **preprocess_data}
-        
-        # 使用解析器解析输出
-        if parser_name:
-            # 解析输出
-            try:
-                parse_result = parse_output(parser_name, stdout, rule, node, preprocess_data)
-                if parse_result:
-                    return parse_result
-                else:
-                    # 解析器不存在或返回None
-                    logger.warning(f"解析器 '{parser_name}' 不存在或返回空结果")
-                    return self.rule_processor.format_rule_result(
-                        rule=rule,
-                        status='error',
-                        description=f"解析器错误: '{parser_name}' 不存在或返回空结果",
-                        severity='warning',
-                        details=f"规则 {rule.name} 指定的解析器 '{parser_name}' 不存在或返回空结果。\n原始输出: {stdout[:200]}{'...' if len(stdout) > 200 else ''}",
-                        solution="检查规则定义中的解析器名称是否正确，以及解析器是否已正确注册"
-                    )
-            except Exception as e:
-                logger.exception(f"解析输出失败: {str(e)}")
-                return self.rule_processor.format_rule_result(
-                    rule=rule,
-                    status='error',
-                    description=f"解析输出失败: {str(e)}",
-                    severity='warning',
-                    details=f"规则 {rule.name} 解析输出时出错: {str(e)}\n原始输出: {stdout[:200]}{'...' if len(stdout) > 200 else ''}",
-                    solution="检查解析器代码和输出格式"
-                )
-        
-        # 基本检查逻辑 (用于没有解析器的规则)
-        # 使用通用的阈值获取方法
-        expected_value = self.rule_processor.get_threshold_value(rule, 'expected_value')
+        if error:
+            # 命令执行错误
+            node_result = self._format_error_result(rule, 
+                f"命令执行失败", error)
+            node_result['name'] = f"{rule.name} - {node_name}"
+            node_result['node'] = {'ip': node['ip'], 'name': node.get('name', node['ip'])}
+        else:
+            # 准备变量字典 - 简化版本
+            variables = {
+                'output': output.strip(),  # 直接使用命令输出
+                'node_ip': node['ip'],
+                'node_name': node.get('name', node['ip'])
+            }
             
-        if expected_value is not None:
-            if stdout.strip() == expected_value:
-                return self.rule_processor.format_rule_result(
-                    rule=rule,
-                    status='passed',
-                    description="检查通过",
-                    severity='info',
-                    details=f"结果符合预期: {expected_value}",
-                    solution=""
-                )
-            else:
-                return self.rule_processor.format_rule_result(
-                    rule=rule,
-                    status='failed',
-                    description="检查失败",
-                    severity=rule.severity,
-                    details=f"结果不符合预期，预期: {expected_value}，实际: {stdout.strip()}",
-                    solution=rule.solution if hasattr(rule, 'solution') else "检查节点状态"
-                )
+            # 评估断言
+            node_result = self._evaluate_assertions(rule, assertions, variables, node)
         
-        # 默认情况
+        return node_result
+        
+        return node_results
+        
+    def _evaluate_assertions(self, rule: Rule, assertions: List[Dict], 
+                            variables: Dict[str, Any], node: Dict) -> Dict:
+        """
+        评估断言
+        
+        Args:
+            rule: 规则对象
+            assertions: 断言列表
+            variables: 变量字典
+            node: 节点信息
+            
+        Returns:
+            评估结果
+        """
+        # 评估所有断言
+        assertion_result = self.rule_processor.evaluate_assertions(assertions, variables)
+        
+        # 根据断言评估结果格式化检查结果
+        if assertion_result['passed']:
+            status = "passed"
+            severity = "info"
+            # 对于通过的检查，在描述中显示具体的检查结果
+            first_assertion = assertions[0] if assertions else {}
+            first_assertion_desc = first_assertion.get('description', '')
+            if first_assertion_desc:
+                # 渲染模板以显示具体值
+                from utils.assertion_evaluator import AssertionEvaluator
+                evaluator = AssertionEvaluator()
+                rendered_desc = evaluator._render_template(first_assertion_desc, variables)
+                description = f"{rule.name}: {rendered_desc}"
+            else:
+                description = f"{rule.name}: 当前值为 {variables.get('output', 'N/A')}"
+            details = "检查通过，系统状态正常"
+            solution = ""
+        else:
+            status = "failed"
+            severity = assertion_result['severity']
+            # 移除"断言失败"前缀，直接使用描述
+            description = assertion_result['description'].replace("断言失败: ", "")
+            
+            # 构建详细信息
+            failed_assertions = assertion_result['failed_assertions']
+            details = "检查失败详情:\n" + "\n".join(
+                [f"- {fa['name']}: {fa['description']}" for fa in failed_assertions]
+            )
+            solution = rule.solution
+        
+        # 格式化结果
+        result = self.rule_processor.format_rule_result(
+            rule=rule,
+            status=status,
+            description=description,
+            severity=severity,
+            details=details,
+            solution=solution
+        )
+        
+        # 修改名称以包含节点信息，方便UI显示
+        node_name = node.get('name', node['ip'])
+        result['name'] = f"{rule.name} - {node_name}"
+        
+        # 添加节点信息和变量信息
+        result['node'] = {'ip': node['ip'], 'name': node.get('name', node['ip'])}
+        result['variables'] = variables
+        result['assertions'] = {
+            'total': len(assertions),
+            'failed': len(assertion_result.get('failed_assertions', [])),
+            'failures': assertion_result.get('failed_assertions')
+        }
+        
+        return result
+
+    def _execute_command(self, command: str, node: Dict) -> Tuple[str, str]:
+        """
+        在节点上执行命令
+        
+        Args:
+            command: 要执行的命令
+            node: 节点信息
+            
+        Returns:
+            命令输出和错误信息的元组
+        """
+        try:
+            # 获取节点基本信息
+            ip = node.get('ip', 'unknown')
+            port = node.get('port', 22)
+            username = node.get('username', 'unknown')
+            node_name = node.get('name', ip)
+            
+            logger.info(f"正在连接节点 {node_name} ({ip}:{port}) 用户: {username}")
+
+            # 验证节点配置完整性
+            auth_type = node.get('auth_type', 'password')
+            if auth_type == 'password' and not node.get('password'):
+                error_msg = f"节点 {node_name} 配置错误: 使用密码认证但未提供密码"
+                logger.error(error_msg)
+                return "", error_msg
+            elif auth_type == 'key' and not node.get('key_path'):
+                error_msg = f"节点 {node_name} 配置错误: 使用密钥认证但未提供密钥路径"
+                logger.error(error_msg)
+                return "", error_msg
+            
+            # 简化命令显示（如果命令太长）
+            display_command = command[:100] + "..." if len(command) > 100 else command
+            logger.info(f"在节点 {node_name} 上执行命令: {display_command}")
+                
+            # 使用SSH执行命令
+            with NodeConnection(node) as conn:
+                if not conn.connected:
+                    error_msg = f"无法连接到节点 {node_name} ({ip}): SSH连接失败"
+                    logger.error(error_msg)
+                    return "", error_msg
+                    
+                success, stdout, stderr = conn.execute_command(command)
+                if success:
+                    logger.info(f"命令在节点 {node_name} 上执行成功，输出长度: {len(stdout)}")
+                    return stdout, ""
+                else:
+                    error_msg = f"命令执行失败: {stderr}"
+                    logger.error(f"节点 {node_name}: {error_msg}")
+                    return "", error_msg
+                    
+        except ConnectionError as e:
+            error_msg = f"网络连接错误: {str(e)}"
+            logger.error(f"连接节点 {node.get('name', node.get('ip'))} 失败: {error_msg}")
+            return "", error_msg
+        except TimeoutError as e:
+            error_msg = f"连接超时: {str(e)}"
+            logger.error(f"连接节点 {node.get('name', node.get('ip'))} 超时: {error_msg}")
+            return "", error_msg
+        except Exception as e:
+            error_msg = f"执行命令时发生意外错误: {str(e)}"
+            logger.error(f"节点 {node.get('name', node.get('ip'))}: {error_msg}", exc_info=True)
+            return "", error_msg
+            
+    def _filter_nodes_by_selector(self, nodes: List[Dict], node_selector: Dict) -> List[Dict]:
+        """
+        根据节点选择器过滤节点
+        
+        Args:
+            nodes: 节点列表
+            node_selector: 节点选择器配置
+            
+        Returns:
+            过滤后的节点列表
+        """
+        if not node_selector:
+            return nodes
+            
+        filtered_nodes = []
+        for node in nodes:
+            # 检查节点标签是否匹配选择器
+            node_labels = node.get('labels', {})
+            match = True
+            
+            for label_key, label_value in node_selector.items():
+                if label_key not in node_labels or str(node_labels[label_key]) != str(label_value):
+                    match = False
+                    break
+                    
+            if match:
+                filtered_nodes.append(node)
+                
+        return filtered_nodes
+
+    def _should_apply_rule(self, rule: Rule, context: Dict) -> bool:
+        """
+        判断规则是否应该应用于当前上下文
+        
+        Args:
+            rule: 规则
+            context: 上下文
+            
+        Returns:
+            是否应用规则
+        """
+        # 检查节点选择器
+        node_selector = self.get_rule_config(rule, 'scope.node_selector', {})
+        if not node_selector:
+            # 没有节点选择器，适用于所有节点
+            return True
+            
+        # 因为我们是在 _apply_rule 中遍历节点，所以这里只需要返回 True
+        # 实际的节点筛选会在 _apply_rule 中根据标签进行
+        return True
+    
+    def _format_error_result(self, rule: Rule, description: str, error_msg: str) -> Dict:
+        """格式化错误结果"""
         return self.rule_processor.format_rule_result(
             rule=rule,
-            status='unknown',
-            description="规则未定义解析方式",
-            severity='warning',
-            details=stdout,
-            solution="检查规则定义"
+            status="error",
+            description=description,
+            severity="error",
+            details=error_msg,
+            solution="请检查节点配置和网络连接"
+        )
+    
+    def get_execution_stats(self) -> Dict:
+        """获取执行统计信息"""
+        return {
+            **self.stats,
+            'average_time_per_rule': self.stats['total_time'] / max(self.stats['total_rules'], 1),
+            'success_rate': self.stats['successful_executions'] / max(self.stats['total_node_executions'], 1) * 100,
+            'concurrent_mode': self.enable_concurrent,
+            'max_workers': self.max_workers,
+            'timeout': self.timeout
+        }
+    
+    def print_execution_summary(self):
+        """打印执行摘要"""
+        stats = self.get_execution_stats()
+        
+        print(f"\n=== 节点巡检执行摘要 ===")
+        print(f"执行模式: {'并发' if stats['concurrent_mode'] else '串行'}")
+        print(f"总规则数: {stats['total_rules']}")
+        print(f"总节点执行数: {stats['total_node_executions']}")
+        print(f"成功执行数: {stats['successful_executions']}")
+        print(f"失败执行数: {stats['failed_executions']}")
+        print(f"成功率: {stats['success_rate']:.1f}%")
+        print(f"总耗时: {stats['total_time']:.2f}秒")
+        print(f"平均每规则耗时: {stats['average_time_per_rule']:.2f}秒")
+        if stats['concurrent_mode']:
+            print(f"最大并发数: {stats['max_workers']}")
+        print(f"超时设置: {stats['timeout']}秒")
+        print(f"========================\n")
+    
+    @classmethod
+    def create_optimized(cls, config: List[Dict[str, Any]]) -> 'NodeInspector':
+        """
+        创建优化配置的节点巡检器
+        
+        Args:
+            config: 节点配置列表
+            
+        Returns:
+            优化配置的节点巡检器实例
+        """
+        node_count = len(config)
+        
+        # 根据节点数量自适应配置
+        if node_count <= 3:
+            max_workers = node_count
+            timeout = 30
+        elif node_count <= 10:
+            max_workers = min(5, node_count)
+            timeout = 25
+        elif node_count <= 20:
+            max_workers = min(8, node_count)
+            timeout = 20
+        else:
+            max_workers = min(10, node_count)
+            timeout = 15
+        
+        return cls(
+            config=config,
+            enable_concurrent=node_count > 1,  # 单节点时不启用并发
+            max_workers=max_workers,
+            timeout=timeout
         )

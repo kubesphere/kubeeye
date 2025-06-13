@@ -14,7 +14,7 @@ from inspectors.opa.opa_inspector import OpaInspector
 from inspectors.node.node_inspector import NodeInspector
 
 from .common import create_rule_selection_tabs
-from components.ui import display_cluster_info, select_inspectors, display_inspection_results, display_summary_metrics, InspectionProgress
+from components.ui import display_cluster_info, select_inspectors, InspectionProgress
 
 def render_immediate_scan_tab():
     """渲染立即巡检标签页内容"""
@@ -40,10 +40,10 @@ def render_immediate_scan_tab():
             # 获取kubeconfig
             kubeconfig = cluster_config.get_kubeconfig()
             
-            # 选择巡检器
+            # 确定可用的巡检类型
             run_node_check, run_prometheus_check, run_opa_check = select_inspectors(nodes, prometheus_config, kubeconfig)
                 
-            # 使用RuleManager创建规则选择区域
+            # 使用新版RuleManager创建规则选择区域 - 直接展示所有可用规则类型的标签页
             from utils.rule_manager import RuleManager
             selected_node_rules, selected_prometheus_rules, selected_opa_rules = RuleManager.create_rule_selection_tabs(
                 run_node_check, run_prometheus_check, run_opa_check, key_suffix="_run"
@@ -53,9 +53,9 @@ def render_immediate_scan_tab():
             run_inspection = st.button("开始巡检", type="primary")
             
             if run_inspection:
-                # 检查是否选择了至少一个巡检类型
+                # 检查是否至少有一种巡检类型可用
                 if not (run_node_check or run_prometheus_check or run_opa_check):
-                    st.error("请选择至少一种巡检类型")
+                    st.error("没有可用的巡检类型，请检查集群配置")
                 else:
                     # 创建进度条和结果变量
                     progress = InspectionProgress()
@@ -118,40 +118,64 @@ def render_immediate_scan_tab():
                     
                     progress.complete()
                     
-                    # 合并所有巡检结果为一个统一报告
+                    # 保存巡检结果并提供查看选项
                     if all_results:
-                        # 创建结果展示
-                        st.subheader("巡检结果概览")
+                        # 自动保存结果
+                        from inspectors.controller import InspectionController
                         
-                        # 显示摘要信息
-                        display_summary_metrics(all_results)
+                        # 安全地获取集群配置字典
+                        try:
+                            if hasattr(cluster_config, 'get_dict'):
+                                config_dict = cluster_config.get_dict()
+                            else:
+                                # 如果没有get_dict方法，手动构建配置字典
+                                config_dict = {
+                                    'nodes': cluster_config.get_nodes() if hasattr(cluster_config, 'get_nodes') else [],
+                                    'prometheus': cluster_config.get_prometheus_config() if hasattr(cluster_config, 'get_prometheus_config') else {},
+                                    'opa': {'kubeconfig': cluster_config.get_kubeconfig() if hasattr(cluster_config, 'get_kubeconfig') else ''}
+                                }
+                        except Exception as e:
+                            st.error(f"获取集群配置失败: {e}")
+                            config_dict = {'nodes': [], 'prometheus': {}, 'opa': {'kubeconfig': ''}}
                         
-                        # 创建详细结果的标签页
-                        if len(all_results) > 1:
-                            result_tabs = st.tabs([f"{k.capitalize()}巡检结果" for k in all_results.keys()])
-                            
-                            # 填充每个标签页的内容
-                            for i, (key, result) in enumerate(all_results.items()):
-                                with result_tabs[i]:
-                                    display_inspection_results(key, result)
-                        else:
-                            # 如果只有一个巡检结果，直接显示
-                            key, result = next(iter(all_results.items()))
-                            display_inspection_results(key, result)
+                        controller = InspectionController(config_dict)
+                        result_path = controller.save_inspection_result(all_results, selected_cluster, "immediate")
                         
-                        # 保存结果按钮
-                        if st.button("保存巡检结果"):
-                            # 导入控制器并保存结果
-                            from inspectors.controller import InspectionController
-                            controller = InspectionController(cluster_config.get_dict())
-                            result_path = controller.save_inspection_result(all_results, selected_cluster)
-                            st.success(f"巡检结果已保存至: {result_path}")
-                            
-                            # 添加查看详细报告的按钮
-                            if st.button("查看详细报告"):
-                                st.session_state.last_result_path = result_path
-                                st.session_state.last_cluster_name = selected_cluster
+                        # 显示巡检完成状态
+                        st.success("✅ 巡检任务完成！")
+                        
+                        # 显示任务统计信息
+                        total_items = sum(len(result.items) for result in all_results.values())
+                        passed_count = sum(len([item for item in result.items if item.get('status') == 'passed']) for result in all_results.values())
+                        failed_count = sum(len([item for item in result.items if item.get('status') == 'failed']) for result in all_results.values())
+                        warning_count = sum(len([item for item in result.items if item.get('status') == 'warning']) for result in all_results.values())
+                        
+                        # 创建任务摘要卡片
+                        col1, col2, col3, col4 = st.columns(4)
+                        with col1:
+                            st.metric("总检查项", total_items)
+                        with col2:
+                            st.metric("✅ 通过", passed_count)
+                        with col3:
+                            st.metric("⚠️ 警告", warning_count)
+                        with col4:
+                            st.metric("❌ 失败", failed_count)
+                        
+                        # 结果文件信息
+                        st.info(f"📄 巡检结果已保存: `{result_path}`")
+                        
+                        # 设置会话状态，用于报告页面
+                        st.session_state.last_result_path = result_path
+                        st.session_state.last_cluster_name = selected_cluster
+                        
+                        # 操作按钮
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("📊 查看详细报告", type="primary", use_container_width=True):
                                 st.switch_page("pages/3_scan_report.py")
+                        with col2:
+                            if st.button("🔄 重新巡检", use_container_width=True):
+                                st.rerun()
                     else:
                         st.warning("未产生任何巡检结果")
                         

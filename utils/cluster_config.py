@@ -58,15 +58,12 @@ class ClusterConfig:
     
     def update_node(self, node_info: Dict) -> None:
         """添加或更新节点信息"""
-        # 创建一个节点信息的副本，以便进行加密
+        # 创建一个节点信息的副本
         node_copy = node_info.copy()
         
-        # 如果是密码认证且密码未加密，则加密密码
-        if (node_copy.get('auth_type') == 'password' and 
-            node_copy.get('password') and 
-            not node_copy.get('password_encrypted')):
-            node_copy['password'] = encrypt_password(node_copy['password'])
-            node_copy['password_encrypted'] = True
+        # 确保密码以明文方式存储
+        if node_copy.get('auth_type') == 'password' and node_copy.get('password'):
+            node_copy['password_encrypted'] = False
         
         # 更新节点信息
         for i, node in enumerate(self.config['nodes']):
@@ -90,17 +87,15 @@ class ClusterConfig:
     
     def update_prometheus(self, prometheus_info: Dict) -> None:
         """更新 Prometheus 配置"""
-        # 创建配置的副本以进行加密
+        # 创建配置的副本
         prometheus_copy = prometheus_info.copy()
         
-        # 加密密码和令牌
-        if prometheus_copy.get('password') and not prometheus_copy.get('password_encrypted'):
-            prometheus_copy['password'] = encrypt_password(prometheus_copy['password'])
-            prometheus_copy['password_encrypted'] = True
+        # 确保密码和令牌以明文方式存储
+        if prometheus_copy.get('password'):
+            prometheus_copy['password_encrypted'] = False
             
-        if prometheus_copy.get('token') and not prometheus_copy.get('token_encrypted'):
-            prometheus_copy['token'] = encrypt_password(prometheus_copy['token'])
-            prometheus_copy['token_encrypted'] = True
+        if prometheus_copy.get('token'):
+            prometheus_copy['token_encrypted'] = False
             
         self.config['prometheus'].update(prometheus_copy)
         self.save_config()
@@ -115,13 +110,10 @@ class ClusterConfig:
         nodes = []
         for node in self.config['nodes']:
             node_copy = node.copy()
-            # 如果密码是加密的，进行解密
-            if node_copy.get('auth_type') == 'password' and node_copy.get('password_encrypted'):
-                try:
-                    node_copy['password'] = decrypt_password(node_copy['password'])
-                    node_copy['password_encrypted'] = False
-                except Exception as e:
-                    logger.error(f"解密节点 {node_copy.get('ip')} 的密码时出错: {str(e)}")
+            # 明确删除密码加密标记，确保所有密码都被视为明文
+            if node_copy.get('password_encrypted'):
+                logger.info(f"节点 {node_copy.get('ip')} 的密码标记为加密，但将以明文方式使用")
+                node_copy['password_encrypted'] = False
             nodes.append(node_copy)
         return nodes
     
@@ -129,27 +121,35 @@ class ClusterConfig:
         """获取 Prometheus 配置"""
         prometheus_config = self.config['prometheus'].copy()
         
-        # 如果密码是加密的，进行解密
+        # 删除密码加密标记
         if prometheus_config.get('password_encrypted'):
-            try:
-                prometheus_config['password'] = decrypt_password(prometheus_config['password'])
-                prometheus_config['password_encrypted'] = False
-            except Exception as e:
-                logger.error(f"解密 Prometheus 密码时出错: {str(e)}")
+            logger.info("Prometheus密码标记为加密，但将以明文方式使用")
+            prometheus_config['password_encrypted'] = False
                 
-        # 如果令牌是加密的，进行解密
+        # 删除令牌加密标记
         if prometheus_config.get('token_encrypted'):
-            try:
-                prometheus_config['token'] = decrypt_password(prometheus_config['token'])
-                prometheus_config['token_encrypted'] = False
-            except Exception as e:
-                logger.error(f"解密 Prometheus 令牌时出错: {str(e)}")
+            logger.info("Prometheus令牌标记为加密，但将以明文方式使用")
+            prometheus_config['token_encrypted'] = False
                 
         return prometheus_config
     
     def get_kubeconfig(self) -> str:
         """获取 Kubeconfig"""
         return self.config['kubeconfig']
+    
+    def get_dict(self) -> Dict:
+        """获取集群配置的字典表示"""
+        config_dict = self.config.copy()
+        
+        # 添加便于巡检器使用的结构化数据
+        config_dict.update({
+            'nodes': self.get_nodes(),
+            'prometheus': self.get_prometheus_config(),
+            'kubeconfig': {'kubeconfig': self.get_kubeconfig()},  # 包装成字典
+            'opa': {'kubeconfig': self.get_kubeconfig()}  # OPA巡检器需要的格式
+        })
+        
+        return config_dict
 
 
 def list_clusters() -> List[str]:

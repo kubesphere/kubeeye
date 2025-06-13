@@ -1,0 +1,34 @@
+---
+# 集群CPU使用率检查
+id: prom_cluster_cpu_usage
+name: 集群CPU使用率检查
+description: 检查整个集群的CPU使用率
+type: prometheus
+category: cluster
+severity: warning
+enabled: true
+tier: cluster
+
+# 规则配置
+config:
+  # Prometheus查询配置 - 集群整体CPU使用率
+  query: "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)"
+  
+  # 时间范围配置
+  time_range:
+    start: "now-10m"
+    end: "now"
+    step: "1m"
+
+  # 断言配置
+  assertions:
+    - name: "集群CPU使用率检查"
+      condition: "max_value < 75"
+      severity: warning
+      description: "集群CPU使用率: {{ max_value | round(2) }}%"
+
+# 标签
+tags:
+  - cluster
+  - cpu
+  - performance

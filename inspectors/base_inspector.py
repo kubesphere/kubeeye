@@ -98,6 +98,18 @@ class BaseInspector(ABC):
         
         for rule in active_rules:
             try:
+                # 验证规则配置
+                validation_issues = self._validate_rule_config(rule)
+                if validation_issues:
+                    # 规则配置无效
+                    result.add_item(self._format_invalid_result(
+                        rule, 
+                        "规则配置无效", 
+                        f"以下配置问题阻止了规则执行: {', '.join(validation_issues)}"
+                    ))
+                    continue
+                    
+                # 检查规则是否适用当前环境    
                 if self._should_apply_rule(rule, context):
                     inspection_result = self._apply_rule(rule, context)
                     
@@ -108,15 +120,18 @@ class BaseInspector(ABC):
                                 result.add_item(item)
                         else:
                             result.add_item(inspection_result)
+                else:
+                    # 规则不适用于当前环境
+                    result.add_item(self._format_not_applicable_result(
+                        rule, 
+                        "规则不适用于当前环境"
+                    ))
             except Exception as e:
                 logger.exception(f"执行规则 {rule.id} 时出错: {str(e)}")
-                error_result = self.rule_processor.format_rule_result(
-                    rule=rule,
-                    status='error',
-                    description=f"执行规则时发生错误: {str(e)}",
-                    severity='warning',
-                    details=f"执行规则 {rule.name} 失败: {str(e)}",
-                    solution="检查日志和系统状态"
+                error_result = self._format_error_result(
+                    rule,
+                    f"执行规则时发生错误: {str(e)}",
+                    str(e)
                 )
                 result.add_item(error_result)
                 
@@ -149,6 +164,19 @@ class BaseInspector(ABC):
         # 子类可以覆盖此方法以实现更复杂的规则过滤
         return True
         
+    def _validate_rule_config(self, rule: Rule) -> List[str]:
+        """
+        验证规则配置是否有效
+        
+        Args:
+            rule: 规则对象
+            
+        Returns:
+            配置问题列表，如果没有问题则为空列表
+        """
+        # 子类应该重写此方法以实现特定规则类型的验证逻辑
+        return []
+        
     def get_rule_config(self, rule: Rule, path: str, default_value: Any = None) -> Any:
         """
         从规则中获取配置值，支持嵌套路径
@@ -162,3 +190,85 @@ class BaseInspector(ABC):
             配置值或默认值
         """
         return self.rule_processor.get_rule_config(rule, path, default_value)
+        
+    def _format_invalid_result(self, rule: Rule, description: str, details: str) -> Dict:
+        """
+        格式化配置无效的规则结果
+        
+        Args:
+            rule: 规则对象
+            description: 简要描述
+            details: 详细信息
+            
+        Returns:
+            格式化的结果字典
+        """
+        return self.rule_processor.format_rule_result(
+            rule=rule,
+            status='invalid',
+            description=description,
+            severity='warning',
+            details=details,
+            solution="请检查规则配置并修正问题"
+        )
+        
+    def _format_not_applicable_result(self, rule: Rule, reason: str) -> Dict:
+        """
+        格式化不适用规则结果
+        
+        Args:
+            rule: 规则对象
+            reason: 不适用原因
+            
+        Returns:
+            格式化的结果字典
+        """
+        return self.rule_processor.format_rule_result(
+            rule=rule,
+            status='not_applicable',
+            description=f"规则不适用: {reason}",
+            severity='info',
+            details=f"规则 {rule.name} 不适用于当前环境: {reason}",
+            solution=""
+        )
+        
+    def _format_skipped_result(self, rule: Rule, reason: str) -> Dict:
+        """
+        格式化跳过的规则结果（用户主动选择跳过）
+        
+        Args:
+            rule: 规则对象
+            reason: 跳过原因
+            
+        Returns:
+            格式化的结果字典
+        """
+        return self.rule_processor.format_rule_result(
+            rule=rule,
+            status='skipped',
+            description=reason,
+            severity='info',
+            details=f"规则 {rule.name} 被跳过: {reason}",
+            solution=""
+        )
+        
+    def _format_error_result(self, rule: Rule, description: str, error: str) -> Dict:
+        """
+        格式化错误的规则结果
+        
+        Args:
+            rule: 规则对象
+            description: 错误描述
+            error: 错误详情
+            
+        Returns:
+            格式化的结果字典
+        """
+        return self.rule_processor.format_rule_result(
+            rule=rule,
+            status='error',
+            description=description,
+            severity='warning',
+            details=f"规则 {rule.name} 执行出错: {error}",
+            solution="检查日志和系统状态"
+        )

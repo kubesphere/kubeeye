@@ -1,0 +1,43 @@
+---
+# 磁盘使用率检查规则
+id: prom_disk_usage_warning
+name: 节点磁盘使用率检查
+description: 检查节点根分区磁盘使用率
+type: prometheus
+category: storage
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # Prometheus查询配置 - 磁盘使用率
+  query: "100 - ((node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"rootfs\"} * 100) / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"rootfs\"})"
+  
+  # 时间范围配置
+  time_range:
+    start: "now-10m"  # 10分钟前
+    end: "now"        # 当前时间
+    step: "1m"        # 1分钟间隔
+  
+  # 断言配置 - 简化为单个检查
+  assertions:
+    - name: "磁盘使用率正常"
+      condition: "max_value < 85"
+      severity: warning
+      description: "磁盘使用率: {{ max_value | round(2) }}%"
+
+# 问题解决建议
+solution: |
+  磁盘使用率过高处理：
+  1. 查看磁盘使用：df -h
+  2. 清理日志：kubectl logs <pod> --previous | head
+  3. 清理未使用镜像：docker system prune -f
+  4. 清理临时文件和缓存
+  5. 扩容磁盘或添加存储
+
+# 标签
+tags:
+  - disk
+  - storage
+  - monitoring

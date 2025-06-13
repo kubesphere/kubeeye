@@ -1,0 +1,116 @@
+---
+# OPA规则 - 容器镜像标签检查
+id: opa_image_tags
+name: 容器镜像标签检查
+description: 检查容器镜像标签是否符合规范，包括latest标签检查和标签格式验证
+type: opa
+category: security
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # 资源配置 - 指定要检查的资源类型
+  resources:
+    - kind: Pod
+      apiVersion: v1
+      namespaced: true
+    - kind: Deployment
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: DaemonSet
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: StatefulSet
+      apiVersion: apps/v1
+      namespaced: true
+
+  # Rego规则配置 - 内联规则定义
+  rego:
+    inline: |
+      package kubernetes
+      
+      # 获取Pod规范
+      get_pod_spec(resource) = spec if {
+          resource.kind == "Pod"
+          spec := resource.spec
+      }
+      
+      get_pod_spec(resource) = spec if {
+          resource.kind != "Pod"
+          spec := resource.spec.template.spec
+      }
+      
+      # 检查容器镜像是否使用latest标签
+      latest_image_containers(containers) = latest if {
+          latest := [container |
+              container := containers[_]
+              image := container.image
+              is_latest_tag(image)
+          ]
+      }
+      
+      # 检查镜像是否使用latest标签
+      is_latest_tag(image) if {
+          endswith(image, ":latest")
+      }
+      
+      is_latest_tag(image) if {
+          not contains(image, ":")
+      }
+      
+      # 定义违规
+      violations contains result if {
+          resource := input.resources[_]
+          spec := get_pod_spec(resource)
+          containers := array.concat(
+              default_array(spec.containers),
+              default_array(spec.initContainers)
+          )
+          latest := latest_image_containers(containers)
+          count(latest) > 0
+          
+          result := {
+              "kind": resource.kind,
+              "name": resource.metadata.name,
+              "namespace": resource.metadata.namespace,
+              "message": sprintf("%s '%s' in namespace '%s' has %d container(s) using latest tag: %s", [
+                  resource.kind,
+                  resource.metadata.name,
+                  resource.metadata.namespace,
+                  count(latest),
+                  concat(", ", [sprintf("%s(%s)", [c.name, c.image]) | c := latest[_]])
+              ])
+          }
+      }
+      
+      # 辅助函数
+      default_array(val) = result if {
+          val != null
+          result = val
+      }
+      
+      default_array(val) = [] if {
+          val == null
+      }
+  
+  # 断言配置 - 简化为单个检查
+  assertions:
+    - name: "检查是否有使用latest标签的镜像"
+      condition: "violation_count == 0"
+      severity: warning
+      description: "发现 {{ violation_count }} 个资源使用了latest标签镜像"
+
+# 问题解决建议
+solution: |
+  使用latest标签的镜像可能导致部署不稳定，建议：
+  1. 为所有容器镜像指定明确的版本标签，如v1.2.3
+  2. 避免在生产环境中使用latest标签
+  3. 建立镜像版本管理策略
+
+# 标签
+tags:
+  - images
+  - security
+  - best-practice

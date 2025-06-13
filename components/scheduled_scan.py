@@ -13,7 +13,7 @@ from utils.schedule_manager import (
 
 from .common import create_rule_selection_tabs, create_rule_selection_in_form
 # 导入UI组件
-from components.ui import display_cluster_info, InspectionProgress, display_inspection_results, display_summary_metrics
+from components.ui import display_cluster_info, InspectionProgress
 
 def render_scheduled_scan_tab():
     """渲染定时巡检标签页内容"""
@@ -181,25 +181,16 @@ def render_task_list_tab(tasks):
                             if success:
                                 st.success(f"任务 {selected_task.name} 已成功执行")
                                 
-                                # 显示巡检结果
+                                # 简化的结果展示
                                 if results:
-                                    st.subheader("巡检结果概览")
+                                    total_items = sum(len(result.items) for result in results.values())
+                                    st.info(f"✅ 巡检完成，检查了 {total_items} 个项目")
+                                    st.info(f"📄 {message}")
                                     
-                                    # 显示摘要信息
-                                    display_summary_metrics(results)
-                                    
-                                    # 创建详细结果的标签页
-                                    if len(results) > 1:
-                                        result_tabs = st.tabs([f"{k.capitalize()}巡检结果" for k in results.keys()])
-                                        
-                                        # 填充每个标签页的内容
-                                        for i, (key, result) in enumerate(results.items()):
-                                            with result_tabs[i]:
-                                                display_inspection_results(key, result)
-                                    else:
-                                        # 如果只有一个巡检结果，直接显示
-                                        key, result = next(iter(results.items()))
-                                        display_inspection_results(key, result)
+                                    # 提供跳转到报告页面的按钮
+                                    if st.button("📊 查看详细报告", key="view_scheduled_report"):
+                                        st.switch_page("pages/3_scan_report.py")
+                                
                                 st.rerun()
                             else:
                                 st.error(f"执行任务失败: {message}")
@@ -330,23 +321,22 @@ def render_create_task_tab():
         prometheus_config = cluster_config.get_prometheus_config() if cluster_config else None
         kubeconfig = cluster_config.get_kubeconfig() if cluster_config else None
         
-        check_boxes_col1, check_boxes_col2, check_boxes_col3 = st.columns(3)
-        with check_boxes_col1:
-            node_check = st.checkbox("启用节点状态巡检", value=True)
-        with check_boxes_col2:
-            prometheus_check = st.checkbox("启用 Prometheus 指标巡检", value=prometheus_config.get('enabled', False) if prometheus_config else False, disabled=not prometheus_config or not prometheus_config.get('enabled', False))
-        with check_boxes_col3:
-            opa_check = st.checkbox("启用 OPA 合规性巡检", value=bool(kubeconfig), disabled=not kubeconfig)
+        # 确定哪些巡检类型可用
+        node_check = bool(cluster_config and cluster_config.get_nodes())
+        prometheus_check = bool(prometheus_config and prometheus_config.get('enabled', False))
+        opa_check = bool(kubeconfig)
+        
         selected_node_rules = []
         selected_prometheus_rules = []
         selected_opa_rules = []
-        if node_check or prometheus_check or opa_check:
-            from utils.rule_manager import RuleManager
-            
-            # 使用RuleManager统一处理规则选择
-            selected_node_rules, selected_prometheus_rules, selected_opa_rules = RuleManager.create_rule_selection_tabs(
-                node_check, prometheus_check, opa_check, "_schedule"
-            )
+        
+        # 使用RuleManager创建规则选择标签页
+        from utils.rule_manager import RuleManager
+        
+        # 直接创建规则选择标签页，让用户在每个标签页中选择规则
+        selected_node_rules, selected_prometheus_rules, selected_opa_rules = RuleManager.create_rule_selection_tabs(
+            node_check, prometheus_check, opa_check, "_schedule", in_form=True
+        )
         st.divider()
         st.divider()
         # 任务启用状态

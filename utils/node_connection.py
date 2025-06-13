@@ -6,6 +6,7 @@
 
 import paramiko
 import socket
+import logging
 from typing import Dict, List, Tuple, Optional
 import os
 from pathlib import Path
@@ -31,6 +32,16 @@ class NodeConnection:
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.connected = False
     
+    def __enter__(self):
+        """上下文管理器入口，连接到节点并返回自身"""
+        self.connect()
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """上下文管理器退出，关闭连接"""
+        self.close()
+        return False  # 让异常正常传播
+    
     def connect(self) -> Tuple[bool, str]:
         """
         连接到节点
@@ -39,13 +50,21 @@ class NodeConnection:
             成功连接时返回 (True, "")，失败时返回 (False, error_message)
         """
         try:
+            # 记录连接信息
+            logging.info(f"正在连接到节点: {self.node_info['ip']}:{self.node_info['port']} 用户名: {self.node_info['username']}")
+            
+            # 确保我们不会要求交互式输入密码
+            # 设置look_for_keys=False可以避免Paramiko尝试使用SSH代理或寻找密钥文件
+            # 设置allow_agent=False可以避免使用SSH代理
             if self.node_info['auth_type'] == 'password':
                 self.client.connect(
                     hostname=self.node_info['ip'],
                     port=int(self.node_info['port']),
                     username=self.node_info['username'],
                     password=self.node_info['password'],
-                    timeout=10
+                    timeout=10,
+                    look_for_keys=False,
+                    allow_agent=False
                 )
             else:  # key-based auth
                 key_path = self.node_info['key_path']
@@ -58,7 +77,9 @@ class NodeConnection:
                     port=int(self.node_info['port']),
                     username=self.node_info['username'],
                     pkey=key,
-                    timeout=10
+                    timeout=10,
+                    look_for_keys=False,
+                    allow_agent=False
                 )
             
             self.connected = True
@@ -88,8 +109,25 @@ class NodeConnection:
                 return False, "", message
         
         try:
+            # 执行命令并等待完成
             stdin, stdout, stderr = self.client.exec_command(command, timeout=60)
-            return True, stdout.read().decode('utf-8'), stderr.read().decode('utf-8')
+            
+            # 关闭标准输入
+            stdin.close()
+            
+            # 读取标准输出和标准错误
+            stdout_data = stdout.read().decode('utf-8')
+            stderr_data = stderr.read().decode('utf-8')
+            
+            # 等待命令完成并获取退出状态码
+            exit_status = stdout.channel.recv_exit_status()
+            
+            # 确保所有通道关闭
+            stdout.close()
+            stderr.close()
+            
+            success = exit_status == 0
+            return success, stdout_data, stderr_data
         except Exception as e:
             return False, "", str(e)
     

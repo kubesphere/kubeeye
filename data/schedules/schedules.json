@@ -1,1 +1,173 @@
-[]
+[
+  {
+    "task_id": "task_1749734822",
+    "cluster": "demo",
+    "name": "你好",
+    "description": "",
+    "cron_expr": "",
+    "enabled": false,
+    "rules": {
+      "node": {
+        "enabled": true,
+        "rules": [
+          "node_memory_usage_simple",
+          "node_load_average_simple",
+          "node_zombie_processes",
+          "node_kubelet_status",
+          "node_disk_usage_simple",
+          "node_process_count"
+        ]
+      },
+      "prometheus": {
+        "enabled": true,
+        "rules": [
+          "prom_cluster_node_availability",
+          "prom_pod_running_ratio",
+          "prom_namespace_resource_quota",
+          "prom_node_pod_capacity",
+          "prom_cluster_cpu_usage",
+          "prom_pod_cpu_limit_usage",
+          "prom_disk_usage_warning",
+          "prom_pod_restart_rate",
+          "prom_memory_usage_warning",
+          "prom_memory_usage_critical",
+          "prom_pod_memory_limit_usage",
+          "prom_cpu_usage_critical",
+          "prom_cpu_usage_warning",
+          "prom_cluster_memory_usage"
+        ]
+      },
+      "opa": {
+        "enabled": true,
+        "rules": [
+          "opa_dangerous_capabilities",
+          "opa_host_network",
+          "opa_run_as_non_root",
+          "opa_image_tags",
+          "opa_host_path",
+          "opa_privileged_container",
+          "opa_resource_limits_check"
+        ]
+      }
+    },
+    "task_type": "once",
+    "last_run": "2025-06-12T21:32:06.952720",
+    "last_status": "running",
+    "created_at": "2025-06-12T21:27:02.092398",
+    "run_datetime": "2025-06-12 21:30"
+  },
+  {
+    "task_id": "task_1749735127",
+    "cluster": "demo",
+    "name": "你好",
+    "description": "",
+    "cron_expr": "",
+    "enabled": false,
+    "rules": {
+      "node": {
+        "enabled": true,
+        "rules": [
+          "node_memory_usage_simple",
+          "node_load_average_simple",
+          "node_zombie_processes",
+          "node_kubelet_status",
+          "node_disk_usage_simple",
+          "node_process_count"
+        ]
+      },
+      "prometheus": {
+        "enabled": true,
+        "rules": [
+          "prom_cluster_node_availability",
+          "prom_pod_running_ratio",
+          "prom_namespace_resource_quota",
+          "prom_node_pod_capacity",
+          "prom_cluster_cpu_usage",
+          "prom_pod_cpu_limit_usage",
+          "prom_disk_usage_warning",
+          "prom_pod_restart_rate",
+          "prom_memory_usage_warning",
+          "prom_memory_usage_critical",
+          "prom_pod_memory_limit_usage",
+          "prom_cpu_usage_critical",
+          "prom_cpu_usage_warning",
+          "prom_cluster_memory_usage"
+        ]
+      },
+      "opa": {
+        "enabled": true,
+        "rules": [
+          "opa_dangerous_capabilities",
+          "opa_host_network",
+          "opa_run_as_non_root",
+          "opa_image_tags",
+          "opa_host_path",
+          "opa_privileged_container",
+          "opa_resource_limits_check"
+        ]
+      }
+    },
+    "task_type": "once",
+    "last_run": null,
+    "last_status": null,
+    "created_at": "2025-06-12T21:32:07.263097",
+    "run_datetime": "2025-06-12 21:30"
+  },
+  {
+    "task_id": "task_1749735264",
+    "cluster": "demo",
+    "name": "测试",
+    "description": "",
+    "cron_expr": "35 21 * * *",
+    "enabled": true,
+    "rules": {
+      "node": {
+        "enabled": true,
+        "rules": [
+          "node_memory_usage_simple",
+          "node_load_average_simple",
+          "node_zombie_processes",
+          "node_kubelet_status",
+          "node_disk_usage_simple",
+          "node_process_count"
+        ]
+      },
+      "prometheus": {
+        "enabled": true,
+        "rules": [
+          "prom_cluster_node_availability",
+          "prom_pod_running_ratio",
+          "prom_namespace_resource_quota",
+          "prom_node_pod_capacity",
+          "prom_cluster_cpu_usage",
+          "prom_pod_cpu_limit_usage",
+          "prom_disk_usage_warning",
+          "prom_pod_restart_rate",
+          "prom_memory_usage_warning",
+          "prom_memory_usage_critical",
+          "prom_pod_memory_limit_usage",
+          "prom_cpu_usage_critical",
+          "prom_cpu_usage_warning",
+          "prom_cluster_memory_usage"
+        ]
+      },
+      "opa": {
+        "enabled": true,
+        "rules": [
+          "opa_dangerous_capabilities",
+          "opa_host_network",
+          "opa_run_as_non_root",
+          "opa_image_tags",
+          "opa_host_path",
+          "opa_privileged_container",
+          "opa_resource_limits_check"
+        ]
+      }
+    },
+    "task_type": "cron",
+    "last_run": "2025-06-12T21:42:29.162161",
+    "last_status": "success",
+    "created_at": "2025-06-12T21:34:24.720221",
+    "run_datetime": null
+  }
+]

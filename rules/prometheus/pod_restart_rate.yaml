@@ -1,0 +1,35 @@
+---
+# Pod重启率检查
+id: prom_pod_restart_rate
+name: Pod重启率检查
+description: 检查Pod的重启频率是否异常
+type: prometheus
+category: stability
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # Prometheus查询配置 - Pod重启次数增长率
+  query: "increase(kube_pod_container_status_restarts_total[10m])"
+  
+  # 时间范围配置
+  time_range:
+    start: "now-10m"
+    end: "now"
+    step: "1m"
+
+  # 断言配置
+  assertions:
+    - name: "Pod重启率检查"
+      condition: "max_value < 3"
+      severity: warning
+      description: "Pod重启次数: {{ max_value | round(0) }}次/10分钟"
+
+# 标签
+tags:
+  - pod
+  - stability
+  - restart
+  - workload

@@ -42,12 +42,16 @@ initialize_page(
 # 加载集群列表
 clusters = list_clusters()
 
-# 加载规则数据
+# 加载规则数据 - 所有规则现在都使用统一的断言格式
 node_rules = load_rules('node')
 prometheus_rules = load_rules('prometheus')
 opa_rules = load_rules('opa')
 
+# 计算总规则数
 total_rules = len(node_rules) + len(prometheus_rules) + len(opa_rules)
+
+# 断言系统已经是默认系统
+using_assertion_system = True
 
 # 设置强调样式，增强视觉效果，更加和谐的色彩
 st.markdown("""
@@ -297,3 +301,7 @@ with footer_col2:
     
     持续开发中，欢迎提供功能建议和使用反馈，共同改进本工具。
     """)
+    
+    # 显示断言系统信息
+    if 'using_assertion_system' in locals() and using_assertion_system:
+        st.info("✨ **新功能**: 基于断言的规则系统已启用！了解更多请查看 [断言系统文档](/docs/assertion_system.md) 和 [迁移指南](/docs/rule_migration_guide.md)。")

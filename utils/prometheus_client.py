@@ -62,24 +62,8 @@ class PrometheusClient:
         if time_param:
             params['time'] = time_param
             
-        try:
-            response = requests.get(
-                f"{self.url}/api/v1/query",
-                headers=self._get_headers(),
-                params=params,
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                return response.json()
-            else:
-                return {
-                    'status': 'error',
-                    'error': f"查询失败: HTTP {response.status_code}",
-                    'detail': response.text
-                }
-        except requests.exceptions.RequestException as e:
-            return {'status': 'error', 'error': f"请求异常: {str(e)}"}
+        # 使用带重试的请求
+        return self._request_with_retry(f"{self.url}/api/v1/query", params)
     
     def query_range(self, query_expr: str, start_time: datetime, 
                    end_time: datetime, step: str = "15s") -> Dict:
@@ -105,62 +89,110 @@ class PrometheusClient:
             'step': step
         }
         
-        try:
-            response = requests.get(
-                f"{self.url}/api/v1/query_range",
-                headers=self._get_headers(),
-                params=params,
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                return response.json()
-            else:
-                return {
-                    'status': 'error',
-                    'error': f"查询失败: HTTP {response.status_code}",
-                    'detail': response.text
-                }
-        except requests.exceptions.RequestException as e:
-            return {'status': 'error', 'error': f"请求异常: {str(e)}"}
+        # 使用带重试的请求
+        return self._request_with_retry(f"{self.url}/api/v1/query_range", params)
     
     def alerts(self) -> Dict:
         """获取当前触发的告警"""
         if not self.enabled or not self.url:
             return {'status': 'error', 'error': 'Prometheus 未配置或未启用'}
         
-        try:
-            response = requests.get(
-                f"{self.url}/api/v1/alerts",
-                headers=self._get_headers(),
-                timeout=30
-            )
+        # 使用带重试的请求
+        return self._request_with_retry(f"{self.url}/api/v1/alerts")
             
-            if response.status_code == 200:
-                return response.json()
-            else:
-                return {
-                    'status': 'error',
-                    'error': f"获取告警失败: HTTP {response.status_code}",
-                    'detail': response.text
-                }
-        except requests.exceptions.RequestException as e:
-            return {'status': 'error', 'error': f"请求异常: {str(e)}"}
-    
+    def _request_with_retry(self, url: str, params: Dict = None, max_retries: int = 3) -> Dict:
+        """
+        执行带重试的 Prometheus API 请求
+        
+        Args:
+            url: API URL
+            params: 请求参数
+            max_retries: 最大重试次数
+            
+        Returns:
+            响应结果
+        """
+        retries = 0
+        last_error = None
+        
+        # 根据URL协议决定是否验证SSL
+        verify_ssl = url.lower().startswith('https://')
+        
+        # 如果是HTTP请求，禁用不安全请求的警告
+        if not verify_ssl:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
+        while retries < max_retries:
+            try:
+                response = requests.get(
+                    url,
+                    headers=self._get_headers(),
+                    params=params,
+                    timeout=30,
+                    verify=verify_ssl  # 根据协议决定是否验证SSL
+                )
+                
+                if response.status_code == 200:
+                    return response.json()
+                elif response.status_code == 503 or response.status_code >= 500:
+                    # 服务不可用，尝试重试
+                    retries += 1
+                    if retries < max_retries:
+                        time.sleep(1)  # 重试前等待1秒
+                        continue
+                    else:
+                        return {
+                            'status': 'error',
+                            'error': f"多次重试后仍连接失败: HTTP {response.status_code}",
+                            'detail': response.text
+                        }
+                else:
+                    return {
+                        'status': 'error',
+                        'error': f"查询失败: HTTP {response.status_code}",
+                        'detail': response.text
+                    }
+            except requests.exceptions.Timeout:
+                # 超时重试
+                retries += 1
+                if retries < max_retries:
+                    time.sleep(1)
+                    continue
+                else:
+                    return {'status': 'error', 'error': "请求超时，多次重试无效"}
+            except requests.exceptions.RequestException as e:
+                last_error = str(e)
+                retries += 1
+                if retries < max_retries:
+                    time.sleep(1)
+                    continue
+                else:
+                    return {'status': 'error', 'error': f"请求异常: {last_error}"}
+                    
     def test_connection(self) -> Dict:
         """测试与 Prometheus 的连接"""
-        if not self.url:
-            return {'status': 'error', 'error': 'Prometheus URL 未配置'}
+        if not self.enabled or not self.url:
+            return {'status': 'error', 'error': 'Prometheus 未配置或未启用'}
         
+        # 根据URL协议决定是否验证SSL
+        verify_ssl = self.url.lower().startswith('https://')
+        
+        # 如果是HTTP请求，禁用不安全请求的警告
+        if not verify_ssl:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
         try:
             response = requests.get(
-                f"{self.url}/-/healthy",
+                f"{self.url}/api/v1/status/config",
                 headers=self._get_headers(),
-                timeout=10
+                timeout=10,
+                verify=verify_ssl  # 根据协议决定是否验证SSL
             )
             
             if response.status_code == 200:
-                return {'status': 'success', 'message': '连接成功'}
+                return {'status': 'success', 'message': 'Prometheus 连接成功'}
             else:
                 return {
                     'status': 'error',
@@ -168,4 +200,4 @@ class PrometheusClient:
                     'detail': response.text
                 }
         except requests.exceptions.RequestException as e:
-            return {'status': 'error', 'error': f"连接异常: {str(e)}"}
+            return {'status': 'error', 'error': f"请求异常: {str(e)}"}

@@ -1,0 +1,35 @@
+---
+# 节点Pod容量使用率检查
+id: prom_node_pod_capacity
+name: 节点Pod容量使用率检查
+description: 检查节点上Pod数量是否接近节点容量限制
+type: prometheus
+category: capacity
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # Prometheus查询配置 - 节点Pod使用率
+  query: "(sum by(node) (kube_pod_info{host_network=\"false\"}) / sum by(node) (kube_node_status_capacity{resource=\"pods\"})) * 100"
+  
+  # 时间范围配置
+  time_range:
+    start: "now-5m"
+    end: "now"
+    step: "1m"
+
+  # 断言配置
+  assertions:
+    - name: "节点Pod容量使用率检查"
+      condition: "max_value < 85"
+      severity: warning
+      description: "节点Pod容量使用率: {{ max_value | round(2) }}%"
+
+# 标签
+tags:
+  - node
+  - pod
+  - capacity
+  - workload

@@ -1,0 +1,81 @@
+---
+# OPA规则 - 主机网络检查 - 简化版本
+id: opa_host_network
+name: Pod主机网络检查
+description: 检查Pod是否使用了主机网络，一个规则一个检查项
+type: opa
+category: security
+severity: warning
+enabled: true
+tier: basic
+
+# 规则配置
+config:
+  # 资源配置
+  resources:
+    - kind: Pod
+      apiVersion: v1
+      namespaced: true
+    - kind: Deployment
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: StatefulSet
+      apiVersion: apps/v1
+      namespaced: true
+    - kind: DaemonSet
+      apiVersion: apps/v1
+      namespaced: true
+
+  # Rego规则配置
+  rego:
+    inline: |
+      package kubernetes
+      
+      # 获取Pod规范
+      get_pod_spec(resource) = spec if {
+          resource.kind == "Pod"
+          spec := resource.spec
+      }
+      
+      get_pod_spec(resource) = spec if {
+          resource.kind != "Pod"
+          spec := resource.spec.template.spec
+      }
+      
+      # 定义违规 - 使用主机网络
+      violations contains result if {
+          resource := input.resources[_]
+          spec := get_pod_spec(resource)
+          spec.hostNetwork == true
+          
+          result := {
+              "kind": resource.kind,
+              "name": resource.metadata.name,
+              "namespace": resource.metadata.namespace,
+              "message": sprintf("%s '%s' in namespace '%s' is using host network", [
+                  resource.kind,
+                  resource.metadata.name,
+                  resource.metadata.namespace
+              ])
+          }
+      }
+  
+  # 断言配置
+  assertions:
+    - name: "检查主机网络使用"
+      condition: "violation_count == 0"
+      severity: warning
+      description: "发现 {{ violation_count }} 个Pod使用了主机网络"
+
+# 问题解决建议
+solution: |
+  主机网络安全风险处理：
+  1. 避免使用hostNetwork: true，除非绝对必要
+  2. 使用Service和Ingress来暴露服务
+  3. 考虑使用CNI网络插件进行网络隔离
+
+# 标签
+tags:
+  - security
+  - network
+  - hostNetwork

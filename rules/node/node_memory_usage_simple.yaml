@@ -1,0 +1,31 @@
+category: memory
+config:
+  assertions:
+  - condition: int(output) < 90
+    description: '内存使用率: {{ output }}%'
+    name: 内存使用率正常
+    severity: warning
+  execution:
+    command: free | awk 'NR==2{printf "%.0f", $3*100/$2 }'
+    timeout: 5
+description: 检查系统内存使用率
+enabled: false
+id: node_memory_usage_simple
+name: 内存使用率检查
+severity: warning
+solution: '内存使用率过高处理：
+
+  1. 查看内存详情：free -h
+
+  2. 查看进程内存使用：ps aux --sort=-%mem | head
+
+  3. 清理缓存：echo 3 > /proc/sys/vm/drop_caches
+
+  4. 检查内存泄漏进程
+
+  '
+tags:
+- memory
+- usage
+tier: basic
+type: node
