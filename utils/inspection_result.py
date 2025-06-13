@@ -44,14 +44,18 @@ class InspectionResult:
         Args:
             item: 巡检项字典，需包含：
                 - name: 巡检项名称
-                - status: 'passed' 或 'failed' 或 'warning'
+                - status: 'passed' 或 'exception' (简化后的状态体系)
                 - description: 描述
-                - severity: 严重程度 ('critical', 'warning', 'info')
+                - severity: 严重程度 ('critical', 'warning', 'info') - 仅用于异常项的细分级别
                 - details: 详细内容
                 - solution: 解决方案 (可选)
         """
         if 'solution' not in item:
             item['solution'] = ''
+            
+        # 状态标准化：统一将 failed、warning、error 转换为 exception
+        if item.get('status') in ['failed', 'warning', 'error']:
+            item['status'] = 'exception'
             
         self.items.append(item)
     
@@ -61,10 +65,10 @@ class InspectionResult:
     
     def get_summary(self) -> Dict:
         """获取巡检摘要"""
-        critical = 0
-        warning = 0
-        info = 0
         passed = 0
+        exception_critical = 0
+        exception_warning = 0
+        exception_info = 0
         
         for item in self.items:
             # 安全地获取status和severity，处理不同类型的item
@@ -78,14 +82,19 @@ class InspectionResult:
                 status = 'unknown'
                 severity = 'unknown'
             
+            # 简化的状态体系：只有 passed 和 exception
             if status == 'passed':
                 passed += 1
-            elif severity == 'critical':
-                critical += 1
-            elif severity == 'warning':
-                warning += 1
             else:
-                info += 1
+                # 所有非通过的状态都视为异常，按严重程度细分
+                if severity == 'critical':
+                    exception_critical += 1
+                elif severity == 'warning':
+                    exception_warning += 1
+                else:
+                    exception_info += 1
+                
+        total_exceptions = exception_critical + exception_warning + exception_info
                 
         return {
             'cluster_name': self.cluster_name,
@@ -94,9 +103,14 @@ class InspectionResult:
             'result_id': self.result_id,
             'total': len(self.items),
             'passed': passed,
-            'critical': critical,
-            'warning': warning,
-            'info': info
+            'total_exceptions': total_exceptions,
+            'exception_critical': exception_critical,
+            'exception_warning': exception_warning,
+            'exception_info': exception_info,
+            # 为兼容性保留旧字段
+            'critical': exception_critical,
+            'warning': exception_warning,
+            'info': exception_info
         }
     
     def save(self) -> str:
@@ -278,12 +292,14 @@ def list_results(cluster_name: Optional[str] = None) -> List[Dict]:
                     
             # 处理新的数据结构
             if 'summary' in result_data:
-                # 新格式：有summary字段
+                # 新格式：有summary字段 - 使用简化状态系统
                 summary_data = result_data['summary']
-                critical = summary_data.get('failed', 0)
-                warning = summary_data.get('warning', 0)
                 passed = summary_data.get('passed', 0)
-                info = summary_data.get('error', 0)
+                # 在简化状态系统中，所有异常都在 error 字段中
+                total_exceptions = summary_data.get('error', 0) + summary_data.get('failed', 0) + summary_data.get('warning', 0)
+                critical = total_exceptions  # 所有异常都显示为需要关注的问题
+                warning = 0  # 简化状态系统中不再区分警告
+                info = 0
                 total = summary_data.get('total_items', 0)
             elif 'inspection_results' in result_data:
                 # 新格式：但没有summary，需要计算
@@ -308,10 +324,8 @@ def list_results(cluster_name: Optional[str] = None) -> List[Dict]:
                         
                         if status == 'passed':
                             passed += 1
-                        elif status == 'failed':
+                        elif status == 'exception':  # 使用新的简化状态
                             critical += 1
-                        elif status == 'warning':
-                            warning += 1
                         else:
                             info += 1
             else:

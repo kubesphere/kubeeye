@@ -199,7 +199,7 @@ class OpaInspector(BaseInspector):
                         pass
     
     def _evaluate_assertions(self, rule: Rule, violations: List[Dict], resource_count: int) -> Dict:
-        """评估断言并返回结果"""
+        """评估断言并返回结果（使用统一的 AssertionManager）"""
         try:
             # 确保violations是列表
             if not isinstance(violations, list):
@@ -213,8 +213,8 @@ class OpaInspector(BaseInspector):
             }
             
             assertions = self.get_rule_config(rule, 'assertions', [])
-            assertion_result = self.rule_processor.assertion_evaluator.evaluate_assertions(
-                assertions, assertion_vars
+            assertion_result = self.rule_processor.assertion_manager.evaluate_assertions(
+                assertions, assertion_vars, mode="simple"
             )
             
             if assertion_result['passed']:
@@ -266,36 +266,16 @@ class OpaInspector(BaseInspector):
         return "\n".join(details)
     
     def _pass_result(self, rule: Rule, description: str, details: str = "") -> Dict:
-        """生成通过结果"""
-        return self.rule_processor.format_rule_result(
-            rule=rule,
-            status="passed",
-            description=description,
-            severity="info",
-            details=details,
-            solution=""
-        )
+        """生成通过结果（已委托给 ResultFormatter）"""
+        return self.rule_processor.result_formatter.pass_result(rule, description, details)
     
     def _fail_result(self, rule: Rule, description: str, details: str, 
                      severity: str = "warning", violations: List[Dict] = None) -> Dict:
-        """生成失败结果"""
-        return self.rule_processor.format_rule_result(
-            rule=rule,
-            status="failed",
-            description=description,
-            severity=severity,
-            details=details,
-            solution=rule.solution,
-            violations=violations or []
+        """生成失败结果（已委托给 ResultFormatter）"""
+        return self.rule_processor.result_formatter.fail_result(
+            rule, description, details, severity, violations
         )
     
     def _error_result(self, rule: Rule, error_msg: str) -> Dict:
-        """生成错误结果"""
-        return self.rule_processor.format_rule_result(
-            rule=rule,
-            status="error",
-            description="规则执行失败",
-            severity="error",
-            details=error_msg,
-            solution=""
-        )
+        """生成错误结果（已委托给 ResultFormatter）"""
+        return self.rule_processor.result_formatter.error_result(rule, error_msg)

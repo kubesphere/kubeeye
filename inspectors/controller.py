@@ -156,15 +156,19 @@ class InspectionController:
                 else:
                     status = 'unknown'
                 
-                # 统计各状态
+                # 统计各状态 - 使用简化的状态体系
                 if status == 'passed':
                     total_passed += 1
-                elif status == 'failed':
-                    total_failed += 1
-                elif status == 'warning':
-                    total_warning += 1
-                elif status == 'error':
-                    total_error += 1
+                else:
+                    # 所有非通过状态都视为异常
+                    # 根据旧状态映射进行兼容性处理
+                    if status in ['failed', 'error']:
+                        total_failed += 1
+                    elif status == 'warning':
+                        total_warning += 1
+                    else:
+                        # 未知状态按错误处理
+                        total_error += 1
             
             # 序列化items - 确保所有items都是字典格式
             serialized_items = []

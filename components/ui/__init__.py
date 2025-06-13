@@ -11,3 +11,4 @@ from .cluster_info import display_cluster_info
 from .inspector_selector import select_inspectors
 from .progress import InspectionProgress
 from .task_execution import execute_inspection_task
+from .inspection_engine import execute_inspection_unified, InspectionEngine

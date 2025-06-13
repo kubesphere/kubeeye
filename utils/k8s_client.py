@@ -5,18 +5,19 @@ Kubernetes 客户端工具，用于与 Kubernetes 集群交互
 """
 
 import yaml
-import tempfile
-import os
 import json
 import base64
+import datetime
 from typing import Dict, List, Any, Optional, Tuple
-from kubernetes import client, config
+from kubernetes import client
 from kubernetes.client.rest import ApiException
 import logging
 
+from .k8s_base_client import K8sBaseClient
+
 logger = logging.getLogger(__name__)
 
-class K8sClient:
+class K8sClient(K8sBaseClient):
     """Kubernetes 客户端类"""
     
     def __init__(self, kubeconfig_content: str = None):
@@ -26,9 +27,7 @@ class K8sClient:
         Args:
             kubeconfig_content: kubeconfig 文件内容
         """
-        self.kubeconfig_content = kubeconfig_content
-        self.temp_config = None
-        self.initialized = False
+        super().__init__(kubeconfig_content)
         self.init_client()
     
     def init_client(self) -> bool:
@@ -39,19 +38,11 @@ class K8sClient:
             成功返回 True，失败返回 False
         """
         try:
-            if self.kubeconfig_content:
-                # 创建临时文件存储 kubeconfig
-                self.temp_config = tempfile.NamedTemporaryFile(delete=False)
-                self.temp_config.write(self.kubeconfig_content.encode())
-                self.temp_config.flush()
-                # 允许跳过SSL证书验证
-                config.load_kube_config(self.temp_config.name)
-                client.Configuration.set_default(self._configure_no_verify_ssl())
-            else:
-                # 尝试默认方式加载配置
-                config.load_kube_config()
-                client.Configuration.set_default(self._configure_no_verify_ssl())
+            # 使用基类的通用初始化逻辑
+            if not self.init_client_base():
+                return False
                 
+            # 初始化具体的API客户端
             self.core_v1 = client.CoreV1Api()
             self.apps_v1 = client.AppsV1Api()
             self.batch_v1 = client.BatchV1Api()
@@ -60,7 +51,7 @@ class K8sClient:
             self.rbac_v1 = client.RbacAuthorizationV1Api()
             self.custom_objects = client.CustomObjectsApi()
             
-            self.initialized = True
+            logger.info("Kubernetes客户端API初始化成功")
             return True
         except Exception as e:
             logger.error(f"初始化 Kubernetes 客户端失败: {e}")
@@ -68,50 +59,16 @@ class K8sClient:
             return False
     
     def _configure_no_verify_ssl(self):
-        """
-        配置Kubernetes客户端跳过SSL证书验证，用于自签名证书环境
-        
-        Returns:
-            配置好的客户端配置
-        """
-        # 获取当前客户端配置
-        configuration = client.Configuration.get_default_copy()
-        
-        # 禁用SSL证书验证
-        configuration.verify_ssl = False
-        configuration.ssl_ca_cert = None
-        
-        # 设置警告消息
-        logger.warning("已禁用SSL证书验证，这可能存在安全风险")
-        
-        return configuration
+        """已移至基类K8sBaseClient"""
+        return super()._configure_no_verify_ssl()
     
     def __del__(self):
-        """析构函数，删除临时文件"""
-        if self.temp_config:
-            try:
-                self.temp_config.close()
-                os.unlink(self.temp_config.name)
-            except:
-                pass
+        """已移至基类K8sBaseClient"""
+        super().__del__()
     
     def test_connection(self) -> Tuple[bool, str]:
-        """
-        测试与集群的连接
-        
-        Returns:
-            (成功, 消息) 元组
-        """
-        if not self.initialized:
-            return False, "客户端未初始化"
-        
-        try:
-            version = self.core_v1.get_api_resources()
-            return True, "连接成功"
-        except ApiException as e:
-            return False, f"API 错误: {e.reason}"
-        except Exception as e:
-            return False, f"连接错误: {str(e)}"
+        """已移至基类K8sBaseClient"""
+        return super().test_connection()
     
     def get_nodes(self) -> Dict:
         """

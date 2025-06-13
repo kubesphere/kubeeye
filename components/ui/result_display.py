@@ -10,18 +10,58 @@ from typing import Dict, List, Any, Optional
 
 def display_status(status):
     """显示状态的彩色标记"""
-    if status == 'passed':
-        return "✅ 通过"
-    elif status == 'failed':
-        return "❌ 失败"
-    elif status == 'warning':
-        return "⚠️ 警告"
-    elif status == 'error':
-        return "🔴 错误"
-    elif status == 'skipped':
-        return "⏭️ 跳过"
-    else:
-        return "❓ 未知"
+    status_colors = {
+        'passed': '🟢',
+        'failed': '🔴', 
+        'warning': '🟡',
+        'error': '🔴',
+        'skipped': '⚪'
+    }
+    return status_colors.get(status, '❓')
+
+def format_status_badge(status):
+    """格式化状态标记"""
+    status_map = {
+        'passed': '✅ 通过',
+        'failed': '❌ 失败',
+        'warning': '⚠️ 警告',
+        'error': '🔥 错误',
+        'skipped': '⏭️ 跳过'
+    }
+    return status_map.get(status, f'❓ {status}')
+
+def parse_opa_violations_to_table(violations_text):
+    """将OPA违规文本解析为表格数据"""
+    if not violations_text or violations_text == "无违规资源":
+        return []
+    
+    violations = []
+    
+    # 解析不同格式的违规信息
+    lines = violations_text.split('\n')
+    current_violation = {}
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        # 尝试匹配不同的格式
+        if line.startswith('Name:') or line.startswith('name:'):
+            if current_violation:
+                violations.append(current_violation)
+            current_violation = {'name': line.split(':', 1)[1].strip()}
+        elif line.startswith('Kind:') or line.startswith('kind:'):
+            current_violation['kind'] = line.split(':', 1)[1].strip()
+        elif line.startswith('Namespace:') or line.startswith('namespace:'):
+            current_violation['namespace'] = line.split(':', 1)[1].strip()
+        elif line.startswith('Message:') or line.startswith('message:'):
+            current_violation['message'] = line.split(':', 1)[1].strip()
+    
+    if current_violation:
+        violations.append(current_violation)
+    
+    return violations
 
 def get_items_safely(result):
     """安全地获取result.items，处理items是方法或属性的情况"""
@@ -57,63 +97,15 @@ def count_status(items):
     
     # 安全地统计状态，处理不同类型的item
     for item in items:
-        # 安全地获取status
         if isinstance(item, dict):
             status = item.get('status', 'unknown')
-        elif hasattr(item, 'status'):
-            status = getattr(item, 'status', 'unknown')
-        else:
-            status = 'unknown'
-        
-        if status in status_counts:
-            status_counts[status] += 1
+            if status in status_counts:
+                status_counts[status] += 1
     
     return status_counts
 
-def parse_opa_violations_to_table(details_content: str) -> List[Dict]:
-    """解析OPA违规信息为表格数据"""
-    if not details_content or details_content == "无违规资源":
-        return []
-    
-    violations = []
-    if details_content.startswith("- "):
-        for line in details_content.strip().split('\n'):
-            if line.strip():
-                violation_text = line.strip("- ")
-                
-                # 解析格式：kind/name (命名空间: namespace): message
-                # 或者：kind/name: message
-                parts = violation_text.split(': ', 1)
-                if len(parts) >= 2:
-                    resource_part = parts[0]
-                    message = parts[1]
-                    
-                    # 解析资源信息
-                    if ' (命名空间: ' in resource_part:
-                        resource_name, namespace_part = resource_part.split(' (命名空间: ', 1)
-                        namespace = namespace_part.rstrip(')')
-                    else:
-                        resource_name = resource_part
-                        namespace = "-"
-                    
-                    # 解析kind和name
-                    if '/' in resource_name:
-                        kind, name = resource_name.split('/', 1)
-                    else:
-                        kind = "Unknown"
-                        name = resource_name
-                    
-                    violations.append({
-                        'kind': kind,
-                        'name': name,
-                        'namespace': namespace,
-                        'message': message
-                    })
-    
-    return violations
-
-def display_opa_violations_table(violations_data: List[Dict]):
-    """以表格形式显示OPA违规资源"""
+def display_opa_violations_table(violations_data: List[Dict], show_expander: bool = True, table_key: str = None):
+    """以表格形式显示OPA违规资源 - 优化版本"""
     if not violations_data:
         st.info("无违规资源")
         return
@@ -131,19 +123,103 @@ def display_opa_violations_table(violations_data: List[Dict]):
     }
     df = df.rename(columns=column_mapping)
     
-    # 显示表格
+    # 显示表格标题
     st.markdown("**违规资源列表:**")
-    st.dataframe(
-        df,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "资源类型": st.column_config.TextColumn(width="small"),
-            "资源名称": st.column_config.TextColumn(width="medium"),
-            "命名空间": st.column_config.TextColumn(width="small"),
-            "违规详情": st.column_config.TextColumn(width="large")
-        }
-    )
+    
+    # 检查违规数量，决定显示方式
+    if len(violations_data) <= 10:
+        # 少量违规，使用优化的表格显示
+        st.dataframe(
+            df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "资源类型": st.column_config.TextColumn(
+                    "资源类型", 
+                    help="Kubernetes资源类型"
+                ),
+                "资源名称": st.column_config.TextColumn(
+                    "资源名称", 
+                    help="资源实例名称"
+                ),
+                "命名空间": st.column_config.TextColumn(
+                    "命名空间", 
+                    help="Kubernetes命名空间"
+                ),
+                "违规详情": st.column_config.TextColumn(
+                    "违规详情", 
+                    help="具体的违规信息和描述"
+                )
+            },
+            # 设置表格高度以避免过度压缩
+            height=min(400, len(violations_data) * 50 + 100)
+        )
+    else:
+        # 大量违规，使用分页或展开式显示
+        st.info(f"发现 {len(violations_data)} 个违规资源，采用分页显示")
+        
+        # 分页显示
+        page_size = 10
+        total_pages = (len(violations_data) + page_size - 1) // page_size
+        
+        # 页面选择器
+        if total_pages > 1:
+            # 使用violations_data的id和时间戳生成唯一的selectbox key
+            import time
+            selectbox_key = f"violations_page_selector_{id(violations_data)}_{int(time.time() * 1000) % 10000}"
+            page = st.selectbox(
+                "选择页面", 
+                range(1, total_pages + 1),
+                format_func=lambda x: f"第 {x} 页 (共 {total_pages} 页)",
+                key=selectbox_key
+            ) - 1
+        else:
+            page = 0
+        
+        # 显示当前页的数据
+        start_idx = page * page_size
+        end_idx = min(start_idx + page_size, len(violations_data))
+        page_df = df.iloc[start_idx:end_idx]
+        
+        st.dataframe(
+            page_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "资源类型": st.column_config.TextColumn(
+                    "资源类型"
+                ),
+                "资源名称": st.column_config.TextColumn(
+                    "资源名称"
+                ),
+                "命名空间": st.column_config.TextColumn(
+                    "命名空间"
+                ),
+                "违规详情": st.column_config.TextColumn(
+                    "违规详情"
+                )
+            },
+            height=400
+        )
+        
+        # 显示页面信息
+        st.caption(f"显示第 {start_idx + 1}-{end_idx} 项，共 {len(violations_data)} 项违规")
+    
+    # 根据参数决定是否显示详细视图选项
+    if show_expander and len(violations_data) > 0:
+        with st.expander("📋 查看详细列表", expanded=False):
+            for i, violation in enumerate(violations_data, 1):
+                st.markdown(f"**{i}. {violation.get('资源类型', violation.get('kind', 'Unknown'))}/{violation.get('资源名称', violation.get('name', 'unnamed'))}**")
+                
+                col1, col2 = st.columns([1, 3])
+                with col1:
+                    st.markdown(f"**命名空间:** {violation.get('命名空间', violation.get('namespace', '-'))}")
+                with col2:
+                    message = violation.get('违规详情', violation.get('message', '无详细信息'))
+                    st.markdown(f"**违规详情:** {message}")
+                
+                if i < len(violations_data):
+                    st.divider()
 
 def display_summary_metrics(all_results):
     """显示巡检结果摘要信息"""
@@ -191,88 +267,62 @@ def display_summary_metrics(all_results):
 
 def display_inspection_results(inspector_type: str, result, show_summary: bool = True):
     """
-    统一的巡检结果展示函数，支持不同类型的巡检器
+    显示巡检结果 - 简化状态系统版本
     
     Args:
-        inspector_type: 巡检器类型 (node, prometheus, opa)
-        result: 巡检结果对象
+        inspector_type: 巡检器类型
+        result: 巡检结果
         show_summary: 是否显示摘要信息
     """
+    if not result:
+        st.info(f"📝 {inspector_type} 巡检结果为空")
+        return
+        
     items = get_items_safely(result)
     if not items:
-        st.warning(f"没有 {inspector_type} 巡检结果")
+        st.info(f"📝 {inspector_type} 无检查项")
         return
     
-    # 显示摘要信息
-    if show_summary:
-        display_result_summary(inspector_type, result)
-    
-    # 根据巡检类型选择不同的展示方式
-    if inspector_type == "opa":
-        display_opa_results(result)
-    elif inspector_type == "node":
-        display_node_results(result)
-    elif inspector_type == "prometheus":
-        display_prometheus_results(result)
-    else:
-        # 默认展示方式
-        display_generic_results(result)
-
-def display_result_summary(inspector_type: str, result):
-    """显示巡检结果摘要"""
-    type_names = {
-        "node": "节点巡检",
-        "prometheus": "Prometheus指标",
-        "opa": "OPA合规性"
-    }
-    
-    st.subheader(f"📊 {type_names.get(inspector_type, inspector_type)} 结果摘要")
-    
-    items = get_items_safely(result)
-    status_counts = count_status(items)
-    total = sum(status_counts.values())
-    
-    if total == 0:
-        st.info("没有检查项")
-        return
-    
-    # 显示指标卡片
-    col1, col2, col3, col4, col5 = st.columns(5)
-    
-    with col1:
-        st.metric("总计", total)
-    
-    with col2:
-        passed_pct = round(status_counts['passed'] / total * 100, 1) if total > 0 else 0
-        st.metric("通过", f"{status_counts['passed']} ({passed_pct}%)")
-    
-    with col3:
-        failed_pct = round(status_counts['failed'] / total * 100, 1) if total > 0 else 0
-        st.metric("失败", f"{status_counts['failed']} ({failed_pct}%)")
-    
-    with col4:
-        warning_pct = round(status_counts['warning'] / total * 100, 1) if total > 0 else 0
-        st.metric("警告", f"{status_counts['warning']} ({warning_pct}%)")
-    
-    with col5:
-        error_pct = round(status_counts['error'] / total * 100, 1) if total > 0 else 0
-        st.metric("错误", f"{status_counts['error']} ({error_pct}%)")
-
-def display_opa_results(result):
-    """显示OPA合规性巡检结果"""
-    st.subheader("🔒 合规性检查详情")
-    
-    # 按状态分组显示
-    items = get_items_safely(result)
+    # 按状态分组
+    passed_items = [item for item in items if item.get('status') == 'passed']
     failed_items = [item for item in items if item.get('status') == 'failed']
     warning_items = [item for item in items if item.get('status') == 'warning']
-    passed_items = [item for item in items if item.get('status') == 'passed']
+    error_items = [item for item in items if item.get('status') == 'error']
+    
+    # 显示摘要
+    if show_summary:
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("✅ 通过", len(passed_items))
+        with col2:
+            st.metric("❌ 失败", len(failed_items))
+        with col3:
+            st.metric("⚠️ 警告", len(warning_items))
+        with col4:
+            st.metric("🔥 错误", len(error_items))
     
     # 显示失败项
     if failed_items:
         st.markdown("#### ❌ 合规性问题")
         for item in failed_items:
-            with st.expander(f"🔴 {item.get('name', '未命名检查')} - {item.get('description', '')}"):
+            with st.expander(f"🔴 {item.get('name', '未命名检查')} - {item.get('description', '')}", expanded=True):
+                # 添加基本信息展示
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    st.markdown(f"**检查项:** {item.get('name', '未知检查')}")
+                    st.markdown(f"**描述:** {item.get('description', '无描述')}")
+                with col2:
+                    severity = item.get('severity', 'unknown')
+                    if severity == 'critical':
+                        st.error(f"🔴 严重级别: {severity}")
+                    elif severity == 'warning':
+                        st.warning(f"🟡 警告级别: {severity}")
+                    else:
+                        st.info(f"ℹ️ 级别: {severity}")
+                
+                st.divider()
+                
+                # 显示违规详情
                 details_content = item.get('details', '')
                 if details_content and details_content != "无违规资源":
                     # 首先尝试使用原始violations数据
@@ -285,13 +335,17 @@ def display_opa_results(result):
                         violations_data = parse_opa_violations_to_table(details_content)
                     
                     if violations_data:
-                        display_opa_violations_table(violations_data)
+                        # 在专门的容器中显示表格，禁用expander避免嵌套
+                        violations_container = st.container()
+                        with violations_container:
+                            display_opa_violations_table(violations_data, show_expander=False)
                     else:
-                        st.text(details_content)
+                        st.text_area("详细信息", details_content, height=150)
                 
                 # 显示解决方案
                 if item.get('solution'):
-                    st.markdown("**解决方案:**")
+                    st.divider()
+                    st.markdown("**💡 解决方案:**")
                     st.info(item['solution'])
     
     # 显示警告项
@@ -299,6 +353,18 @@ def display_opa_results(result):
         st.markdown("#### ⚠️ 合规性警告")
         for item in warning_items:
             with st.expander(f"🟡 {item.get('name', '未命名检查')} - {item.get('description', '')}"):
+                # 添加基本信息展示
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    st.markdown(f"**检查项:** {item.get('name', '未知检查')}")
+                    st.markdown(f"**描述:** {item.get('description', '无描述')}")
+                with col2:
+                    severity = item.get('severity', 'warning')
+                    st.warning(f"⚠️ 警告级别: {severity}")
+                
+                st.divider()
+                
+                # 显示违规详情
                 details_content = item.get('details', '')
                 if details_content and details_content != "无违规资源":
                     # 首先尝试使用原始violations数据
@@ -311,197 +377,88 @@ def display_opa_results(result):
                         violations_data = parse_opa_violations_to_table(details_content)
                     
                     if violations_data:
-                        display_opa_violations_table(violations_data)
+                        # 在专门的容器中显示表格，禁用expander避免嵌套
+                        violations_container = st.container()
+                        with violations_container:
+                            display_opa_violations_table(violations_data, show_expander=False)
                     else:
-                        st.text(details_content)
+                        st.text_area("详细信息", details_content, height=150)
+                
+                # 显示解决方案
+                if item.get('solution'):
+                    st.divider()
+                    st.markdown("**💡 建议方案:**")
+                    st.info(item['solution'])
     
-    # 显示通过项（可折叠）
-    if passed_items:
-        with st.expander(f"✅ 已通过的检查项 ({len(passed_items)}个)"):
-            for item in passed_items:
-                st.markdown(f"- ✅ {item.get('name', '未命名检查')}: {item.get('description', '')}")
+    # 显示错误项
+    if error_items:
+        st.markdown("#### 🔥 系统错误")
+        for item in error_items:
+            with st.expander(f"🔥 {item.get('name', '未命名检查')} - {item.get('description', '')}"):
+                st.error(f"错误信息: {item.get('details', '无详细错误信息')}")
+                if item.get('solution'):
+                    st.markdown("**💡 解决方案:**")
+                    st.info(item['solution'])
+
+def display_result_summary(results):
+    """显示结果摘要"""
+    if not results:
+        st.info("没有巡检结果")
+        return
+    
+    # 计算总体统计
+    total_passed = 0
+    total_failed = 0
+    total_warning = 0
+    total_error = 0
+    
+    for result in results.values():
+        items = get_items_safely(result)
+        status_counts = count_status(items)
+        total_passed += status_counts['passed']
+        total_failed += status_counts['failed'] 
+        total_warning += status_counts['warning']
+        total_error += status_counts['error']
+    
+    # 显示摘要卡片
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(
+            label="✅ 通过",
+            value=total_passed,
+            delta=None
+        )
+    
+    with col2:
+        st.metric(
+            label="❌ 失败", 
+            value=total_failed,
+            delta=None
+        )
+    
+    with col3:
+        st.metric(
+            label="⚠️ 警告",
+            value=total_warning, 
+            delta=None
+        )
+    
+    with col4:
+        st.metric(
+            label="🔥 错误",
+            value=total_error,
+            delta=None
+        )
+
+def display_opa_results(result):
+    """显示OPA巡检结果"""
+    return display_inspection_results("OPA", result)
 
 def display_node_results(result):
     """显示节点巡检结果"""
-    st.subheader("🖥️ 节点检查详情")
-    
-    # 按节点分组显示结果
-    items = get_items_safely(result)
-    node_groups = {}
-    for item in items:
-        node_name = extract_node_name(item.get('name', ''))
-        if node_name not in node_groups:
-            node_groups[node_name] = []
-        node_groups[node_name].append(item)
-    
-    for node_name, items in node_groups.items():
-        st.markdown(f"#### 🖥️ 节点: {node_name}")
-        
-        # 按状态分类
-        failed_items = [item for item in items if item.get('status') == 'failed']
-        warning_items = [item for item in items if item.get('status') == 'warning']
-        passed_items = [item for item in items if item.get('status') == 'passed']
-        
-        # 显示节点状态概览
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("失败", len(failed_items))
-        with col2:
-            st.metric("警告", len(warning_items))
-        with col3:
-            st.metric("通过", len(passed_items))
-        
-        # 显示详细信息
-        if failed_items:
-            st.markdown("**❌ 失败项:**")
-            for item in failed_items:
-                with st.expander(f"🔴 {item.get('description', item.get('name', '未命名检查'))}"):
-                    display_generic_item_details(item)
-        
-        if warning_items:
-            st.markdown("**⚠️ 警告项:**")
-            for item in warning_items:
-                with st.expander(f"🟡 {item.get('description', item.get('name', '未命名检查'))}"):
-                    display_generic_item_details(item)
-        
-        # 通过的检查项可折叠显示
-        if passed_items:
-            with st.expander(f"✅ 通过的检查项 ({len(passed_items)}个)"):
-                for item in passed_items:
-                    st.markdown(f"- ✅ {item.get('description', item.get('name', '未命名检查'))}")
-        
-        st.divider()
+    return display_inspection_results("节点检查", result)
 
 def display_prometheus_results(result):
-    """显示Prometheus指标巡检结果"""
-    st.subheader("📈 Prometheus指标检查详情")
-    
-    # 按类别分组显示
-    items = get_items_safely(result)
-    categories = {}
-    for item in items:
-        category = item.get('category', '其他')
-        if category not in categories:
-            categories[category] = []
-        categories[category].append(item)
-    
-    for category, items in categories.items():
-        st.markdown(f"#### 📊 {category}")
-        
-        # 按状态分类
-        failed_items = [item for item in items if item.get('status') == 'failed']
-        warning_items = [item for item in items if item.get('status') == 'warning']
-        passed_items = [item for item in items if item.get('status') == 'passed']
-        
-        # 显示指标
-        if failed_items or warning_items:
-            for item in failed_items + warning_items:
-                status_icon = "🔴" if item.get('status') == 'failed' else "🟡"
-                severity = item.get('severity', 'warning')
-                
-                with st.expander(f"{status_icon} {item.get('description', item.get('name', '未命名检查'))} [{severity}]"):
-                    display_prometheus_item_details(item)
-        
-        # 通过的检查项
-        if passed_items:
-            with st.expander(f"✅ 正常指标 ({len(passed_items)}个)"):
-                for item in passed_items:
-                    st.markdown(f"- ✅ {item.get('description', item.get('name', '未命名检查'))}")
-        
-        st.divider()
-
-def display_generic_results(result):
-    """通用的巡检结果展示"""
-    st.subheader("📋 巡检结果详情")
-    
-    items = get_items_safely(result)
-    for item in items:
-        status = item.get('status', 'unknown')
-        status_icon = {
-            'passed': '✅',
-            'failed': '❌', 
-            'warning': '⚠️',
-            'error': '🔴',
-            'skipped': '⏭️'
-        }.get(status, '❓')
-        
-        with st.expander(f"{status_icon} {item.get('name', '未命名检查')} - {item.get('description', '')}"):
-            display_generic_item_details(item)
-
-def display_generic_item_details(item):
-    """显示通用的检查项详情"""
-    # 基本信息
-    if item.get('description'):
-        st.markdown(f"**描述:** {item['description']}")
-    
-    if item.get('severity'):
-        st.markdown(f"**严重程度:** {item['severity']}")
-    
-    # 详细信息
-    if item.get('details'):
-        st.markdown("**详细信息:**")
-        st.code(item['details'], language='text')
-    
-    # 解决方案
-    if item.get('solution'):
-        st.markdown("**解决方案:**")
-        st.info(item['solution'])
-
-def display_prometheus_item_details(item):
-    """显示Prometheus检查项的详细信息"""
-    # 基本信息
-    if item.get('description'):
-        st.markdown(f"**检查项:** {item['description']}")
-    
-    if item.get('severity'):
-        severity_colors = {
-            'critical': '🔴',
-            'warning': '🟡', 
-            'info': '🔵'
-        }
-        severity_icon = severity_colors.get(item['severity'], '⚪')
-        st.markdown(f"**严重程度:** {severity_icon} {item['severity']}")
-    
-    # 指标详情
-    details = item.get('details', '')
-    if details:
-        st.markdown("**指标详情:**")
-        
-        # 检查是否包含百分比信息，格式化显示
-        if "%" in details and ("使用率" in details or "负载" in details):
-            lines = details.strip().split('\n')
-            for line in lines:
-                if line.strip():
-                    if ":" in line:
-                        key, value = line.split(':', 1)
-                        # 如果值包含百分比，用进度条显示
-                        if "%" in value:
-                            try:
-                                pct_match = re.search(r'(\d+\.?\d*)%', value)
-                                if pct_match:
-                                    percentage = float(pct_match.group(1))
-                                    st.markdown(f"**{key.strip()}:**")
-                                    st.progress(min(percentage / 100, 1.0))
-                                    st.caption(f"{percentage}%")
-                                else:
-                                    st.markdown(f"**{key.strip()}:** {value.strip()}")
-                            except:
-                                st.markdown(f"**{key.strip()}:** {value.strip()}")
-                        else:
-                            st.markdown(f"**{key.strip()}:** {value.strip()}")
-                    else:
-                        st.text(line)
-        else:
-            st.code(details, language='text')
-    
-    # 解决方案
-    if item.get('solution'):
-        st.markdown("**建议措施:**")
-        st.info(item['solution'])
-
-def extract_node_name(item_name: str) -> str:
-    """从检查项名称中提取节点名称"""
-    # 节点巡检项通常格式为 "检查项名称 - 节点IP/名称"
-    if " - " in item_name:
-        return item_name.split(" - ")[-1]
-    return "未知节点"
+    """显示Prometheus巡检结果"""
+    return display_inspection_results("Prometheus", result)

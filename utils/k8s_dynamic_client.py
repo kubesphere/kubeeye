@@ -6,21 +6,21 @@ Kubernetes 动态客户端工具 - 类似Go的Dynamic Client
 """
 
 import yaml
-import tempfile
-import os
 import json
 import base64
 import datetime
 from typing import Dict, List, Any, Optional, Tuple
-from kubernetes import client, config
+from kubernetes import client
 from kubernetes.client.rest import ApiException
 from kubernetes.dynamic import DynamicClient
 from kubernetes.dynamic.exceptions import ResourceNotFoundError
 import logging
 
+from .k8s_base_client import K8sBaseClient
+
 logger = logging.getLogger(__name__)
 
-class K8sDynamicClient:
+class K8sDynamicClient(K8sBaseClient):
     """
     Kubernetes 动态客户端类 - 模仿Go的Dynamic Client
     支持动态资源发现和操作，减少重复代码
@@ -33,9 +33,7 @@ class K8sDynamicClient:
         Args:
             kubeconfig_content: kubeconfig 文件内容
         """
-        self.kubeconfig_content = kubeconfig_content
-        self.temp_config = None
-        self.initialized = False
+        super().__init__(kubeconfig_content)
         self.dynamic_client = None
         self.api_client = None
         self.resource_cache = {}  # 资源定义缓存
@@ -51,26 +49,14 @@ class K8sDynamicClient:
             成功返回 True，失败返回 False
         """
         try:
-            if self.kubeconfig_content:
-                # 创建临时文件存储 kubeconfig
-                self.temp_config = tempfile.NamedTemporaryFile(delete=False)
-                self.temp_config.write(self.kubeconfig_content.encode())
-                self.temp_config.flush()
-                config.load_kube_config(self.temp_config.name)
-            else:
-                # 尝试默认方式加载配置
-                config.load_kube_config()
+            # 使用基类的通用初始化逻辑
+            if not self.init_client_base():
+                return False
             
             # 创建API客户端和动态客户端
             self.api_client = client.ApiClient()
             self.dynamic_client = DynamicClient(self.api_client)
             
-            # 禁用SSL证书验证（如果需要）
-            configuration = client.Configuration.get_default_copy()
-            configuration.verify_ssl = False
-            client.Configuration.set_default(configuration)
-            
-            self.initialized = True
             logger.info("Kubernetes动态客户端初始化成功")
             return True
             
@@ -80,13 +66,8 @@ class K8sDynamicClient:
             return False
     
     def __del__(self):
-        """析构函数，删除临时文件"""
-        if self.temp_config:
-            try:
-                self.temp_config.close()
-                os.unlink(self.temp_config.name)
-            except:
-                pass
+        """已移至基类K8sBaseClient"""
+        super().__del__()
     
     def get_resource_definition(self, resource_type: str) -> Optional[Any]:
         """

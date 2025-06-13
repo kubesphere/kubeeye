@@ -165,7 +165,7 @@
       }
     },
     "task_type": "cron",
-    "last_run": "2025-06-12T21:42:29.162161",
+    "last_run": "2025-06-13T21:35:57.274385",
     "last_status": "success",
     "created_at": "2025-06-12T21:34:24.720221",
     "run_datetime": null

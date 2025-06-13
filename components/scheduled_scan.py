@@ -11,7 +11,6 @@ from utils.schedule_manager import (
     run_inspection, restart_scheduler, start_scheduler, stop_scheduler
 )
 
-from .common import create_rule_selection_tabs, create_rule_selection_in_form
 # 导入UI组件
 from components.ui import display_cluster_info, InspectionProgress
 

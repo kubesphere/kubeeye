@@ -15,7 +15,6 @@ def set_app_styles():
     Returns:
         None
     """
-    # 简化的基本样式
     st.markdown("""
     <style>
     /* 隐藏默认页面标题和页脚 */
@@ -26,12 +25,40 @@ def set_app_styles():
     /* 改善整体界面和间距 */
     .main .block-container { padding-top: 1.5rem; }
     
-    /* 改进侧边栏样式 */
+    /* 侧边栏基础样式 */
     [data-testid="stSidebar"] {
         background-color: #f0f2f5;
         border-right: 1px solid rgba(0,0,0,0.05);
-        position: relative;
-        min-height: 100vh;
+        resize: none !important;
+        min-width: 244px !important;
+        max-width: 244px !important;
+        width: 244px !important;
+    }
+    
+    /* 禁用侧边栏的拖拽调整功能 */
+    [data-testid="stSidebar"] .css-1d391kg,
+    [data-testid="stSidebar"] .css-1y4p8pa,
+    [data-testid="stSidebar"] .css-1cypcdb {
+        resize: none !important;
+        min-width: 244px !important;
+        max-width: 244px !important;
+        width: 244px !important;
+    }
+    
+    /* 隐藏侧边栏的拖拽手柄 */
+    [data-testid="stSidebar"] .css-1d391kg::after,
+    [data-testid="stSidebar"] .css-1y4p8pa::after,
+    [data-testid="stSidebar"] .css-1cypcdb::after {
+        display: none !important;
+    }
+    
+    /* 禁用侧边栏右边缘的鼠标调整 */
+    [data-testid="stSidebar"]:hover {
+        cursor: default !important;
+    }
+    
+    [data-testid="stSidebar"] * {
+        resize: none !important;
     }
     
     /* 标题样式 */
@@ -40,23 +67,21 @@ def set_app_styles():
         font-weight: 600;
     }
     
-    /* 底部版权信息样式 - 侧边栏内底部贴边 */
-    .sidebar-footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 21rem; /* 固定宽度与侧边栏宽度一致 */
-        max-width: 100%;
-        padding: 10px 5px;
-        background-color: #f0f2f5;
-        border-top: 1px solid rgba(0,0,0,0.05);
-        text-align: center;
-        font-size: 0.85rem;
-        color: #555;
-        z-index: 99;
-        display: flex;
-        flex-direction: column;
-        line-height: 1.5;
+    /* 改善按钮样式 */
+    [data-testid="stSidebar"] .stButton > button {
+        width: 100% !important;
+        margin-bottom: 0.5rem !important;
+        border-radius: 6px !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    /* 改善链接样式 */
+    [data-testid="stSidebar"] a {
+        transition: color 0.2s ease !important;
+    }
+    
+    [data-testid="stSidebar"] a:hover {
+        color: #007acc !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -124,15 +149,57 @@ def create_sidebar_header(active_page="首页"):
                     st.error(f"页面跳转失败: {str(e)}")
                     st.info(f"尝试跳转到: {item['path']}")
         
-        # 为菜单留出底部空间，以免被固定版权信息覆盖
-        st.markdown('<div style="margin-bottom: 50px;"></div>', unsafe_allow_html=True)
+        # 简化方案：固定宽度244px，禁用拖拽调整
+        st.markdown("""
+        <style>
+        .sidebar-footer {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            width: 244px !important;
+            background-color: rgba(240, 242, 245, 0.95) !important;
+            border-top: 1px solid rgba(0, 0, 0, 0.15) !important;
+            padding: 0.8rem 1rem !important;
+            text-align: center !important;
+            font-size: 0.7rem !important;
+            color: #666 !important;
+            line-height: 1.4 !important;
+            z-index: 9999 !important;
+            transition: all 0.3s ease !important;
+        }
         
-        # 固定在底部的版权信息
+        .sidebar-footer a {
+            color: #00a971 !important;
+            text-decoration: none !important;
+            font-weight: 500 !important;
+        }
+        
+        .sidebar-footer a:hover {
+            color: #007f5f !important;
+        }
+        
+        /* 当侧边栏收起时隐藏版权信息 */
+        [data-testid="stSidebar"][aria-expanded="false"] ~ * .sidebar-footer,
+        [data-testid="stSidebar"].st-emotion-cache-1d391kg ~ * .sidebar-footer {
+            transform: translateX(-100%) !important;
+            opacity: 0 !important;
+        }
+        
+        /* 响应式处理 */
+        @media (max-width: 768px) {
+            .sidebar-footer {
+                display: none !important;
+            }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # 在侧边栏中添加版权信息（使用固定定位）
         st.markdown(f"""
         <div class="sidebar-footer">
-            <div style="margin-bottom: 8px;">© 2025 KubeEye | v{VERSION}</div>
+            <div style="margin-bottom: 4px; font-weight: 500;">© 2025 KubeEye v{VERSION}</div>
             <div>
-                <a href="https://kubesphere.io" style="color: #00a971; text-decoration: none;">KubeSphere</a>
+                <a href="https://kubesphere.io" target="_blank">KubeSphere</a>
             </div>
         </div>
         """, unsafe_allow_html=True)

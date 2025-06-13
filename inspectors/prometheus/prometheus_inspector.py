@@ -135,9 +135,7 @@ class PrometheusInspector(BaseInspector):
                 first_assertion_desc = first_assertion.get('description', '')
                 if first_assertion_desc:
                     # 渲染模板以显示具体值
-                    from utils.assertion_evaluator import AssertionEvaluator
-                    evaluator = AssertionEvaluator()
-                    rendered_desc = evaluator._render_template(first_assertion_desc, variables)
+                    rendered_desc = self.rule_processor.assertion_manager.render_template(first_assertion_desc, variables)
                     description = f"{rule.name}: {rendered_desc}"
                 else:
                     # 显示关键指标值
@@ -334,7 +332,7 @@ class PrometheusInspector(BaseInspector):
         
     def _format_skipped_result(self, rule: Rule, reason: str) -> Dict:
         """
-        格式化跳过的规则结果
+        格式化跳过的规则结果（已委托给 ResultFormatter）
         
         Args:
             rule: 规则对象
@@ -343,18 +341,11 @@ class PrometheusInspector(BaseInspector):
         Returns:
             结果字典
         """
-        return self.rule_processor.format_rule_result(
-            rule=rule,
-            status="skipped",
-            description=f"{rule.name} 已跳过: {reason}",
-            severity="info",
-            details=reason,
-            solution=""
-        )
+        return self.rule_processor.result_formatter.skipped_result(rule, reason)
         
     def _format_error_result(self, rule: Rule, error_type: str, error_msg: str) -> Dict:
         """
-        格式化错误结果
+        格式化错误结果（已委托给 ResultFormatter）
         
         Args:
             rule: 规则对象
@@ -364,11 +355,7 @@ class PrometheusInspector(BaseInspector):
         Returns:
             结果字典
         """
-        return self.rule_processor.format_rule_result(
-            rule=rule,
-            status="error",
-            description=f"{rule.name} 出错: {error_type}",
-            severity="critical",
-            details=f"错误类型: {error_type}\n错误信息: {error_msg}",
-            solution="请检查Prometheus连接配置和查询语法"
+        full_error_msg = f"错误类型: {error_type}\n错误信息: {error_msg}\n解决建议: 请检查Prometheus连接配置和查询语法"
+        return self.rule_processor.result_formatter.error_result(
+            rule, full_error_msg, f"{rule.name} 出错: {error_type}"
         )

@@ -193,7 +193,7 @@ class BaseInspector(ABC):
         
     def _format_invalid_result(self, rule: Rule, description: str, details: str) -> Dict:
         """
-        格式化配置无效的规则结果
+        格式化配置无效的规则结果（已委托给 ResultFormatter）
         
         Args:
             rule: 规则对象
@@ -203,18 +203,11 @@ class BaseInspector(ABC):
         Returns:
             格式化的结果字典
         """
-        return self.rule_processor.format_rule_result(
-            rule=rule,
-            status='invalid',
-            description=description,
-            severity='warning',
-            details=details,
-            solution="请检查规则配置并修正问题"
-        )
+        return self.rule_processor.result_formatter.invalid_result(rule, description, details)
         
     def _format_not_applicable_result(self, rule: Rule, reason: str) -> Dict:
         """
-        格式化不适用规则结果
+        格式化不适用规则结果（已委托给 ResultFormatter）
         
         Args:
             rule: 规则对象
@@ -223,18 +216,11 @@ class BaseInspector(ABC):
         Returns:
             格式化的结果字典
         """
-        return self.rule_processor.format_rule_result(
-            rule=rule,
-            status='not_applicable',
-            description=f"规则不适用: {reason}",
-            severity='info',
-            details=f"规则 {rule.name} 不适用于当前环境: {reason}",
-            solution=""
-        )
+        return self.rule_processor.result_formatter.not_applicable_result(rule, reason)
         
     def _format_skipped_result(self, rule: Rule, reason: str) -> Dict:
         """
-        格式化跳过的规则结果（用户主动选择跳过）
+        格式化跳过的规则结果（已委托给 ResultFormatter）
         
         Args:
             rule: 规则对象
@@ -243,18 +229,11 @@ class BaseInspector(ABC):
         Returns:
             格式化的结果字典
         """
-        return self.rule_processor.format_rule_result(
-            rule=rule,
-            status='skipped',
-            description=reason,
-            severity='info',
-            details=f"规则 {rule.name} 被跳过: {reason}",
-            solution=""
-        )
+        return self.rule_processor.result_formatter.skipped_result(rule, reason)
         
     def _format_error_result(self, rule: Rule, description: str, error: str) -> Dict:
         """
-        格式化错误的规则结果
+        格式化错误的规则结果（已委托给 ResultFormatter）
         
         Args:
             rule: 规则对象
@@ -264,11 +243,4 @@ class BaseInspector(ABC):
         Returns:
             格式化的结果字典
         """
-        return self.rule_processor.format_rule_result(
-            rule=rule,
-            status='error',
-            description=description,
-            severity='warning',
-            details=f"规则 {rule.name} 执行出错: {error}",
-            solution="检查日志和系统状态"
-        )
+        return self.rule_processor.result_formatter.error_result(rule, error, description)

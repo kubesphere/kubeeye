@@ -275,9 +275,7 @@ class NodeInspector(BaseInspector):
             first_assertion_desc = first_assertion.get('description', '')
             if first_assertion_desc:
                 # 渲染模板以显示具体值
-                from utils.assertion_evaluator import AssertionEvaluator
-                evaluator = AssertionEvaluator()
-                rendered_desc = evaluator._render_template(first_assertion_desc, variables)
+                rendered_desc = self.rule_processor.assertion_manager.render_template(first_assertion_desc, variables)
                 description = f"{rule.name}: {rendered_desc}"
             else:
                 description = f"{rule.name}: 当前值为 {variables.get('output', 'N/A')}"
