@@ -1,0 +1,115 @@
+# 节点健康状态检查规则
+# 描述：检查节点的健康状态，包括就绪状态、内存压力、磁盘压力、网络可达性等
+---
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  name: node-health-check
+spec:
+  opas:
+  - name: NodeHealthCheck
+    rule: |-
+      package inspect.kubeeye
+      import rego.v1
+
+      deny contains msg if {
+
+        input.kind == "Node"
+        input.apiVersion == "v1"
+
+        level := "NotReady"
+        message := "节点就绪状态检查"
+
+        some condition in input.status.conditions
+
+        condition.type == "Ready"
+        condition.status != "True"
+
+        msg = {
+          "Name": sprintf("%v", [input.metadata.name]),
+          "Type": sprintf("%v", [input.kind]),
+          "Level": sprintf("%v", [level]),
+          "Message": sprintf("%v",[message]),
+          "Reason": "节点不是 Ready 状态",
+        }
+      } 
+
+  - name: MemoryPressureCheck
+    rule: |-
+      package inspect.kubeeye
+      import rego.v1
+
+      deny contains msg if {
+
+        input.kind == "Node"
+        input.apiVersion == "v1"
+
+        level := "NotReady"
+        message := "内存压力检查"
+
+        some condition in input.status.conditions
+
+        condition.type == "MemoryPressure"
+        condition.status != "False"
+
+        msg = {
+          "Name": sprintf("%v", [input.metadata.name]),
+          "Type": sprintf("%v", [input.kind]),
+          "Level": sprintf("%v", [level]),
+          "Message": sprintf("%v",[message]),
+          "Reason": "节点内存资源信息异常",
+        }
+      } 
+
+  - name: DiskPressureCheck
+    rule: |-
+      package inspect.kubeeye
+      import rego.v1
+
+      deny contains msg if {
+
+        input.kind == "Node"
+        input.apiVersion == "v1"
+
+        level := "NotReady"
+        message := "磁盘压力检查"
+
+        some condition in input.status.conditions
+
+        condition.type == "DiskPressure"
+        condition.status != "False"
+
+        msg = {
+          "Name": sprintf("%v", [input.metadata.name]),
+          "Type": sprintf("%v", [input.kind]),
+          "Level": sprintf("%v", [level]),
+          "Message": sprintf("%v",[message]),
+          "Reason": "节点磁盘资源信息异常",
+        }
+      }
+
+  - name: NetworkerUnavailableCheck
+    rule: |-
+      package inspect.kubeeye
+      import rego.v1
+
+      deny contains msg if {
+
+        input.kind == "Node"
+        input.apiVersion == "v1"
+
+        level := "NotReady"
+        message := "网络不可达检查"
+
+        some condition in input.status.conditions
+        condition.type == "NetworkUnavailable"
+        condition.status != "False"
+
+        msg = {
+          "Name": sprintf("%v", [input.metadata.name]),
+          "Type": sprintf("%v", [input.kind]),
+          "Level": sprintf("%v", [level]),
+          "Message": sprintf("%v",[message]),
+          "Reason": "节点网络不可达",
+        }
+      }

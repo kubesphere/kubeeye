@@ -1,0 +1,32 @@
+# 集群级别资源使用规则
+# 描述：监控集群整体资源使用情况，包括CPU、内存、磁盘、Pod使用率等
+---
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  name: cluster-resource-usage
+spec:
+  promQL:
+    - name: cluster_cpu_usage_high
+      rule: (cluster:node_cpu:sum_rate5m / count(sum by (instance, cpu) (node_cpu_seconds_total))) > 0.8
+      desc: 集群 CPU 使用率超过 80%
+    - name: cluster_memory_usage_high
+      rule: ((sum by (cluster)(node:node_memory_bytes_total:sum) - sum by (cluster)(node:node_memory_available_bytes:sum)) / sum by (cluster)(node:node_memory_bytes_total:sum)) > 0.8
+      desc: 集群内存使用率超过 80%
+    - name: cluster_disk_usage_high
+      rule: (sum by (cluster)(max by (cluster, device, instance)(node_filesystem_size_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", job="node-exporter"} - node_filesystem_avail_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", job="node-exporter"})) / sum by (cluster)(max(node_filesystem_size_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", job="node-exporter"}) by (cluster, device, instance))) > 0.8
+      desc: 集群磁盘使用率超过 80%
+    - name: cluster_pod_quota_usage_high
+      rule: (count by(cluster)(kube_pod_info{job="kube-state-metrics"} and on(pod, namespace) (kube_pod_status_phase{job="kube-state-metrics",phase="Running"} > 0)) / sum by(cluster)(max by (cluster,node)(kube_node_status_capacity{resource="pods"}) unless on (cluster,node) (kube_node_status_condition{condition="Ready",status=~"unknown|false"} > 0))) > 0.8
+      desc: 集群 Pod 配额使用率超过 80%
+    - name: cluster_memory_overcommit
+      rule: (sum (kube_pod_container_resource_requests{job="kube-state-metrics",resource="memory"}) / sum by (cluster)(node:node_memory_bytes_total:sum)) > 1.2
+      desc: 集群内存资源请求超额分配超过 120%
+    - name: cluster_cpu_overcommit
+      rule: (sum (kube_pod_container_resource_requests{job="kube-state-metrics",resource="cpu"}) / sum by (cluster)(node:node_num_cpu:sum)) > 1.2
+      desc: 集群 CPU 资源请求超额分配超过 120%
+    - name: cluster_node_usage_ratio_high
+      rule: (count(node:node_pod_utilisation:ratio > 0.8) / count(kube_node_info)) > 0.5
+      desc: 集群中超过 50% 的节点 Pod 使用率超过 80%
+  prometheus:
+    endpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090

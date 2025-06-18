@@ -1,0 +1,29 @@
+# 存储文件系统监控规则
+# 描述：监控文件系统相关指标，包括磁盘空间、inode使用情况等
+---
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  name: storage-filesystem-monitoring
+spec:
+  prometheus:
+    endpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
+  promQL:
+    - name: filesystem-less-20
+      desc: 文件系统 inode 可用空间少于 20%
+      rule: (node_filesystem_files_free{fstype!="",job="node-exporter"} / node_filesystem_files{fstype!="",job="node-exporter"} * 100 < 20 and node_filesystem_readonly{fstype!="",job="node-exporter"} == 0)
+    - name: NodeFilesystemSpaceFillingUp
+      desc: 预测文件系统将在未来 24 小时内耗尽空间
+      rule: (node_filesystem_avail_bytes{fstype!="",job="node-exporter"} / node_filesystem_size_bytes{fstype!="",job="node-exporter"} * 100 < 20 and predict_linear(node_filesystem_avail_bytes{fstype!="",job="node-exporter"}[6h], 24 * 60 * 60) < 0 and node_filesystem_readonly{fstype!="",job="node-exporter"} == 0)
+    - name: NodeFilesystemFilesFillingUp
+      rule: (node_filesystem_files_free{fstype!="",job="node-exporter"} / node_filesystem_files{fstype!="",job="node-exporter"} * 100 < 40 and predict_linear(node_filesystem_files_free{fstype!="",job="node-exporter"}[6h], 24 * 60 * 60) < 0 and node_filesystem_readonly{fstype!="",job="node-exporter"} == 0)
+      desc: 预测文件系统将在未来 24 小时内耗尽 inode
+    - name: NodeFilesystemAlmostOutOfSpace
+      rule: (node_filesystem_avail_bytes{fstype!="",job="node-exporter"} / node_filesystem_size_bytes{fstype!="",job="node-exporter"} * 100 < 5 and node_filesystem_readonly{fstype!="",job="node-exporter"} == 0)
+      desc: 文件系统剩余空间少于 5%
+    - name: filesystem_readonly
+      rule: node_filesystem_readonly==1
+      desc: 文件系统为只读状态
+    - name: filesystem_avail
+      rule: (node_filesystem_avail_bytes{mountpoint=~"/var/lib/docker|/kube|/home|/var|/"} / node_filesystem_size_bytes{mountpoint=~"/var/lib/docker|/kube|/home|/var|/"}) < 0.25
+      desc: 关键挂载点可用空间不足 25%

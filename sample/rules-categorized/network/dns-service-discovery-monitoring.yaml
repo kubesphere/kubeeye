@@ -1,0 +1,51 @@
+# DNS 和服务发现监控规则
+# 描述：监控 DNS 解析性能、CoreDNS 状态、服务发现相关的网络指标
+# 注意：CoreDNS 指标需要启用 prometheus 插件才能获取
+---
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  name: dns-service-discovery-monitoring
+spec:
+  prometheus:
+    endpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
+  promQL:
+    # === CoreDNS 基础监控 ===
+    - name: CoreDNSPodDown
+      rule: (kube_pod_status_phase{namespace="kube-system", pod=~"coredns.*", phase!="Running"} == 1) or (kube_pod_status_ready{namespace="kube-system", pod=~"coredns.*", condition="true"} == 0)
+      desc: CoreDNS Pod 未就绪或未运行
+    - name: CoreDNSPodRestartFrequent
+      rule: increase(kube_pod_container_status_restarts_total{namespace="kube-system", pod=~"coredns.*"}[1h]) > 3
+      desc: CoreDNS Pod 1小时内重启超过3次
+    
+    # === DNS 请求监控（需要 CoreDNS prometheus 插件）===
+    - name: CoreDNSHighRequestRate
+      rule: sum(rate(coredns_dns_requests_total[5m])) > 100
+      desc: CoreDNS DNS 请求速率超过 100 req/s（适合中小集群）
+    - name: CoreDNSHighErrorRate
+      rule: (sum(rate(coredns_dns_responses_total{rcode=~"SERVFAIL|REFUSED|FORMERR|NOTIMP"}[5m])) / sum(rate(coredns_dns_responses_total[5m])) > 0) > 0.05
+      desc: CoreDNS 真正错误率超过5%（SERVFAIL、REFUSED等严重错误）
+    - name: CoreDNSHighNXDOMAINRate
+      rule: (sum(rate(coredns_dns_responses_total{rcode="NXDOMAIN"}[5m])) / sum(rate(coredns_dns_responses_total[5m])) > 0) > 0.3
+      desc: CoreDNS NXDOMAIN响应率超过30%（可能存在配置问题）
+    - name: CoreDNSHighLatency
+      rule: histogram_quantile(0.95, sum(rate(coredns_dns_request_duration_seconds_bucket[5m])) by (server, zone, le)) > 0.5
+      desc: CoreDNS DNS 查询延迟过高（95分位数超过500ms）
+    
+    # === 服务发现监控 ===
+    - name: ServiceEndpointsNotReady
+      rule: sum(kube_endpoint_address_not_ready) > 10
+      desc: 集群中未就绪的服务端点超过10个
+    - name: DNSServiceNotAvailable
+      rule: up{job="kube-dns"} == 0 or up{job="coredns"} == 0
+      desc: DNS 服务不可用
+    
+    # === DNS 配置监控 ===
+    - name: CoreDNSConfigMapChanges
+      rule: increase(kube_configmap_created{namespace="kube-system", configmap="coredns"}[10m]) > 0 or increase(kube_configmap_metadata_resource_version{namespace="kube-system", configmap="coredns"}[10m]) > 1
+      desc: CoreDNS 配置在10分钟内发生变更
+    
+    # === 外部 DNS 监控（如果配置了外部 DNS 解析）===
+    - name: ExternalDNSResolutionFailed
+      rule: probe_success{job="dns-external"} == 0
+      desc: 外部 DNS 解析检查失败

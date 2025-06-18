@@ -1,0 +1,69 @@
+# Kubernetes API 服务器综合监控规则
+# 描述：全面监控 kube-apiserver 的性能、错误率、延迟等关键指标
+# 注意：不同类型的请求有不同的正常延迟范围：
+#   - GET 请求：通常 < 1s
+#   - LIST 请求：可能较慢，< 5s 
+#   - 变更请求 (CREATE/UPDATE/PATCH/DELETE)：< 2s
+#   - WATCH 请求：长连接，不适合延迟监控
+#   - Webhook：准入控制可能较慢，< 5s
+---
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  name: kube-apiserver-monitoring
+spec:
+  prometheus:
+    endpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
+  promQL:
+    # === 基础性能监控 ===
+    - name: KubeAPIServerHighRequestRate
+      rule: sum(rate(apiserver_request_total{verb!="WATCH"}[5m])) > 1000
+      desc: API 服务器非 WATCH 请求速率超过 1000 req/s
+    - name: KubeAPIServerHighErrorRate
+      rule: (sum(rate(apiserver_request_total{code=~"5.."}[5m])) / sum(rate(apiserver_request_total[5m]))) > 0.05
+      desc: API 服务器 5xx 错误率超过5%
+    - name: KubeAPIServerHighClientErrorRate
+      rule: (sum(rate(apiserver_request_total{code=~"4.."}[5m])) / sum(rate(apiserver_request_total[5m]))) > 0.1
+      desc: API 服务器 4xx 客户端错误率超过10%
+    
+    # === 按操作类型的延迟监控 ===
+    - name: KubeAPIServerHighGetLatency
+      rule: histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{verb="GET"}[5m])) by (resource, le)) > 1
+      desc: API 服务器 GET 请求延迟过高（99分位数超过1秒）
+    - name: KubeAPIServerHighListLatency
+      rule: histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{verb="LIST"}[5m])) by (resource, le)) > 5
+      desc: API 服务器 LIST 请求延迟过高（99分位数超过5秒）
+    - name: KubeAPIServerHighMutatingLatency
+      rule: histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{verb=~"CREATE|UPDATE|PATCH|DELETE"}[5m])) by (verb, resource, le)) > 2
+      desc: API 服务器变更请求延迟过高（99分位数超过2秒）
+    
+    # === 按资源类型的监控 ===
+    - name: KubeAPIServerHighPodRequestRate
+      rule: sum(rate(apiserver_request_total{resource="pods", verb!="WATCH"}[5m])) > 500
+      desc: API 服务器 Pod 资源请求率过高（超过500 req/s）
+    - name: KubeAPIServerSlowPodCreation
+      rule: histogram_quantile(0.95, sum(rate(apiserver_request_duration_seconds_bucket{resource="pods", verb="CREATE"}[5m])) by (le)) > 3
+      desc: Pod 创建操作延迟过高（95分位数超过3秒）
+    
+    # === 认证和授权监控 ===
+    - name: KubeAPIServerForbiddenRequests
+      rule: sum(rate(apiserver_request_total{code="403"}[5m])) > 20
+      desc: API 服务器禁止访问请求过多（超过20 req/s）
+    
+    # === etcd 交互监控 ===
+    - name: KubeAPIServerEtcdRequestLatency
+      rule: histogram_quantile(0.99, sum(rate(etcd_request_duration_seconds_bucket[5m])) by (operation, le)) > 0.5
+      desc: API 服务器访问 etcd 延迟过高（99分位数超过500ms）
+    
+    # === 系统资源监控 ===
+    - name: KubeAPIServerWorkQueueDepth
+      rule: workqueue_depth{name=~".*apiserver.*"} > 100
+      desc: API 服务器工作队列深度过高（超过100）
+    - name: KubeAPIServerWorkQueueLatency
+      rule: histogram_quantile(0.99, sum(rate(workqueue_queue_duration_seconds_bucket{name=~".*apiserver.*"}[5m])) by (name, le)) > 1
+      desc: API 服务器工作队列等待时间过长（99分位数超过1秒）
+    
+    # === 证书和安全监控 ===
+    - name: KubeAPIServerAdmissionWebhookLatency
+      rule: histogram_quantile(0.99, sum(rate(apiserver_admission_webhook_admission_duration_seconds_bucket[5m])) by (name, type, le)) > 5
+      desc: API 服务器准入控制 Webhook 延迟过高（99分位数超过5秒）

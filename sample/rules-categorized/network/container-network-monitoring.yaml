@@ -1,0 +1,32 @@
+# 容器网络和 CNI 监控规则
+# 描述：监控容器网络性能、CNI 插件状态、网络策略等相关指标
+---
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  name: container-network-monitoring
+spec:
+  prometheus:
+    endpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
+  promQL:
+    - name: PodHighNetworkReceiveBytes
+      rule: sum(rate(container_network_receive_bytes_total{interface="eth0"}[5m])) by (pod, namespace) > 100 * 1024 * 1024
+      desc: Pod 网络接收速率过高（超过100MB/s）
+    - name: PodHighNetworkTransmitBytes
+      rule: sum(rate(container_network_transmit_bytes_total{interface="eth0"}[5m])) by (pod, namespace) > 100 * 1024 * 1024
+      desc: Pod 网络发送速率过高（超过100MB/s）
+    - name: PodNetworkReceiveErrors
+      rule: sum(rate(container_network_receive_errors_total[5m])) by (pod, namespace) > 0.1
+      desc: Pod 网络接收错误率过高（超过0.1 errors/s）
+    - name: PodNetworkTransmitErrors
+      rule: sum(rate(container_network_transmit_errors_total[5m])) by (pod, namespace) > 0.1
+      desc: Pod 网络发送错误率过高（超过0.1 errors/s）
+    - name: CNIOperationHighLatency
+      rule: histogram_quantile(0.99, sum(rate(kubelet_cni_operations_duration_seconds_bucket[5m])) by (operation_type, le)) > 1
+      desc: CNI 操作延迟过高（99分位数超过1秒）
+    - name: CNIOperationErrors
+      rule: sum(rate(kubelet_cni_operations_errors_total[5m])) by (operation_type) > 0.1
+      desc: CNI 操作错误率过高（超过0.1 errors/s）
+    - name: NetworkInterfaceDown
+      rule: node_network_up{device!~"lo|docker.*|br-.*|veth.*|kube-ipvs.*|nodelocaldns|tunl.*"} == 0
+      desc: 物理网络接口状态异常
