@@ -1,0 +1,36 @@
+# 节点状态统计检查规则
+# 描述：检查节点状态统计信息，包括临时存储使用情况等
+---
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  name: node-stats-check
+spec:
+  opas:
+  - name: CheckEphemeralStorageUsage
+    rule: |-
+      package inspect.kubeeye.nodeStatsSummary
+      import rego.v1
+      
+      # 定义阈值 (5GB in bytes)
+      threshold := 5 * 1024 * 1024 * 1024
+      
+      deny contains msg if {
+      
+        pod := input.pods[_]
+        storage := pod["ephemeral-storage"]
+        bytes := storage.usedBytes
+        bytes > threshold
+        
+        gb_used := bytes / (1024 * 1024 * 1024)
+
+        level := "danger"
+        msg := {
+          "Name": sprintf("%v", [pod.podRef.name]),
+          "Namespace": sprintf("%v", [pod.podRef.namespace]),
+          "Type": "Pod",
+          "Level": sprintf("%v", [level]),
+          "Message": sprintf("Pod '%v/%v' 临时存储使用量 (%.2f GB) 超过阈值 (5 GB)", [pod.podRef.namespace, pod.podRef.name, gb_used]),
+          "Reason": "Pod 临时存储使用量超过阈值"
+        }
+      }

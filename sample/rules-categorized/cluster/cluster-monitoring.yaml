@@ -1,0 +1,29 @@
+# 集群级别异常监控规则
+# 描述：监控集群级别的异常情况，包括版本不匹配、资源超额分配等
+---
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  name: cluster-monitoring
+spec:
+  prometheus:
+    endpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
+  promQL:
+    - name: KubeQuotaAlmostFull
+      rule: kube_resourcequota{job="kube-state-metrics",type="used"} / ignoring(instance, job, type) (kube_resourcequota{job="kube-state-metrics",type="hard"} > 0) > 0.9 < 1
+      desc: 命名空间配额即将满载
+    - name: KubeCPUOvercommit
+      rule: (sum(namespace_cpu:kube_pod_container_resource_requests:sum) / sum(kube_node_status_allocatable{resource="cpu"})) > 1.5
+      desc: 集群 CPU 资源请求超额分配（超过可分配资源的150%）
+    - name: KubeMemoryOvercommit
+      rule: (sum(namespace_memory:kube_pod_container_resource_requests:sum) / sum(kube_node_status_allocatable{resource="memory"})) > 1.5
+      desc: 集群内存资源请求超额分配（超过可分配资源的150%）
+    - name: KubeVersionMismatch
+      rule: count(count by(git_version) (label_replace(kubernetes_build_info{job!~"kube-dns|coredns"}, "git_version", "$1", "git_version", "(v[0-9]*.[0-9]*).*"))) > 1
+      desc: Kubernetes 组件运行的版本不一致
+    - name: KubeClientErrors
+      rule: (sum by(instance, job, namespace) (rate(rest_client_requests_total{code=~"5.."}[5m])) / sum by(instance, job, namespace) (rate(rest_client_requests_total[5m]))) > 0.01
+      desc: Kubernetes API 服务器客户端出现错误
+    - name: NodeClockSkewDetected
+      rule: (node_timex_offset_seconds > 0.05 and deriv(node_timex_offset_seconds[5m]) >= 0) or (node_timex_offset_seconds < -0.05 and deriv(node_timex_offset_seconds[5m]) <= 0)
+      desc: 检测到时钟偏差

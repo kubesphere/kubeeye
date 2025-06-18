@@ -1,0 +1,54 @@
+# 容器资源使用监控规则
+# 描述：监控容器运行时资源使用情况，包括CPU、内存限制和使用率等
+---
+apiVersion: kubeeye.kubesphere.io/v1alpha2
+kind: InspectRule
+metadata:
+  name: container-resource-monitoring
+spec:
+  prometheus:
+    endpoint: http://prometheus-k8s.kubesphere-monitoring-system.svc.cluster.local:9090
+  promQL:
+    # === 容器资源使用率监控 ===
+    - name: ContainerCPUUsageAbsolute
+      rule: rate(container_cpu_usage_seconds_total{container!=""}[5m]) > 1
+      desc: 容器 CPU 使用超过 1 核
+    - name: ContainerMemoryUsageAbsolute
+      rule: container_memory_working_set_bytes{container!=""} > 2 * 1024 * 1024 * 1024
+      desc: 容器内存使用超过 2GB
+    
+    # === 容器重启和异常监控 ===
+    - name: ContainerRestartFrequent
+      rule: increase(kube_pod_container_status_restarts_total[1h]) > 5
+      desc: 容器 1 小时内重启超过 5 次
+    - name: ContainerOOMKilled
+      rule: increase(kube_pod_container_status_terminated_reason{reason="OOMKilled"}[5m]) > 0
+      desc: 容器因内存不足被终止（OOMKilled）
+    - name: ContainerWaitingState
+      rule: kube_pod_container_status_waiting{reason!="ContainerCreating"} == 1
+      desc: 容器处于等待状态（非正常创建中）
+    
+    # === 资源配置检查 ===
+    - name: ContainerWithoutMemoryLimits
+      rule: kube_pod_container_info unless on(namespace,pod,container) kube_pod_container_resource_limits{resource="memory"}
+      desc: 容器未设置内存限制
+    - name: ContainerWithoutCPULimits  
+      rule: kube_pod_container_info unless on(namespace,pod,container) kube_pod_container_resource_limits{resource="cpu"}
+      desc: 容器未设置 CPU 限制
+    - name: ContainerWithoutMemoryRequests
+      rule: kube_pod_container_info unless on(namespace,pod,container) kube_pod_container_resource_requests{resource="memory"}
+      desc: 容器未设置内存请求
+    - name: ContainerWithoutCPURequests
+      rule: kube_pod_container_info unless on(namespace,pod,container) kube_pod_container_resource_requests{resource="cpu"}
+      desc: 容器未设置 CPU 请求
+    
+    # === 容器状态监控 ===
+    - name: ContainerStatusNotRunning
+      rule: kube_pod_container_status_running == 0
+      desc: 容器未处于运行状态
+    
+    # === 存储相关监控 ===
+    - name: PodVolumeUsageHigh
+      rule: (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes) > 0.9
+      desc: Pod 存储卷使用率超过 90%
+
