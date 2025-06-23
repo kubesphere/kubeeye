@@ -378,3 +378,22 @@ def list_results(cluster_name: Optional[str] = None) -> List[Dict]:
     # 按时间戳排序，最新的在前
     results.sort(key=lambda x: x['timestamp'], reverse=True)
     return results
+
+
+def get_latest_result_by_cluster(cluster_name: str) -> Optional[Dict[str, Any]]:
+    """
+    获取指定集群的最新巡检结果
+    
+    Args:
+        cluster_name (str): 集群名称
+        
+    Returns:
+        Optional[Dict[str, Any]]: 最新的巡检结果，如果没有则返回 None
+    """
+    results = list_results()
+    
+    for result in results:
+        if result.get('cluster_name') == cluster_name:
+            return result
+    
+    return None

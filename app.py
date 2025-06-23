@@ -27,16 +27,17 @@ st.set_page_config(
 # 项目模块导入
 from utils.common import initialize_page
 from utils.cluster_config import list_clusters, get_cluster
-from utils.inspection_result import list_results
+from utils.inspection_result import list_results, get_latest_result_by_cluster
 from utils.rule_loader import load_rules
 from utils.version import VERSION, APP_NAME, APP_DESCRIPTION, RELEASE_DATE
+from utils.cert_checker import get_cluster_cert_status
 
 # 页面配置已经在上面设置完成，现在初始化其他页面组件
 initialize_page(
-    title="首页",
-    icon="🏠",
-    page_title="KubeEye",
-    page_subtitle="Kubernetes 集群巡检工具"
+    title="巡检总览",
+    icon="📊",
+    page_title="KubeEye 集群巡检总览",
+    page_subtitle="实时监控您的 Kubernetes 集群健康状况"
 )
 
 # 加载集群列表
@@ -50,258 +51,321 @@ opa_rules = load_rules('opa')
 # 计算总规则数
 total_rules = len(node_rules) + len(prometheus_rules) + len(opa_rules)
 
-# 断言系统已经是默认系统
-using_assertion_system = True
-
-# 设置强调样式，增强视觉效果，更加和谐的色彩
+# 设置简洁样式
 st.markdown("""
 <style>
-.highlight {
-    padding: 1.2rem;
-    border-radius: 0.5rem;
-    background-color: #f8f9fa;
-    border-left: 3px solid #00a971;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-}
-.stat-card {
-    background-color: #ffffff;
-    border-radius: 0.5rem;
-    padding: 1.2rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    text-align: center;
-    transition: all 0.25s ease;
-    border: 1px solid rgba(0,0,0,0.03);
-}
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-.stat-number {
-    font-size: 2.2rem;
-    font-weight: 600;
-    color: #00a971;
-    margin-bottom: 0.3rem;
-}
-.stat-label {
-    color: #555;
-    font-size: 0.95rem;
-}
-/* 改进文本可读性 */
-p, li {
-    color: #444;
-    line-height: 1.6;
-}
-h2, h3 {
-    margin-top: 1.5rem;
-    color: #333;
-}
-small {
-    color: #777;
-}
+.status-healthy { color: #28a745; font-weight: bold; }
+.status-warning { color: #ffc107; font-weight: bold; }
+.status-critical { color: #dc3545; font-weight: bold; }
+.status-unknown { color: #6c757d; font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
 
-# 首页功能区域
-st.markdown(f"""
-## 欢迎使用 {APP_NAME} {VERSION}
+# 获取数据
+clusters = list_clusters()
+all_results = list_results()
 
-### 系统概述
+# 计算统计数据
+total_clusters = len(clusters)
 
-**{APP_NAME}** 是一款专为 Kubernetes 集群设计的综合巡检工具，旨在帮助运维人员和 SRE 团队快速发现、诊断和解决集群中的各类问题。通过自动化的检查流程，本工具可以显著提高集群的可靠性、安全性和性能。
+# 最近24小时的巡检结果
+recent_scans = 0
+recent_issues = 0
 
-<small>版本发布日期: {RELEASE_DATE}</small>
+if all_results:
+    # 计算最近24小时的数据
+    now = datetime.now()
+    for result in all_results:
+        result_time = datetime.fromisoformat(result['timestamp'])
+        if (now - result_time).total_seconds() < 24 * 3600:  # 24小时内
+            recent_scans += 1
+            recent_issues += result.get('critical', 0) + result.get('warning', 0)
 
-### 核心功能
+# 获取每个集群的最新状态
+cluster_statuses = {}
+for cluster_name in clusters:
+    latest_result = None
+    for result in all_results:
+        if result['cluster_name'] == cluster_name:
+            latest_result = result
+            break
+    
+    if latest_result:
+        critical = latest_result.get('critical', 0)
+        warning = latest_result.get('warning', 0)
+        
+        if critical > 0:
+            status = 'critical'
+        elif warning > 0:
+            status = 'warning'
+        else:
+            status = 'healthy'
+    else:
+        status = 'unknown'
+    
+    cluster_statuses[cluster_name] = {
+        'status': status,
+        'latest_result': latest_result
+    }
 
-本工具提供三大类巡检功能，全面覆盖集群各层面的健康状况：
+# 顶部概览统计
+st.markdown("### 📊 概览")
+cols = st.columns(5)
 
-1. **节点状态检查**
-   - 监控 CPU、内存、磁盘使用率，及时预警资源不足
-   - 检查关键系统服务（kubelet、docker、containerd）的运行状态
-   - 分析系统负载，识别性能瓶颈
-   - 验证节点网络连通性和内核参数配置
-
-2. **Prometheus 指标检查**
-   - 通过 Prometheus 指标分析集群关键性能数据
-   - 监控容器重启次数、Pod 状态异常等关键指标
-   - 追踪资源使用趋势，提前预警潜在问题
-   - 支持自定义指标查询和阈值设置
-
-3. **OPA 合规性检查**
-   - 基于 OPA（Open Policy Agent）验证资源配置合规性
-   - 检查安全风险，如特权容器、不安全挂载等
-   - 验证资源配置最佳实践（副本数、资源限制等）
-   - 确保集群配置符合组织安全策略和行业标准
-
-### 灵活的规则配置
-
-- **基于 YAML 的规则定义**：简单易读，方便版本控制和分享
-- **当前已配置 {total_rules} 条规则**：覆盖常见的集群问题和最佳实践
-- **规则管理界面**：通过 UI 直接编辑和创建规则，无需编写代码
-- **分级严重性**：问题按严重程度分类（关键、警告、信息），便于优先处理
-- **解决方案建议**：智能提供针对性的问题解决建议
-
-### 使用流程
-
-1. **配置集群信息**：添加您需要巡检的 Kubernetes 集群信息
-2. **选择巡检规则**：根据需求选择要执行的巡检规则
-3. **执行巡检**：系统自动执行所选规则并收集结果
-4. **查看分析报告**：获取直观的巡检报告，包含问题详情和解决建议
-5. **导出分享**：支持导出报告为多种格式，方便团队协作和问题追踪
-
-### 导航指南
-
-请使用左侧导航栏访问各功能页面：
-
-- **集群信息**：管理集群连接配置，包括节点 SSH、Prometheus 和 Kubeconfig 设置
-- **集群巡检**：执行巡检任务并管理巡检规则
-- **巡检报告**：查看详细的巡检结果，支持历史记录查询和数据可视化
-
-开始使用本工具，确保您的 Kubernetes 集群始终处于最佳状态！
-""")
-
-# 显示统计信息卡片
-st.markdown('<div class="highlight">', unsafe_allow_html=True)
-cols = st.columns(4)
-
-# 集群数统计卡片
 with cols[0]:
-    st.markdown(f"""
-    <div class="stat-card">
-        <div class="stat-number">{len(clusters)}</div>
-        <div class="stat-label">已配置集群</div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.metric(
+        label="总集群数",
+        value=total_clusters,
+        delta=None
+    )
 
-# 规则数统计卡片
 with cols[1]:
-    st.markdown(f"""
-    <div class="stat-card">
-        <div class="stat-number">{total_rules}</div>
-        <div class="stat-label">可用规则</div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.metric(
+        label="24小时内巡检次数",
+        value=recent_scans,
+        delta=None
+    )
 
-# 节点规则统计卡片
 with cols[2]:
-    st.markdown(f"""
-    <div class="stat-card">
-        <div class="stat-number">{len(node_rules)}</div>
-        <div class="stat-label">节点检查规则</div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.metric(
+        label="发现的问题数",
+        value=recent_issues,
+        delta=None  
+    )
 
-# OPA规则统计卡片
 with cols[3]:
+    latest_scan_time = "从未执行"
+    if all_results:
+        latest_time = datetime.fromisoformat(all_results[0]['timestamp'])
+        latest_scan_time = latest_time.strftime("%m-%d %H:%M")
+    
+    st.metric(
+        label="最近巡检时间",
+        value=latest_scan_time,
+        delta=None
+    )
+
+with cols[4]:
+    st.metric(
+        label="巡检规则总数",
+        value=total_rules,
+        delta=None
+    )
+
+# 安全状态检查
+try:
+    from utils.command_security import CommandSecurityChecker
+    security_checker = CommandSecurityChecker()
+    
+    # 测试危险命令和安全命令
+    dangerous_safe, _, _ = security_checker.check_command_security("rm -rf /")
+    safe_safe, _, _ = security_checker.check_command_security("ps aux")
+    
+    # 强制安全模式状态显示
+    if not dangerous_safe and safe_safe:
+        security_status = "� 强制安全模式已启用"
+        security_color = "green"
+    else:
+        security_status = "🔴 安全检查器异常"
+        security_color = "red"
+        
     st.markdown(f"""
-    <div class="stat-card">
-        <div class="stat-number">{len(opa_rules)}</div>
-        <div class="stat-label">OPA检查规则</div>
+    <div style="text-align: center; margin: 15px 0; padding: 10px; 
+                background-color: {'#d4edda' if security_color == 'green' else '#f8d7da'}; 
+                border: 1px solid {'#c3e6cb' if security_color == 'green' else '#f5c6cb'}; 
+                border-radius: 5px;">
+        <span style="color: {security_color}; font-weight: bold; font-size: 1.1em;">
+            {security_status}
+        </span>
+        <br>
+        <small style="color: #666;">只读巡检 • 禁止修改操作 • 安全第一</small>
     </div>
     """, unsafe_allow_html=True)
+except Exception as e:
+    st.markdown(f'''
+    <div style="text-align: center; color: orange; padding: 10px; 
+                background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
+        ⚠️ 安全检查器状态未知: {str(e)}
+    </div>
+    ''', unsafe_allow_html=True)
 
-st.markdown('</div>', unsafe_allow_html=True)
-
-# 分栏显示主要内容
-col1, col2 = st.columns(2)
-
-# 显示集群信息
-with col1:
-    st.subheader("已配置的集群")
-    
-    if clusters:
-        cluster_data = []
-        
-        for cluster_name in clusters:
-            cluster_config = get_cluster(cluster_name)
-            nodes_count = len(cluster_config.get_nodes())
-            prometheus_enabled = "✅" if cluster_config.get_prometheus_config().get('enabled', False) else "❌"
-            kubeconfig = "✅" if cluster_config.get_kubeconfig() else "❌"
-            
-            cluster_data.append({
-                "集群名称": cluster_name,
-                "节点数量": nodes_count,
-                "Prometheus": prometheus_enabled,
-                "Kubeconfig": kubeconfig
-            })
-        
-        st.dataframe(pd.DataFrame(cluster_data), use_container_width=True)
-    else:
-        st.info("还没有配置任何集群，请前往「集群信息」页面添加集群。")
-        
-    st.markdown("---")
-    
-    # 快速链接
-    st.subheader("快速操作")
-    
-    col1_1, col1_2, col1_3 = st.columns(3)
-    
-    with col1_1:
-        if st.button("➕ 添加新集群", use_container_width=True):
-            st.switch_page("pages/1_cluster_info.py")
-    
-    with col1_2:
-        if st.button("🔍 执行巡检", use_container_width=True):
-            st.switch_page("pages/2_cluster_scan.py")
-    
-    with col1_3:
-        if st.button("📊 查看报告", use_container_width=True):
-            st.switch_page("pages/3_scan_report.py")
-            
-    st.info("💡 **小贴士**: 定期执行巡检可以帮助您提前发现潜在问题，建议每周至少进行一次全面巡检。")
-
-# 显示最近的巡检结果
-with col2:
-    st.subheader("最近巡检结果")
-    
-    # 获取最近的10条巡检结果
-    results = list_results()
-    
-    if results:
-        # 取前10个结果
-        recent_results = results[:10]
-        
-        result_data = []
-        for result in recent_results:
-            timestamp = datetime.fromisoformat(result['timestamp']).strftime("%Y-%m-%d %H:%M")
-            
-            result_data.append({
-                "集群名称": result['cluster_name'],
-                "巡检类型": result['inspection_type'],
-                "时间": timestamp,
-                "关键问题": result['critical'],
-                "警告": result['warning'],
-                "通过": result['passed']
-            })
-        
-        st.dataframe(pd.DataFrame(result_data), use_container_width=True)
-    else:
-        st.info("还没有执行过任何巡检，请前往「集群巡检」页面执行巡检。")
-
-# 页面底部
 st.markdown("---")
 
-# 创建两列布局
-footer_col1, footer_col2 = st.columns(2)
+# 主要内容区域 - 集群状态表格
+st.markdown("### 🏗️ 集群状态详情")
 
-with footer_col1:
-    st.markdown("""
-    ### 巡检最佳实践
-    - **定期执行**: 建议每周进行一次完整巡检，确保集群稳定
-    - **变更后检查**: 集群重大变更后应立即执行相关巡检
-    - **问题追踪**: 对发现的问题建立跟踪机制，确保及时修复
-    - **规则迭代**: 根据运维经验不断优化和丰富巡检规则
-    """)
+if not clusters:
+    st.warning("📝 还没有配置任何集群，请先前往「集群信息」页面添加集群配置。")
+    if st.button("➕ 立即添加集群", type="primary"):
+        st.switch_page("pages/1_cluster_info.py")
+else:
+    # 构建集群状态表格数据
+    cluster_data = []
+    
+    for cluster_name in clusters:
+        status_info = cluster_statuses[cluster_name]
+        status = status_info['status']
+        latest_result = status_info['latest_result']
+        
+        # 获取集群配置
+        cluster_config = get_cluster(cluster_name)
+        nodes_count = len(cluster_config.get_nodes())
+        
+        # 检查证书状态
+        kubeconfig = cluster_config.get_kubeconfig()
+        cert_status_info = {'status': 'unknown', 'days_remaining': None}
+        if kubeconfig:
+            cert_status_info = get_cluster_cert_status(cluster_name, kubeconfig)
+        
+        # 状态显示
+        status_icons = {
+            'healthy': '✅ 健康',
+            'warning': '⚠️ 警告',
+            'critical': '❌ 异常',
+            'unknown': '❓ 未知'
+        }
+        
+        cert_status_text = {
+            'valid': '✅ 正常',
+            'warning': '⚠️ 即将过期',
+            'critical': '🔴 临近过期',
+            'expired': '❌ 已过期',
+            'unknown': '❓ 未知'
+        }
+        
+        cert_status = cert_status_info['status']
+        days_remaining = cert_status_info.get('days_remaining')
+        
+        cert_display = cert_status_text.get(cert_status, '❓ 未知')
+        if days_remaining is not None and days_remaining >= 0:
+            cert_display += f" ({days_remaining}天)"
+        elif days_remaining is not None and days_remaining < 0:
+            cert_display += f" (过期{abs(days_remaining)}天)"
+        
+        # 最近巡检时间
+        last_scan = "从未巡检"
+        if latest_result:
+            scan_time = datetime.fromisoformat(latest_result['timestamp'])
+            last_scan = scan_time.strftime("%m-%d %H:%M")
+        
+        # 巡检结果统计
+        critical_count = latest_result.get('critical', 0) if latest_result else 0
+        warning_count = latest_result.get('warning', 0) if latest_result else 0
+        passed_count = latest_result.get('passed', 0) if latest_result else 0
+        
+        cluster_data.append({
+            "集群名称": f"**{cluster_name}**",
+            "状态": status_icons[status],
+            "节点数": nodes_count,
+            "kubeconfig 有效期": cert_display,
+            "最近巡检": last_scan,
+            "关键问题": critical_count,
+            "警告": warning_count,
+            "通过": passed_count
+        })
+    
+    # 显示集群状态表格
+    cluster_df = pd.DataFrame(cluster_data)
+    
+    def color_status(val):
+        if '✅' in str(val):
+            return 'color: #28a745; font-weight: bold'
+        elif '⚠️' in str(val):
+            return 'color: #ffc107; font-weight: bold'
+        elif '❌' in str(val) or '🔴' in str(val):
+            return 'color: #dc3545; font-weight: bold'
+        else:
+            return 'color: #6c757d'
+    
+    def color_numbers(val):
+        if val > 0:
+            return 'color: #dc3545; font-weight: bold'
+        return ''
+    
+    styled_df = cluster_df.style.applymap(color_status, subset=['状态', 'kubeconfig 有效期']) \
+                               .applymap(color_numbers, subset=['关键问题', '警告'])
+    
+    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+    
+    # 快速操作按钮
+    st.markdown("#### 🚀 快速操作")
+    cols = st.columns(3)
+    
+    with cols[0]:
+        if st.button("🔍 执行巡检", use_container_width=True, type="primary"):
+            st.switch_page("pages/2_cluster_scan.py")
+    
+    with cols[1]:
+        if st.button("📊 查看报告", use_container_width=True):
+            st.switch_page("pages/3_scan_report.py")
+    
+    with cols[2]:
+        if st.button("⚙️ 管理集群", use_container_width=True):
+            st.switch_page("pages/1_cluster_info.py")
 
-with footer_col2:
-    st.markdown("""
-    ### 项目说明
-    kubeeye 旨在提供全面的 Kubernetes 集群巡检解决方案，帮助管理员维护健康、安全的集群环境。通过自动化检查和详细报告，大幅降低运维成本，提升集群可靠性。
+# 最近巡检记录表格
+st.markdown("### 📈 最近巡检记录")
+
+if all_results:
+    # 构建巡检记录表格数据
+    recent_results = all_results[:10]  # 最近10条记录
     
-    持续开发中，欢迎提供功能建议和使用反馈，共同改进本工具。
-    """)
+    scan_records = []
+    for result in recent_results:
+        timestamp = datetime.fromisoformat(result['timestamp'])
+        time_str = timestamp.strftime("%Y-%m-%d %H:%M")
+        
+        # 计算状态
+        critical = result.get('critical', 0)
+        warning = result.get('warning', 0)
+        passed = result.get('passed', 0)
+        
+        if critical > 0:
+            status = '❌ 异常'
+        elif warning > 0:
+            status = '⚠️ 警告'
+        else:
+            status = '✅ 正常'
+        
+        scan_records.append({
+            "时间": time_str,
+            "集群": f"**{result['cluster_name']}**",
+            "类型": result['inspection_type'],
+            "状态": status,
+            "关键问题": critical,
+            "警告": warning,
+            "通过": passed
+        })
     
-    # 显示断言系统信息
-    if 'using_assertion_system' in locals() and using_assertion_system:
-        st.info("✨ **新功能**: 基于断言的规则系统已启用！了解更多请查看 [断言系统文档](/docs/assertion_system.md) 和 [迁移指南](/docs/rule_migration_guide.md)。")
+    scan_df = pd.DataFrame(scan_records)
+    
+    def color_scan_status(val):
+        if '✅' in str(val):
+            return 'color: #28a745; font-weight: bold'
+        elif '⚠️' in str(val):
+            return 'color: #ffc107; font-weight: bold'
+        elif '❌' in str(val):
+            return 'color: #dc3545; font-weight: bold'
+        return ''
+    
+    def color_scan_numbers(val):
+        if val > 0:
+            return 'color: #dc3545; font-weight: bold'
+        return ''
+    
+    styled_scan_df = scan_df.style.applymap(color_scan_status, subset=['状态']) \
+                                  .applymap(color_scan_numbers, subset=['关键问题', '警告'])
+    
+    st.dataframe(styled_scan_df, use_container_width=True, hide_index=True)
+else:
+    st.info("📋 还没有巡检记录，执行首次巡检后这里将显示历史记录。")
+
+# 页面底部信息
+st.markdown("---")
+st.markdown(f"""
+<div style="text-align: center; color: #666; font-size: 0.85rem; padding: 1rem;">
+    KubeEye {VERSION} | 
+    <a href="#" onclick="window.location.reload()">刷新页面</a> | 
+    最后更新: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+</div>
+""", unsafe_allow_html=True)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-节点巡检器，支持并发执行优化
+节点巡检器，支持并发执行优化，增加安全检查功能
 """
 
 import logging
@@ -16,12 +16,20 @@ from inspectors.base_inspector import BaseInspector
 from utils.inspection_result import InspectionResult
 from utils.rule_loader import Rule
 from utils.node_connection import NodeConnection
+from utils.command_security import CommandSecurityChecker, RiskLevel
 
 # 设置日志
 logger = logging.getLogger(__name__)
 
 class NodeInspector(BaseInspector):
-    """节点巡检器，支持并发执行优化"""
+    """
+    节点巡检器 - 强制安全模式，只允许只读操作
+    
+    安全原则：
+    - 强制启用安全检查，不可关闭
+    - 只允许执行只读命令
+    - 所有高风险命令一律禁止
+    """
     
     def __init__(self, config: List[Dict[str, Any]], enable_concurrent: bool = True, 
                  max_workers: int = 5, timeout: int = 30):
@@ -39,19 +47,26 @@ class NodeInspector(BaseInspector):
         self.max_workers = min(max_workers, len(config)) if enable_concurrent else 1
         self.timeout = timeout
         
+        # 安全检查器强制启用，不可关闭
+        self.security_checker = CommandSecurityChecker()
+        logger.info("🔒 安全检查器已强制启用 - 仅允许只读命令执行")
+        
         # 统计信息
         self.stats = {
             'total_rules': 0,
             'total_node_executions': 0,
             'successful_executions': 0,
             'failed_executions': 0,
+            'blocked_by_security': 0,
+            'security_warnings': 0,
             'total_time': 0
         }
         
         super().__init__({"nodes": config})
         
         logger.info(f"节点巡检器初始化完成 - 并发模式: {'开启' if enable_concurrent else '关闭'}, "
-                   f"最大并发数: {self.max_workers}, 超时: {timeout}秒")
+                   f"最大并发数: {self.max_workers}, 超时: {timeout}秒, "
+                   f"安全检查: 强制开启")
     
     @property
     def inspector_type(self) -> str:
@@ -59,7 +74,7 @@ class NodeInspector(BaseInspector):
     
     def _validate_rule_config(self, rule: Rule) -> List[str]:
         """
-        验证规则配置是否有效
+        验证规则配置是否有效（包括安全检查）
         
         Args:
             rule: 规则对象
@@ -73,6 +88,14 @@ class NodeInspector(BaseInspector):
         command = self.get_rule_config(rule, 'execution.command', '')
         if not command:
             issues.append("缺少必要的执行命令(execution.command)")
+        else:
+            # 安全检查
+            if self.enable_security_check:
+                is_safe, risk_level, risk_desc = self.security_checker.check_command_security(command)
+                if not is_safe:
+                    issues.append(f"命令安全检查失败: {risk_desc}")
+                elif risk_level != 'low':
+                    issues.append(f"命令存在风险 ({risk_level}): {risk_desc}")
         
         # 检查必要的断言配置
         assertions = self.get_rule_config(rule, 'assertions', [])
@@ -83,7 +106,7 @@ class NodeInspector(BaseInspector):
             
     def _apply_rule(self, rule: Rule, context: Dict) -> List[Dict]:
         """
-        应用单条规则进行节点检查（支持并发）
+        应用单条规则进行节点检查（支持并发和安全检查）
         
         Args:
             rule: 要应用的规则
@@ -97,6 +120,27 @@ class NodeInspector(BaseInspector):
         # 获取命令和断言配置
         command = self.get_rule_config(rule, 'execution.command', '')
         assertions = self.get_rule_config(rule, 'assertions', [])
+        
+        # 安全检查
+        if self.enable_security_check and command:
+            is_safe, risk_level, risk_desc = self.security_checker.check_command_security(command)
+            
+            if not is_safe:
+                logger.error(f"规则 {rule.id} 命令被安全检查拦截: {risk_desc}")
+                self.stats['blocked_by_security'] += 1
+                
+                # 返回安全错误结果
+                error_result = self._format_error_result(rule, 
+                    f"命令安全检查失败", 
+                    f"命令包含安全风险被拦截: {risk_desc}\n命令: {command[:100]}{'...' if len(command) > 100 else ''}")
+                error_result['security_blocked'] = True
+                error_result['risk_level'] = risk_level
+                return [error_result]
+            
+            elif risk_level != 'low':
+                logger.warning(f"规则 {rule.id} 命令存在安全风险: {risk_desc}")
+                self.stats['security_warnings'] += 1
+                # 在严格模式下，如果不是严格模式，继续执行但记录警告
         
         # 获取节点选择器并过滤节点
         node_selector = self.get_rule_config(rule, 'scope.node_selector', {})
@@ -321,7 +365,7 @@ class NodeInspector(BaseInspector):
 
     def _execute_command(self, command: str, node: Dict) -> Tuple[str, str]:
         """
-        在节点上执行命令
+        在节点上执行命令（包含安全审计）
         
         Args:
             command: 要执行的命令
@@ -336,6 +380,19 @@ class NodeInspector(BaseInspector):
             port = node.get('port', 22)
             username = node.get('username', 'unknown')
             node_name = node.get('name', ip)
+            
+            # 执行前的最后安全检查（双重保护）
+            if self.enable_security_check:
+                is_safe, risk_level, risk_desc = self.security_checker.check_command_security(command)
+                if not is_safe:
+                    error_msg = f"执行前安全检查失败: {risk_desc}"
+                    logger.error(f"节点 {node_name} 命令被阻止: {error_msg}")
+                    # 记录安全审计日志
+                    self._log_security_audit(node_name, ip, username, command, "BLOCKED", risk_desc)
+                    return "", error_msg
+                elif risk_level != 'low':
+                    # 记录风险命令审计
+                    self._log_security_audit(node_name, ip, username, command, "RISKY", risk_desc)
             
             logger.info(f"正在连接节点 {node_name} ({ip}:{port}) 用户: {username}")
 
@@ -353,21 +410,30 @@ class NodeInspector(BaseInspector):
             # 简化命令显示（如果命令太长）
             display_command = command[:100] + "..." if len(command) > 100 else command
             logger.info(f"在节点 {node_name} 上执行命令: {display_command}")
+            
+            # 记录命令执行审计
+            self._log_security_audit(node_name, ip, username, command, "EXECUTE", "正常执行")
                 
             # 使用SSH执行命令
             with NodeConnection(node) as conn:
                 if not conn.connected:
                     error_msg = f"无法连接到节点 {node_name} ({ip}): SSH连接失败"
                     logger.error(error_msg)
+                    # 记录连接失败审计
+                    self._log_security_audit(node_name, ip, username, command, "CONN_FAILED", error_msg)
                     return "", error_msg
                     
                 success, stdout, stderr = conn.execute_command(command)
                 if success:
                     logger.info(f"命令在节点 {node_name} 上执行成功，输出长度: {len(stdout)}")
+                    # 记录执行成功审计
+                    self._log_security_audit(node_name, ip, username, command, "SUCCESS", f"输出长度: {len(stdout)}")
                     return stdout, ""
                 else:
                     error_msg = f"命令执行失败: {stderr}"
                     logger.error(f"节点 {node_name}: {error_msg}")
+                    # 记录执行失败审计
+                    self._log_security_audit(node_name, ip, username, command, "FAILED", error_msg)
                     return "", error_msg
                     
         except ConnectionError as e:
@@ -445,9 +511,69 @@ class NodeInspector(BaseInspector):
             solution="请检查节点配置和网络连接"
         )
     
-    def get_execution_stats(self) -> Dict:
-        """获取执行统计信息"""
+    def _log_security_audit(self, node_name: str, node_ip: str, username: str, 
+                           command: str, action: str, details: str):
+        """
+        记录安全审计日志
+        
+        Args:
+            node_name: 节点名称
+            node_ip: 节点IP
+            username: 用户名
+            command: 执行的命令
+            action: 操作类型 (EXECUTE, BLOCKED, RISKY, SUCCESS, FAILED, CONN_FAILED)
+            details: 详细信息
+        """
+        import time
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # 缩短命令显示
+        short_command = command[:150] + '...' if len(command) > 150 else command
+        
+        # 根据操作类型选择日志级别
+        if action == "BLOCKED":
+            log_level = logger.error
+            status_icon = "🚫"
+        elif action == "RISKY":
+            log_level = logger.warning
+            status_icon = "⚠️"
+        elif action == "FAILED" or action == "CONN_FAILED":
+            log_level = logger.error
+            status_icon = "❌"
+        else:
+            log_level = logger.info
+            status_icon = "✅"
+        
+        # 记录审计日志
+        audit_msg = (f"[SECURITY_AUDIT] {status_icon} {timestamp} | "
+                    f"Node: {node_name}({node_ip}) | User: {username} | "
+                    f"Action: {action} | Command: {short_command} | "
+                    f"Details: {details}")
+        
+        log_level(audit_msg)
+        
+        # 可选：写入专门的安全审计日志文件
+        try:
+            audit_file = os.path.join(os.path.dirname(__file__), '..', '..', 'logs', 'security_audit.log')
+            os.makedirs(os.path.dirname(audit_file), exist_ok=True)
+            with open(audit_file, 'a', encoding='utf-8') as f:
+                f.write(f"{audit_msg}\n")
+        except Exception as e:
+            logger.warning(f"无法写入安全审计日志文件: {str(e)}")
+    
+    def get_security_stats(self) -> Dict:
+        """获取安全统计信息"""
         return {
+            'security_enabled': self.enable_security_check,
+            'strict_mode': self.strict_security_mode,
+            'blocked_by_security': self.stats.get('blocked_by_security', 0),
+            'security_warnings': self.stats.get('security_warnings', 0),
+            'total_commands_checked': self.stats.get('total_rules', 0)
+        }
+    
+    def get_execution_stats(self) -> Dict:
+        """获取执行统计信息（包含安全统计）"""
+        base_stats = {
             **self.stats,
             'average_time_per_rule': self.stats['total_time'] / max(self.stats['total_rules'], 1),
             'success_rate': self.stats['successful_executions'] / max(self.stats['total_node_executions'], 1) * 100,
@@ -455,17 +581,26 @@ class NodeInspector(BaseInspector):
             'max_workers': self.max_workers,
             'timeout': self.timeout
         }
+        
+        # 添加安全统计
+        base_stats.update(self.get_security_stats())
+        return base_stats
     
     def print_execution_summary(self):
-        """打印执行摘要"""
+        """打印执行摘要（包含安全信息）"""
         stats = self.get_execution_stats()
         
         print(f"\n=== 节点巡检执行摘要 ===")
         print(f"执行模式: {'并发' if stats['concurrent_mode'] else '串行'}")
+        print(f"安全检查: {'开启' if stats['security_enabled'] else '关闭'} "
+              f"({'严格模式' if stats.get('strict_mode') else '宽松模式'})")
         print(f"总规则数: {stats['total_rules']}")
         print(f"总节点执行数: {stats['total_node_executions']}")
         print(f"成功执行数: {stats['successful_executions']}")
         print(f"失败执行数: {stats['failed_executions']}")
+        if stats['security_enabled']:
+            print(f"安全拦截数: {stats['blocked_by_security']}")
+            print(f"安全警告数: {stats['security_warnings']}")
         print(f"成功率: {stats['success_rate']:.1f}%")
         print(f"总耗时: {stats['total_time']:.2f}秒")
         print(f"平均每规则耗时: {stats['average_time_per_rule']:.2f}秒")

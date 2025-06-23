@@ -127,7 +127,7 @@ def create_sidebar_header(active_page="首页"):
         {"title": "首页", "path": "app.py", "label": "首页", "icon": "🏠"},
         {"title": "集群信息", "path": "pages/1_cluster_info.py", "label": "集群信息", "icon": "🔗"},
         {"title": "集群巡检", "path": "pages/2_cluster_scan.py", "label": "集群巡检", "icon": "🔍"},
-        {"title": "巡检报告", "path": "pages/3_scan_report.py", "label": "巡检报告", "icon": "📊"}
+        {"title": "巡检报告", "path": "pages/3_scan_report.py", "label": "巡检报告", "icon": "📊"},
     ]
     
     with st.sidebar:

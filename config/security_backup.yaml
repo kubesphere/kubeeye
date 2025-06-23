@@ -1,0 +1,46 @@
+# KubeEye 安全配置文件
+# 注意：KubeEye 采用强制安全模式，核心安全设置不可更改
+
+# ==================== 强制安全原则 ====================
+# 以下安全设置为强制配置，代码中硬编码，无法通过配置修改：
+#
+# enable_security_check: true    # 强制启用安全检查
+# strict_mode: true               # 强制严格模式  
+# whitelist_only: true            # 强制白名单模式
+# allow_sudo_commands: false      # 强制禁止sudo命令
+# allow_root_user: false          # 强制禁止root用户
+# auto_validate_rules: true       # 强制启用规则验证
+# block_invalid_rules: true       # 强制阻止不安全规则
+#
+# 核心安全原则：
+# 1. 巡检工具只能观察，绝不能修改
+# 2. 所有高风险命令一律禁止，无例外  
+# 3. 只允许明确安全的只读命令执行
+# 4. 不提供任何降低安全级别的选项
+
+# ==================== 可调整参数 ====================
+# 以下参数可以调整，但不会影响核心安全策略
+
+# 命令执行限制
+max_command_length: 1000        # 单个命令的最大长度限制
+command_timeout: 30             # 命令执行超时时间（秒）
+
+# 审计日志设置
+audit_log_path: "logs/security_audit.log"  # 审计日志文件路径
+audit_retention_days: 90        # 审计日志保留天数
+enable_detailed_logging: true   # 是否启用详细日志记录
+
+# 网络安全设置
+allowed_ports:                  # 允许连接的端口列表
+  - 22    # SSH
+  - 80    # HTTP  
+  - 443   # HTTPS
+  - 6443  # Kubernetes API Server
+  - 8080  # 通用HTTP
+  - 9090  # Prometheus
+  - 10250 # kubelet
+
+blocked_ips: []                 # 被阻止的IP地址列表（可选）
+
+# 是否强制要求密钥认证（禁用密码认证）
+require_key_auth: false

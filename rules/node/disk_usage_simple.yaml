@@ -28,8 +28,8 @@ solution: |
   磁盘使用率过高处理：
   1. 查看磁盘使用：df -h
   2. 查找大文件：find / -type f -size +100M 2>/dev/null
-  3. 清理日志：journalctl --vacuum-time=30d
-  4. 清理临时文件：rm -rf /tmp/* /var/tmp/*
+  3. 查看日志占用：journalctl --disk-usage
+  4. 联系系统管理员清理临时文件和日志（如需要）
 
 # 标签
 tags:

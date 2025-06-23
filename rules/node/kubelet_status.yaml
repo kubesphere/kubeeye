@@ -27,9 +27,9 @@ config:
 solution: |
   kubelet服务异常处理：
   1. 查看服务状态：systemctl status kubelet
-  2. 重启服务：systemctl restart kubelet
-  3. 查看日志：journalctl -u kubelet -f
-  4. 检查配置文件：/etc/kubernetes/kubelet/kubelet-config.yaml
+  2. 查看日志：journalctl -u kubelet -f
+  3. 检查配置文件：/etc/kubernetes/kubelet/kubelet-config.yaml
+  4. 联系系统管理员进行 kubelet 服务重启（如需要）
 
 # 标签
 tags:
