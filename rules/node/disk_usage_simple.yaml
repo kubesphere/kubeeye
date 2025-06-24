@@ -19,7 +19,7 @@ config:
   # 断言配置 - 直接使用命令输出
   assertions:
     - name: "磁盘使用率正常"
-      condition: "int(output) < 30"
+      condition: "int(output) < 70"
       severity: warning
       description: "根分区使用率: {{ output }}%"
 

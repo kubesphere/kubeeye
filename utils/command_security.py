@@ -57,9 +57,9 @@ class CommandSecurityChecker:
             r'\bchown\s+',                                  # 所有权修改
             r'\bchgrp\s+',                                  # 组修改
             
-            # 系统服务管理
-            r'\bsystemctl\s+(start|stop|restart|reload|enable|disable)', # 服务管理
-            r'\bservice\s+\w+\s+(start|stop|restart|reload)',           # service命令
+            # 系统服务管理（只禁止修改操作，允许is-active/status/show等只读）
+            r'\bsystemctl\s+(start|stop|restart|reload|enable|disable|mask|unmask|kill|reset-failed)\b', # 服务管理
+            r'\bservice\s+\w+\s+(start|stop|restart|reload)\b',           # service命令
             r'\binit\s+[0-6]',                             # 系统运行级别改变
             r'\bshutdown\s+',                              # 系统关机
             r'\breboot\s*',                                # 系统重启
@@ -162,6 +162,12 @@ class CommandSecurityChecker:
             r'^\s*echo\s+\$\w+',                                      # 打印变量值
             r'^\s*printf\s+',                                         # 格式化输出
         ]
+        self.safe_readonly_patterns.extend([
+            r'^\s*(awk|wc|tail|head|xargs|grep|sed)\b.*',
+            r'^\s*systemctl\s+(is-active|status|show)\b.*',
+            r'^\s*service\s+\w+\s+(status)\b.*',
+            r'^\s*echo\b.*',  # 允许 echo 任意内容
+        ])
     
     def check_command_security(self, command: str) -> Tuple[bool, RiskLevel, str]:
         """
@@ -175,22 +181,26 @@ class CommandSecurityChecker:
         """
         command = command.strip()
         
+        logger.info(f"🔍 安全检查开始 - 命令: {command[:100]}{'...' if len(command) > 100 else ''}")
+        
         if not command:
+            logger.info("空命令，判定为安全")
             return True, RiskLevel.LOW, "空命令"
         
         # 第一步：检查是否为明确的只读安全命令（白名单）
         if self._is_safe_readonly_command(command):
+            logger.info("✅ 命令通过白名单检查")
             return True, RiskLevel.LOW, "安全的只读命令"
         
         # 第二步：检查是否包含绝对禁止的操作（黑名单）
         if self._contains_critical_operations(command):
             risk_level, risk_desc = self._analyze_command_risk(command)
-            logger.error(f"检测到禁止的修改操作: {command[:100]}... 风险: {risk_desc}")
+            logger.error(f"❌ 检测到禁止的修改操作: {command[:100]}... 风险: {risk_desc}")
             return False, risk_level, risk_desc
         
         # 第三步：如果启用仅白名单模式，则拒绝所有未明确允许的命令
         if self.whitelist_only:
-            logger.warning(f"仅白名单模式：命令未在安全白名单中: {command[:100]}...")
+            logger.warning(f"⚠️ 仅白名单模式：命令未在安全白名单中: {command[:100]}...")
             return False, RiskLevel.HIGH, "命令未在安全白名单中，巡检工具只允许执行只读查看命令"
         
         # 第四步：传统风险分析（用于兼容模式）
@@ -211,101 +221,138 @@ class CommandSecurityChecker:
         return True, RiskLevel.LOW, "命令通过安全检查"
     
     def _contains_critical_operations(self, command: str) -> bool:
-        """检查命令是否包含绝对禁止的修改操作"""
-        for pattern in self.critical_commands:
-            if re.search(pattern, command, re.IGNORECASE):
-                return True
+        """检查命令是否包含绝对禁止的修改操作（对每个子命令分割判断，避免误判只读组合）"""
+        cmd = command.strip()
+        sep_pattern = r'(\|\||&&)'
+        def strip_redirect(s):
+            s = re.split(r'>+.*', s)[0].strip()
+            return s
+        sub_cmds = re.split(sep_pattern, cmd)
+        for sub in sub_cmds:
+            sub = sub.strip()
+            if not sub or sub in {'|', '||', '&&'}:
+                continue
+            if sub.startswith('sudo '):
+                sub = sub[5:].lstrip()
+            sub = strip_redirect(sub)
+            for pattern in self.critical_commands:
+                if re.search(pattern, sub, re.IGNORECASE):
+                    return True
         return False
     
     def _is_safe_readonly_command(self, command: str) -> bool:
-        """检查命令是否为安全的只读命令"""
-        for pattern in self.safe_readonly_patterns:
-            if re.match(pattern, command, re.IGNORECASE):
-                return True
-        return False
+        """检查命令是否为安全的只读命令，支持sudo前缀、管道/逻辑组合、去除重定向"""
+        cmd = command.strip()
+        sep_pattern = r'(\|\||&&)'
+        
+        logger.info(f"🔍 白名单检查 - 原始命令: {cmd}")
+        
+        def strip_redirect(s):
+            s = re.split(r'>+.*', s)[0].strip()
+            return s
+            
+        sub_cmds = re.split(sep_pattern, cmd)
+        logger.info(f"分割后的子命令: {sub_cmds}")
+        
+        for i, sub in enumerate(sub_cmds):
+            sub = sub.strip()
+            if not sub or sub in {'|', '||', '&&'}:
+                logger.debug(f"子命令 {i}: '{sub}' (分隔符，跳过)")
+                continue
+                
+            if sub.startswith('sudo '):
+                sub = sub[5:].lstrip()
+                logger.info(f"子命令 {i}: 去除sudo前缀后: '{sub}'")
+                
+            sub = strip_redirect(sub)
+            logger.info(f"子命令 {i}: 去除重定向后: '{sub}'")
+            
+            matched = False
+            for pattern in self.safe_readonly_patterns:
+                if re.match(pattern, sub, re.IGNORECASE):
+                    logger.info(f"✅ 子命令 {i} 匹配白名单模式: {pattern}")
+                    matched = True
+                    break
+                    
+            if not matched:
+                logger.warning(f"❌ 子命令 {i} 未匹配任何白名单模式: '{sub}'")
+                return False
+                
+        logger.info("✅ 所有子命令都通过白名单检查")
+        return True
     
     def _analyze_command_risk(self, command: str) -> Tuple[RiskLevel, str]:
-        """分析命令的风险等级和描述"""
+        """
+        分析命令风险 - 识别命令中的风险模式和等级
         
-        # 检查关键风险操作
-        if self._contains_critical_operations(command):
-            return RiskLevel.CRITICAL, "包含禁止的修改/删除操作"
+        Args:
+            command: 要分析的命令
+            
+        Returns:
+            (风险等级, 风险描述)
+        """
+        command = command.strip()
         
-        # 检查高风险模式
+        if not command:
+            return RiskLevel.LOW, "空命令"
+        
+        risk_level = RiskLevel.LOW
+        risk_desc = "低风险命令"
+        
+        # 检查每个子命令的风险
+        sep_pattern = r'(\|\||&&)'
+        sub_cmds = re.split(sep_pattern, command)
+        for sub in sub_cmds:
+            sub = sub.strip()
+            if not sub or sub in {'|', '||', '&&'}:
+                continue
+            if sub.startswith('sudo '):
+                sub = sub[5:].lstrip()
+            sub_risk_level, sub_risk_desc = self._analyze_single_command_risk(sub)
+            
+            # 合并风险等级
+            if sub_risk_level.value > risk_level.value:
+                risk_level = sub_risk_level
+                risk_desc = sub_risk_desc
+        
+        return risk_level, risk_desc
+    
+    def _analyze_single_command_risk(self, command: str) -> Tuple[RiskLevel, str]:
+        """
+        分析单个命令风险 - 识别单个命令中的风险模式和等级
+        
+        Args:
+            command: 要分析的命令
+            
+        Returns:
+            (风险等级, 风险描述)
+        """
+        command = command.strip()
+        
+        if not command:
+            return RiskLevel.LOW, "空命令"
+        
+        # 检查是否为绝对禁止的命令
+        for pattern in self.critical_commands:
+            if re.search(pattern, command, re.IGNORECASE):
+                return RiskLevel.CRITICAL, "包含绝对禁止的修改操作"
+        
+        # 检查是否为高风险命令
         high_risk_patterns = [
-            r'\bsudo\s+',                    # sudo命令
-            r'\bsu\s+',                      # 切换用户
-            r'\|.*sh\b',                     # 管道到shell
-            r'&\s*$',                        # 后台执行
-            r';\s*\w+',                      # 命令分隔符
+            r'\b(dd|mkfs|mount|umount|chmod|chown|chgrp|systemctl|service|kill|killall|pkill|reboot|shutdown|halt|apt-get|yum|dnf|pip|npm)\b',
+            r'\b(find|locate|grep|awk|sed|xargs|wc|sort|uniq|tee|cut|tr|head|tail)\s+.*[|&]', # 管道/逻辑组合
         ]
-        
         for pattern in high_risk_patterns:
             if re.search(pattern, command, re.IGNORECASE):
-                return RiskLevel.HIGH, f"包含高风险操作模式"
+                return RiskLevel.HIGH, "包含高风险命令或操作"
         
-        # 检查中等风险
+        # 检查是否为中风险命令
         medium_risk_patterns = [
-            r'\bwget\s+',                    # 下载文件
-            r'\bcurl\s+',                    # 网络请求
+            r'\b(less|more|cat|echo|printf|env|printenv|history|journalctl|dmesg)\b', # 仅限部分参数
+            r'\b(systemctl|service)\s+\w+\s+(status|show|is-active)\b',           # 只读状态查看
         ]
-        
         for pattern in medium_risk_patterns:
             if re.search(pattern, command, re.IGNORECASE):
-                return RiskLevel.MEDIUM, "包含网络操作"
+                return RiskLevel.MEDIUM, "包含中风险命令或操作"
         
         return RiskLevel.LOW, "低风险命令"
-
-    def validate_commands_batch(self, commands: List[str]) -> Dict[str, any]:
-        """批量验证命令安全性"""
-        report = {
-            'total_commands': len(commands),
-            'safe_commands': 0,
-            'blocked_commands': 0,
-            'risky_commands': 0,
-            'risk_distribution': {
-                'low': 0,
-                'medium': 0,
-                'high': 0,
-                'critical': 0
-            },
-            'details': []
-        }
-        
-        for command in commands:
-            is_safe, risk_level, desc = self.check_command_security(command)
-            
-            report['details'].append({
-                'command': command,
-                'is_safe': is_safe,
-                'risk_level': risk_level.value,
-                'description': desc
-            })
-            
-            # 统计
-            if is_safe:
-                report['safe_commands'] += 1
-            else:
-                report['blocked_commands'] += 1
-            
-            if not is_safe or risk_level != RiskLevel.LOW:
-                report['risky_commands'] += 1
-            
-            report['risk_distribution'][risk_level.value] += 1
-        
-        return report
-
-# 全局安全检查器实例 - 强制使用最严格安全模式
-default_security_checker = CommandSecurityChecker()
-
-def check_command_security(command: str) -> Tuple[bool, str, str]:
-    """
-    便捷的命令安全检查函数 - 强制使用最严格安全模式
-    
-    Args:
-        command: 要检查的命令
-        
-    Returns:
-        (是否安全, 风险等级, 风险描述)
-    """
-    return default_security_checker.check_command_security(command)

@@ -17,3 +17,4 @@ regex>=2023.0.0
 typing-extensions>=4.0.0
 watchdog>=2.0.0
 starlette>=0.31.0
+simpleeval>=0.9.0

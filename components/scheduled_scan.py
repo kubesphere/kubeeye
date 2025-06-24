@@ -115,7 +115,7 @@ def render_task_list_tab(tasks):
                 "调度": schedule_type,
                 "状态": f"{status_icon} {status_text}",
                 "启用": enabled_text,
-                "上次运行": task.last_run.split("T")[0] if task.last_run else "从未运行",
+                "上次运行": task.last_run.replace("T", " ").split(".")[0] if task.last_run else "从未运行",
                 "下次运行": next_run_text,
                 "ID": task.task_id
             })
@@ -188,7 +188,7 @@ def render_task_list_tab(tasks):
                                     
                                     # 提供跳转到报告页面的按钮
                                     if st.button("📊 查看详细报告", key="view_scheduled_report"):
-                                        st.switch_page("pages/3_scan_report.py")
+                                        st.switch_page("pages/3_inspect_report.py")
                                 
                                 st.rerun()
                             else:
@@ -237,7 +237,7 @@ def render_create_task_tab():
     
     if not clusters:
         st.warning("还没有配置任何集群。请前往「集群信息」页面添加集群。")
-        if st.button("转到集群信息页面"):
+        if st.button("转到集群信息页面", key="goto_cluster_info_btn2"):
             st.switch_page("pages/1_cluster_info.py")
         return
     

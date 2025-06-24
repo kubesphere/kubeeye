@@ -15,7 +15,7 @@ def render_immediate_scan_tab():
     
     if not clusters:
         st.warning("还没有配置任何集群。请前往「集群信息」页面添加集群。")
-        if st.button("转到集群信息页面"):
+        if st.button("转到集群信息页面", key="goto_cluster_info_btn1"):
             st.switch_page("pages/1_cluster_info.py")
     else:
         # 选择集群

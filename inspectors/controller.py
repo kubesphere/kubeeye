@@ -31,10 +31,16 @@ class InspectionController:
         
     def _initialize_inspectors(self):
         """初始化所有巡检器"""
+        # 打印配置信息用于调试
+        logger.info(f"控制器配置: {list(self.config.keys())}")
+        
         # 初始化节点巡检器
         if 'nodes' in self.config and self.config['nodes']:
+            logger.info(f"发现节点配置，节点数量: {len(self.config['nodes'])}")
             self.inspectors['node'] = NodeInspector(self.config['nodes'])
             logger.info("已初始化节点巡检器")
+        else:
+            logger.warning(f"未找到节点配置: nodes={'nodes' in self.config}, count={len(self.config.get('nodes', []))}")
             
         # 初始化OPA巡检器
         if 'opa' in self.config:
@@ -46,7 +52,7 @@ class InspectionController:
             self.inspectors['prometheus'] = PrometheusInspector(self.config['prometheus'])
             logger.info("已初始化Prometheus巡检器")
             
-        logger.info(f"已初始化 {len(self.inspectors)} 个巡检器")
+        logger.info(f"已初始化 {len(self.inspectors)} 个巡检器: {list(self.inspectors.keys())}")
         
     def get_available_inspectors(self) -> List[str]:
         """
@@ -90,13 +96,13 @@ class InspectionController:
                 if rule_ids and inspector_type in rule_ids:
                     inspector_rule_ids = rule_ids[inspector_type]
                     
-                logger.info(f"运行 {inspector_type} 巡检...")
+                logger.info(f"🚀 运行 {inspector_type} 巡检...")
                 result = inspector.run_inspection(cluster_name, inspector_rule_ids)
                 results[inspector_type] = result
-                logger.info(f"{inspector_type} 巡检完成，发现 {len(result.items)} 个结果")
+                logger.info(f"✅ {inspector_type} 巡检完成，发现 {len(result.items)} 个结果")
                 
             except Exception as e:
-                logger.exception(f"运行 {inspector_type} 巡检时出错: {str(e)}")
+                logger.exception(f"❌ 运行 {inspector_type} 巡检时出错: {str(e)}")
                 
         return results
         
@@ -233,6 +239,14 @@ class InspectionController:
         # 保存到文件
         with open(result_path, 'w', encoding='utf-8') as f:
             json.dump(result_data, f, ensure_ascii=False, indent=2)
+        
+        # 触发数据清理 - 在生成新报告后进行清理
+        try:
+            from utils.data_cleanup import get_cleanup_manager
+            cleanup_manager = get_cleanup_manager()
+            cleanup_manager.cleanup_inspection_results()
+        except Exception as e:
+            logger.warning(f"清理旧报告失败: {e}")
         
         logger.info(f"巡检结果已保存到: {result_path}")
         return str(result_path)

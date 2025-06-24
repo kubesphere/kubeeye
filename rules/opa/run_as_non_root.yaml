@@ -16,16 +16,15 @@ config:
     - kind: Pod
       apiVersion: v1
       namespaced: true
-    - kind: Deployment
-      apiVersion: apps/v1
-      namespaced: true
     - kind: StatefulSet
       apiVersion: apps/v1
       namespaced: true
     - kind: DaemonSet
       apiVersion: apps/v1
       namespaced: true
-
+    - kind: Deployment
+      apiVersion: apps/v1
+      namespaced: true
   # Rego规则配置
   rego:
     inline: |

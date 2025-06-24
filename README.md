@@ -32,78 +32,150 @@ KubeEye 是一个**纯观察型** Kubernetes 集群巡检工具，专注于安�
 - **禁止安装操作**：不允许 `apt install`、`pip install` 等软件安装
 - **强制安全模式**：无法通过配置降低安全级别
 
-## 安装方法
+## 快速开始
 
-1. 克隆代码库：
-   ```
-   git clone https://github.com/pixiake/kubeeye.git
-   cd kubeeye
-   ```
+### 方式一：Docker 运行
 
-2. 使用初始化脚本：
-   ```
-   python init.py --all
-   ```
-   这将自动完成以下操作：
-   - 创建必要的数据目录
-   - 安装所需依赖
-   - 初始化示例集群配置
+#### 持久化数据
+```bash
+# 创建数据目录
+mkdir -p /opt/kubeeye/data
 
-   或者手动安装：
-   ```
-   pip install -r requirements.txt
-   ```
+# 运行容器并挂载数据目录和时间
+docker run -d \
+  --name kubeeye \
+  -p 8501:8501 \
+  -v /opt/kubeeye/data:/app/data \
+  -v /etc/localtime:/etc/localtime:ro \
+  kubespheredev/kubeeye:v2.0.0-alpha.1
+```
 
-3. 运行应用：
-   ```
-   streamlit run app.py
-   ```
+访问地址：http://localhost:8501
 
-## 使用说明
 
-1. **添加集群**：
-   - 在「集群信息」页面添加集群名称、节点信息
-   - 配置 Prometheus 连接信息（可选）
-   - 配置 Kubeconfig（可选）
+### 方式二：Kubernetes 部署
 
-2. **执行巡检**：
-   - 在「集群巡检」页面选择集群和要执行的巡检规则
-   - 点击「开始巡检」按钮执行巡检
+#### 创建命名空间
+```bash
+kubectl create namespace kubeeye
+```
 
-3. **查看报告**：
-   - 在「巡检报告」页面查看巡检结果统计和详细问题列表
-   - 可以按集群、巡检类型等条件筛选查看历史报告
+#### 部署应用
+```yaml
+# kubeeye-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubeeye
+  namespace: kubeeye-system
+  labels:
+    app: kubeeye
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubeeye
+  template:
+    metadata:
+      labels:
+        app: kubeeye
+    spec:
+      containers:
+      - name: kubeeye
+        image: kubespheredev/kubeeye:v2.0.0-alpha.1
+        ports:
+        - containerPort: 8501
+        env:
+        - name: KUBEEYE_DATA_DIR
+          value: "/app/data"
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        - name: localtime
+          mountPath: /etc/localtime
+          readOnly: true
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: kubeeye-pvc
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+          type: File
 
-4. **管理敏感信息**：
-   - 敏感信息（如节点密码、Prometheus 认证信息）会自动加密存储
-   - 可以使用 `tools/encrypt_config.py` 工具加密现有配置
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kubeeye-pvc
+  namespace: kubeeye-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
 
-## 数据存储
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubeeye-service
+  namespace: kubeeye-system
+spec:
+  selector:
+    app: kubeeye
+  ports:
+    - protocol: TCP
+      port: 8501
+      targetPort: 8501
+  type: NodePort
 
-- 集群配置信息保存在 `data/clusters/` 目录下
-- 巡检结果保存在 `data/results/` 目录下
+```
 
-## OPA 规则
+#### 部署命令
+```bash
+# 应用配置
+kubectl apply -f kubeeye-deployment.yaml
 
-OPA 规则文件存储在 `inspectors/opa/rules/` 目录下，按资源类型分类：
+# 检查部署状态
+kubectl get pods -n kubeeye
 
-- `pod/`：Pod 相关规则
-- `deployment/`：Deployment 相关规则
-- `service/`：Service 相关规则
-- `configmap/`：ConfigMap 相关规则
-- `security/`：安全相关规则
+# 查看服务
+kubectl get svc -n kubeeye
+```
 
-## 依赖项
+## 使用指南
 
-- Python 3.8+
-- Streamlit
-- Pandas
-- Plotly
-- PyYAML
-- Kubernetes Python Client
-- Paramiko
-- Requests
+### 1. 配置集群信息
+- 访问 "集群信息" 页面
+- 添加您要监控的 Kubernetes 集群
+- 支持多种连接方式：kubeconfig 文件、SSH 连接
 
-## 贡献指南
+### 2. 执行立即巡检
+- 前往 "集群巡检" 页面
+- 选择目标集群和巡检规则
+- 点击 "开始巡检" 执行检查
 
-欢迎提交 Issues 和 Pull Requests 来完善此工具。
+### 3. 配置定时巡检
+- 在 "定时巡检" 页面创建定时任务
+- 支持 Cron 表达式和单次定时
+- 自动生成巡检报告
+
+### 4. 查看巡检报告
+- "巡检报告" 页面查看历史结果
+- 支持导出为 JSON、Excel 格式
+- 提供问题修复建议
+
+### 5. 管理规则
+- 在 "规则管理" 页面管理巡检规则
+- 支持本地规则和 GitOps 模式
+- 可以自定义规则配置
+

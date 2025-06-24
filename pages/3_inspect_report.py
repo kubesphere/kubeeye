@@ -91,6 +91,7 @@ def safe_display_opa_violations_table(violations_data, show_expander=False, tabl
 def display_reports_overview():
     """显示报告概览页面"""
     st.markdown("查看和管理所有集群的巡检报告，快速识别问题并获取解决建议。")
+    st.caption("💡 系统自动保留最近30天的报告，超出限制的旧报告会被自动清理以节省存储空间")
     
     # 加载数据
     clusters = list_clusters()
@@ -100,15 +101,40 @@ def display_reports_overview():
     if hasattr(st.session_state, 'last_result_path') and st.session_state.last_result_path:
         st.success(f"🆕 检测到最新巡检结果: {os.path.basename(st.session_state.last_result_path)}")
         if st.button("🔍 查看最新结果", type="primary"):
-            st.session_state.selected_report_id = st.session_state.get('last_cluster_name', '未知集群')
-            st.session_state.report_detail_path = st.session_state.last_result_path
-            st.session_state.view_mode = "detail"
-            st.rerun()
+            # 尝试从文件路径或会话状态中获取正确的result_id
+            result_id = None
+            
+            # 方法1: 如果有last_result_id，直接使用
+            if hasattr(st.session_state, 'last_result_id'):
+                result_id = st.session_state.last_result_id
+            
+            # 方法2: 从最新的巡检结果列表中获取
+            if not result_id and all_results:
+                # 获取最新的结果（按时间排序后的第一个）
+                latest_result = max(all_results, key=lambda x: x['timestamp'])
+                result_id = latest_result['result_id']
+            
+            # 方法3: 尝试从文件名解析
+            if not result_id and st.session_state.last_result_path:
+                try:
+                    # 从文件路径加载数据获取result_id
+                    with open(st.session_state.last_result_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    result_id = data.get('result_id')
+                except Exception:
+                    pass
+            
+            if result_id:
+                st.session_state.selected_report_id = result_id
+                st.session_state.view_mode = "detail"
+                st.rerun()
+            else:
+                st.error("❌ 无法获取最新结果的ID，请从报告列表中选择")
     
     if not all_results:
         st.info("📭 暂无巡检报告。请先执行巡检任务生成报告。")
         if st.button("🚀 去执行巡检", type="primary"):
-            st.switch_page("pages/2_cluster_scan.py")
+            st.switch_page("pages/2_cluster_inspect.py")
         return
     
     # 过滤控制区域
@@ -178,7 +204,7 @@ def display_statistics_overview(filtered_results):
     latest_report = max(filtered_results, key=lambda x: x['timestamp'])
     latest_time = datetime.fromisoformat(latest_report['timestamp']).strftime('%m-%d %H:%M')
     
-    # 显示关键指标卡片 - 简化为3列
+    # 显示关键指标卡片
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -261,27 +287,6 @@ def display_reports_table(filtered_results):
         st.session_state.selected_report_id = selected_result['result_id']
         st.session_state.view_mode = "operations"
         st.rerun()
-        
-        # 批量操作区域
-        if len(sorted_results) > 1:
-            st.markdown("### 🔧 批量操作")
-            col1, col2, col3, col4 = st.columns(4)
-            
-            with col1:
-                if st.button("📄 批量导出JSON", use_container_width=True):
-                    export_all_reports(sorted_results, "json")
-            
-            with col2:
-                if st.button("📊 批量导出Excel", use_container_width=True):
-                    export_all_reports(sorted_results, "excel")
-            
-            with col3:
-                if st.button("📋 批量导出CSV", use_container_width=True):
-                    export_all_reports(sorted_results, "csv")
-            
-            with col4:
-                if st.button("🗑️ 清理旧报告", use_container_width=True, help="删除7天前的报告"):
-                    cleanup_old_reports()
 
 def delete_report(report_id):
     """删除报告文件"""
@@ -300,70 +305,6 @@ def delete_report(report_id):
         except:
             continue
     return False
-
-def cleanup_old_reports():
-    """清理7天前的旧报告"""
-    try:
-        from pathlib import Path
-        import os
-        from datetime import datetime, timedelta
-        
-        results_dir = Path(__file__).parent.parent / "data" / "results"
-        cutoff_date = datetime.now() - timedelta(days=7)
-        
-        deleted_count = 0
-        for file_path in results_dir.glob("*.json"):
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                
-                report_time = datetime.fromisoformat(data.get('timestamp', ''))
-                if report_time < cutoff_date:
-                    os.remove(file_path)
-                    deleted_count += 1
-            except:
-                continue
-        
-        if deleted_count > 0:
-            st.success(f"✅ 已清理 {deleted_count} 个旧报告")
-        else:
-            st.info("ℹ️ 没有找到需要清理的旧报告")
-    
-    except Exception as e:
-        st.error(f"❌ 清理失败: {str(e)}")
-
-def export_all_reports(results, format_type):
-    """批量导出报告"""
-    try:
-        export_count = 0
-        failed_count = 0
-        
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        for i, result in enumerate(results):
-            try:
-                status_text.text(f"正在导出: {result['result_id']}")
-                success, _ = export_report(result['result_id'], format_type)
-                if success:
-                    export_count += 1
-                else:
-                    failed_count += 1
-            except:
-                failed_count += 1
-            
-            progress_bar.progress((i + 1) / len(results))
-        
-        status_text.empty()
-        progress_bar.empty()
-        
-        if export_count > 0:
-            st.success(f"✅ 成功导出 {export_count} 个报告")
-        if failed_count > 0:
-            st.warning(f"⚠️ {failed_count} 个报告导出失败")
-    
-    except Exception as e:
-        st.error(f"❌ 批量导出失败: {str(e)}")
 
 # 导入导出函数
 from utils.inspection_result import export_report
@@ -447,6 +388,17 @@ def display_report_operations(report_id):
             export_and_download(report_id, "json", "JSON")
     
     with col3:
+        if st.button("📊 导出Excel", use_container_width=True):
+            export_and_download(report_id, "excel", "Excel")
+    
+    # 删除操作单独一行
+    st.markdown("#### 🗑️ 删除操作")
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        st.caption("⚠️ 删除操作不可恢复，请谨慎操作")
+    
+    with col2:
         # 删除按钮
         confirm_key = f"confirm_delete_{report_id}"
         if st.session_state.get(confirm_key, False):
@@ -467,7 +419,7 @@ def display_report_operations(report_id):
     
     # 删除确认提示
     if st.session_state.get(confirm_key, False):
-        st.warning("⚠️ 点击红色按钮确认删除操作")
+        st.warning("⚠️ 点击确认删除按钮触发删除操作")
 
 def display_report_detail(report_id):
     """显示报告详情"""
@@ -492,7 +444,7 @@ def display_report_detail(report_id):
         **🏷️ 报告ID:** `{report_id}`  
         **🖥️ 集群:** {report_data['cluster_name']}  
         **⏰ 时间:** {datetime.fromisoformat(report_data['timestamp']).strftime('%Y年%m月%d日 %H:%M:%S')}  
-        **📋 类型:** {'立即巡检' if report_data['inspection_type'] == 'immediate' else '定时巡检'}
+        **📋 类型:** {'⚡ 立即巡检' if report_data['inspection_type'] == 'immediate' else '⏲️ 定时巡检'}
         """)
     
     with col2:
@@ -531,69 +483,7 @@ def display_report_detail(report_id):
     st.divider()
     
     # 检查项详情 - 传递处理后的所有项目
-    display_inspection_items(all_items)
-    """显示报告详情"""
-    # 导航返回按钮
-    if st.button("⬅️ 返回报告列表"):
-        st.session_state.view_mode = "list"
-        st.rerun()
-    
-    # 加载报告数据
-    report_data = load_result(report_id)
-    if not report_data:
-        st.error("❌ 无法加载报告数据")
-        return
-    
-    # 报告头部信息
-    st.markdown(f"## 📄 巡检报告详情")
-    
-    # 基本信息卡片
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        st.markdown(f"""
-        **🏷️ 报告ID:** `{report_id}`  
-        **🖥️ 集群:** {report_data['cluster_name']}  
-        **⏰ 时间:** {datetime.fromisoformat(report_data['timestamp']).strftime('%Y年%m月%d日 %H:%M:%S')}  
-        **📋 类型:** {'立即巡检' if report_data['inspection_type'] == 'immediate' else '定时巡检'}
-        """)
-    
-    with col2:
-        # 快速统计 - 使用简化状态系统
-        if 'inspection_results' in report_data:
-            # 新数据结构：从inspection_results中统计
-            all_items = []
-            for inspector_type, inspector_result in report_data['inspection_results'].items():
-                items = inspector_result.get('items', [])
-                all_items.extend(items)
-        else:
-            # 旧数据结构：直接从items字段
-            all_items = report_data.get('items', [])
-        
-        exception_count = 0
-        passed_count = 0
-        
-        for item in all_items:
-            if isinstance(item, dict):
-                status = item.get('status', 'unknown')
-            elif hasattr(item, 'status'):
-                status = getattr(item, 'status', 'unknown')
-            else:
-                status = 'unknown'
-            
-            if status == 'passed':
-                passed_count += 1
-            elif status == 'exception':
-                exception_count += 1
-        
-        if exception_count > 0:
-            st.error(f"🔴 发现 {exception_count} 个异常")
-        else:
-            st.success(f"🟢 所有检查通过 ({passed_count} 项)")
-    
-    st.divider()
-    
-    # 检查项详情 - 传递处理后的所有项目
-    display_inspection_items(all_items)
+    display_inspection_items(all_items, report_id=report_id)
 
 def display_report_preview(report_id):
     """显示报告快速预览 - 简化状态系统版本"""
@@ -682,7 +572,7 @@ def display_report_preview(report_id):
         st.session_state.view_mode = "detail"
         st.rerun()
 
-def display_inspection_items(items):
+def display_inspection_items(items, report_id=None):
     """显示巡检项详情 - 简化状态体系版本"""
     # 按新的状态体系分类：通过 vs 异常（按严重程度细分）
     passed_items = [item for item in items if item.get('status') == 'passed']
@@ -720,43 +610,38 @@ def display_inspection_items(items):
         tabs = st.tabs(tab_names)
         for i, (tab, data) in enumerate(zip(tabs, tab_data)):
             with tab:
-                display_items_list(data, tab_names[i].startswith("✅"))
+                display_items_list(data, tab_names[i].startswith("✅"), report_id=report_id, tab_name=tab_names[i])
 
-def display_items_list(items, is_passed=False):
+def display_items_list(items, is_passed=False, report_id=None, tab_name=None):
     """显示检查项列表 - 简化状态系统版本"""
     if not items:
         st.info("此类别下暂无项目")
         return
     
     # 对于通过的项目，默认折叠显示
-    for item in items:
+    for idx, item in enumerate(items):
         title = f"{item.get('name', '未知检查项')}"
-        
-        # 根据类型选择展开状态
         expanded = not is_passed and item.get('severity') == 'critical'
-        
         with st.expander(title, expanded=expanded):
-            # 基本信息
             col1, col2 = st.columns([3, 1])
             with col1:
                 st.markdown(f"**描述:** {item.get('description', '无')}")
-                
-                # 显示详细信息
                 details = item.get('details', '')
                 if details:
-                    # 特殊处理OPA违规
                     if 'violations' in item and isinstance(item['violations'], list):
                         st.markdown("**违规资源:**")
-                        safe_display_opa_violations_table(item['violations'], show_expander=False)
+                        import hashlib
+                        # 用 name, description, report_id, tab_name, idx 生成稳定唯一的key
+                        # 加入description确保即使name相同也能区分
+                        base = f"{item.get('name','')}_{item.get('description','')[:50]}_{report_id or ''}_{tab_name or ''}_{idx}"
+                        item_key = hashlib.md5(base.encode()).hexdigest()[:12]
+                        safe_display_opa_violations_table(item['violations'], show_expander=False, table_key=item_key)
                     else:
                         st.markdown("**详细信息:**")
                         st.text(details)
-            
             with col2:
-                # 状态标签 - 使用简化状态系统
                 status = item.get('status', 'unknown')
                 severity = item.get('severity', 'info')
-                
                 if status == 'exception':
                     if severity == 'critical':
                         st.error("🔴 严重异常")
@@ -768,8 +653,6 @@ def display_items_list(items, is_passed=False):
                     st.success("✅ 通过")
                 else:
                     st.info("ℹ️ 未知状态")
-            
-            # 解决方案
             solution = item.get('solution', '')
             if solution:
                 st.markdown("**💡 建议解决方案:**")
@@ -785,7 +668,7 @@ def display_export_page(report_id):
     
     # 提供快速导出选项
     st.markdown("#### 🚀 快速导出")
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     
     with col1:
         if st.button("📄 导出 JSON", use_container_width=True):
@@ -794,10 +677,6 @@ def display_export_page(report_id):
     with col2:
         if st.button("📊 导出 Excel", use_container_width=True):
             export_and_download(report_id, "excel", "Excel")
-    
-    with col3:
-        if st.button("📋 导出 CSV", use_container_width=True):
-            export_and_download(report_id, "csv", "CSV")
     
     st.divider()
     
@@ -808,7 +687,7 @@ def display_export_page(report_id):
     with col1:
         export_format = st.selectbox(
             "选择导出格式",
-            ["JSON", "CSV", "Excel"],
+            ["JSON", "Excel"],
             help="选择您希望导出的报告格式"
         )
         
@@ -865,7 +744,6 @@ def export_and_download(report_id, format_type, format_name, include_passed=Fals
                 # 根据格式设置MIME类型
                 mime_types = {
                     "json": "application/json",
-                    "csv": "text/csv",
                     "excel": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 }
                 

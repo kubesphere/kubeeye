@@ -1,31 +1,30 @@
-version: '3'
+version: '3.8'
 
 services:
   kubeeye:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-    container_name: kubeeye
+    build: .
     ports:
       - "8501:8501"
     volumes:
-      - ./data:/app/data
+      - kubeeye-data:/app/data
+      # 开发模式：挂载源代码用于实时开发
+      # - .:/app
     environment:
       - PYTHONPATH=/app
       - KUBEEYE_DATA_DIR=/app/data
+      - STREAMLIT_SERVER_HEADLESS=true
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  # 可选: 为开发环境添加一个简单的 Prometheus 实例
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./tools/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-    restart: unless-stopped
+volumes:
+  kubeeye-data:
+    driver: local
+
+networks:
+  default:
+    name: kubeeye-network

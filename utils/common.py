@@ -11,6 +11,35 @@ from pathlib import Path
 # 导入项目模块
 from utils.navbar import set_app_styles, show_app_logo, create_sidebar_header, create_page_header
 
+# 全局变量，确保只初始化一次
+_background_services_initialized = False
+
+def _initialize_background_services():
+    """
+    初始化后台服务（定时任务、数据清理等）
+    使用全局变量确保只初始化一次
+    """
+    global _background_services_initialized
+    
+    if _background_services_initialized:
+        return
+    
+    try:
+        # 导入并启动数据清理模块
+        import utils.data_cleanup
+        
+        # 导入并启动定时任务调度器
+        import utils.schedule_manager
+        
+        _background_services_initialized = True
+        
+    except ImportError as e:
+        # 如果模块不存在，记录错误但不影响页面加载
+        pass
+    except Exception as e:
+        # 其他错误也不影响页面加载
+        pass
+
 def initialize_page(title, icon="🔍", sidebar_name="", page_title="", page_subtitle="", page_icon=""):
     """
     初始化页面设置，包括样式和导航栏
@@ -27,6 +56,9 @@ def initialize_page(title, icon="🔍", sidebar_name="", page_title="", page_sub
     Returns:
         None
     """
+    # 初始化后台服务（只在第一次调用时执行）
+    _initialize_background_services()
+    
     # 不再调用 st.set_page_config() - 必须在使用此函数之前调用
     
     # 确保项目根目录在Python路径中

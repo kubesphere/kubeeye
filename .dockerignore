@@ -1,0 +1,57 @@
+# Git
+.git
+.gitignore
+.github
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache
+.coverage
+htmlcov
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Documentation
+README.md
+docs/
+
+# CI/CD
+.github/workflows/
+
+# Local development files
+docker-compose.yml
+docker-compose.override.yml
+
+# Data directories (will be created in container)
+data/
+
+# 多架构构建脚本
+build-multiarch.sh
+dev.sh
+docker-compose.multiarch.yml

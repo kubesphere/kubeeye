@@ -4,6 +4,8 @@
 统一巡检执行引擎 - 消除重复代码，提供统一的巡检执行接口
 """
 import streamlit as st
+import logging
+import json
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 
@@ -13,6 +15,8 @@ from inspectors.node.node_inspector import NodeInspector
 from inspectors.prometheus.prometheus_inspector import PrometheusInspector
 from inspectors.opa.opa_inspector import OpaInspector
 from inspectors.controller import InspectionController
+
+logger = logging.getLogger(__name__)
 from components.ui.progress import InspectionProgress
 
 
@@ -77,6 +81,11 @@ class InspectionEngine:
             run_node_check = bool(nodes) and (selected_rules and selected_rules.get("node"))
             run_prometheus_check = bool(prometheus_config and prometheus_config.get('enabled', False)) and (selected_rules and selected_rules.get("prometheus"))
             run_opa_check = bool(kubeconfig) and (selected_rules and selected_rules.get("opa"))
+            
+            # 调试日志：打印选择的规则
+            logger.info(f"🔍 巡检类型判断 - 节点数量: {len(nodes)}, Prometheus启用: {prometheus_config.get('enabled', False) if prometheus_config else False}, kubeconfig: {'有' if kubeconfig else '无'}")
+            logger.info(f"🔍 选择的规则: {selected_rules}")
+            logger.info(f"🔍 巡检类型决策 - 节点: {run_node_check}, Prometheus: {run_prometheus_check}, OPA: {run_opa_check}")
             
             if not (run_node_check or run_prometheus_check or run_opa_check):
                 error_msg = "没有可用的巡检类型，请检查集群配置和规则选择"
@@ -330,19 +339,37 @@ class InspectionEngine:
             st.metric("✅ 通过", passed_count)
         with col3:
             st.metric("⚠️ 异常", exception_count)
-        
-        # 结果文件信息
-        st.info(f"📄 巡检结果已保存: `{result_path}`")
+
         
         # 设置会话状态，用于报告页面
         st.session_state.last_result_path = result_path
         st.session_state.last_cluster_name = cluster_name
         
-        # 操作按钮
+        # 尝试从保存的结果中获取result_id
+        try:
+            with open(result_path, 'r', encoding='utf-8') as f:
+                result_data = json.load(f)
+            st.session_state.last_result_id = result_data.get('result_id')
+        except Exception:
+            # 如果无法读取，生成一个默认的result_id
+            from datetime import datetime
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            st.session_state.last_result_id = f"immediate_{timestamp}"
+        
+        # 操作按钮和提示信息
         col1, col2 = st.columns(2)
+        
         with col1:
-            if st.button("📊 查看详细报告", type="primary", use_container_width=True):
-                st.switch_page("pages/3_scan_report.py")
+            # 设置报告页面参数，方便用户查看
+            result_id = st.session_state.get("last_result_id")
+            if result_id:
+                st.session_state.selected_report_id = result_id
+                st.session_state.view_mode = "detail"
+            
+            # 显示友好的查看提示
+            st.success("✅ 巡检完成！报告已准备就绪")
+            st.info("📊 请点击左侧导航栏中的「**巡检报告**」页面查看详细结果")
+                    
         with col2:
             if st.button("🔄 重新巡检", use_container_width=True):
                 st.rerun()
