@@ -178,19 +178,10 @@ def render_mode_selector(gitops_manager: GitOpsRuleManager, config: Dict):
 
 def render_local_mode(gitops_manager: GitOpsRuleManager):
     """渲染本地模式界面"""
-    st.markdown("#### 📁 本地规则管理")
+    st.markdown("#### 📁 本地规则")
     
-    # 选项卡
-    tab_list, tab_create, tab_import = st.tabs(["📋 规则列表", "➕ 创建规则", "📥 导入规则"])
-    
-    with tab_list:
-        render_local_rule_list()
-    
-    with tab_create:
-        st.info("规则创建功能开发中...")
-    
-    with tab_import:
-        st.info("规则导入功能开发中...")
+    # 直接显示规则列表
+    render_local_rule_list()
 
 def render_gitops_mode(gitops_manager: GitOpsRuleManager, config: Dict):
     """渲染GitOps模式界面"""

@@ -32,7 +32,7 @@ class NodeInspector(BaseInspector):
     """
     
     def __init__(self, config: List[Dict[str, Any]], enable_concurrent: bool = True, 
-                 max_workers: int = 5, timeout: int = 30):
+                 max_workers: int = 5, timeout: int = 30, enable_security_check: bool = True):
         """
         初始化节点巡检器
         
@@ -41,11 +41,13 @@ class NodeInspector(BaseInspector):
             enable_concurrent: 是否启用并发执行，默认True
             max_workers: 最大并发线程数，默认5个
             timeout: 单个节点命令执行超时时间（秒），默认30秒
+            enable_security_check: 是否启用安全检查，默认True
         """
         self.nodes = config
         self.enable_concurrent = enable_concurrent
         self.max_workers = min(max_workers, len(config)) if enable_concurrent else 1
         self.timeout = timeout
+        self.enable_security_check = enable_security_check  # 新增属性，默认True
         
         # 安全检查器强制启用，不可关闭
         self.security_checker = CommandSecurityChecker()
@@ -94,8 +96,8 @@ class NodeInspector(BaseInspector):
                 is_safe, risk_level, risk_desc = self.security_checker.check_command_security(command)
                 if not is_safe:
                     issues.append(f"命令安全检查失败: {risk_desc}")
-                elif risk_level != 'low':
-                    issues.append(f"命令存在风险 ({risk_level}): {risk_desc}")
+                elif risk_level != RiskLevel.LOW:  # 修复: 使用枚举值而不是字符串
+                    issues.append(f"命令存在风险 ({risk_level.value}): {risk_desc}")
         
         # 检查必要的断言配置
         assertions = self.get_rule_config(rule, 'assertions', [])
@@ -115,14 +117,19 @@ class NodeInspector(BaseInspector):
         Returns:
             检查结果列表
         """
+        logger.info(f"🎯 开始执行节点规则: {rule.id} - {rule.name}")
         rule_start_time = time.time()
         
         # 获取命令和断言配置
         command = self.get_rule_config(rule, 'execution.command', '')
         assertions = self.get_rule_config(rule, 'assertions', [])
         
+        logger.info(f"规则 {rule.id} 配置 - 命令: {command[:100]}{'...' if len(command) > 100 else ''}")
+        logger.info(f"规则 {rule.id} 配置 - 断言数量: {len(assertions)}")
+        
         # 安全检查
         if self.enable_security_check and command:
+            logger.info(f"规则 {rule.id} 开始安全检查...")
             is_safe, risk_level, risk_desc = self.security_checker.check_command_security(command)
             
             if not is_safe:
@@ -136,19 +143,38 @@ class NodeInspector(BaseInspector):
                 error_result['security_blocked'] = True
                 error_result['risk_level'] = risk_level
                 return [error_result]
+            else:
+                logger.info(f"规则 {rule.id} 安全检查通过 - 风险级别: {risk_level}")
             
-            elif risk_level != 'low':
+            if risk_level != 'low':
                 logger.warning(f"规则 {rule.id} 命令存在安全风险: {risk_desc}")
                 self.stats['security_warnings'] += 1
                 # 在严格模式下，如果不是严格模式，继续执行但记录警告
+        else:
+            logger.info(f"规则 {rule.id} 跳过安全检查 (enable_security_check={self.enable_security_check}, command_length={len(command)})")
         
         # 获取节点选择器并过滤节点
         node_selector = self.get_rule_config(rule, 'scope.node_selector', {})
+        logger.info(f"规则 {rule.id} 节点选择器: {node_selector}")
+        logger.info(f"规则 {rule.id} 可用节点总数: {len(self.nodes)}")
+        
         target_nodes = self._filter_nodes_by_selector(self.nodes, node_selector)
+        logger.info(f"规则 {rule.id} 筛选后目标节点数: {len(target_nodes)}")
         
         if not target_nodes:
             logger.warning(f"规则 {rule.id} 没有匹配的节点")
+            # 添加详细的节点信息日志
+            logger.info(f"可用节点列表: {[node.get('name', node.get('ip', 'unknown')) for node in self.nodes]}")
+            if node_selector:
+                logger.info(f"节点选择器要求: {node_selector}")
+                for node in self.nodes:
+                    node_labels = node.get('labels', {})
+                    logger.info(f"节点 {node.get('name', node.get('ip'))} 标签: {node_labels}")
             return []
+        
+        # 记录目标节点信息
+        target_node_names = [node.get('name', node.get('ip', 'unknown')) for node in target_nodes]
+        logger.info(f"规则 {rule.id} 目标节点: {target_node_names}")
         
         # 选择执行模式：如果启用并发且节点数>1，使用并发；否则串行
         if self.enable_concurrent and len(target_nodes) > 1:
@@ -159,7 +185,7 @@ class NodeInspector(BaseInspector):
             node_results = self._execute_rule_sequentially(rule, command, assertions, target_nodes)
         
         rule_duration = time.time() - rule_start_time
-        logger.info(f"规则 {rule.id} 执行完成，耗时 {rule_duration:.2f}秒")
+        logger.info(f"✅ 规则 {rule.id} 执行完成，耗时 {rule_duration:.2f}秒，结果数: {len(node_results)}")
         
         # 更新统计信息
         self.stats['total_rules'] += 1
@@ -554,7 +580,7 @@ class NodeInspector(BaseInspector):
         
         # 可选：写入专门的安全审计日志文件
         try:
-            audit_file = os.path.join(os.path.dirname(__file__), '..', '..', 'logs', 'security_audit.log')
+            audit_file = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'logs', 'security_audit.log')
             os.makedirs(os.path.dirname(audit_file), exist_ok=True)
             with open(audit_file, 'a', encoding='utf-8') as f:
                 f.write(f"{audit_msg}\n")

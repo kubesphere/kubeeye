@@ -164,15 +164,31 @@ def display_opa_violations_table(violations_data: List[Dict], show_expander: boo
         
         # 页面选择器
         if total_pages > 1:
-            # 使用violations_data的id和时间戳生成唯一的selectbox key
-            import time
-            selectbox_key = f"violations_page_selector_{id(violations_data)}_{int(time.time() * 1000) % 10000}"
+            # 优先使用传入的table_key，确保唯一性和稳定性
+            if table_key:
+                selectbox_key = f"violations_page_{table_key}"
+            else:
+                # 仅当没有table_key时才使用violations_data的哈希值
+                import hashlib
+                violations_hash = hashlib.md5(str(violations_data).encode()).hexdigest()[:8]
+                selectbox_key = f"violations_page_{violations_hash}"
+            
+            # 使用session_state存储当前页面，确保状态持久化
+            page_state_key = f"{selectbox_key}_current_page"
+            if page_state_key not in st.session_state:
+                st.session_state[page_state_key] = 1
+                
             page = st.selectbox(
                 "选择页面", 
                 range(1, total_pages + 1),
                 format_func=lambda x: f"第 {x} 页 (共 {total_pages} 页)",
-                key=selectbox_key
-            ) - 1
+                key=selectbox_key,
+                index=st.session_state[page_state_key] - 1
+            )
+            
+            # 更新session_state中的页面状态
+            st.session_state[page_state_key] = page
+            page = page - 1
         else:
             page = 0
         
@@ -338,7 +354,10 @@ def display_inspection_results(inspector_type: str, result, show_summary: bool =
                         # 在专门的容器中显示表格，禁用expander避免嵌套
                         violations_container = st.container()
                         with violations_container:
-                            display_opa_violations_table(violations_data, show_expander=False)
+                            # 为每个违规表格生成唯一的key - 错误级别
+                            import hashlib
+                            item_key = hashlib.md5(f"{item.get('name', '')}_error_{len(violations_data)}".encode()).hexdigest()[:8]
+                            display_opa_violations_table(violations_data, show_expander=False, table_key=item_key)
                     else:
                         st.text_area("详细信息", details_content, height=150)
                 
@@ -380,7 +399,10 @@ def display_inspection_results(inspector_type: str, result, show_summary: bool =
                         # 在专门的容器中显示表格，禁用expander避免嵌套
                         violations_container = st.container()
                         with violations_container:
-                            display_opa_violations_table(violations_data, show_expander=False)
+                            # 为每个违规表格生成唯一的key - 警告级别
+                            import hashlib
+                            item_key = hashlib.md5(f"{item.get('name', '')}_warning_{len(violations_data)}".encode()).hexdigest()[:8]
+                            display_opa_violations_table(violations_data, show_expander=False, table_key=item_key)
                     else:
                         st.text_area("详细信息", details_content, height=150)
                 

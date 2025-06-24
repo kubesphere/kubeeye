@@ -82,15 +82,15 @@ class K8sBaseClient:
         测试连接到Kubernetes集群
         
         Returns:
-            (是否成功, 消息)
+            (是否成功, 消消息)
         """
         try:
             if not self.initialized:
                 return False, "客户端未初始化"
                 
             # 尝试获取集群版本信息
-            v1 = client.CoreV1Api()
-            version = v1.get_code().git_version
+            version_api = client.VersionApi()
+            version = version_api.get_code().git_version
             return True, f"连接成功，集群版本: {version}"
             
         except ApiException as e:

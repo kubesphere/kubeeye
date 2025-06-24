@@ -40,7 +40,7 @@ class SimpleSecurityConfig:
             return {
                 'max_command_length': config.get('max_command_length', 1000),
                 'command_timeout': config.get('command_timeout', 30),
-                'audit_log_path': config.get('audit_log_path', 'logs/security_audit.log'),
+                'audit_log_path': config.get('audit_log_path', 'data/logs/security_audit.log'),
                 'audit_retention_days': config.get('audit_retention_days', 90),
                 'enable_detailed_logging': config.get('enable_detailed_logging', True),
                 'allowed_ports': config.get('allowed_ports', [22, 80, 443, 6443, 8080, 9090, 10250]),
@@ -56,7 +56,7 @@ class SimpleSecurityConfig:
         return {
             'max_command_length': 1000,
             'command_timeout': 30,
-            'audit_log_path': 'logs/security_audit.log',
+            'audit_log_path': 'data/logs/security_audit.log',
             'audit_retention_days': 90,
             'enable_detailed_logging': True,
             'allowed_ports': [22, 80, 443, 6443, 8080, 9090, 10250],

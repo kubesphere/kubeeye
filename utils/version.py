@@ -5,13 +5,13 @@
 """
 
 # 主版本号
-VERSION_MAJOR = 1
+VERSION_MAJOR = 2
 # 次版本号
 VERSION_MINOR = 0
 # 修订号
 VERSION_PATCH = 0
 # 版本标签（如 'alpha'、'beta'、'rc1'，正式版留空）
-VERSION_TAG = ''
+VERSION_TAG = 'alpha'
 
 # 完整版本号
 VERSION = f"{VERSION_MAJOR}.{VERSION_MINOR}.{VERSION_PATCH}"
@@ -25,10 +25,10 @@ APP_DESCRIPTION = "Kubernetes 集群巡检工具"
 # 应用作者
 APP_AUTHOR = "pixiake"
 # 应用主页
-APP_URL = "https://github.com/pixiake/kubeeye"
+APP_URL = "https://github.com/kubesphere/kubeeye"
 
 # 版本发布日期
-RELEASE_DATE = "2025-05-28"
+RELEASE_DATE = "2025-06-25"
 
 def get_version():
     """获取当前版本号"""

@@ -23,9 +23,9 @@ config:
   # 断言配置
   assertions:
     - name: "Pod运行状态比例检查"
-      condition: "max_value > 85"
+      condition: "max_value < 85"
       severity: warning
-      description: "Pod运行状态比例: {{ max_value | round(2) }}%"
+      description: "Pod运行状态比例过高: {{ max_value | round(2) }}%，建议考虑添加节点扩容"
 
 # 标签
 tags:

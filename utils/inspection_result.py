@@ -7,7 +7,7 @@
 import json
 import yaml
 import os
-import csv
+
 import openpyxl
 from datetime import datetime
 from pathlib import Path
@@ -158,14 +158,45 @@ def load_result(result_id: str) -> Optional[Dict]:
             # 检查result_id是否匹配
             if result_data.get('result_id') == result_id:
                 return result_data
-        except Exception:
+        except Exception as e:
+            # 记录读取失败的文件但继续搜索
+            print(f"Warning: Failed to read {file_path}: {e}")
             continue
-            
-    # 如果没有找到，也尝试从文件名匹配
-    result_file = RESULTS_DIR / f"inspection_result_{result_id.replace('_', '_')}.json"
-    if result_file.exists():
-        with open(result_file, 'r', encoding='utf-8') as f:
-            return json.load(f)
+    
+    # 如果通过result_id没找到，尝试通过文件名模式匹配
+    # 处理不同的文件名格式
+    possible_patterns = [
+        f"inspection_result_{result_id}.json",
+        f"{result_id}.json",
+        # 尝试从result_id中提取集群名和时间戳
+    ]
+    
+    # 如果result_id包含时间戳，尝试构建标准文件名
+    if '_' in result_id:
+        parts = result_id.split('_')
+        if len(parts) >= 3:
+            # 假设格式是 type_date_time，尝试找到对应的文件
+            for file_path in RESULTS_DIR.glob(f'inspection_result_*_{parts[-2]}_{parts[-1]}.json'):
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        result_data = json.load(f)
+                    # 如果文件内容匹配，返回结果
+                    if result_data.get('result_id') == result_id:
+                        return result_data
+                except Exception as e:
+                    print(f"Warning: Failed to read {file_path}: {e}")
+                    continue
+    
+    # 尝试直接的文件名匹配
+    for pattern in possible_patterns:
+        result_file = RESULTS_DIR / pattern
+        if result_file.exists():
+            try:
+                with open(result_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"Warning: Failed to read {result_file}: {e}")
+                continue
     
     return None
 
@@ -176,7 +207,7 @@ def export_report(result_id: str, format_type: str = "json") -> Tuple[bool, str]
     
     Args:
         result_id: 巡检结果ID
-        format_type: 导出格式，支持 "json", "csv", "excel"
+        format_type: 导出格式，支持 "json", "excel"
         
     Returns:
         (成功, 文件路径) 元组，成功为 True 时返回导出文件路径
@@ -186,50 +217,32 @@ def export_report(result_id: str, format_type: str = "json") -> Tuple[bool, str]
     if not result_data:
         return False, "找不到指定巡检结果"
     
-    # 从 result_id 解析出集群名
-    parts = result_id.split('_')
-    if len(parts) < 3:
-        return False, "无效的结果ID格式"
-        
-    cluster_name = parts[0]
+    # 从 result_data 获取集群名
+    cluster_name = result_data.get('cluster_name', 'unknown')
     export_dir = RESULTS_DIR / cluster_name / "exports"
     os.makedirs(export_dir, exist_ok=True)
     
     # 根据格式类型导出
     if format_type == "json":
-        # 直接使用原始结果文件
-        source_path = RESULTS_DIR / cluster_name / f"{result_id}.json"
-        export_path = export_dir / f"{result_id}.json"
+        # 找到原始结果文件
+        source_path = None
+        for file_path in RESULTS_DIR.glob('*.json'):
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                if data.get('result_id') == result_id:
+                    source_path = file_path
+                    break
+            except Exception:
+                continue
         
-        if source_path.exists():
+        if source_path and source_path.exists():
+            export_path = export_dir / f"{result_id}.json"
             import shutil
             shutil.copy(source_path, export_path)
             return True, str(export_path)
         else:
             return False, "找不到源文件"
-            
-    elif format_type == "csv":
-        export_path = export_dir / f"{result_id}.csv"
-        
-        try:
-            with open(export_path, 'w', newline='', encoding='utf-8') as csvfile:
-                fieldnames = ['name', 'status', 'severity', 'description', 'details', 'solution']
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                
-                writer.writeheader()
-                for item in result_data.get('items', []):
-                    writer.writerow({
-                        'name': item.get('name', ''),
-                        'status': item.get('status', ''),
-                        'severity': item.get('severity', ''),
-                        'description': item.get('description', ''),
-                        'details': item.get('details', '').replace('\n', ' '),
-                        'solution': item.get('solution', '').replace('\n', ' ')
-                    })
-                    
-            return True, str(export_path)
-        except Exception as e:
-            return False, f"导出CSV失败: {str(e)}"
             
     elif format_type == "excel":
         export_path = export_dir / f"{result_id}.xlsx"
@@ -250,8 +263,19 @@ def export_report(result_id: str, format_type: str = "json") -> Tuple[bool, str]
             for col, header in enumerate(headers, start=1):
                 ws.cell(row=6, column=col, value=header)
             
+            # 获取所有检查项 - 兼容新旧数据结构
+            all_items = []
+            if 'inspection_results' in result_data:
+                # 新数据结构：从inspection_results中获取所有项目
+                for inspector_type, inspector_result in result_data['inspection_results'].items():
+                    items = inspector_result.get('items', [])
+                    all_items.extend(items)
+            else:
+                # 旧数据结构：直接从items字段获取
+                all_items = result_data.get('items', [])
+            
             # 添加数据
-            for row_idx, item in enumerate(result_data.get('items', []), start=7):
+            for row_idx, item in enumerate(all_items, start=7):
                 ws.cell(row=row_idx, column=1, value=item.get('name', ''))
                 ws.cell(row=row_idx, column=2, value=item.get('status', ''))
                 ws.cell(row=row_idx, column=3, value=item.get('severity', ''))

@@ -82,25 +82,40 @@ class BaseInspector(ABC):
         Returns:
             巡检结果对象
         """
+        logger.info(f"🔍 BaseInspector.run_inspection 开始 - 巡检器类型: {self.inspector_type}, 集群: {cluster_name}")
+        logger.info(f"可用规则总数: {len(self.rules)}, 指定规则ID: {rule_ids}")
+        
         result = InspectionResult(cluster_name, self.inspector_type)
         
         # 确定要运行的规则
         if rule_ids:
             active_rules = [rule for rule in self.rules if rule.id in rule_ids]
+            logger.info(f"根据指定ID筛选后的规则数: {len(active_rules)}")
         else:
             active_rules = self.rules
+            logger.info(f"使用所有可用规则数: {len(active_rules)}")
             
         if not active_rules:
+            logger.warning(f"没有可执行的规则，巡检结束")
             return result
+        
+        logger.info(f"准备执行 {len(active_rules)} 条规则:")
+        for rule in active_rules:
+            logger.info(f"  - {rule.id}: {rule.name}")
             
         # 执行规则
         context = self._prepare_context(cluster_name)
+        logger.info(f"上下文准备完成: {context}")
         
+        executed_count = 0
         for rule in active_rules:
             try:
+                logger.info(f"📋 开始执行规则 {rule.id}: {rule.name}")
+                
                 # 验证规则配置
                 validation_issues = self._validate_rule_config(rule)
                 if validation_issues:
+                    logger.error(f"规则 {rule.id} 配置无效: {validation_issues}")
                     # 规则配置无效
                     result.add_item(self._format_invalid_result(
                         rule, 
@@ -108,33 +123,50 @@ class BaseInspector(ABC):
                         f"以下配置问题阻止了规则执行: {', '.join(validation_issues)}"
                     ))
                     continue
+                else:
+                    logger.info(f"规则 {rule.id} 配置验证通过")
                     
                 # 检查规则是否适用当前环境    
-                if self._should_apply_rule(rule, context):
+                should_apply = self._should_apply_rule(rule, context)
+                logger.info(f"规则 {rule.id} 适用性检查: {should_apply}")
+                
+                if should_apply:
+                    logger.info(f"🎯 开始应用规则 {rule.id}")
                     inspection_result = self._apply_rule(rule, context)
+                    logger.info(f"规则 {rule.id} 应用完成，结果类型: {type(inspection_result)}")
                     
                     if inspection_result:
                         # 处理单个结果或结果列表
                         if isinstance(inspection_result, list):
+                            logger.info(f"规则 {rule.id} 返回结果列表，长度: {len(inspection_result)}")
                             for item in inspection_result:
                                 result.add_item(item)
                         else:
+                            logger.info(f"规则 {rule.id} 返回单个结果")
                             result.add_item(inspection_result)
+                    else:
+                        logger.warning(f"规则 {rule.id} 返回空结果")
                 else:
+                    logger.info(f"规则 {rule.id} 不适用于当前环境")
                     # 规则不适用于当前环境
                     result.add_item(self._format_not_applicable_result(
                         rule, 
                         "规则不适用于当前环境"
                     ))
+                
+                executed_count += 1
+                logger.info(f"✅ 规则 {rule.id} 执行完成 ({executed_count}/{len(active_rules)})")
+                
             except Exception as e:
-                logger.exception(f"执行规则 {rule.id} 时出错: {str(e)}")
+                logger.exception(f"❌ 执行规则 {rule.id} 时出错: {str(e)}")
                 error_result = self._format_error_result(
                     rule,
                     f"执行规则时发生错误: {str(e)}",
                     str(e)
                 )
                 result.add_item(error_result)
-                
+        
+        logger.info(f"🏁 BaseInspector.run_inspection 完成 - 巡检器: {self.inspector_type}, 执行规则数: {executed_count}, 结果数: {len(result.items)}")        
         return result
         
     def _prepare_context(self, cluster_name: str) -> Dict:

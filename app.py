@@ -36,8 +36,8 @@ from utils.cert_checker import get_cluster_cert_status
 initialize_page(
     title="巡检总览",
     icon="📊",
-    page_title="KubeEye 集群巡检总览",
-    page_subtitle="实时监控您的 Kubernetes 集群健康状况"
+    page_title="集群巡检概览",
+    page_subtitle=" Kubernetes 集群巡检概况"
 )
 
 # 加载集群列表
@@ -152,43 +152,6 @@ with cols[4]:
         delta=None
     )
 
-# 安全状态检查
-try:
-    from utils.command_security import CommandSecurityChecker
-    security_checker = CommandSecurityChecker()
-    
-    # 测试危险命令和安全命令
-    dangerous_safe, _, _ = security_checker.check_command_security("rm -rf /")
-    safe_safe, _, _ = security_checker.check_command_security("ps aux")
-    
-    # 强制安全模式状态显示
-    if not dangerous_safe and safe_safe:
-        security_status = "� 强制安全模式已启用"
-        security_color = "green"
-    else:
-        security_status = "🔴 安全检查器异常"
-        security_color = "red"
-        
-    st.markdown(f"""
-    <div style="text-align: center; margin: 15px 0; padding: 10px; 
-                background-color: {'#d4edda' if security_color == 'green' else '#f8d7da'}; 
-                border: 1px solid {'#c3e6cb' if security_color == 'green' else '#f5c6cb'}; 
-                border-radius: 5px;">
-        <span style="color: {security_color}; font-weight: bold; font-size: 1.1em;">
-            {security_status}
-        </span>
-        <br>
-        <small style="color: #666;">只读巡检 • 禁止修改操作 • 安全第一</small>
-    </div>
-    """, unsafe_allow_html=True)
-except Exception as e:
-    st.markdown(f'''
-    <div style="text-align: center; color: orange; padding: 10px; 
-                background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
-        ⚠️ 安全检查器状态未知: {str(e)}
-    </div>
-    ''', unsafe_allow_html=True)
-
 st.markdown("---")
 
 # 主要内容区域 - 集群状态表格
@@ -266,26 +229,7 @@ else:
     
     # 显示集群状态表格
     cluster_df = pd.DataFrame(cluster_data)
-    
-    def color_status(val):
-        if '✅' in str(val):
-            return 'color: #28a745; font-weight: bold'
-        elif '⚠️' in str(val):
-            return 'color: #ffc107; font-weight: bold'
-        elif '❌' in str(val) or '🔴' in str(val):
-            return 'color: #dc3545; font-weight: bold'
-        else:
-            return 'color: #6c757d'
-    
-    def color_numbers(val):
-        if val > 0:
-            return 'color: #dc3545; font-weight: bold'
-        return ''
-    
-    styled_df = cluster_df.style.applymap(color_status, subset=['状态', 'kubeconfig 有效期']) \
-                               .applymap(color_numbers, subset=['关键问题', '警告'])
-    
-    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+    st.table(cluster_df)
     
     # 快速操作按钮
     st.markdown("#### 🚀 快速操作")
@@ -293,11 +237,11 @@ else:
     
     with cols[0]:
         if st.button("🔍 执行巡检", use_container_width=True, type="primary"):
-            st.switch_page("pages/2_cluster_scan.py")
+            st.switch_page("pages/2_cluster_inspect.py")
     
     with cols[1]:
         if st.button("📊 查看报告", use_container_width=True):
-            st.switch_page("pages/3_scan_report.py")
+            st.switch_page("pages/3_inspect_report.py")
     
     with cols[2]:
         if st.button("⚙️ 管理集群", use_container_width=True):
@@ -338,25 +282,7 @@ if all_results:
         })
     
     scan_df = pd.DataFrame(scan_records)
-    
-    def color_scan_status(val):
-        if '✅' in str(val):
-            return 'color: #28a745; font-weight: bold'
-        elif '⚠️' in str(val):
-            return 'color: #ffc107; font-weight: bold'
-        elif '❌' in str(val):
-            return 'color: #dc3545; font-weight: bold'
-        return ''
-    
-    def color_scan_numbers(val):
-        if val > 0:
-            return 'color: #dc3545; font-weight: bold'
-        return ''
-    
-    styled_scan_df = scan_df.style.applymap(color_scan_status, subset=['状态']) \
-                                  .applymap(color_scan_numbers, subset=['关键问题', '警告'])
-    
-    st.dataframe(styled_scan_df, use_container_width=True, hide_index=True)
+    st.table(scan_df)
 else:
     st.info("📋 还没有巡检记录，执行首次巡检后这里将显示历史记录。")
 

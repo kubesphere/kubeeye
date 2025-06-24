@@ -116,6 +116,8 @@ class ScheduleTask:
         """获取友好的调度描述"""
         if self.task_type == "cron":
             return f"自定义: {self.cron_expr}"
+        elif self.task_type == "once":
+            return f"单次定时: {self.run_datetime}"
         elif self.task_type == "hourly":
             return "每小时"
         elif self.task_type == "daily":
