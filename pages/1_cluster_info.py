@@ -39,6 +39,41 @@ initialize_page(
     page_subtitle="管理和配置您的 Kubernetes 集群连接"
 )
 
+def parse_labels_string(labels_str: str) -> dict:
+    """
+    将标签字符串转换为字典格式
+    
+    Args:
+        labels_str: 标签字符串，格式如 "key1=value1,key2=value2"
+        
+    Returns:
+        标签字典
+    """
+    if not labels_str or not labels_str.strip():
+        return {}
+    
+    labels = {}
+    for label_pair in labels_str.split(','):
+        label_pair = label_pair.strip()
+        if '=' in label_pair:
+            key, value = label_pair.split('=', 1)  # 使用 maxsplit=1 处理值中包含=的情况
+            labels[key.strip()] = value.strip()
+    return labels
+
+def format_labels_dict(labels_dict: dict) -> str:
+    """
+    将标签字典转换为字符串格式
+    
+    Args:
+        labels_dict: 标签字典
+        
+    Returns:
+        标签字符串，格式如 "key1=value1,key2=value2"
+    """
+    if not labels_dict:
+        return ""
+    return ",".join([f"{k}={v}" for k, v in labels_dict.items()])
+
 def reset_auth_related_state(node_id: Union[str, int], auth_type: str):  # 替换 str | int 为 Union[str, int]
     """
     重置认证方式相关的会话状态，确保切换时无残留
@@ -92,11 +127,13 @@ with tab1:
                 if nodes:
                     node_data = []
                     for node in nodes:
+                        labels_str = format_labels_dict(node.get('labels', {}))
                         node_data.append({
                             "IP": node['ip'],
                             "端口": node['port'],
                             "用户名": node['username'],
-                            "认证类型": node['auth_type']
+                            "认证类型": node['auth_type'],
+                            "标签": labels_str if labels_str else "无"
                         })
                     st.dataframe(pd.DataFrame(node_data))
                 else:
@@ -135,7 +172,8 @@ with tab2:
         if f"auth_type_{node_id}" not in st.session_state:
             st.session_state[f"auth_type_{node_id}"] = "password"  # 默认密码认证
         reset_auth_related_state(node_id, st.session_state[f"auth_type_{node_id}"])
-    
+        if f"node_labels_{node_id}" not in st.session_state:
+            st.session_state[f"node_labels_{node_id}"] = ""
     # 集群名称输入（表单外，但值会在表单提交时读取）
     cluster_name = st.text_input("集群名称", placeholder="production")
     st.caption("请输入一个唯一的集群名称，用于标识此集群")
@@ -220,6 +258,16 @@ with tab2:
                             key=key_path_key,
                             value=st.session_state[key_path_key]  # 显式绑定值
                         )
+                
+                    node_labels_key = f"node_labels_{node_id}"
+                    node_labels = st.text_input(
+                        "节点标签",
+                        placeholder="kubernetes.io/arch=amd64,kubernetes.io/os=linux",
+                        key=node_labels_key,
+                        value=st.session_state[node_labels_key],
+                        help="输入节点标签，格式：key1=value1,key2=value2"
+                    )
+
         
         # 添加节点按钮（表单外，直接触发重渲染）
         if st.button("➕ 添加节点", use_container_width=False):
@@ -227,6 +275,7 @@ with tab2:
             st.session_state.add_cluster_nodes.append(new_id)
             st.session_state[f"auth_type_{new_id}"] = "password"  # 初始化新节点认证方式
             reset_auth_related_state(new_id, "password")  # 初始化新节点的认证状态
+            st.session_state[f"node_labels_{new_id}"] = ""  # 新增：初始化新节点标签
             st.rerun()
 
     
@@ -266,12 +315,15 @@ with tab2:
                 node_port = st.session_state.get(f"node_port_{node_id}", "22")
                 node_username = st.session_state.get(f"node_username_{node_id}", "root")
                 auth_type = st.session_state.get(f"auth_type_{node_id}", "password")
+                node_labels_str = st.session_state.get(f"node_labels_{node_id}", "")
+                node_labels = parse_labels_string(node_labels_str)
                 
                 node_info = {
                     "ip": node_ip,
                     "port": node_port or "22",
                     "username": node_username or "root",
-                    "auth_type": auth_type
+                    "auth_type": auth_type,
+                    "labels": node_labels
                 }
                 
                 # 根据认证方式添加密码或密钥路径
@@ -365,7 +417,7 @@ with tab2:
                 st.session_state[f"auth_type_0"] = "password"
                 # 清空所有节点输入框的会话状态
                 for key in list(st.session_state.keys()):
-                    if key.startswith(("node_ip_", "node_port_", "node_username_", "node_password_", "node_key_", "select_auth_type_")):
+                    if key.startswith(("node_ip_", "node_port_", "node_username_", "node_password_", "node_key_", "select_auth_type_", "node_labels_")):
                         del st.session_state[key]
                 st.info("你可以在「编辑集群」选项卡中添加更多节点")
 
@@ -402,7 +454,6 @@ with tab3:
                     for i, node in enumerate(nodes):
                         with st.expander(f"节点: {node['ip']}", expanded=False):
                             st.json(node)
-                            
                             if st.button("删除节点", key=f"delete_node_{i}"):
                                 cluster_config.remove_node(node['ip'])
                                 st.success(f"节点 {node['ip']} 已删除")
@@ -414,6 +465,7 @@ with tab3:
                 edit_node_id = "edit_node"  # 固定ID，区分添加集群的数字ID
                 auth_type_key = f"auth_type_{edit_node_id}"
                 select_auth_key = f"select_auth_type_{edit_node_id}"  # 选择框的键名
+                node_labels_key = f"node_labels_{edit_node_id}"
                 
                 # 2. 初始化认证方式状态（确保键存在）
                 if auth_type_key not in st.session_state:
@@ -421,6 +473,8 @@ with tab3:
                 # 3. 初始化选择框状态（关键：与选择框的key完全一致）
                 if select_auth_key not in st.session_state:
                     st.session_state[select_auth_key] = "password"
+                if node_labels_key not in st.session_state:
+                    st.session_state[node_labels_key] = ""
                 
                 # 4. 初始化密码/密钥的会话状态
                 reset_auth_related_state(edit_node_id, st.session_state[auth_type_key])
@@ -501,6 +555,14 @@ with tab3:
                                 value=st.session_state[key_path_key]
                             )
                 
+                        edit_node_labels = st.text_input(
+                            "节点标签",
+                            placeholder="kubernetes.io/arch=amd64,kubernetes.io/os=linux",
+                            key=node_labels_key,
+                            value=st.session_state[node_labels_key],
+                            help="输入节点标签，格式：key1=value1,key2=value2"
+                        )
+                
                 with st.form("add_node_form"):
                     submitted = st.form_submit_button("添加节点")
                     
@@ -514,7 +576,8 @@ with tab3:
                                 "ip": ip,
                                 "port": st.session_state[f"node_port_{edit_node_id}"],
                                 "username": st.session_state[f"node_username_{edit_node_id}"],
-                                "auth_type": st.session_state[auth_type_key]
+                                "auth_type": st.session_state[auth_type_key],
+                                "labels": parse_labels_string(st.session_state[node_labels_key])
                             }
                             
                             # 添加密码/密钥信息
@@ -540,7 +603,8 @@ with tab3:
                                     f"node_port_{edit_node_id}",
                                     f"node_username_{edit_node_id}",
                                     f"node_password_{edit_node_id}",
-                                    f"node_key_{edit_node_id}"
+                                    f"node_key_{edit_node_id}",
+                                    node_labels_key
                                 ]
                                 for key in reset_keys:
                                     if key in st.session_state:
