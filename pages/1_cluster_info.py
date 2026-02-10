@@ -88,6 +88,7 @@ def ensure_node_state(node_id: Union[str, int]):
         f"select_auth_type_{node_id}": "password",
         f"node_password_{node_id}": "",
         f"node_key_{node_id}": "",
+        f"node_key_content_{node_id}": "",
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -99,19 +100,26 @@ def reset_auth_related_state(node_id: Union[str, int], auth_type: str):
     
     Args:
         node_id: 节点的唯一标识（数字/字符串）
-        auth_type: 目标认证方式（password/key_path）
+        auth_type: 目标认证方式（password/key_path/key_content）
     """
     # 定义需要清空的键
     password_key = f"node_password_{node_id}"
     key_path_key = f"node_key_{node_id}"
+    key_content_key = f"node_key_content_{node_id}"
     
     # 清空所有非目标认证方式的状态
     if auth_type == "password":
-        if key_path_key in st.session_state:
-            del st.session_state[key_path_key]
+        for key in [key_path_key, key_content_key]:
+            if key in st.session_state:
+                del st.session_state[key]
     elif auth_type == "key_path":
-        if password_key in st.session_state:
-            del st.session_state[password_key]
+        for key in [password_key, key_content_key]:
+            if key in st.session_state:
+                del st.session_state[key]
+    elif auth_type == "key_content":
+        for key in [password_key, key_path_key]:
+            if key in st.session_state:
+                del st.session_state[key]
 
 def render_auth_fields(
     *,
@@ -126,6 +134,7 @@ def render_auth_fields(
     select_key = f"select_auth_type_{node_id}"
     password_key = f"node_password_{node_id}"
     key_path_key = f"node_key_{node_id}"
+    key_content_key = f"node_key_content_{node_id}"
 
     # 初始化 auth_type
     ensure_node_state(node_id)  # 统一初始化，无需单独判断
@@ -138,9 +147,9 @@ def render_auth_fields(
     # 认证方式选择
     auth_type = st.selectbox(
         label_prefix,
-        ["password", "key_path"],
+        ["password", "key_path", "key_content"],
         key=select_key,
-        index=["password", "key_path"].index(st.session_state[auth_type_key]),
+        index=["password", "key_path", "key_content"].index(st.session_state[auth_type_key]),
         on_change=on_auth_change
     )
     st.session_state[auth_type_key] = auth_type
@@ -153,12 +162,20 @@ def render_auth_fields(
             key=password_key,
             value=st.session_state[password_key]
         )
-    else:
+    elif auth_type == "key_path":
         st.text_input(
             "私钥路径",
-            placeholder="~/.ssh/id_rsa",
+            placeholder="/path/to/.ssh/id_rsa",
             key=key_path_key,
             value=st.session_state[key_path_key]
+        )
+    elif auth_type == "key_content":
+        st.text_area(
+            "私钥内容",
+            placeholder="-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----",
+            height=180,
+            key=key_content_key,
+            value=st.session_state[key_content_key]
         )
 
 def clear_node_state(node_ids: List[Union[str, int]]):
@@ -169,7 +186,7 @@ def clear_node_state(node_ids: List[Union[str, int]]):
         node_ids: 需要清空的节点ID列表
     """
     for node_id in node_ids:
-        for suffix in ["ip", "port", "username", "labels", "password", "key", "auth_type", "select_auth_type"]:
+        for suffix in ["ip", "port", "username", "labels", "password", "key", "key_content", "auth_type", "select_auth_type"]:
             key = f"node_{suffix}_{node_id}"
             if key in st.session_state:
                 del st.session_state[key]
@@ -318,6 +335,7 @@ with tab2:
         kubeconfig_content = st.text_area("Kubeconfig 内容", height=150)
         
         submitted = st.form_submit_button("保存集群")
+    # 处理保存集群操作（表单提交后执行）
     if submitted:
         # 收集所有节点信息（从会话状态读取）
         nodes_to_add = []
@@ -342,8 +360,10 @@ with tab2:
                 # 根据认证方式添加密码或密钥路径
                 if auth_type == "password":
                     node_info["password"] = st.session_state.get(f"node_password_{node_id}", "")
-                else:
+                elif auth_type == "key_path":
                     node_info["key_path"] = st.session_state.get(f"node_key_{node_id}", "")
+                elif auth_type == "key_content":
+                    node_info["key_content"] = st.session_state.get(f"node_key_content_{node_id}", "")
                 nodes_to_add.append(node_info)
         
         # 验证输入
@@ -537,8 +557,10 @@ with tab3:
                         # 添加密码/密钥信息
                         if node_info["auth_type"] == "password":
                             node_info["password"] = st.session_state[f"node_password_{edit_node_id}"]
-                        else:
+                        elif node_info["auth_type"] == "key_path":
                             node_info["key_path"] = st.session_state[f"node_key_{edit_node_id}"]
+                        else :
+                            node_info["key_content"] = st.session_state[f"node_key_content_{edit_node_id}"]
                         
                         # 测试节点连接（仅验证，不添加）
                         with st.spinner("正在测试节点连接..."):
@@ -565,8 +587,10 @@ with tab3:
                         # 添加密码/密钥信息
                         if node_info["auth_type"] == "password":
                             node_info["password"] = st.session_state[f"node_password_{edit_node_id}"]
-                        else:
+                        elif node_info["auth_type"] == "key_path":
                             node_info["key_path"] = st.session_state[f"node_key_{edit_node_id}"]
+                        else :
+                            node_info["key_content"] = st.session_state[f"node_key_content_{edit_node_id}"]
                         
                         # 先测试连接，再添加
                         with st.spinner("正在测试节点连接..."):
