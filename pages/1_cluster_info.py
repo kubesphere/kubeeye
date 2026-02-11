@@ -287,13 +287,11 @@ with tab2:
                     )
                     node_port = st.text_input(
                         "SSH 端口", 
-                        key=node_port_key,
-                        value=st.session_state[node_port_key]
+                        key=node_port_key
                     )
                     node_username = st.text_input(
                         "用户名", 
-                        key=node_username_key,
-                        value=st.session_state[node_username_key]
+                        key=node_username_key
                     )
                 
                 with col2:
@@ -510,13 +508,11 @@ with tab3:
                         )
                         edit_node_port = st.text_input(
                             "SSH 端口",
-                            key=node_port_key,
-                            value=st.session_state[node_port_key]
+                            key=node_port_key
                         )
                         edit_node_username = st.text_input(
                             "用户名",
-                            key=node_username_key,
-                            value=st.session_state[node_username_key]
+                            key=node_username_key
                         )
                     
                     with col2:
