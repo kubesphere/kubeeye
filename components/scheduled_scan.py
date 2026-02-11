@@ -199,7 +199,7 @@ def render_task_list_tab(tasks):
                         if selected_task.enabled:
                             if st.button("禁用任务", key=f"disable_{selected_task_id}"):
                                 selected_task.enabled = False
-                                if add_schedule(selected_task, update=True):
+                                if add_schedule(selected_task):
                                     st.success(f"任务 {selected_task.name} 已禁用")
                                     restart_scheduler()
                                     st.rerun()
@@ -208,7 +208,7 @@ def render_task_list_tab(tasks):
                         else:
                             if st.button("启用任务", key=f"enable_{selected_task_id}"):
                                 selected_task.enabled = True
-                                if add_schedule(selected_task, update=True):
+                                if add_schedule(selected_task):
                                     st.success(f"任务 {selected_task.name} 已启用")
                                     restart_scheduler()
                                     st.rerun()
