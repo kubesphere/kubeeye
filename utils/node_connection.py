@@ -66,7 +66,7 @@ class NodeConnection:
                     look_for_keys=False,
                     allow_agent=False
                 )
-            else:  # key-based auth
+            elif self.node_info['auth_type'] == 'key_path':  # key-based auth
                 key_path = self.node_info['key_path']
                 if not os.path.isfile(key_path):
                     return False, f"密钥文件 {key_path} 不存在"
@@ -81,7 +81,40 @@ class NodeConnection:
                     look_for_keys=False,
                     allow_agent=False
                 )
-            
+            else : # key_content
+                key_content = self.node_info.get('key_content')
+                try:
+                    import io
+                    key_stream = io.StringIO(key_content)
+
+                    pkey = None
+                    errors = []
+                    for key_cls in (
+                        paramiko.RSAKey, # 跟key_path一致先保留RSA
+                        # paramiko.ECDSAKey,
+                        # paramiko.Ed25519Key,
+                    ):
+                        try:
+                            key_stream.seek(0)
+                            pkey = key_cls.from_private_key(key_stream)
+                            break
+                        except Exception as e:
+                            errors.append(str(e))
+                    if pkey is None:
+                        return False, f"无法解析私钥，尝试失败原因: {errors}"
+                    self.client.connect(
+                        hostname=self.node_info['ip'],
+                        port=int(self.node_info['port']),
+                        username=self.node_info['username'],
+                        pkey=pkey,
+                        timeout=10,
+                        look_for_keys=False,
+                        allow_agent=False
+                    )
+                except paramiko.PasswordRequiredException:
+                    return False, "私钥需要 passphrase，但当前未提供"
+                except Exception as e:
+                    return False, f"私钥认证失败: {e}"
             self.connected = True
             return True, ""
         except socket.timeout:
