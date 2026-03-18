@@ -8,6 +8,7 @@ import re
 import logging
 from typing import List, Dict, Tuple, Optional
 from enum import Enum
+import bashlex
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +169,51 @@ class CommandSecurityChecker:
             r'^\s*service\s+\w+\s+(status)\b.*',
             r'^\s*echo\b.*',  # 允许 echo 任意内容
         ])
-    
+
+    # 提取 command node 的完整命令字符串
+    def _extract_command_string(self, node):
+        """
+        从 bashlex Command 节点还原命令字符串
+        """
+        parts = []
+        for part in node.parts:
+            if hasattr(part, "word"):
+                parts.append(part.word)
+        return " ".join(parts).strip()
+
+    # 遍历 AST
+    def _walk(self, node):
+        yield node
+        for attr in ("parts", "list", "commands"):
+            child = getattr(node, attr, None)
+            if child:
+                for item in child:
+                    yield from self._walk(item)
+
+        # 处理 command substitution
+        if hasattr(node, "command"):
+            yield from self._walk(node.command)
+
+    def _normalize_command(self, node) -> str:
+        """
+        统一提取 + 去 sudo + 去重定向
+        """
+
+        cmd_str = self._extract_command_string(node)
+        if not cmd_str:
+            return ""
+
+        # 去 sudo
+        if cmd_str.startswith("sudo "):
+            cmd_str = cmd_str[5:].lstrip()
+
+        # 去重定向
+        cmd_str = re.sub(r'\s*[0-9]*>>?\s*[^ ]+', '', cmd_str)
+        cmd_str = re.sub(r'\s*[0-9]*>&\s*[0-9]+', '', cmd_str)
+        cmd_str = re.sub(r'\s*<<?\s*[^ ]+', '', cmd_str)
+        return cmd_str.strip()
+
+
     def check_command_security(self, command: str) -> Tuple[bool, RiskLevel, str]:
         """
         检查命令安全性 - 采用白名单优先模式
@@ -221,64 +266,60 @@ class CommandSecurityChecker:
         return True, RiskLevel.LOW, "命令通过安全检查"
     
     def _contains_critical_operations(self, command: str) -> bool:
-        """检查命令是否包含绝对禁止的修改操作（对每个子命令分割判断，避免误判只读组合）"""
-        cmd = command.strip()
-        sep_pattern = r'(\|\||&&)'
-        def strip_redirect(s):
-            s = re.split(r'>+.*', s)[0].strip()
-            return s
-        sub_cmds = re.split(sep_pattern, cmd)
-        for sub in sub_cmds:
-            sub = sub.strip()
-            if not sub or sub in {'|', '||', '&&'}:
-                continue
-            if sub.startswith('sudo '):
-                sub = sub[5:].lstrip()
-            sub = strip_redirect(sub)
-            for pattern in self.critical_commands:
-                if re.search(pattern, sub, re.IGNORECASE):
-                    return True
+        """
+        基于 AST 检查是否包含绝对禁止命令
+        """
+        logger.info(f"🔍 检查是否包含绝对禁止命令 - 原始命令: {command}")
+        try:
+            trees = bashlex.parse(command)
+        except bashlex.errors.ParsingError as e:
+            logger.warning(f"❌ 语法解析失败: {e}")
+            return True
+        for tree in trees:
+            for node in self._walk(tree):
+                if node.kind != "command":
+                    continue
+                cmd_str = self._normalize_command(node)
+                if not cmd_str:
+                    continue
+                logger.info(f"检查子命令: {cmd_str}")
+                for pattern in self.critical_commands:
+                    if re.search(pattern, cmd_str, re.IGNORECASE):
+                        logger.error(f"❌ 匹配到禁止的修改操作: {cmd_str} 模式: {pattern}")
+                        return True
+                logger.info(f"子命令通过检查: {cmd_str}")
+
         return False
     
     def _is_safe_readonly_command(self, command: str) -> bool:
         """检查命令是否为安全的只读命令，支持sudo前缀、管道/逻辑组合、去除重定向"""
-        cmd = command.strip()
-        sep_pattern = r'(\|\||&&)'
-        
-        logger.info(f"🔍 白名单检查 - 原始命令: {cmd}")
-        
-        def strip_redirect(s):
-            s = re.split(r'>+.*', s)[0].strip()
-            return s
-            
-        sub_cmds = re.split(sep_pattern, cmd)
-        logger.info(f"分割后的子命令: {sub_cmds}")
-        
-        for i, sub in enumerate(sub_cmds):
-            sub = sub.strip()
-            if not sub or sub in {'|', '||', '&&'}:
-                logger.debug(f"子命令 {i}: '{sub}' (分隔符，跳过)")
-                continue
-                
-            if sub.startswith('sudo '):
-                sub = sub[5:].lstrip()
-                logger.info(f"子命令 {i}: 去除sudo前缀后: '{sub}'")
-                
-            sub = strip_redirect(sub)
-            logger.info(f"子命令 {i}: 去除重定向后: '{sub}'")
-            
-            matched = False
-            for pattern in self.safe_readonly_patterns:
-                if re.match(pattern, sub, re.IGNORECASE):
-                    logger.info(f"✅ 子命令 {i} 匹配白名单模式: {pattern}")
-                    matched = True
-                    break
-                    
-            if not matched:
-                logger.warning(f"❌ 子命令 {i} 未匹配任何白名单模式: '{sub}'")
-                return False
-                
-        logger.info("✅ 所有子命令都通过白名单检查")
+        logger.info(f"🔍 白名单检查 - 原始命令: {command}")
+        try:
+            trees = bashlex.parse(command)
+        except bashlex.errors.ParsingError as e:
+            logger.warning(f"❌ 语法解析失败: {e}")
+            return False
+
+        # 遍历所有 AST 节点
+        for tree in trees:
+            for node in self._walk(tree):
+                # 只检查真正的 command 节点
+                if node.kind != "command":
+                    continue
+                cmd_str = self._normalize_command(node)
+                if not cmd_str:
+                    continue
+                logger.info(f"检查子命令: {cmd_str}")
+                matched = False
+                for pattern in self.safe_readonly_patterns:
+                    if re.match(pattern, cmd_str, re.IGNORECASE):
+                        logger.info(f"✅ 匹配白名单: {pattern}")
+                        matched = True
+                        break
+                if not matched:
+                    logger.warning(f"❌ 未匹配白名单: {cmd_str}")
+                    return False
+        logger.info("✅ 所有命令节点通过检查")
         return True
     
     def _analyze_command_risk(self, command: str) -> Tuple[RiskLevel, str]:
@@ -295,27 +336,32 @@ class CommandSecurityChecker:
         
         if not command:
             return RiskLevel.LOW, "空命令"
-        
-        risk_level = RiskLevel.LOW
-        risk_desc = "低风险命令"
-        
-        # 检查每个子命令的风险
-        sep_pattern = r'(\|\||&&)'
-        sub_cmds = re.split(sep_pattern, command)
-        for sub in sub_cmds:
-            sub = sub.strip()
-            if not sub or sub in {'|', '||', '&&'}:
-                continue
-            if sub.startswith('sudo '):
-                sub = sub[5:].lstrip()
-            sub_risk_level, sub_risk_desc = self._analyze_single_command_risk(sub)
-            
-            # 合并风险等级
-            if sub_risk_level.value > risk_level.value:
-                risk_level = sub_risk_level
-                risk_desc = sub_risk_desc
-        
-        return risk_level, risk_desc
+        try:
+            trees = bashlex.parse(command)
+        except bashlex.errors.ParsingError as e:
+            logger.warning(f"❌ 命令语法解析失败: {e}")
+            return RiskLevel.HIGH, f"命令语法异常: {e}"
+
+        max_level = RiskLevel.LOW
+        max_desc = "低风险命令"
+
+        for tree in trees:
+            for node in self._walk(tree):
+
+                if node.kind != "command":
+                    continue
+
+                cmd_str = self._normalize_command(node)
+                if not cmd_str:
+                    continue
+
+                level, desc = self._analyze_single_command_risk(cmd_str)
+
+                if level.value > max_level.value:
+                    max_level = level
+                    max_desc = desc
+
+        return max_level, max_desc
     
     def _analyze_single_command_risk(self, command: str) -> Tuple[RiskLevel, str]:
         """
