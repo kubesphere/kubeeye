@@ -361,7 +361,7 @@ def display_report_operations(report_id):
             
             if status == 'passed':
                 passed_count += 1
-            elif status == 'exception':
+            else:
                 exception_count += 1
         
         if exception_count > 0:
@@ -528,7 +528,7 @@ def display_report_preview(report_id):
             
         if status == 'passed':
             passed_items.append(item)
-        elif status == 'exception':
+        else:
             if severity == 'critical':
                 exception_critical.append(item)
             elif severity == 'warning':
@@ -577,12 +577,12 @@ def display_inspection_items(items, report_id=None):
     # 按新的状态体系分类：通过 vs 异常（按严重程度细分）
     passed_items = [item for item in items if item.get('status') == 'passed']
     exception_critical = [item for item in items 
-                         if item.get('status') == 'exception' and item.get('severity') == 'critical']
+                         if item.get('status') != 'passed' and item.get('severity') == 'critical']
     exception_warning = [item for item in items 
-                        if item.get('status') == 'exception' and item.get('severity') == 'warning']
+                        if item.get('status') != 'passed' and item.get('severity') == 'warning']
     exception_info = [item for item in items 
-                     if item.get('status') == 'exception' and item.get('severity') in ['info', 'error'] or 
-                     (item.get('status') == 'exception' and item.get('severity') not in ['critical', 'warning'])]
+                     if item.get('status') != 'passed' and item.get('severity') in ['info', 'error'] or 
+                     (item.get('status') != 'passed' and item.get('severity') not in ['critical', 'warning'])]
     
     # 创建标签页
     tab_names = []
