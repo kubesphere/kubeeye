@@ -187,6 +187,11 @@ def update_task_status(task_id, last_run=None, last_status=None):
         return add_schedule(task)
     return False
 
+def run_once(task):
+    run_inspection_bg(task)
+    schedule.clear(task.task_id)
+    logger.info(f"一次性任务 {task.name} ({task.task_id}) 已执行一次，并已从调度中移除")
+
 def run_inspection_bg(task):
     """在后台执行巡检任务"""
     try:
@@ -348,10 +353,9 @@ def schedule_tasks():
             if run_time > now:
                 delta_seconds = (run_time - now).total_seconds()
                 schedule.every(int(delta_seconds)).seconds.do(
-                    lambda t=task: run_inspection_bg(t)
+                    lambda t=task: run_once(t)
                 ).tag(task.task_id)
-                logger.info(f"已调度一次性任务: {task.name} ({task.task_id})，将在 {run_time} 执行")
-    
+                logger.info(f"已调度一次性任务: {task.name} ({task.task_id})，将在 {run_time} 执行")        
     logger.info(f"已调度 {len([t for t in tasks if t.enabled])} 个巡检任务")
 
 def reschedule_cron_task(task):
