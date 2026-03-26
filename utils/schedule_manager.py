@@ -106,10 +106,9 @@ class ScheduleTask:
     
     def get_next_run(self):
         """获取下次运行时间"""
-        if self.cron_expr and self.is_valid_cron():
-            base = dt.now()
-            itr = croniter(self.cron_expr, base)
-            return itr.get_next(dt)
+        for job in schedule.jobs:
+            if self.task_id in job.tags:
+                return job.next_run
         return None
     
     def get_pretty_schedule(self):

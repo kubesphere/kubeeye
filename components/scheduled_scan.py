@@ -242,7 +242,7 @@ def render_create_task_tab():
         return
     
     # --- 调度类型选择放到表单外部 ---
-    schedule_types = ["单次定时", "周期定时（Cron表达式）"]
+    schedule_types = ["单次定时","每小时","每天","每周","每月", "周期定时（Cron表达式）"]
     if "schedule_type" not in st.session_state:
         st.session_state["schedule_type"] = schedule_types[0]
     st.session_state["schedule_type"] = st.selectbox(
@@ -359,6 +359,10 @@ def render_create_task_tab():
                 # 确定任务类型和CRON表达式
                 task_type_map = {
                     "单次定时": "once",
+                    "每小时": "hourly",
+                    "每天": "daily",
+                    "每周": "weekly",
+                    "每月": "monthly",
                     "周期定时（Cron表达式）": "cron"
                 }
                 actual_task_type = task_type_map.get(task_type, "cron")
